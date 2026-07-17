@@ -28,7 +28,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Each alert is fully independent — turn any of them off, pick a
         preset, or upload your own sound.
       </p>
@@ -75,14 +75,14 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
 
   return (
     <Section title={meta.label}>
-      <p className="text-xs text-ivory-dim">{meta.description}</p>
+      <p className="text-base text-ivory-dim">{meta.description}</p>
 
       <div className="flex items-center justify-between">
-        <span className="text-sm text-ivory-dim">Sound</span>
+        <span className="text-base text-ivory-dim">Sound</span>
         <button
           onClick={() => patch({ enabled: !setting.enabled })}
           disabled={saving}
-          className={`rounded-lg border px-3.5 py-2 text-sm disabled:opacity-50 ${
+          className={`rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
             setting.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
           }`}
         >
@@ -97,7 +97,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
               value={setting.sound === 'custom' ? 'custom' : setting.sound}
               onChange={(e) => patch({ sound: e.target.value })}
               disabled={saving}
-              className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
+              className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             >
               {SOUND_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
               {setting.customUrl && <option value="custom">Custom upload</option>}
@@ -105,7 +105,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
             {setting.sound !== 'custom' && (
               <button
                 onClick={() => playPresetSound(setting.sound)}
-                className="shrink-0 rounded-lg border border-ink-line px-3 py-2 text-sm text-ivory-dim hover:text-ivory"
+                className="shrink-0 rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
               >
                 ▶ Preview
               </button>
@@ -116,7 +116,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={saving}
-              className="rounded-lg border border-brass/40 px-3.5 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
+              className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
             >
               Upload custom sound
             </button>
@@ -124,7 +124,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
             {setting.customUrl && (
               <button
                 onClick={() => patch({ sound: 'default', customUrl: '' })}
-                className="text-xs text-red-400 hover:underline"
+                className="text-base text-red-400 hover:underline"
               >
                 Remove custom sound
               </button>

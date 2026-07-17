@@ -34,15 +34,15 @@ export default function StaffPage() {
       <Section title="Team">
         <div className="space-y-1.5">
           {staff.map((s) => (
-            <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+            <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
               <span className="text-ivory">
                 {s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span>
-                {!s.is_active && <span className="ml-2 text-xs text-red-400">deactivated</span>}
+                {!s.is_active && <span className="ml-2 text-base text-red-400">deactivated</span>}
               </span>
               {s.role === 'staff' && (
                 <button
                   onClick={() => setStaffActive(businessId, s.id, !s.is_active).then(reload)}
-                  className="text-xs text-ivory-dim hover:text-ivory"
+                  className="text-base text-ivory-dim hover:text-ivory"
                 >
                   {s.is_active ? 'Deactivate' : 'Reactivate'}
                 </button>
@@ -51,7 +51,7 @@ export default function StaffPage() {
           ))}
         </div>
 
-        <p className="text-sm text-ivory-dim">
+        <p className="text-base text-ivory-dim">
           New staff sign in with their own email and password — no card
           needed, since staff sign in through the website.
         </p>

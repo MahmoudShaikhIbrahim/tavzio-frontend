@@ -5,20 +5,16 @@ import { getBusiness } from '../../lib/authApi';
 import type { BusinessFeatures } from '../../types';
 
 const TABS = [
-  { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const },
-  { path: 'menu', label: 'Menu', ownerOnly: false, requires: 'ordering' as const },
   { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const },
   { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null },
-  { path: 'loyalty', label: 'Loyalty', ownerOnly: false, requires: 'loyalty' as const },
-  { path: 'cards', label: 'Cards', ownerOnly: false, requires: null }, // always available - core safety plumbing, never a toggle
-  { path: 'features', label: 'Features', ownerOnly: false, requires: null }, // self-service toggles - never gated by its own flag
-  { path: 'notifications', label: 'Notifications', ownerOnly: false, requires: null },
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
-  { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
+  { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
+  { path: 'features', label: 'Features', ownerOnly: false, requires: null }, // self-service toggles - never gated by its own flag
   { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const },
-  { path: 'settings', label: 'Settings', ownerOnly: true, requires: null },
+  { path: 'settings', label: 'Settings', ownerOnly: false, requires: null }, // Menu, Loyalty, Cards, Notifications, and Landing Page Buttons all live here now - business info specifically stays owner-only, enforced inside the page itself
+  { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
 ];
 
 export default function DashboardLayout() {
@@ -40,7 +36,6 @@ export default function DashboardLayout() {
     if (!requires || !features) return !requires;
     if (requires === 'ordering') return features.ordering.menuView || features.ordering.submission;
     if (requires === 'booking') return features.booking.menuView || features.booking.submission;
-    if (requires === 'loyalty') return features.loyalty;
     if (requires === 'staffAccounts') return features.staffAccounts;
     return true;
   }
@@ -52,7 +47,7 @@ export default function DashboardLayout() {
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>
-          <div className="flex items-center gap-4 text-sm text-ivory-dim">
+          <div className="flex items-center gap-4 text-base text-ivory-dim">
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
@@ -62,7 +57,7 @@ export default function DashboardLayout() {
             <Link
               key={t.path}
               to={`/admin/dashboard/${t.path}`}
-              className={`shrink-0 border-b-2 px-3 py-2.5 text-sm ${
+              className={`shrink-0 border-b-2 px-3 py-2.5 text-base ${
                 location.pathname.includes(t.path)
                   ? 'border-brass text-ivory'
                   : 'border-transparent text-ivory-dim hover:text-ivory'

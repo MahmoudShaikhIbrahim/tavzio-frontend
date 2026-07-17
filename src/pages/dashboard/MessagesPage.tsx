@@ -53,14 +53,14 @@ export default function MessagesPage() {
   return (
     <div className="flex h-[70vh] flex-col rounded-xl border border-ink-line">
       <div className="border-b border-ink-line p-4">
-        <h1 className="font-display text-lg text-ivory">Contact us</h1>
-        <p className="text-xs text-ivory-dim">Message the platform operator directly — they'll reply here.</p>
+        <h1 className="font-display text-xl text-ivory">Contact us</h1>
+        <p className="text-base text-ivory-dim">Message the platform operator directly — they'll reply here.</p>
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-4">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.sender_role === 'business' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[75%] rounded-xl px-3.5 py-2 text-sm ${
+            <div className={`max-w-[75%] rounded-xl px-3.5 py-2 text-base ${
               m.sender_role === 'business' ? 'bg-brass text-ink' : 'border border-ink-line bg-ink-soft text-ivory'
             }`}>
               <p>{m.message}</p>
@@ -70,7 +70,7 @@ export default function MessagesPage() {
             </div>
           </div>
         ))}
-        {messages.length === 0 && <p className="text-sm text-ivory-dim">No messages yet — send one below if you need help.</p>}
+        {messages.length === 0 && <p className="text-base text-ivory-dim">No messages yet — send one below if you need help.</p>}
         <div ref={bottomRef} />
       </div>
 
@@ -82,7 +82,7 @@ export default function MessagesPage() {
           rows={2}
           className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
-        <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink disabled:opacity-50">
+        <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
           Send
         </button>
       </form>

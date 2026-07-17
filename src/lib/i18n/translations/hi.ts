@@ -26,6 +26,10 @@ export const hi: TranslationDict = {
   pointsProgress: '{points}/{threshold} पॉइंट्स',
   noTierYet: 'अभी तक कोई टियर नहीं',
   moreVisitsTo: '{tier} तक पहुँचने के लिए {n} और विज़िट',
+  claimReward: 'रिवॉर्ड क्लेम करें',
+  claiming: 'क्लेम किया जा रहा है...',
+  rewardClaimed: 'रिवॉर्ड क्लेम हो गया — यह स्टाफ को दिखाएँ',
+  yourReward: 'आपका रिवॉर्ड',
 
   menu: 'मेन्यू',
   menuNotAvailable: 'मेन्यू उपलब्ध नहीं है',

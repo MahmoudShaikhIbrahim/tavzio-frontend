@@ -26,6 +26,10 @@ export const es: TranslationDict = {
   pointsProgress: '{points}/{threshold} puntos',
   noTierYet: 'Aún sin nivel',
   moreVisitsTo: '{n} visitas más para llegar a {tier}',
+  claimReward: 'Reclamar recompensa',
+  claiming: 'Reclamando...',
+  rewardClaimed: 'Recompensa reclamada — muéstraselo al personal',
+  yourReward: 'Tu recompensa',
 
   menu: 'Menú',
   menuNotAvailable: 'Menú no disponible',

@@ -24,7 +24,7 @@ export default function ServicesManagementPage() {
       action={
         <button
           onClick={() => setShowForm((s) => !s)}
-          className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >
           + Add service
         </button>
@@ -35,7 +35,7 @@ export default function ServicesManagementPage() {
         {services.map((service) => (
           <ServiceRow key={service.id} service={service} businessId={businessId} onChange={reload} />
         ))}
-        {services.length === 0 && <p className="text-sm text-ivory-dim">No services yet.</p>}
+        {services.length === 0 && <p className="text-base text-ivory-dim">No services yet.</p>}
       </div>
     </Section>
   );
@@ -84,11 +84,11 @@ function ServiceRow({ service, businessId, onChange }: { service: Service; busin
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2.5 text-sm">
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
       <div>
         <span className="text-ivory">{service.name}</span>
         <span className="ml-2 text-ivory-dim">{service.price.toFixed(2)} · {service.duration_minutes} min</span>
-        {!service.is_available && <span className="ml-2 text-xs text-red-400">unavailable</span>}
+        {!service.is_available && <span className="ml-2 text-base text-red-400">unavailable</span>}
       </div>
       <div className="flex items-center gap-2">
         <ActionButton onClick={() => updateService(businessId, service.id, { isAvailable: !service.is_available }).then(onChange)}>

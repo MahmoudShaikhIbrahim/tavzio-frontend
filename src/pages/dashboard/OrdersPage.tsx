@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listOrders, updateOrderStatus, getBusiness, downloadExport,
-  voidOrder, voidOrderItem, clearTable,
+  voidOrder, voidOrderItem, clearTable, listRequests, dismissRequest, type RequestRow,
+  listLoyaltyClaims, applyManualClaim,
 } from '../../lib/authApi';
+import type { LoyaltyClaim } from '../../types';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings } from '../../types';
@@ -37,6 +39,8 @@ export default function OrdersPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [claims, setClaims] = useState<LoyaltyClaim[]>([]);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [showStaffOrder, setShowStaffOrder] = useState(false);
@@ -44,8 +48,16 @@ export default function OrdersPage() {
   function reload() {
     if (businessId) listOrders(businessId).then(setOrders);
   }
+  function reloadRequests() {
+    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed')));
+  }
+  function reloadClaims() {
+    if (businessId) listLoyaltyClaims(businessId).then(setClaims);
+  }
 
   useEffect(reload, [businessId]);
+  useEffect(reloadRequests, [businessId]);
+  useEffect(reloadClaims, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
@@ -53,11 +65,15 @@ export default function OrdersPage() {
   useEffect(() => {
     if (!businessId) return;
     const unsubscribe = subscribeToBusinessTable(businessId, 'orders', (row) => {
-      reload();
-      setNewOrderPulse(true);
-      setTimeout(() => setNewOrderPulse(false), 2000);
-
       const requestType = row.request_type as string;
+      if (requestType === 'order') {
+        reload();
+        setNewOrderPulse(true);
+        setTimeout(() => setNewOrderPulse(false), 2000);
+      } else {
+        reloadRequests();
+      }
+
       if (notificationSettings) {
         if (requestType === 'call_waiter') playNotificationSound(notificationSettings.callWaiter);
         else if (requestType === 'request_bill') playNotificationSound(notificationSettings.requestBill);
@@ -67,6 +83,13 @@ export default function OrdersPage() {
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, notificationSettings]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    const unsubscribe = subscribeToBusinessTable(businessId, 'loyalty_reward_claims', reloadClaims);
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
 
   if (!businessId) return null;
 
@@ -88,20 +111,24 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="font-display text-2xl text-ivory">Orders</h1>
+          <h1 className="font-display text-3xl text-ivory">Orders</h1>
           {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowStaffOrder(true)} className="rounded-lg bg-brass px-3.5 py-1.5 text-xs font-medium text-ink hover:opacity-90">
+          <button onClick={() => setShowStaffOrder(true)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
             + Order for a table
           </button>
-          <button onClick={() => downloadExport(businessId, 'orders', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory">CSV</button>
-          <button onClick={() => downloadExport(businessId, 'orders', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory">PDF</button>
+          <button onClick={() => downloadExport(businessId, 'orders', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">CSV</button>
+          <button onClick={() => downloadExport(businessId, 'orders', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">PDF</button>
         </div>
       </div>
 
+      {(requests.length > 0 || claims.length > 0) && (
+        <RequestsPanel requests={requests} claims={claims} businessId={businessId} onChange={reloadRequests} onClaimsChange={reloadClaims} />
+      )}
+
       {Object.keys(tableGroups).length === 0 ? (
-        <p className="text-sm text-ivory-dim">No active orders right now.</p>
+        <p className="text-base text-ivory-dim">No active orders right now.</p>
       ) : (
         <div className="space-y-6">
           {Object.keys(tableGroups).map((table) => (
@@ -115,9 +142,9 @@ export default function OrdersPage() {
           <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">Earlier today</h2>
           <div className="space-y-1.5">
             {past.slice(0, 10).map((order) => (
-              <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+              <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
                 <span className="text-ivory-dim">{order.table_label || 'No table'} — {order.total.toFixed(2)}</span>
-                <span className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[order.status]}`}>
+                <span className={`rounded-full border px-2 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
                   {STATUS_LABEL[order.status]}
                 </span>
               </div>
@@ -129,6 +156,51 @@ export default function OrdersPage() {
       {showStaffOrder && (
         <StaffOrderModal businessId={businessId} onClose={() => setShowStaffOrder(false)} onPlaced={() => { setShowStaffOrder(false); reload(); }} />
       )}
+    </div>
+  );
+}
+
+function RequestsPanel({ requests, claims, businessId, onChange, onClaimsChange }: {
+  requests: RequestRow[]; claims: LoyaltyClaim[]; businessId: string; onChange: () => void; onClaimsChange: () => void;
+}) {
+  const LABEL = { call_waiter: 'Call waiter', request_bill: 'Request bill' } as const;
+
+  return (
+    <div className="rounded-xl border border-brass/30 bg-brass/5 p-4">
+      <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-brass">Requests</p>
+      <div className="space-y-1.5">
+        {requests.map((r) => (
+          <div key={r.id} className="flex items-center justify-between rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-base">
+            <span className="text-ivory">
+              {LABEL[r.request_type]} — <span className="text-ivory-dim">{r.table_label || 'No table'}</span>
+            </span>
+            <button
+              onClick={() => dismissRequest(businessId, r.id).then(onChange)}
+              className="rounded-lg border border-brass/40 px-3 py-1 text-base text-brass hover:bg-brass/10"
+            >
+              Dismiss
+            </button>
+          </div>
+        ))}
+        {claims.map((c) => (
+          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-base">
+            <span className="text-ivory">
+              Reward ready — <span className="text-ivory-dim">{c.table_label || 'No table'}</span>
+              {c.reward_description ? ` (${c.reward_description})` : ''}
+            </span>
+            {c.reward_type === 'manual' ? (
+              <button
+                onClick={() => applyManualClaim(businessId, c.id).then(onClaimsChange)}
+                className="rounded-lg border border-brass/40 px-3 py-1 text-base text-brass hover:bg-brass/10"
+              >
+                Mark applied
+              </button>
+            ) : (
+              <span className="text-base text-ivory-dim">Applies automatically at Pay Bill</span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -152,12 +224,12 @@ function TableGroup({ table, orders, businessId, onChange }: {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-display text-lg text-ivory">{table}</h2>
+        <h2 className="font-display text-xl text-ivory">{table}</h2>
         {cardId && (
           <button
             onClick={handleClearTable}
             disabled={clearing}
-            className="rounded-lg border border-red-400/40 px-3 py-1.5 text-xs text-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            className="rounded-lg border border-red-400/40 px-3 py-1.5 text-base text-red-400 hover:bg-red-400/10 disabled:opacity-50"
           >
             {clearing ? 'Clearing...' : 'Clear table'}
           </button>
@@ -179,41 +251,41 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
   return (
     <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
       <div className="flex items-center justify-between">
-        <p className="font-display text-lg text-ivory">
+        <p className="font-display text-xl text-ivory">
           {order.table_label || 'No table'}
           {order.placed_by_staff_id && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Added by staff</span>}
         </p>
-        <span className={`rounded-full border px-2.5 py-0.5 text-xs ${STATUS_STYLE[order.status]}`}>
+        <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
           {STATUS_LABEL[order.status]}
         </span>
       </div>
 
-      <div className="mt-2 space-y-1.5 text-sm">
+      <div className="mt-2 space-y-1.5 text-base">
         {visibleItems.map((item) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>
               <span className="text-ivory">{item.quantity}×</span> {item.item_name}
-              {item.addons.length > 0 && <span className="block text-xs text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
+              {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
               {item.note && <span className="block italic">— {item.note}</span>}
             </div>
             <button
               onClick={() => voidOrderItem(businessId, order.id, item.id).then(onChange)}
-              className="shrink-0 text-xs text-red-400 hover:underline"
+              className="shrink-0 text-base text-red-400 hover:underline"
               title="Void just this item"
             >
               Void
             </button>
           </div>
         ))}
-        {visibleItems.length === 0 && <p className="text-xs italic text-ivory-dim">All items voided</p>}
+        {visibleItems.length === 0 && <p className="text-base italic text-ivory-dim">All items voided</p>}
       </div>
 
-      {order.note && <p className="mt-2 text-xs italic text-brass">Note: {order.note}</p>}
+      {order.note && <p className="mt-2 text-base italic text-brass">Note: {order.note}</p>}
 
-      <p className="mt-2 text-sm text-ivory">{order.total.toFixed(2)}</p>
+      <p className="mt-2 text-base text-ivory">{order.total.toFixed(2)}</p>
 
       {order.pos_sync_status !== 'not_applicable' && (
-        <p className="mt-1 text-xs text-ivory-dim">
+        <p className="mt-1 text-base text-ivory-dim">
           POS sync: {order.pos_sync_status}
           {order.pos_sync_status === 'failed' && order.pos_sync_error ? ` — ${order.pos_sync_error}` : ''}
         </p>
@@ -223,7 +295,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         {next && (
           <button
             onClick={() => updateOrderStatus(businessId, order.id, next).then(onChange)}
-            className="flex-1 rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90"
+            className="flex-1 rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90"
           >
             Mark {STATUS_LABEL[next].toLowerCase()}
           </button>
@@ -231,14 +303,14 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         {order.status !== 'cancelled' && order.status !== 'completed' && (
           <button
             onClick={() => updateOrderStatus(businessId, order.id, 'cancelled').then(onChange)}
-            className="rounded-lg border border-red-400/40 px-3 py-2 text-sm text-red-400 hover:bg-red-400/10"
+            className="rounded-lg border border-red-400/40 px-3 py-2 text-base text-red-400 hover:bg-red-400/10"
           >
             Cancel
           </button>
         )}
         <button
           onClick={() => { if (confirm('Void this entire order? This is for stray leftover orders, not a customer cancelling.')) voidOrder(businessId, order.id).then(onChange); }}
-          className="rounded-lg border border-ink-line px-3 py-2 text-sm text-ivory-dim hover:text-ivory"
+          className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
           title="Void the whole order"
         >
           Void order

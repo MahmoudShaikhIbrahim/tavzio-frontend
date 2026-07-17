@@ -26,6 +26,10 @@ export const ar: TranslationDict = {
   pointsProgress: '{points}/{threshold} نقطة',
   noTierYet: 'لا توجد فئة بعد',
   moreVisitsTo: '{n} زيارات إضافية للوصول إلى {tier}',
+  claimReward: 'اطلب المكافأة',
+  claiming: 'جارٍ المطالبة...',
+  rewardClaimed: 'تم المطالبة بالمكافأة — أظهر هذا للموظفين',
+  yourReward: 'مكافأتك',
 
   menu: 'القائمة',
   menuNotAvailable: 'القائمة غير متاحة',

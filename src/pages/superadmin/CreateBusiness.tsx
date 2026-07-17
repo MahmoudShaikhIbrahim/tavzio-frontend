@@ -51,8 +51,8 @@ export default function CreateBusiness() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="font-display text-2xl text-ivory">Onboard a business</h1>
-      <p className="mt-1 text-sm text-ivory-dim">
+      <h1 className="font-display text-3xl text-ivory">Onboard a business</h1>
+      <p className="mt-1 text-base text-ivory-dim">
         Creates the owner's account and the business record together. The
         owner won't use this password day-to-day — they'll get a tap card
         once you issue one, on the business's page after this.
@@ -71,7 +71,7 @@ export default function CreateBusiness() {
             <button
               type="button"
               onClick={() => setPassword(randomPassword())}
-              className="shrink-0 rounded-lg border border-ink-line px-3 text-sm text-ivory-dim hover:text-ivory"
+              className="shrink-0 rounded-lg border border-ink-line px-3 text-base text-ivory-dim hover:text-ivory"
             >
               Generate
             </button>
@@ -85,7 +85,7 @@ export default function CreateBusiness() {
         </div>
         <Field label="URL slug">
           <div className="flex items-center gap-1">
-            <span className="text-sm text-ivory-dim">tavzio.com/</span>
+            <span className="text-base text-ivory-dim">tavzio.com/</span>
             <input
               required
               value={slug}
@@ -100,7 +100,7 @@ export default function CreateBusiness() {
           </select>
         </Field>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-base text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={loading}
@@ -113,12 +113,12 @@ export default function CreateBusiness() {
   );
 }
 
-const inputClass = 'w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-sm text-ivory focus:border-brass';
+const inputClass = 'w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass';
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm text-ivory-dim">{label}</span>
+      <span className="mb-1.5 block text-base text-ivory-dim">{label}</span>
       {children}
     </label>
   );

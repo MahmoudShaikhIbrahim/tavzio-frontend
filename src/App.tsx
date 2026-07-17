@@ -19,16 +19,12 @@ import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
 
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
-import LoyaltyPage from './pages/dashboard/LoyaltyPage';
-import CardsPage from './pages/dashboard/CardsPage';
 import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
-import MenuManagementPage from './pages/dashboard/MenuManagementPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
 import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import FeaturesPage from './pages/dashboard/FeaturesPage';
-import NotificationsPage from './pages/dashboard/NotificationsPage';
 import PaymentsPage from './pages/dashboard/PaymentsPage';
 import AuditLogPage from './pages/dashboard/AuditLogPage';
 import MessagesPage from './pages/dashboard/MessagesPage';
@@ -63,18 +59,14 @@ export default function App() {
         {/* Owner/staff shared dashboard */}
         <Route element={<RequireRole allow={['business_owner', 'staff']} />}>
           <Route path="/admin/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="analytics" replace />} />
+            <Route index element={<Navigate to="orders" replace />} />
             <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="loyalty" element={<LoyaltyPage />} />
-            <Route path="cards" element={<CardsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="settings" element={<SettingsPage />} />
-            <Route path="menu" element={<MenuManagementPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="services" element={<ServicesManagementPage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="features" element={<FeaturesPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="audit-log" element={<AuditLogPage />} />
             <Route path="messages" element={<MessagesPage />} />

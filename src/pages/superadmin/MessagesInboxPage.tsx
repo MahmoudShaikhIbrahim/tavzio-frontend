@@ -17,7 +17,7 @@ export default function MessagesInboxPage() {
     <div className="flex h-[75vh] gap-4">
       <div className="w-72 shrink-0 overflow-y-auto rounded-xl border border-ink-line">
         <div className="border-b border-ink-line p-3">
-          <h1 className="font-display text-lg text-ivory">Messages</h1>
+          <h1 className="font-display text-xl text-ivory">Messages</h1>
         </div>
         {threads.map((t) => (
           <button
@@ -28,8 +28,8 @@ export default function MessagesInboxPage() {
             }`}
           >
             <div className="min-w-0">
-              <p className="truncate text-sm text-ivory">{t.businessName}</p>
-              <p className="truncate text-xs text-ivory-dim">{t.lastMessage}</p>
+              <p className="truncate text-base text-ivory">{t.businessName}</p>
+              <p className="truncate text-base text-ivory-dim">{t.lastMessage}</p>
             </div>
             {t.unreadCount > 0 && (
               <span className="ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass text-[10px] font-medium text-ink">
@@ -38,14 +38,14 @@ export default function MessagesInboxPage() {
             )}
           </button>
         ))}
-        {threads.length === 0 && <p className="p-3.5 text-sm text-ivory-dim">No messages yet.</p>}
+        {threads.length === 0 && <p className="p-3.5 text-base text-ivory-dim">No messages yet.</p>}
       </div>
 
       <div className="flex-1 rounded-xl border border-ink-line">
         {selectedThread ? (
           <ThreadView businessId={selectedThread.businessId} businessName={selectedThread.businessName} onSent={reload} />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-ivory-dim">Select a conversation</div>
+          <div className="flex h-full items-center justify-center text-base text-ivory-dim">Select a conversation</div>
         )}
       </div>
     </div>
@@ -79,12 +79,12 @@ function ThreadView({ businessId, businessName, onSent }: { businessId: string; 
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-ink-line p-4">
-        <p className="font-display text-lg text-ivory">{businessName}</p>
+        <p className="font-display text-xl text-ivory">{businessName}</p>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-4">
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.sender_role === 'super_admin' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[75%] rounded-xl px-3.5 py-2 text-sm ${
+            <div className={`max-w-[75%] rounded-xl px-3.5 py-2 text-base ${
               m.sender_role === 'super_admin' ? 'bg-brass text-ink' : 'border border-ink-line bg-ink-soft text-ivory'
             }`}>
               <p>{m.message}</p>
@@ -104,7 +104,7 @@ function ThreadView({ businessId, businessName, onSent }: { businessId: string; 
           rows={2}
           className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
-        <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink disabled:opacity-50">
+        <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
           Send
         </button>
       </form>

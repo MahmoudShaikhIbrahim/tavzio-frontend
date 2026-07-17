@@ -33,28 +33,28 @@ export default function AuditLogPage() {
 
   return (
     <Section title="Audit log">
-      <p className="text-sm text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Every void, refund, staff-placed order, and card deletion — who did
         it, and when. Not a general activity feed by design.
       </p>
       <div className="space-y-1.5">
         {entries.map((e) => (
-          <div key={e.id} className="rounded-lg border border-ink-line px-3.5 py-2.5 text-sm">
+          <div key={e.id} className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
             <div className="flex items-center justify-between">
-              <span className={`rounded-full border px-2 py-0.5 text-xs ${ACTION_STYLE[e.action]}`}>
+              <span className={`rounded-full border px-2 py-0.5 text-sm ${ACTION_STYLE[e.action]}`}>
                 {ACTION_LABEL[e.action]}
               </span>
-              <span className="text-xs text-ivory-dim">{new Date(e.created_at).toLocaleString()}</span>
+              <span className="text-sm text-ivory-dim">{new Date(e.created_at).toLocaleString()}</span>
             </div>
             <p className="mt-1 text-ivory-dim">
               <span className="text-ivory">{e.actor_name || 'Unknown'}</span> ({e.actor_role})
               {Object.keys(e.details).length > 0 && (
-                <span className="ml-1 text-xs">— {JSON.stringify(e.details)}</span>
+                <span className="ml-1 text-base">— {JSON.stringify(e.details)}</span>
               )}
             </p>
           </div>
         ))}
-        {entries.length === 0 && <p className="text-sm text-ivory-dim">No activity logged yet.</p>}
+        {entries.length === 0 && <p className="text-base text-ivory-dim">No activity logged yet.</p>}
       </div>
     </Section>
   );

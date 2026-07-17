@@ -26,6 +26,10 @@ export const zh: TranslationDict = {
   pointsProgress: '{points}/{threshold} 积分',
   noTierYet: '暂无等级',
   moreVisitsTo: '再到店 {n} 次即可升至{tier}',
+  claimReward: '领取奖励',
+  claiming: '领取中...',
+  rewardClaimed: '奖励已领取 — 请向员工出示',
+  yourReward: '您的奖励',
 
   menu: '菜单',
   menuNotAvailable: '菜单暂不可用',

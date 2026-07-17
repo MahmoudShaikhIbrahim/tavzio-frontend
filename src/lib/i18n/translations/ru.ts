@@ -26,6 +26,10 @@ export const ru: TranslationDict = {
   pointsProgress: '{points}/{threshold} баллов',
   noTierYet: 'Уровень ещё не присвоен',
   moreVisitsTo: 'Ещё {n} посещений до уровня «{tier}»',
+  claimReward: 'Получить награду',
+  claiming: 'Получение...',
+  rewardClaimed: 'Награда получена — покажите это персоналу',
+  yourReward: 'Ваша награда',
 
   menu: 'Меню',
   menuNotAvailable: 'Меню недоступно',

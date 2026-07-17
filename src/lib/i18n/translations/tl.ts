@@ -26,6 +26,10 @@ export const tl: TranslationDict = {
   pointsProgress: '{points}/{threshold} na points',
   noTierYet: 'Wala pang tier',
   moreVisitsTo: '{n} pang pagbisita para sa {tier}',
+  claimReward: 'I-claim ang reward',
+  claiming: 'Kino-claim...',
+  rewardClaimed: 'Na-claim ang reward — ipakita ito sa staff',
+  yourReward: 'Ang reward mo',
 
   menu: 'Menu',
   menuNotAvailable: 'Hindi available ang menu',

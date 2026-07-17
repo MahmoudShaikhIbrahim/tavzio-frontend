@@ -24,10 +24,10 @@ export default function BusinessesList() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl text-ivory">Businesses</h1>
+        <h1 className="font-display text-3xl text-ivory">Businesses</h1>
         <Link
           to="/admin/super/businesses/new"
-          className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >
           + Onboard a business
         </Link>
@@ -38,12 +38,12 @@ export default function BusinessesList() {
         placeholder="Search by name..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mt-5 w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-sm
+        className="mt-5 w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-base
                    text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
       />
 
       <div className="mt-5 overflow-hidden rounded-xl border border-ink-line">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-base">
           <thead className="bg-ink-soft text-ivory-dim">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
@@ -69,7 +69,7 @@ export default function BusinessesList() {
                 <td className="px-4 py-3 text-ivory-dim">/{b.slug}</td>
                 <td className="px-4 py-3 text-ivory-dim capitalize">{b.category}</td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full border px-2.5 py-0.5 text-xs capitalize ${STATUS_STYLES[b.status]}`}>
+                  <span className={`rounded-full border px-2.5 py-0.5 text-sm capitalize ${STATUS_STYLES[b.status]}`}>
                     {b.status}
                   </span>
                 </td>

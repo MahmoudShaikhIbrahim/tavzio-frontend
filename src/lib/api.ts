@@ -1,6 +1,6 @@
 import type {
   Business, LoyaltyMembership, TapResponse, MenuCategory, MenuItem, OrderRow, CartLine,
-  OrderRequestType, Service, BookingRow, BillItem, PaymentRow, Receipt,
+  OrderRequestType, Service, BookingRow, BillItem, PaymentRow, Receipt, LoyaltyCheckinResponse, LoyaltyClaim,
 } from '../types';
 import { getDeviceToken } from './session';
 import { getVisitorId } from './visitor';
@@ -52,16 +52,23 @@ export function logEvent(slug: string, type: string, cardUid?: string) {
 }
 
 export function loyaltyCheckin(slug: string, phone: string, tapEventId: number) {
-  return request<{ membership: LoyaltyMembership; rewardReady: boolean; alreadyCounted: boolean }>(
+  return request<LoyaltyCheckinResponse>(
     `/api/public/business/${slug}/loyalty/checkin`,
     { method: 'POST', body: JSON.stringify({ phone, tapEventId }) }
   );
 }
 
 export function loyaltyStatus(slug: string, phone: string) {
-  return request<{ membership: LoyaltyMembership | null }>(
+  return request<Partial<LoyaltyCheckinResponse> & { membership: LoyaltyMembership | null }>(
     `/api/public/business/${slug}/loyalty/status?phone=${encodeURIComponent(phone)}`
   );
+}
+
+export function claimReward(slug: string, phone: string, tapEventId: number) {
+  return request<{ claim: LoyaltyClaim }>(`/api/public/business/${slug}/loyalty/claim`, {
+    method: 'POST',
+    body: JSON.stringify({ phone, tapEventId }),
+  });
 }
 
 export function getMenu(slug: string) {
@@ -121,8 +128,11 @@ export function submitBooking(
   });
 }
 
-export function getBill(slug: string, tapEventId: number) {
-  return request<{ items: BillItem[]; total: number }>(`/api/public/business/${slug}/bill?tapEventId=${tapEventId}`);
+export function getBill(slug: string, tapEventId: number, phone?: string) {
+  const qs = phone ? `&phone=${encodeURIComponent(phone)}` : '';
+  return request<{ items: BillItem[]; total: number; subtotal: number; discountAmount: number; rewardDescription: string }>(
+    `/api/public/business/${slug}/bill?tapEventId=${tapEventId}${qs}`
+  );
 }
 
 export function payBill(

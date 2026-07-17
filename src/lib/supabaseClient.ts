@@ -32,7 +32,7 @@ export function getSupabase() {
 // for each. Returns an unsubscribe function - always call it on unmount.
 export function subscribeToBusinessTable(
   businessId: string,
-  table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages',
+  table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims',
   onInsert: (row: Record<string, unknown>) => void
 ) {
   const channel = client

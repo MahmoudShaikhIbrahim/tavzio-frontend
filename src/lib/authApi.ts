@@ -2,7 +2,8 @@ import { authFetch, setSession, getToken } from './session';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import type {
   Profile, AdminBusiness, Card, StaffMember,
-  AnalyticsSummary, CardBreakdownItem, LoyaltyProgramAdmin, LoyaltyMemberRow, LoyaltyProgramType, LoyaltyProgramConfig,
+  AnalyticsSummary, CardBreakdownItem, LoyaltyProgramAdmin, LoyaltyMemberRow, LoyaltyProgramConfig,
+  LoyaltyEarnMethod, LoyaltyStructure, RewardType, LoyaltyClaim,
   MenuCategory, MenuItem, OrderRow, OrderStatus,
   PosIntegration, PosIntegrationStatus, PosProvider, PosPurpose,
   Service, BookingRow, BookingStatus,
@@ -149,10 +150,21 @@ export function getLoyaltyProgram(businessId: string) {
   return authFetch<LoyaltyProgramAdmin | null>(`/api/businesses/${businessId}/loyalty/program`);
 }
 
-export function upsertLoyaltyProgram(businessId: string, type: LoyaltyProgramType, enabled: boolean, config: LoyaltyProgramConfig) {
+export interface UpsertLoyaltyProgramPayload {
+  earnMethod: LoyaltyEarnMethod;
+  structure: LoyaltyStructure;
+  usePoints: boolean;
+  rewardType: RewardType;
+  rewardValue: number;
+  rewardDescription: string;
+  enabled: boolean;
+  config: LoyaltyProgramConfig;
+}
+
+export function upsertLoyaltyProgram(businessId: string, payload: UpsertLoyaltyProgramPayload) {
   return authFetch<LoyaltyProgramAdmin>(`/api/businesses/${businessId}/loyalty/program`, {
     method: 'PUT',
-    body: JSON.stringify({ type, enabled, config }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -172,6 +184,16 @@ export function redeemLoyaltyReward(businessId: string, membershipId: string) {
   return authFetch<LoyaltyMemberRow>(`/api/businesses/${businessId}/loyalty/members/${membershipId}/redeem`, {
     method: 'POST',
   });
+}
+
+// --- Reward claims - shown in the same Requests panel as Call Waiter/Request Bill ---
+
+export function listLoyaltyClaims(businessId: string) {
+  return authFetch<LoyaltyClaim[]>(`/api/businesses/${businessId}/loyalty/claims`);
+}
+
+export function applyManualClaim(businessId: string, claimId: string) {
+  return authFetch<LoyaltyClaim>(`/api/businesses/${businessId}/loyalty/claims/${claimId}/apply`, { method: 'PATCH' });
 }
 
 // --- Feature entitlements (super_admin only) ---
@@ -433,6 +455,25 @@ export function voidOrder(businessId: string, orderId: string, reason?: string) 
     method: 'POST',
     body: JSON.stringify({ reason }),
   });
+}
+
+// --- Call Waiter / Request Bill - a separate, lightweight feed, never
+// mixed into the kitchen's order queue ---
+
+export interface RequestRow {
+  id: string;
+  table_label: string;
+  request_type: 'call_waiter' | 'request_bill';
+  status: string;
+  created_at: string;
+}
+
+export function listRequests(businessId: string) {
+  return authFetch<RequestRow[]>(`/api/businesses/${businessId}/orders/requests`);
+}
+
+export function dismissRequest(businessId: string, requestId: string) {
+  return authFetch<RequestRow>(`/api/businesses/${businessId}/orders/requests/${requestId}/dismiss`, { method: 'PATCH' });
 }
 
 export function voidOrderItem(businessId: string, orderId: string, itemId: string) {

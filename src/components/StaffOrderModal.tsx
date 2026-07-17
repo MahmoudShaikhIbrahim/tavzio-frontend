@@ -55,8 +55,11 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-ink-line bg-ink-soft p-5">
+    <div className="fixed inset-0 z-20 flex items-end bg-black/70" onClick={onClose}>
+      <div
+        className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">Order for a table</h2>
           <button onClick={onClose} className="text-ivory-dim hover:text-ivory">✕</button>
@@ -65,7 +68,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
         <select
           value={selectedCardId}
           onChange={(e) => setSelectedCardId(e.target.value)}
-          className="mt-4 w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-sm text-ivory"
+          className="mt-4 w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory"
         >
           <option value="">Select a table...</option>
           {cards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
@@ -83,7 +86,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
                     <button
                       key={item.id}
                       onClick={() => openItem(item)}
-                      className="flex w-full items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-left text-sm"
+                      className="flex w-full items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-left text-base"
                     >
                       <span className="text-ivory">{item.name}</span>
                       <span className="text-brass">{item.price.toFixed(2)}</span>
@@ -96,7 +99,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
         </div>
 
         {cart.lines.length > 0 && (
-          <div className="mt-4 space-y-1.5 border-t border-ink-line pt-3 text-sm">
+          <div className="mt-4 space-y-1.5 border-t border-ink-line pt-3 text-base">
             {cart.lines.map((l, i) => (
               <div key={i} className="flex items-center justify-between text-ivory-dim">
                 <span>{l.quantity}× {l.name}{l.note ? ` (${l.note})` : ''}</span>
@@ -114,7 +117,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
           className="mt-3 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
 
-        {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+        {error && <p className="mt-2 text-base text-red-400">{error}</p>}
 
         <button
           onClick={handleSubmit}
@@ -158,11 +161,11 @@ function ItemPicker({ item, addons, onClose, onAdd }: {
   return (
     <div className="fixed inset-0 z-30 flex items-end bg-black/70" onClick={onClose}>
       <div className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
-        <p className="font-display text-lg text-ivory">{item.name}</p>
+        <p className="font-display text-xl text-ivory">{item.name}</p>
         {addons.length > 0 && (
           <div className="mt-3 space-y-1.5">
             {addons.map((a) => (
-              <label key={a.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+              <label key={a.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-base">
                 <span className="flex items-center gap-2 text-ivory">
                   <input type="checkbox" checked={selectedIds.has(a.id)} onChange={() => toggle(a.id)} className="accent-brass" />
                   {a.name}

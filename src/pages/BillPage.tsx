@@ -30,6 +30,8 @@ function BillPageContent({ slug }: { slug: string }) {
   const [error, setError] = useState('');
   const [paid, setPaid] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [rewardDescription, setRewardDescription] = useState('');
 
   const tapEventId = (() => {
     const stored = sessionStorage.getItem(`tavzio_tap_${slug}`);
@@ -38,8 +40,13 @@ function BillPageContent({ slug }: { slug: string }) {
 
   function loadBill() {
     if (!tapEventId) return;
-    getBill(slug, tapEventId)
-      .then((res) => setItems(res.items))
+    const savedPhone = getSavedPhone(slug) || undefined;
+    getBill(slug, tapEventId, savedPhone)
+      .then((res) => {
+        setItems(res.items);
+        setDiscountAmount(res.discountAmount || 0);
+        setRewardDescription(res.rewardDescription || '');
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }
@@ -59,7 +66,14 @@ function BillPageContent({ slug }: { slug: string }) {
   // selecting specific items is only needed when splitting.
   const payingSpecificItems = selected.size > 0;
   const itemsToPay = payingSpecificItems ? items.filter((i) => selected.has(i.id)) : items;
-  const subtotal = itemsToPay.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+  const rawSubtotal = itemsToPay.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
+  // The discount preview is computed against the FULL bill server-side -
+  // only shown here when paying everything, since prorating it across a
+  // partial split isn't meaningful until payment actually happens (the
+  // real, final discount is always recomputed correctly server-side at
+  // that moment regardless of what's previewed here).
+  const previewDiscount = payingSpecificItems ? 0 : discountAmount;
+  const subtotal = Math.max(0, rawSubtotal - previewDiscount);
   const tip = Math.round(subtotal * (tipPercent / 100) * 100) / 100;
   const total = subtotal + tip;
 
@@ -148,6 +162,9 @@ function BillPageContent({ slug }: { slug: string }) {
               </div>
             ))}
             <div className="my-3 border-t border-dashed border-ink-line" />
+            {receipt.discountAmount > 0 && (
+              <div className="flex justify-between text-brass"><span>{receipt.rewardDescription || 'Reward'}</span><span>-{receipt.discountAmount.toFixed(2)}</span></div>
+            )}
             <div className="flex justify-between"><span>Subtotal (ex VAT)</span><span>{receipt.subtotalExVat.toFixed(2)}</span></div>
             <div className="flex justify-between"><span>VAT ({(receipt.vatRate * 100).toFixed(0)}%)</span><span>{receipt.vatAmount.toFixed(2)}</span></div>
             {receipt.tip > 0 && <div className="flex justify-between"><span>Tip</span><span>{receipt.tip.toFixed(2)}</span></div>}
@@ -222,8 +239,14 @@ function BillPageContent({ slug }: { slug: string }) {
         <div className="mx-auto max-w-md">
           <div className="mb-2 flex justify-between text-sm text-ivory-dim">
             <span>{payingSpecificItems ? t('selectedItems') : t('fullBill')}</span>
-            <span>{subtotal.toFixed(2)}</span>
+            <span>{rawSubtotal.toFixed(2)}</span>
           </div>
+          {previewDiscount > 0 && (
+            <div className="mb-2 flex justify-between text-sm text-brass">
+              <span>{rewardDescription || 'Reward'}</span>
+              <span>-{previewDiscount.toFixed(2)}</span>
+            </div>
+          )}
           {tip > 0 && (
             <div className="mb-2 flex justify-between text-sm text-ivory-dim">
               <span>{t('tip')}</span>

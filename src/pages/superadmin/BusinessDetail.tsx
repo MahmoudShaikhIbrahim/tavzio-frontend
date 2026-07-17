@@ -49,10 +49,10 @@ export default function BusinessDetail() {
       <div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl text-ivory">{business.name}</h1>
-            <p className="text-sm text-ivory-dim">tavzio.com/{business.slug}</p>
+            <h1 className="font-display text-3xl text-ivory">{business.name}</h1>
+            <p className="text-base text-ivory-dim">tavzio.com/{business.slug}</p>
           </div>
-          <span className="rounded-full border border-brass/40 px-2.5 py-0.5 text-xs capitalize text-brass">
+          <span className="rounded-full border border-brass/40 px-2.5 py-0.5 text-sm capitalize text-brass">
             {business.status}
           </span>
         </div>
@@ -114,7 +114,7 @@ export default function BusinessDetail() {
       <Section title={`Table / customer cards (${cards.filter((c) => !c.linked_user_id).length})`}>
         <div className="space-y-1.5">
           {cards.filter((c) => !c.linked_user_id).map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
-          {cards.filter((c) => !c.linked_user_id).length === 0 && <p className="text-sm text-ivory-dim">No cards yet.</p>}
+          {cards.filter((c) => !c.linked_user_id).length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
         </div>
         <AddCardsForm businessId={businessId} onDone={reload} />
       </Section>
@@ -126,7 +126,7 @@ function Section({ title, children, action }: { title: string; children: ReactNo
   return (
     <div className="rounded-xl border border-ink-line p-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg text-ivory">{title}</h2>
+        <h2 className="font-display text-xl text-ivory">{title}</h2>
         {action}
       </div>
       <div className="mt-3 space-y-3">{children}</div>
@@ -139,7 +139,7 @@ function ActionButton({ children, onClick, disabled, danger }: { children: React
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg border px-3.5 py-2 text-sm disabled:opacity-50 ${
+      className={`rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
         danger ? 'border-red-400/40 text-red-400 hover:bg-red-400/10' : 'border-brass/40 text-brass hover:bg-brass/10'
       }`}
     >
@@ -154,13 +154,13 @@ function ToggleRow({ label, description, checked, onChange, disabled }: {
   return (
     <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-3">
       <div>
-        <p className="text-sm text-ivory">{label}</p>
-        {description && <p className="text-xs text-ivory-dim">{description}</p>}
+        <p className="text-base text-ivory">{label}</p>
+        {description && <p className="text-base text-ivory-dim">{description}</p>}
       </div>
       <button
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm disabled:opacity-50 ${
+        className={`shrink-0 rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
           checked ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
         }`}
       >
@@ -186,7 +186,7 @@ function FeaturesSection({ businessId, business, onChange }: {
 
   return (
     <Section title="Features">
-      <p className="text-xs text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Owner and staff can now toggle all of this themselves too, from
         their own Settings tab — this is here for help or override, not the
         only place it lives anymore.
@@ -293,7 +293,7 @@ function PosIntegrationSection({ businessId, purpose, providers }: {
   return (
     <Section title={`POS integration — ${purpose}`}>
       {integration?.status && (
-        <p className="text-xs">
+        <p className="text-base">
           Status: <span className={integration.status === 'connected' ? 'text-green-400' : integration.status === 'error' ? 'text-red-400' : 'text-ivory-dim'}>
             {integration.status}
           </span>
@@ -308,7 +308,7 @@ function PosIntegrationSection({ businessId, purpose, providers }: {
         </Field>
 
         {provider === 'fresha' ? (
-          <p className="text-sm text-ivory-dim">
+          <p className="text-base text-ivory-dim">
             No confirmed public API exists for Fresha - enabling this will fail until
             Fresha grants private/partner API access. Contact them directly first.
           </p>
@@ -321,7 +321,7 @@ function PosIntegrationSection({ businessId, purpose, providers }: {
                   onChange={(e) => setConfig((c) => ({ ...c, [f.key]: e.target.value }))}
                   rows={4}
                   placeholder='{"table": {{table}}, "total": {{total}}, "items": {{items}}}'
-                  className={`${inputClass} font-mono text-xs`}
+                  className={`${inputClass} font-mono text-base`}
                 />
               </Field>
             ) : (
@@ -336,14 +336,14 @@ function PosIntegrationSection({ businessId, purpose, providers }: {
           )
         )}
 
-        <label className="flex items-center gap-2 text-sm text-ivory-dim">
+        <label className="flex items-center gap-2 text-base text-ivory-dim">
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
           Enabled
         </label>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save integration'}
         </button>
@@ -364,11 +364,11 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
 
   return (
     <Section title="Payments (Tap Payments)">
-      <p className="text-sm text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Set up by the owner directly, from their own Settings — the secret
         key is never visible here, only whether it's connected.
       </p>
-      <p className="text-xs">
+      <p className="text-base">
         Status: <span className={status?.enabled ? 'text-green-400' : 'text-ivory-dim'}>
           {status?.enabled ? `connected (${status.status})` : 'not connected'}
         </span>
@@ -392,19 +392,19 @@ function CustomButtonsSection({ businessId }: { businessId: string }) {
     <Section
       title="Custom buttons"
       action={
-        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-xs font-medium text-ink hover:opacity-90">
+        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
           + Add button
         </button>
       }
     >
-      <p className="text-xs text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Beyond the fixed 7 links - a brand-new button with its own label,
         icon, and link. Owner and staff can manage these too.
       </p>
       {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
       <div className="space-y-1.5">
         {buttons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reload} />)}
-        {buttons.length === 0 && <p className="text-sm text-ivory-dim">No custom buttons yet.</p>}
+        {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
       </div>
     </Section>
   );
@@ -439,7 +439,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
         </Field>
       </div>
       <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
-      <button disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink disabled:opacity-50">
+      <button disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
         {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
       </button>
     </form>
@@ -451,7 +451,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
       <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
       <div className="flex items-center gap-2">
         <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
@@ -470,7 +470,7 @@ function StaffTable({ staff, businessId, onChange, busy, setBusy }: {
   return (
     <div className="space-y-1.5">
       {staff.map((s) => (
-        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
           <span className="text-ivory">{s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span></span>
           <button
             disabled={busy}
@@ -480,7 +480,7 @@ function StaffTable({ staff, businessId, onChange, busy, setBusy }: {
               setBusy(false);
               onChange();
             }}
-            className="text-xs text-ivory-dim hover:text-ivory"
+            className="text-base text-ivory-dim hover:text-ivory"
           >
             {s.is_active ? 'Deactivate' : 'Reactivate'}
           </button>
@@ -507,10 +507,10 @@ function InviteStaffForm({ businessId, onDone }: { businessId: string; onDone: (
   return (
     <form onSubmit={submit} className="flex gap-2">
       <input placeholder="Name" required value={name} onChange={(e) => setName(e.target.value)}
-        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory" />
+        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-3.5 py-2 text-sm font-medium text-ink disabled:opacity-50">
+        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-3.5 py-2 text-base font-medium text-ink disabled:opacity-50">
         Add staff
       </button>
     </form>
@@ -534,10 +534,10 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
   return (
     <form onSubmit={submit} className="flex gap-2 border-t border-ink-line pt-3">
       <input type="number" min={1} max={100} value={count} onChange={(e) => setCount(Number(e.target.value))}
-        className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory" />
+        className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Label (e.g. Table 4)" value={label} onChange={(e) => setLabel(e.target.value)}
-        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-3.5 py-2 text-sm font-medium text-ink disabled:opacity-50">
+        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-3.5 py-2 text-base font-medium text-ink disabled:opacity-50">
         Add
       </button>
     </form>
@@ -563,31 +563,31 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-3.5 py-2 text-base">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {editing ? (
           <>
             <input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus
-              className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-sm text-ivory" />
-            <button onClick={saveLabel} className="text-xs text-brass hover:underline">Save</button>
-            <button onClick={() => { setEditing(false); setLabel(card.label); }} className="text-xs text-ivory-dim hover:text-ivory">Cancel</button>
+              className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-base text-ivory" />
+            <button onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
+            <button onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
           </>
         ) : (
           <>
             <span className="truncate text-ivory">{card.label || 'Untitled'}</span>
-            <span className="shrink-0 font-mono text-xs text-ivory-dim">{card.uid}</span>
-            <button onClick={() => setEditing(true)} className="shrink-0 text-xs text-brass hover:underline">Rename</button>
+            <span className="shrink-0 font-mono text-base text-ivory-dim">{card.uid}</span>
+            <button onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
           </>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <button onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-xs text-ivory-dim hover:text-ivory">
+        <button onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
           {copied ? 'Copied!' : 'Copy URL'}
         </button>
         <select
           value={card.status}
           onChange={(e) => updateCard(businessId, card.id, { status: e.target.value }).then(onChange)}
-          className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory-dim"
+          className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim"
         >
           <option value="active">active</option>
           <option value="inactive">inactive</option>
@@ -600,7 +600,7 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
               deleteCard(businessId, card.id).then(onChange);
             }
           }}
-          className="rounded border border-red-400/40 px-2 py-1 text-xs text-red-400 hover:bg-red-400/10"
+          className="rounded border border-red-400/40 px-2 py-1 text-base text-red-400 hover:bg-red-400/10"
         >
           Delete
         </button>

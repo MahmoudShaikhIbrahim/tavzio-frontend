@@ -18,12 +18,16 @@ export interface BusinessLinks {
   directions: LinkButtonConfig;
 }
 
-export type LoyaltyProgramType = 'punch_card' | 'points' | 'tiered' | 'spend';
+export type LoyaltyEarnMethod = 'visit' | 'spend';
+export type LoyaltyStructure = 'threshold' | 'tiered';
+export type RewardType = 'percentage' | 'fixed_amount' | 'manual';
 
 export interface LoyaltyTier {
   name: string;
-  visitsRequired: number;
-  perk: string;
+  threshold: number; // measured in visits, points, or spend depending on the program's settings
+  rewardType: RewardType;
+  rewardValue: number;
+  rewardDescription: string;
 }
 
 export type CooldownType = 'none' | 'daily' | 'weekly' | 'custom';
@@ -35,20 +39,37 @@ export interface LoyaltyCooldown {
 
 export interface LoyaltyProgramConfig {
   visitsRequired?: number;
-  reward?: string;
   pointsPerVisit?: number;
   redeemThreshold?: number;
-  tiers?: LoyaltyTier[];
   thresholdAmount?: number;
   currency?: string;
+  tiers?: LoyaltyTier[];
   // How often a tap is allowed to count - owner-set per program. Never
-  // applies to 'spend' (staff-entered, can't be gamed by re-tapping).
+  // applies to spend-based earning (staff-entered, can't be gamed by re-tapping).
   cooldown?: LoyaltyCooldown;
 }
 
 export interface LoyaltyProgram {
-  type: LoyaltyProgramType;
+  earn_method: LoyaltyEarnMethod;
+  structure: LoyaltyStructure;
+  use_points: boolean;
+  reward_type: RewardType;
+  reward_value: number;
+  reward_description: string;
   config: LoyaltyProgramConfig;
+}
+
+export interface RewardInfo {
+  type: RewardType;
+  value: number;
+  description: string;
+}
+
+export interface TierReward {
+  name: string;
+  type: RewardType;
+  value: number;
+  description: string;
 }
 
 // Every one of these is super_admin-only to toggle - one-tier control, no
@@ -99,6 +120,29 @@ export interface LoyaltyMembership {
   points: number;
   total_spend: number;
   current_tier: string | null;
+}
+
+export interface LoyaltyCheckinResponse {
+  membership: LoyaltyMembership;
+  rewardReady: boolean;
+  alreadyCounted: boolean;
+  reward: RewardInfo | null;
+  currentTierReward: TierReward | null;
+  pendingClaim: boolean;
+}
+
+export interface LoyaltyClaim {
+  id: string;
+  business_id: string;
+  membership_id: string;
+  card_id: string | null;
+  table_label: string;
+  reward_type: RewardType;
+  reward_value: number;
+  reward_description: string;
+  status: 'pending' | 'applied' | 'cancelled';
+  created_at: string;
+  loyalty_memberships?: { customers?: { phone: string } };
 }
 
 export interface Profile {
@@ -169,7 +213,12 @@ export interface CardBreakdownItem {
 export interface LoyaltyProgramAdmin {
   id: string;
   business_id: string;
-  type: LoyaltyProgramType;
+  earn_method: LoyaltyEarnMethod;
+  structure: LoyaltyStructure;
+  use_points: boolean;
+  reward_type: RewardType;
+  reward_value: number;
+  reward_description: string;
   enabled: boolean;
   config: LoyaltyProgramConfig;
 }
@@ -403,6 +452,8 @@ export interface Receipt {
   subtotalExVat: number;
   vatAmount: number;
   vatRate: number;
+  discountAmount: number;
+  rewardDescription: string;
   tip: number;
   total: number;
   paidAt: string;

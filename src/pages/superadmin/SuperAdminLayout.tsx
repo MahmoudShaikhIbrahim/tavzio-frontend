@@ -18,7 +18,7 @@ export default function SuperAdminLayout() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-6">
             <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio · Platform</span>
-            <nav className="flex gap-4 text-sm">
+            <nav className="flex gap-4 text-base">
               <Link
                 to="/admin/super/businesses"
                 className={location.pathname.startsWith('/admin/super/businesses') ? 'text-ivory' : 'text-ivory-dim hover:text-ivory'}
@@ -38,7 +38,7 @@ export default function SuperAdminLayout() {
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-4 text-sm text-ivory-dim">
+          <div className="flex items-center gap-4 text-base text-ivory-dim">
             <span>{user?.name}</span>
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>

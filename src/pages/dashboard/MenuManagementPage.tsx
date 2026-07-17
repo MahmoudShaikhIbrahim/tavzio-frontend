@@ -52,12 +52,12 @@ function CategoriesSection({ businessId, categories, onChange }: {
     <Section title="Categories">
       <div className="space-y-1.5">
         {categories.map((c) => (
-          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
             <span className="text-ivory">{c.name}</span>
             <ActionButton danger onClick={() => deleteMenuCategory(businessId, c.id).then(onChange)}>Remove</ActionButton>
           </div>
         ))}
-        {categories.length === 0 && <p className="text-sm text-ivory-dim">No categories yet — items can also exist without one.</p>}
+        {categories.length === 0 && <p className="text-base text-ivory-dim">No categories yet — items can also exist without one.</p>}
       </div>
       <form onSubmit={handleAdd} className="flex gap-2 border-t border-ink-line pt-3">
         <input placeholder="e.g. Starters" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
@@ -78,7 +78,7 @@ function ItemsSection({ businessId, categories, items, onChange }: {
       action={
         <button
           onClick={() => setShowForm((s) => !s)}
-          className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >
           + Add item
         </button>
@@ -95,7 +95,7 @@ function ItemsSection({ businessId, categories, items, onChange }: {
         {items.map((item) => (
           <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onChange={onChange} />
         ))}
-        {items.length === 0 && <p className="text-sm text-ivory-dim">No items yet.</p>}
+        {items.length === 0 && <p className="text-base text-ivory-dim">No items yet.</p>}
       </div>
     </Section>
   );
@@ -152,7 +152,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
           {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}
         </div>
         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
-          className="rounded-lg border border-brass/40 px-3.5 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+          className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
           {imageUrl ? 'Change photo' : 'Add photo'}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
@@ -187,7 +187,7 @@ function ItemRow({ item, businessId, categories, onChange }: {
 
   return (
     <div className="rounded-lg border border-ink-line">
-      <div className="flex items-center justify-between px-3.5 py-2.5 text-sm">
+      <div className="flex items-center justify-between px-3.5 py-2.5 text-base">
         <div className="flex items-center gap-3">
           {item.image_url && (
             <img src={item.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
@@ -195,7 +195,7 @@ function ItemRow({ item, businessId, categories, onChange }: {
           <div>
             <span className="text-ivory">{item.name}</span>
             <span className="ml-2 text-ivory-dim">{item.price.toFixed(2)}</span>
-            {!item.is_available && <span className="ml-2 text-xs text-red-400">unavailable</span>}
+            {!item.is_available && <span className="ml-2 text-base text-red-400">unavailable</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -233,12 +233,12 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
   return (
     <div className="space-y-2 border-t border-ink-line p-3">
       {addons.map((a) => (
-        <div key={a.id} className="flex items-center justify-between text-sm">
+        <div key={a.id} className="flex items-center justify-between text-base">
           <span className="text-ivory-dim">{a.name} — +{a.price.toFixed(2)}</span>
           <ActionButton danger onClick={() => deleteAddon(businessId, itemId, a.id).then(reload)}>Remove</ActionButton>
         </div>
       ))}
-      {addons.length === 0 && <p className="text-xs text-ivory-dim">No add-ons yet.</p>}
+      {addons.length === 0 && <p className="text-base text-ivory-dim">No add-ons yet.</p>}
       <form onSubmit={handleAdd} className="flex gap-2 pt-1">
         <input placeholder="e.g. Extra cheese" value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} flex-1`} />
         <input type="number" step="0.01" min={0} placeholder="Price" value={price} onChange={(e) => setPrice(Number(e.target.value))} className={`${inputClass} w-24`} />

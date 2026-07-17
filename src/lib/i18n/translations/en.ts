@@ -26,6 +26,10 @@ export const en: TranslationDict = {
   pointsProgress: '{points}/{threshold} points',
   noTierYet: 'No tier yet',
   moreVisitsTo: '{n} more visits to {tier}',
+  claimReward: 'Claim reward',
+  claiming: 'Claiming...',
+  rewardClaimed: 'Reward claimed — show this to staff',
+  yourReward: 'Your reward',
 
   menu: 'Menu',
   menuNotAvailable: 'Menu not available',

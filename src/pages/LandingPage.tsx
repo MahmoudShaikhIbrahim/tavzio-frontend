@@ -49,16 +49,20 @@ function LandingPageContent({ business, tapEventId }: { business: Business; tapE
   const enabledLinks = LINK_ORDER.filter((key) => business.links[key]?.enabled);
 
   return (
-    <div className="min-h-screen bg-ink pb-16" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="relative min-h-screen bg-ink pb-16" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Cover */}
       <div className="relative h-48 w-full overflow-hidden bg-ink-soft sm:h-60">
         {business.cover_image_url && (
           <img src={business.cover_image_url} alt="" className="h-full w-full object-cover opacity-90" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/10 to-transparent" />
-        <div className="absolute end-4 top-4">
-          <LanguageSwitcher />
-        </div>
+      </div>
+
+      {/* Deliberately OUTSIDE the cover's overflow-hidden box - the switcher
+          just sits visually in the same spot via absolute positioning
+          against the page itself, but its dropdown is never clipped now. */}
+      <div className="absolute end-4 top-4 z-10">
+        <LanguageSwitcher />
       </div>
 
       <div className="relative mx-auto max-w-md px-5">

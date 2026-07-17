@@ -51,6 +51,10 @@ export interface TranslationDict {
   pointsProgress: string; // "{points}/{threshold} points"
   noTierYet: string;
   moreVisitsTo: string; // "{n} more visits to {tier}"
+  claimReward: string;
+  claiming: string;
+  rewardClaimed: string;
+  yourReward: string;
 
   // Menu
   menu: string;

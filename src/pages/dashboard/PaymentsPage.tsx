@@ -47,17 +47,17 @@ export default function PaymentsPage() {
         title="Payment history"
         action={
           <div className="flex gap-2">
-            <button onClick={() => downloadExport(businessId, 'payments', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory">CSV</button>
-            <button onClick={() => downloadExport(businessId, 'payments', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory">PDF</button>
+            <button onClick={() => downloadExport(businessId, 'payments', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">CSV</button>
+            <button onClick={() => downloadExport(businessId, 'payments', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">PDF</button>
           </div>
         }
       >
-        <p className="text-sm text-ivory-dim">Today's total: <span className="text-ivory">{totalToday.toFixed(2)} AED</span></p>
+        <p className="text-base text-ivory-dim">Today's total: <span className="text-ivory">{totalToday.toFixed(2)} AED</span></p>
         <div className="space-y-1.5">
           {completed.map((p) => (
             <PaymentRowItem key={p.id} payment={p} businessId={businessId} onChange={reload} />
           ))}
-          {completed.length === 0 && <p className="text-sm text-ivory-dim">No payments yet.</p>}
+          {completed.length === 0 && <p className="text-base text-ivory-dim">No payments yet.</p>}
         </div>
       </Section>
 
@@ -88,7 +88,7 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
   }
 
   return (
-    <div className="rounded-lg border border-ink-line px-3.5 py-2.5 text-sm">
+    <div className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
       <div className="flex items-center justify-between">
         <span className="text-ivory-dim">{new Date(payment.created_at).toLocaleString()}</span>
         <div className="flex items-center gap-2">
@@ -96,9 +96,9 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
             {(Number(payment.amount) + Number(payment.tip_amount)).toFixed(2)} AED{payment.tip_amount > 0 && ` (incl. ${payment.tip_amount} tip)`}
           </span>
           {payment.refunded ? (
-            <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-xs text-red-400">Refunded {payment.refund_amount}</span>
+            <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-sm text-red-400">Refunded {payment.refund_amount}</span>
           ) : (
-            <button onClick={() => setShowRefund((s) => !s)} className="text-xs text-red-400 hover:underline">Refund</button>
+            <button onClick={() => setShowRefund((s) => !s)} className="text-base text-red-400 hover:underline">Refund</button>
           )}
         </div>
       </div>
@@ -113,20 +113,20 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
               max={Number(payment.amount) + Number(payment.tip_amount)}
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-28 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-xs text-ivory"
+              className="w-28 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
             />
             <input
               placeholder="Reason (optional)"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="flex-1 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-xs text-ivory"
+              className="flex-1 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
             />
           </div>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-base text-red-400">{error}</p>}
           <button
             onClick={handleRefund}
             disabled={submitting}
-            className="w-full rounded-lg bg-red-400/10 border border-red-400/40 px-3 py-1.5 text-xs text-red-400 disabled:opacity-50"
+            className="w-full rounded-lg bg-red-400/10 border border-red-400/40 px-3 py-1.5 text-base text-red-400 disabled:opacity-50"
           >
             {submitting ? 'Processing...' : `Confirm refund of ${amount.toFixed(2)} AED`}
           </button>
@@ -165,13 +165,13 @@ function TapPaymentsSetup({ businessId }: { businessId: string }) {
 
   return (
     <Section title="Pay Bill setup (Tap Payments)">
-      <p className="text-sm text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Your own Tap Payments account — money goes straight to your bank,
         Tavzio never touches it. Only you can see or edit this, not staff,
         not the platform operator.
       </p>
       {integration?.status && (
-        <p className="text-xs">
+        <p className="text-base">
           Status: <span className={integration.status === 'connected' ? 'text-green-400' : 'text-ivory-dim'}>{integration.status}</span>
         </p>
       )}
@@ -184,14 +184,14 @@ function TapPaymentsSetup({ businessId }: { businessId: string }) {
             className={inputClass}
           />
         </Field>
-        <label className="flex items-center gap-2 text-sm text-ivory-dim">
+        <label className="flex items-center gap-2 text-base text-ivory-dim">
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
           Enabled — let customers pay via Pay Bill
         </label>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save'}
         </button>

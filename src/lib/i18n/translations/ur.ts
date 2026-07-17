@@ -26,6 +26,10 @@ export const ur: TranslationDict = {
   pointsProgress: '{points}/{threshold} پوائنٹس',
   noTierYet: 'ابھی تک کوئی درجہ نہیں',
   moreVisitsTo: '{tier} تک پہنچنے کے لیے {n} مزید وزٹس',
+  claimReward: 'انعام کا دعویٰ کریں',
+  claiming: 'دعویٰ کیا جا رہا ہے...',
+  rewardClaimed: 'انعام کا دعویٰ ہو گیا — یہ عملے کو دکھائیں',
+  yourReward: 'آپ کا انعام',
 
   menu: 'مینو',
   menuNotAvailable: 'مینو دستیاب نہیں ہے',

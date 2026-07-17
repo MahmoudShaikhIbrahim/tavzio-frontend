@@ -1,16 +1,28 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { getBusiness, updateBusiness } from '../../lib/authApi';
+import {
+  getBusiness, updateBusiness,
+  listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
+} from '../../lib/authApi';
 import { uploadBusinessImage } from '../../lib/supabaseClient';
-import type { AdminBusiness, BusinessLinks } from '../../types';
+import type { AdminBusiness, BusinessLinks, CustomButton } from '../../types';
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
-import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import MenuManagementPage from './MenuManagementPage';
+import LoyaltyPage from './LoyaltyPage';
+import CardsPage from './CardsPage';
+import NotificationsPage from './NotificationsPage';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
+// A single, scrollable page grouping everything that's genuinely a
+// "setting" rather than day-to-day operational work - Menu, Loyalty,
+// Cards, and Notifications used to be separate top-level tabs; they live
+// here now, each under its own clear heading.
 export default function SettingsPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
+  const isOwner = user?.role === 'business_owner';
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
 
   useEffect(() => {
@@ -20,9 +32,139 @@ export default function SettingsPage() {
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
   return (
-    <div className="space-y-6">
-      <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />
-      <LinksForm business={business} businessId={businessId} onSaved={setBusiness} />
+    <div className="space-y-10">
+      {/* Business info and landing page buttons stay owner-only, exactly
+          as they always were - only Menu/Loyalty/Cards/Notifications
+          below are the parts staff already had access to before this
+          reorg, and keep that same access now. */}
+      {isOwner && (
+        <>
+          <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />
+
+          <div>
+            <h2 className="mb-3 font-display text-xl text-ivory">Landing Page Buttons</h2>
+            <div className="space-y-4">
+              <LinksForm business={business} businessId={businessId} onSaved={setBusiness} />
+              <CustomButtonsSection businessId={businessId} />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div>
+        <h2 className="mb-3 font-display text-xl text-ivory">Menu</h2>
+        <MenuManagementPage />
+      </div>
+
+      <div>
+        <h2 className="mb-3 font-display text-xl text-ivory">Loyalty</h2>
+        <LoyaltyPage />
+      </div>
+
+      <div>
+        <h2 className="mb-3 font-display text-xl text-ivory">Cards</h2>
+        <CardsPage />
+      </div>
+
+      <div>
+        <h2 className="mb-3 font-display text-xl text-ivory">Notifications</h2>
+        <NotificationsPage />
+      </div>
+    </div>
+  );
+}
+
+function CustomButtonsSection({ businessId }: { businessId: string }) {
+  const [buttons, setButtons] = useState<CustomButton[]>([]);
+  const [showForm, setShowForm] = useState(false);
+
+  function reload() {
+    listCustomButtons(businessId).then(setButtons);
+  }
+  useEffect(reload, [businessId]);
+
+  return (
+    <Section
+      title="Custom buttons"
+      action={
+        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          + Add button
+        </button>
+      }
+    >
+      <p className="text-base text-ivory-dim">
+        Beyond the 7 built-in links above — add a brand-new button with its
+        own label, icon, and link.
+      </p>
+      {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
+      <div className="space-y-1.5">
+        {buttons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reload} />)}
+        {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
+      </div>
+    </Section>
+  );
+}
+
+const ICON_OPTIONS = ['Link', 'Star', 'Gift', 'Music', 'ShoppingBag', 'Heart', 'Phone', 'Mail', 'Globe', 'MapPin', 'Camera', 'Ticket'];
+
+function CustomButtonForm({ businessId, existing, onDone }: { businessId: string; existing?: CustomButton; onDone: () => void }) {
+  const [label, setLabel] = useState(existing?.label || '');
+  const [icon, setIcon] = useState(existing?.icon || 'Link');
+  const [url, setUrl] = useState(existing?.url || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      if (existing) {
+        await updateCustomButton(businessId, existing.id, { label, icon, url });
+      } else {
+        await createCustomButton(businessId, { label, icon, url });
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this button');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
+        <Field label="Icon">
+          <select value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
+            {ICON_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
+          </select>
+        </Field>
+      </div>
+      <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
+      <button disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
+        {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
+      </button>
+      {error && <p className="text-base text-red-400">{error}</p>}
+    </form>
+  );
+}
+
+function CustomButtonRow({ button, businessId, onChange }: { button: CustomButton; businessId: string; onChange: () => void }) {
+  const [editing, setEditing] = useState(false);
+  if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+      <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
+      <div className="flex items-center gap-2">
+        <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
+          {button.enabled ? 'On' : 'Off'}
+        </ActionButton>
+        <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
+        <ActionButton danger onClick={() => deleteCustomButton(businessId, button.id).then(onChange)}>Delete</ActionButton>
+      </div>
     </div>
   );
 }
@@ -60,11 +202,11 @@ function ImageUploadField({ label, businessId, kind, value, onUploaded }: {
           />
         )}
         <div className="flex-1">
-          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim hover:text-ivory">
+          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-3.5 py-2 text-base text-ivory-dim hover:text-ivory">
             {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
             <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
           </label>
-          {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-1 text-base text-red-400">{error}</p>}
         </div>
       </div>
       <input
@@ -147,13 +289,13 @@ function LinksForm({ business, businessId, onSaved }: { business: AdminBusiness;
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save buttons'}
         </button>
       }
     >
-      <p className="text-xs text-ivory-dim">
+      <p className="text-base text-ivory-dim">
         Which buttons are on or off is set by the platform operator — you
         can fill in the link for anything that's on below.
       </p>
@@ -167,7 +309,7 @@ function LinksForm({ business, businessId, onSaved }: { business: AdminBusiness;
                 className={`h-2 w-2 shrink-0 rounded-full ${cfg.enabled ? 'bg-brass' : 'bg-ink-line'}`}
                 title={cfg.enabled ? 'On' : 'Off'}
               />
-              <span className="w-40 shrink-0 text-sm text-ivory">{meta.label}</span>
+              <span className="w-40 shrink-0 text-base text-ivory">{meta.label}</span>
               <input
                 value={cfg.value}
                 onChange={(e) => updateValue(key, e.target.value)}

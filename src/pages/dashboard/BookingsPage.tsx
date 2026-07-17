@@ -55,10 +55,10 @@ export default function BookingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl text-ivory">Bookings</h1>
+        <h1 className="font-display text-3xl text-ivory">Bookings</h1>
         <div className="flex gap-2">
-          <button onClick={() => downloadExport(businessId, 'bookings', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory">CSV</button>
-          <button onClick={() => downloadExport(businessId, 'bookings', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory">PDF</button>
+          <button onClick={() => downloadExport(businessId, 'bookings', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">CSV</button>
+          <button onClick={() => downloadExport(businessId, 'bookings', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">PDF</button>
         </div>
       </div>
 
@@ -85,17 +85,17 @@ function Group({ title, bookings, businessId, onChange }: {
 
 function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow; businessId: string; onChange: () => void }) {
   return (
-    <div className="rounded-lg border border-ink-line px-3.5 py-3 text-sm">
+    <div className="rounded-lg border border-ink-line px-3.5 py-3 text-base">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-ivory">{booking.service_name}</p>
-          <p className="text-xs text-ivory-dim">
+          <p className="text-base text-ivory-dim">
             {new Date(booking.requested_at).toLocaleString()}
             {booking.contact_phone && ` · ${booking.contact_phone}`}
           </p>
-          {booking.note && <p className="mt-1 text-xs italic text-brass">{booking.note}</p>}
+          {booking.note && <p className="mt-1 text-base italic text-brass">{booking.note}</p>}
         </div>
-        <span className={`rounded-full border px-2.5 py-0.5 text-xs ${STATUS_STYLE[booking.status]}`}>
+        <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[booking.status]}`}>
           {STATUS_LABEL[booking.status]}
         </span>
       </div>
@@ -104,13 +104,13 @@ function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow
         <div className="mt-2.5 flex gap-2">
           <button
             onClick={() => updateBookingStatus(businessId, booking.id, 'confirmed').then(onChange)}
-            className="flex-1 rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90"
+            className="flex-1 rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90"
           >
             Confirm
           </button>
           <button
             onClick={() => updateBookingStatus(businessId, booking.id, 'declined').then(onChange)}
-            className="rounded-lg border border-red-400/40 px-3 py-2 text-sm text-red-400 hover:bg-red-400/10"
+            className="rounded-lg border border-red-400/40 px-3 py-2 text-base text-red-400 hover:bg-red-400/10"
           >
             Decline
           </button>
@@ -119,7 +119,7 @@ function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow
       {booking.status === 'confirmed' && (
         <button
           onClick={() => updateBookingStatus(businessId, booking.id, 'completed').then(onChange)}
-          className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10"
+          className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10"
         >
           Mark completed
         </button>

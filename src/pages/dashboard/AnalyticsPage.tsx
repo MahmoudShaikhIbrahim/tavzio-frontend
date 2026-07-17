@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
 
       {liveFeed.length > 0 && (
         <Section title="Live activity">
-          <ul className="space-y-1 text-sm text-ivory-dim">
+          <ul className="space-y-1 text-base text-ivory-dim">
             {liveFeed.map((f, i) => <li key={i}>{f}</li>)}
           </ul>
         </Section>
@@ -94,12 +94,12 @@ export default function AnalyticsPage() {
       <Section title="Card performance">
         <div className="space-y-1.5">
           {cardBreakdown.map((c) => (
-            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-sm">
+            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
               <span className="text-ivory">{c.label || 'Untitled'}</span>
               <span className="text-ivory-dim">{c.taps} taps</span>
             </div>
           ))}
-          {cardBreakdown.length === 0 && <p className="text-sm text-ivory-dim">No card activity yet.</p>}
+          {cardBreakdown.length === 0 && <p className="text-base text-ivory-dim">No card activity yet.</p>}
         </div>
       </Section>
     </div>
@@ -109,8 +109,8 @@ export default function AnalyticsPage() {
 function Stat({ label, value, live }: { label: string; value: string | number; live?: boolean }) {
   return (
     <div className="rounded-xl border border-ink-line p-4">
-      <p className="text-xs text-ivory-dim">{label}</p>
-      <p className="mt-1 font-display text-2xl text-ivory">
+      <p className="text-base text-ivory-dim">{label}</p>
+      <p className="mt-1 font-display text-3xl text-ivory">
         {value} {live && <span className="ml-1 inline-block h-2 w-2 rounded-full bg-brass align-middle" />}
       </p>
     </div>
