@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Total taps (30d)" value={summary.totalTaps + liveTapCount} live={liveTapCount > 0} />
         <Stat label="Top hour" value={summary.topHours[0] ? `${summary.topHours[0].hour}:00` : '—'} />
-        <Stat label="iOS / Android" value={deviceRatio(summary.devicesSplit)} />
+        <Stat label="Busiest day" value={summary.busiestDays[0] ? summary.busiestDays[0].day_name.trim() : '—'} />
         <Stat label="Returning visitors" value={returningPct !== null ? `${returningPct}%` : '—'} />
       </div>
 
@@ -115,10 +115,4 @@ function Stat({ label, value, live }: { label: string; value: string | number; l
       </p>
     </div>
   );
-}
-
-function deviceRatio(split: { device: string; count: number }[]) {
-  const ios = split.find((d) => d.device === 'ios')?.count || 0;
-  const android = split.find((d) => d.device === 'android')?.count || 0;
-  return `${ios} / ${android}`;
 }

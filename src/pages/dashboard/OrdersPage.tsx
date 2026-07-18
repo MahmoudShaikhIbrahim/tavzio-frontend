@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listOrders, updateOrderStatus, getBusiness, downloadExport,
-  voidOrder, voidOrderItem, clearTable, listRequests, dismissRequest, type RequestRow,
-  listLoyaltyClaims, applyManualClaim,
+  listOrders, updateOrderStatus, getBusiness,
+  voidOrder, voidOrderItem, clearTable,
 } from '../../lib/authApi';
-import type { LoyaltyClaim } from '../../types';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings } from '../../types';
 import StaffOrderModal from '../../components/StaffOrderModal';
+import ExportButtons from '../../components/ExportButtons';
 
 const STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
   pending: 'preparing',
@@ -39,8 +38,6 @@ export default function OrdersPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [requests, setRequests] = useState<RequestRow[]>([]);
-  const [claims, setClaims] = useState<LoyaltyClaim[]>([]);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [showStaffOrder, setShowStaffOrder] = useState(false);
@@ -48,16 +45,8 @@ export default function OrdersPage() {
   function reload() {
     if (businessId) listOrders(businessId).then(setOrders);
   }
-  function reloadRequests() {
-    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed')));
-  }
-  function reloadClaims() {
-    if (businessId) listLoyaltyClaims(businessId).then(setClaims);
-  }
 
   useEffect(reload, [businessId]);
-  useEffect(reloadRequests, [businessId]);
-  useEffect(reloadClaims, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
@@ -66,30 +55,15 @@ export default function OrdersPage() {
     if (!businessId) return;
     const unsubscribe = subscribeToBusinessTable(businessId, 'orders', (row) => {
       const requestType = row.request_type as string;
-      if (requestType === 'order') {
-        reload();
-        setNewOrderPulse(true);
-        setTimeout(() => setNewOrderPulse(false), 2000);
-      } else {
-        reloadRequests();
-      }
-
-      if (notificationSettings) {
-        if (requestType === 'call_waiter') playNotificationSound(notificationSettings.callWaiter);
-        else if (requestType === 'request_bill') playNotificationSound(notificationSettings.requestBill);
-        else playNotificationSound(notificationSettings.newOrder);
-      }
+      if (requestType !== 'order') return; // Call Waiter/Request Bill live on the Requests page now
+      reload();
+      setNewOrderPulse(true);
+      setTimeout(() => setNewOrderPulse(false), 2000);
+      if (notificationSettings) playNotificationSound(notificationSettings.newOrder);
     });
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, notificationSettings]);
-
-  useEffect(() => {
-    if (!businessId) return;
-    const unsubscribe = subscribeToBusinessTable(businessId, 'loyalty_reward_claims', reloadClaims);
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessId]);
 
   if (!businessId) return null;
 
@@ -118,14 +92,9 @@ export default function OrdersPage() {
           <button onClick={() => setShowStaffOrder(true)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
             + Order for a table
           </button>
-          <button onClick={() => downloadExport(businessId, 'orders', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">CSV</button>
-          <button onClick={() => downloadExport(businessId, 'orders', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">PDF</button>
+          <ExportButtons businessId={businessId} kind="orders" />
         </div>
       </div>
-
-      {(requests.length > 0 || claims.length > 0) && (
-        <RequestsPanel requests={requests} claims={claims} businessId={businessId} onChange={reloadRequests} onClaimsChange={reloadClaims} />
-      )}
 
       {Object.keys(tableGroups).length === 0 ? (
         <p className="text-base text-ivory-dim">No active orders right now.</p>
@@ -156,51 +125,6 @@ export default function OrdersPage() {
       {showStaffOrder && (
         <StaffOrderModal businessId={businessId} onClose={() => setShowStaffOrder(false)} onPlaced={() => { setShowStaffOrder(false); reload(); }} />
       )}
-    </div>
-  );
-}
-
-function RequestsPanel({ requests, claims, businessId, onChange, onClaimsChange }: {
-  requests: RequestRow[]; claims: LoyaltyClaim[]; businessId: string; onChange: () => void; onClaimsChange: () => void;
-}) {
-  const LABEL = { call_waiter: 'Call waiter', request_bill: 'Request bill' } as const;
-
-  return (
-    <div className="rounded-xl border border-brass/30 bg-brass/5 p-4">
-      <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-brass">Requests</p>
-      <div className="space-y-1.5">
-        {requests.map((r) => (
-          <div key={r.id} className="flex items-center justify-between rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-base">
-            <span className="text-ivory">
-              {LABEL[r.request_type]} — <span className="text-ivory-dim">{r.table_label || 'No table'}</span>
-            </span>
-            <button
-              onClick={() => dismissRequest(businessId, r.id).then(onChange)}
-              className="rounded-lg border border-brass/40 px-3 py-1 text-base text-brass hover:bg-brass/10"
-            >
-              Dismiss
-            </button>
-          </div>
-        ))}
-        {claims.map((c) => (
-          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-base">
-            <span className="text-ivory">
-              Reward ready — <span className="text-ivory-dim">{c.table_label || 'No table'}</span>
-              {c.reward_description ? ` (${c.reward_description})` : ''}
-            </span>
-            {c.reward_type === 'manual' ? (
-              <button
-                onClick={() => applyManualClaim(businessId, c.id).then(onClaimsChange)}
-                className="rounded-lg border border-brass/40 px-3 py-1 text-base text-brass hover:bg-brass/10"
-              >
-                Mark applied
-              </button>
-            ) : (
-              <span className="text-base text-ivory-dim">Applies automatically at Pay Bill</span>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -313,7 +237,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
           className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
           title="Void the whole order"
         >
-          Void order
+          Delete order
         </button>
       </div>
     </div>

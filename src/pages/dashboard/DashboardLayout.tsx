@@ -6,6 +6,7 @@ import type { BusinessFeatures } from '../../types';
 
 const TABS = [
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const },
+  { path: 'requests', label: 'Requests', ownerOnly: false, requires: 'ordering' as const },
   { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const },
   { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null },

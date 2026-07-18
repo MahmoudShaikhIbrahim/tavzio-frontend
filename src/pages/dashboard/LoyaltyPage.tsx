@@ -313,12 +313,14 @@ function MemberRow({ member, businessId, program, onChange }: {
         </div>
       </div>
       {redeemError && <p className="mt-1.5 text-base text-red-400">{redeemError}</p>}
-      {showAdjust && <AdjustForm businessId={businessId} membershipId={member.id} onDone={() => { setShowAdjust(false); onChange(); }} />}
+      {showAdjust && <AdjustForm businessId={businessId} membershipId={member.id} program={program} onDone={() => { setShowAdjust(false); onChange(); }} />}
     </div>
   );
 }
 
-function AdjustForm({ businessId, membershipId, onDone }: { businessId: string; membershipId: string; onDone: () => void }) {
+function AdjustForm({ businessId, membershipId, program, onDone }: {
+  businessId: string; membershipId: string; program: LoyaltyProgramAdmin; onDone: () => void;
+}) {
   const [visits, setVisits] = useState(0);
   const [points, setPoints] = useState(0);
   const [spendAmount, setSpendAmount] = useState(0);
@@ -330,11 +332,19 @@ function AdjustForm({ businessId, membershipId, onDone }: { businessId: string; 
     onDone();
   }
 
+  // Only the ONE field that actually matters for this program's reward
+  // calculation - showing all three regardless of configuration meant a
+  // staff member could type into "+ Spend" on a pure visit-based program
+  // and see nothing happen, since that program never reads total_spend
+  // at all. This exactly matches getMeasure()'s own logic.
+  const isSpend = program.earn_method === 'spend';
+  const isPoints = program.earn_method === 'visit' && program.use_points;
+
   return (
     <form onSubmit={submit} className="mt-2.5 flex flex-wrap items-end gap-2 border-t border-ink-line pt-2.5">
-      <Field label="± Visits"><input type="number" value={visits} onChange={(e) => setVisits(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>
-      <Field label="± Points"><input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>
-      <Field label="+ Spend"><input type="number" value={spendAmount} onChange={(e) => setSpendAmount(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>
+      {isSpend && <Field label="+ Spend"><input type="number" value={spendAmount} onChange={(e) => setSpendAmount(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
+      {isPoints && <Field label="± Points"><input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
+      {!isSpend && !isPoints && <Field label="± Visits"><input type="number" value={visits} onChange={(e) => setVisits(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
       <Field label="Note"><input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} /></Field>
       <PrimaryButton>Apply</PrimaryButton>
     </form>

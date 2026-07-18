@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listPayments, getBusiness, downloadExport,
+  listPayments, getBusiness,
   getPaymentIntegration, upsertPaymentIntegration, refundPayment,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { PaymentRow, NotificationSettings, PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import ExportButtons from '../../components/ExportButtons';
 
 export default function PaymentsPage() {
   const { user } = useSession();
@@ -47,8 +48,7 @@ export default function PaymentsPage() {
         title="Payment history"
         action={
           <div className="flex gap-2">
-            <button onClick={() => downloadExport(businessId, 'payments', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">CSV</button>
-            <button onClick={() => downloadExport(businessId, 'payments', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">PDF</button>
+            <ExportButtons businessId={businessId} kind="payments" />
           </div>
         }
       >

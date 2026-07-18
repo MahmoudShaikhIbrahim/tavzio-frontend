@@ -426,13 +426,17 @@ export function deleteCustomButton(businessId: string, buttonId: string) {
 export async function downloadExport(
   businessId: string,
   kind: 'orders' | 'bookings' | 'payments',
-  format: 'csv' | 'pdf'
+  format: 'csv' | 'pdf',
+  range?: { from?: string; to?: string }
 ) {
   const token = getToken();
+  const params = new URLSearchParams({ format });
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
   // Longer timeout than the default - generating a PDF for a business with
   // a lot of history genuinely can take longer than a normal API call.
   const res = await fetchWithTimeout(
-    `${BASE}/api/businesses/${businessId}/${kind}/export?format=${format}`,
+    `${BASE}/api/businesses/${businessId}/${kind}/export?${params.toString()}`,
     { headers: token ? { Authorization: `Bearer ${token}` } : {} },
     30000
   );

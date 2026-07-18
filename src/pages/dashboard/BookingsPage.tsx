@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { listBookings, updateBookingStatus, getBusiness, downloadExport } from '../../lib/authApi';
+import { listBookings, updateBookingStatus, getBusiness } from '../../lib/authApi';
+import ExportButtons from '../../components/ExportButtons';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { BookingRow, BookingStatus, NotificationSettings } from '../../types';
@@ -57,8 +58,7 @@ export default function BookingsPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ivory">Bookings</h1>
         <div className="flex gap-2">
-          <button onClick={() => downloadExport(businessId, 'bookings', 'csv')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">CSV</button>
-          <button onClick={() => downloadExport(businessId, 'bookings', 'pdf')} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">PDF</button>
+          <ExportButtons businessId={businessId} kind="bookings" />
         </div>
       </div>
 

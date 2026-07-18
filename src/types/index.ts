@@ -200,6 +200,7 @@ export interface AnalyticsSummary {
   eventsByType: { type: string; count: number }[];
   devicesSplit: { device: string; count: number }[];
   topHours: { hour: number; count: number }[];
+  busiestDays: { day_name: string; day_number: number; count: number }[];
   returningVisitors: { new: number; returning: number };
 }
 
