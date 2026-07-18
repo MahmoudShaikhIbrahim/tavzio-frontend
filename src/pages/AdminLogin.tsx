@@ -26,7 +26,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink px-6">
+    <div data-theme="dark" className="flex min-h-screen items-center justify-center bg-ink px-6">
       <div className="w-full max-w-sm">
         <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</p>
         <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>

@@ -21,7 +21,7 @@ export default function Home() {
   const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to learn more about Tavzio for my business.")}`;
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div data-theme="dark" className="min-h-screen bg-ink">
       {/* Header - a real Sign In, visible to everyone. There's nothing
           insecure about that: the login form itself is what checks
           credentials - someone without real access just gets rejected
@@ -41,7 +41,7 @@ export default function Home() {
           >
             Sign In
           </Link>
-          <p className="mt-1.5 text-[11px] text-ivory-dim/60">
+          <p className="mt-3 text-[11px] text-ivory-dim/60">
             New here?{' '}
             <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to sign up for Tavzio.")}`}
               target="_blank" rel="noreferrer" className="text-brass hover:underline">

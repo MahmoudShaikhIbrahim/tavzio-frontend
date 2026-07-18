@@ -115,7 +115,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
+    <form onSubmit={handleSubmit} className="mb-4 space-y-4 rounded-xl border border-ink-line p-5">
       <div className="grid grid-cols-2 gap-3">
         <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
         <Field label="Icon (used unless you upload your own image below)">
@@ -352,60 +352,70 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         page in this order. Rename it, pick an icon, or upload your own
         image for it. Add more of your own further below.
       </p>
-      <div className="space-y-2">
+      <div className="space-y-4">
         {LINK_ORDER.map((key) => {
           const meta = LINK_META[key];
           const cfg = links[key];
           const SelectedIcon = getIcon(cfg.icon || meta.defaultIcon);
           const selectedColor = getIconColor(cfg.icon || meta.defaultIcon);
           return (
-            <div key={key} className="space-y-2 rounded-lg border border-ink-line px-3.5 py-3">
-              <div className="flex items-center gap-3">
+            <div key={key} className="space-y-4 rounded-xl border border-ink-line p-5">
+              {/* Identity - what this button is and whether it's live */}
+              <div className="flex items-center gap-4">
                 <button
                   type="button"
                   onClick={() => toggleEnabled(key)}
-                  className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                  className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
                 >
                   {cfg.enabled ? 'On' : 'Off'}
                 </button>
                 {cfg.imageUrl ? (
-                  <img src={cfg.imageUrl} alt="" className="h-8 w-8 shrink-0 rounded-full border border-ink-line object-cover" />
+                  <img src={cfg.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-full border border-ink-line object-cover" />
                 ) : (
                   <span
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
                     style={selectedColor ? { color: selectedColor, borderColor: `${selectedColor}66` } : undefined}
                   >
-                    <SelectedIcon size={14} />
+                    <SelectedIcon size={18} />
                   </span>
                 )}
+                <input
+                  value={cfg.label ?? meta.label}
+                  onChange={(e) => updateLabel(key, e.target.value)}
+                  className={`${inputClass} flex-1`}
+                  placeholder="Button label"
+                />
+              </div>
+
+              {/* Appearance - icon or a real uploaded image, its own clear row */}
+              <div className="flex flex-wrap items-center gap-3 border-t border-ink-line pt-4">
+                <span className="text-sm text-ivory-dim">Icon</span>
                 <select
                   value={cfg.icon || meta.defaultIcon}
                   onChange={(e) => updateIcon(key, e.target.value)}
-                  className="shrink-0 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
+                  className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
                 >
                   {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
-                <label className="shrink-0 cursor-pointer rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory">
-                  Upload image
+                <span className="text-sm text-ivory-dim">or</span>
+                <label className="cursor-pointer rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim hover:border-brass/60 hover:text-ivory">
+                  Upload your own image
                   <input type="file" accept="image/*" onChange={(e) => handleImageUpload(key, e)} className="hidden" />
                 </label>
                 {cfg.imageUrl && (
-                  <button type="button" onClick={() => updateImage(key, null)} className="shrink-0 text-sm text-danger hover:underline">
+                  <button type="button" onClick={() => updateImage(key, null)} className="text-sm text-danger hover:underline">
                     Remove image
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  value={cfg.label ?? meta.label}
-                  onChange={(e) => updateLabel(key, e.target.value)}
-                  className={`${inputClass} w-52 shrink-0`}
-                />
+
+              {/* The actual destination - full width, its own clear row */}
+              <div className="border-t border-ink-line pt-4">
                 <input
                   value={cfg.value}
                   onChange={(e) => updateValue(key, e.target.value)}
-                  placeholder={key === 'whatsapp' ? '971...' : 'https://...'}
-                  className={`${inputClass} flex-1`}
+                  placeholder={key === 'whatsapp' ? 'WhatsApp number, e.g. 971501234567' : 'https://...'}
+                  className={`${inputClass} w-full`}
                 />
               </div>
             </div>
@@ -415,7 +425,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
       {error && <p className="text-base text-danger">{error}</p>}
 
       <div className="mt-2 border-t border-ink-line pt-4">
-        <div className="space-y-1.5">
+        <div className="space-y-2.5">
           {extraButtons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reloadExtras} />)}
         </div>
         {showAddForm ? (
