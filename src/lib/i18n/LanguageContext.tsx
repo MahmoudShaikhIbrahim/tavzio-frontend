@@ -42,7 +42,7 @@ export function LanguageProvider({ slug, children }: { slug: string; children: R
     let str = TRANSLATIONS[language][key] || TRANSLATIONS.en[key];
     if (vars) {
       for (const [k, v] of Object.entries(vars)) {
-        str = str.replaceAll(`{${k}}`, String(v));
+        str = str.split(`{${k}}`).join(String(v));
       }
     }
     return str;

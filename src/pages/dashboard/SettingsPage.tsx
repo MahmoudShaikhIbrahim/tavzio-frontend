@@ -40,14 +40,7 @@ export default function SettingsPage() {
       {isOwner && (
         <>
           <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />
-
-          <div>
-            <h2 className="mb-3 font-display text-xl text-ivory">Landing Page Buttons</h2>
-            <div className="space-y-4">
-              <LinksForm business={business} businessId={businessId} onSaved={setBusiness} />
-              <CustomButtonsSection businessId={businessId} />
-            </div>
-          </div>
+          <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />
         </>
       )}
 
@@ -71,37 +64,6 @@ export default function SettingsPage() {
         <NotificationsPage />
       </div>
     </div>
-  );
-}
-
-function CustomButtonsSection({ businessId }: { businessId: string }) {
-  const [buttons, setButtons] = useState<CustomButton[]>([]);
-  const [showForm, setShowForm] = useState(false);
-
-  function reload() {
-    listCustomButtons(businessId).then(setButtons);
-  }
-  useEffect(reload, [businessId]);
-
-  return (
-    <Section
-      title="Custom buttons"
-      action={
-        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
-          + Add button
-        </button>
-      }
-    >
-      <p className="text-base text-ivory-dim">
-        Beyond the 7 built-in links above — add a brand-new button with its
-        own label, icon, and link.
-      </p>
-      {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
-      <div className="space-y-1.5">
-        {buttons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reload} />)}
-        {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
-      </div>
-    </Section>
   );
 }
 
@@ -259,27 +221,41 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
   );
 }
 
-function LinksForm({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
+function LandingPageButtonsSection({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
   const [links, setLinks] = useState<BusinessLinks>(business.links);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [extraButtons, setExtraButtons] = useState<CustomButton[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  function reloadExtras() {
+    listCustomButtons(businessId).then(setExtraButtons);
+  }
+  useEffect(reloadExtras, [businessId]);
 
   function updateValue(key: keyof BusinessLinks, value: string) {
     setLinks((prev) => ({ ...prev, [key]: { ...prev[key], value } }));
   }
 
+  function toggleEnabled(key: keyof BusinessLinks) {
+    setLinks((prev) => ({ ...prev, [key]: { ...prev[key], enabled: !prev[key].enabled } }));
+  }
+
   async function handleSave() {
     setSaving(true);
-    // Only `value` is ever sent from here - `enabled` is exclusively
-    // controlled by the platform operator; the backend would silently
-    // ignore it anyway, but there's no reason to even offer a control
-    // here that wouldn't do anything.
-    const payload: Record<string, { value: string }> = {};
-    (Object.keys(links) as (keyof BusinessLinks)[]).forEach((key) => {
-      payload[key] = { value: links[key].value };
-    });
-    const updated = await updateBusiness(businessId, { links: payload as unknown as BusinessLinks });
-    onSaved(updated);
-    setSaving(false);
+    setError('');
+    try {
+      const payload: Record<string, { value: string; enabled: boolean }> = {};
+      (Object.keys(links) as (keyof BusinessLinks)[]).forEach((key) => {
+        payload[key] = { value: links[key].value, enabled: links[key].enabled };
+      });
+      const updated = await updateBusiness(businessId, { links: payload as unknown as BusinessLinks });
+      onSaved(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save your links');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -296,8 +272,8 @@ function LinksForm({ business, businessId, onSaved }: { business: AdminBusiness;
       }
     >
       <p className="text-base text-ivory-dim">
-        Which buttons are on or off is set by the platform operator — you
-        can fill in the link for anything that's on below.
+        Toggle a button on and fill in its link — it'll show on your landing
+        page in this order. Add more of your own further below.
       </p>
       <div className="space-y-2">
         {LINK_ORDER.map((key) => {
@@ -305,10 +281,13 @@ function LinksForm({ business, businessId, onSaved }: { business: AdminBusiness;
           const cfg = links[key];
           return (
             <div key={key} className="flex items-center gap-3 rounded-lg border border-ink-line px-3.5 py-2.5">
-              <span
-                className={`h-2 w-2 shrink-0 rounded-full ${cfg.enabled ? 'bg-brass' : 'bg-ink-line'}`}
-                title={cfg.enabled ? 'On' : 'Off'}
-              />
+              <button
+                type="button"
+                onClick={() => toggleEnabled(key)}
+                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+              >
+                {cfg.enabled ? 'On' : 'Off'}
+              </button>
               <span className="w-40 shrink-0 text-base text-ivory">{meta.label}</span>
               <input
                 value={cfg.value}
@@ -319,6 +298,23 @@ function LinksForm({ business, businessId, onSaved }: { business: AdminBusiness;
             </div>
           );
         })}
+      </div>
+      {error && <p className="text-base text-red-400">{error}</p>}
+
+      <div className="mt-2 border-t border-ink-line pt-4">
+        <div className="space-y-1.5">
+          {extraButtons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reloadExtras} />)}
+        </div>
+        {showAddForm ? (
+          <CustomButtonForm businessId={businessId} onDone={() => { setShowAddForm(false); reloadExtras(); }} />
+        ) : (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="mt-2 rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10"
+          >
+            + Add another link
+          </button>
+        )}
       </div>
     </Section>
   );
