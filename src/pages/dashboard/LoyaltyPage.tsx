@@ -37,7 +37,7 @@ export default function LoyaltyPage() {
     <div className="space-y-6">
       <ProgramConfigForm businessId={businessId} program={program} onSaved={setProgram} />
 
-      {program?.enabled && (
+      {program && (
         <Section title="Members">
           <input
             placeholder="Search by phone..."

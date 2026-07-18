@@ -1,10 +1,12 @@
 import type { BusinessLinks } from '../types';
 import { LINK_META } from '../lib/linkMeta';
+import { getIcon } from '../lib/iconLibrary';
 import { logEvent } from '../lib/api';
 
 interface Props {
   linkKey: keyof BusinessLinks;
   value: string;
+  icon?: string;
   slug: string;
 }
 
@@ -19,9 +21,9 @@ const EVENT_TYPE: Partial<Record<keyof BusinessLinks, string>> = {
   directions: 'directions_click',
 };
 
-export default function LinkButton({ linkKey, value, slug }: Props) {
+export default function LinkButton({ linkKey, value, icon, slug }: Props) {
   const meta = LINK_META[linkKey];
-  const Icon = meta.icon;
+  const Icon = getIcon(icon || meta.defaultIcon);
   const eventType = EVENT_TYPE[linkKey];
 
   return (
@@ -37,7 +39,7 @@ export default function LinkButton({ linkKey, value, slug }: Props) {
                  active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
-        <Icon size={17} strokeWidth={1.75} />
+        <Icon size={17} />
       </span>
       <span className="font-body text-[15px] font-medium">{meta.label}</span>
     </a>

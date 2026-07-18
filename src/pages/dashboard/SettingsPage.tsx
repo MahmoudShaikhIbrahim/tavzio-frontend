@@ -7,6 +7,7 @@ import {
 import { uploadBusinessImage } from '../../lib/supabaseClient';
 import type { AdminBusiness, BusinessLinks, CustomButton } from '../../types';
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
+import { ICON_LIBRARY, getIcon } from '../../lib/iconLibrary';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import MenuManagementPage from './MenuManagementPage';
 import LoyaltyPage from './LoyaltyPage';
@@ -67,11 +68,9 @@ export default function SettingsPage() {
   );
 }
 
-const ICON_OPTIONS = ['Link', 'Star', 'Gift', 'Music', 'ShoppingBag', 'Heart', 'Phone', 'Mail', 'Globe', 'MapPin', 'Camera', 'Ticket'];
-
 function CustomButtonForm({ businessId, existing, onDone }: { businessId: string; existing?: CustomButton; onDone: () => void }) {
   const [label, setLabel] = useState(existing?.label || '');
-  const [icon, setIcon] = useState(existing?.icon || 'Link');
+  const [icon, setIcon] = useState(existing?.icon || 'link');
   const [url, setUrl] = useState(existing?.url || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -100,7 +99,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
         <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
         <Field label="Icon">
           <select value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
-            {ICON_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
+            {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
         </Field>
       </div>
@@ -117,9 +116,16 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   const [editing, setEditing] = useState(false);
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
+  const Icon = getIcon(button.icon);
+
   return (
     <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
-      <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
+      <span className="flex items-center gap-2 text-ivory">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
+          <Icon size={13} />
+        </span>
+        {button.label}
+      </span>
       <div className="flex items-center gap-2">
         <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
           {button.enabled ? 'On' : 'Off'}
@@ -241,13 +247,17 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
     setLinks((prev) => ({ ...prev, [key]: { ...prev[key], enabled: !prev[key].enabled } }));
   }
 
+  function updateIcon(key: keyof BusinessLinks, icon: string) {
+    setLinks((prev) => ({ ...prev, [key]: { ...prev[key], icon } }));
+  }
+
   async function handleSave() {
     setSaving(true);
     setError('');
     try {
-      const payload: Record<string, { value: string; enabled: boolean }> = {};
+      const payload: Record<string, { value: string; enabled: boolean; icon: string }> = {};
       (Object.keys(links) as (keyof BusinessLinks)[]).forEach((key) => {
-        payload[key] = { value: links[key].value, enabled: links[key].enabled };
+        payload[key] = { value: links[key].value, enabled: links[key].enabled, icon: links[key].icon || LINK_META[key].defaultIcon };
       });
       const updated = await updateBusiness(businessId, { links: payload as unknown as BusinessLinks });
       onSaved(updated);
@@ -279,6 +289,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         {LINK_ORDER.map((key) => {
           const meta = LINK_META[key];
           const cfg = links[key];
+          const SelectedIcon = getIcon(cfg.icon || meta.defaultIcon);
           return (
             <div key={key} className="flex items-center gap-3 rounded-lg border border-ink-line px-3.5 py-2.5">
               <button
@@ -288,6 +299,16 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
               >
                 {cfg.enabled ? 'On' : 'Off'}
               </button>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
+                <SelectedIcon size={14} />
+              </span>
+              <select
+                value={cfg.icon || meta.defaultIcon}
+                onChange={(e) => updateIcon(key, e.target.value)}
+                className="shrink-0 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
+              >
+                {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+              </select>
               <span className="w-40 shrink-0 text-base text-ivory">{meta.label}</span>
               <input
                 value={cfg.value}

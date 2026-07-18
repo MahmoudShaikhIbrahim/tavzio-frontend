@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { login, getMe } from '../lib/authApi';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -43,15 +45,25 @@ export default function AdminLogin() {
             className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-ivory
                        placeholder:text-ivory-dim/60 focus:border-brass"
           />
-          <input
-            type="password"
-            required
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-ivory
-                       placeholder:text-ivory-dim/60 focus:border-brass"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 pe-11 text-ivory
+                         placeholder:text-ivory-dim/60 focus:border-brass"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute end-3 top-1/2 -translate-y-1/2 text-ivory-dim hover:text-ivory"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button
             type="submit"

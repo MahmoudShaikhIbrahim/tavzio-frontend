@@ -237,7 +237,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
           className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
           title="Void the whole order"
         >
-          Delete order
+          Void order
         </button>
       </div>
     </div>

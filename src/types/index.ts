@@ -1,6 +1,7 @@
 export interface LinkButtonConfig {
   enabled: boolean;
   value: string;
+  icon?: string;
 }
 
 // Trimmed to the 7 buttons that work as plain external links on their own.

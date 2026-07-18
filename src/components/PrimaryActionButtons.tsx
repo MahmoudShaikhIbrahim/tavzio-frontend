@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  UtensilsCrossed, CalendarCheck, BellRing, Receipt, CreditCard,
-  Star, Gift, Music, ShoppingBag, Heart, Phone, Mail, Globe, MapPin, Camera, Ticket,
-  type LucideIcon,
-} from 'lucide-react';
+import { UtensilsCrossed, CalendarCheck, BellRing, Receipt, CreditCard } from 'lucide-react';
 import type { Business } from '../types';
 import { submitQuickRequest } from '../lib/api';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { getIcon } from '../lib/iconLibrary';
 
 interface Props {
   business: Business;
@@ -20,12 +17,6 @@ const buttonClass =
   'active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)] disabled:opacity-50';
 
 const iconWrapClass = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass';
-
-// Maps the fixed set of icon choices offered when creating a custom button
-// to the actual component - custom buttons store just the name as a string.
-const CUSTOM_ICON_MAP: Record<string, LucideIcon> = {
-  Link: Globe, Star, Gift, Music, ShoppingBag, Heart, Phone, Mail, Globe, MapPin, Camera, Ticket,
-};
 
 export default function PrimaryActionButtons({ business, tapEventId }: Props) {
   const { ordering, booking } = business.features;
@@ -63,10 +54,10 @@ export default function PrimaryActionButtons({ business, tapEventId }: Props) {
       )}
 
       {business.customButtons.map((btn) => {
-        const Icon = CUSTOM_ICON_MAP[btn.icon] || Globe;
+        const Icon = getIcon(btn.icon);
         return (
           <a key={btn.id} href={btn.url} target="_blank" rel="noreferrer" className={buttonClass}>
-            <span className={iconWrapClass}><Icon size={17} strokeWidth={1.75} /></span>
+            <span className={iconWrapClass}><Icon size={15} /></span>
             {/* Custom button labels are owner-typed content, same reasoning
                 as menu items - never auto-translated. */}
             <span className="font-body text-[15px] font-medium">{btn.label}</span>
