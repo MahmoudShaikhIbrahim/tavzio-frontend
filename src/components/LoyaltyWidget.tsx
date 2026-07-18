@@ -144,7 +144,7 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
             className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory
                        placeholder:text-ivory-dim/60 focus:border-brass"
           />
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
           <button
             type="submit"
             disabled={status === 'loading'}

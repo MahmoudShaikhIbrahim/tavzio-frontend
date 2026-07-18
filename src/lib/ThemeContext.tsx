@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'tavzio_theme';
 
 function getSystemPreference(): 'light' | 'dark' {
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // dark mode) and the person is on 'system', follow it live rather than
   // requiring a reload.
   useEffect(() => {
-    const mql = window.matchMedia('(prefers-color-scheme: light)');
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => setSystemPref(getSystemPreference());
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);

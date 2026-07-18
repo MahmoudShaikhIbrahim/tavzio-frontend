@@ -5,11 +5,11 @@ import type { AuditLogEntry, AuditAction } from '../../types';
 import { Section } from '../../components/ui';
 
 const ACTION_STYLE: Record<AuditAction, string> = {
-  void_order: 'border-red-400/40 text-red-400',
-  void_item: 'border-red-400/40 text-red-400',
-  refund: 'border-red-400/40 text-red-400',
+  void_order: 'border-danger/40 text-danger',
+  void_item: 'border-danger/40 text-danger',
+  refund: 'border-danger/40 text-danger',
   staff_order_placed: 'border-brass/40 text-brass',
-  card_deleted: 'border-red-400/40 text-red-400',
+  card_deleted: 'border-danger/40 text-danger',
 };
 
 // Turns each action's raw details into an actual sentence, instead of a

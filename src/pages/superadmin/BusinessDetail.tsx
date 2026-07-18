@@ -140,7 +140,7 @@ function ActionButton({ children, onClick, disabled, danger }: { children: React
       onClick={onClick}
       disabled={disabled}
       className={`rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
-        danger ? 'border-red-400/40 text-red-400 hover:bg-red-400/10' : 'border-brass/40 text-brass hover:bg-brass/10'
+        danger ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
       }`}
     >
       {children}
@@ -294,7 +294,7 @@ function PosIntegrationSection({ businessId, purpose, providers }: {
     <Section title={`POS integration — ${purpose}`}>
       {integration?.status && (
         <p className="text-base">
-          Status: <span className={integration.status === 'connected' ? 'text-green-400' : integration.status === 'error' ? 'text-red-400' : 'text-ivory-dim'}>
+          Status: <span className={integration.status === 'connected' ? 'text-success' : integration.status === 'error' ? 'text-danger' : 'text-ivory-dim'}>
             {integration.status}
           </span>
         </p>
@@ -369,7 +369,7 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
         key is never visible here, only whether it's connected.
       </p>
       <p className="text-base">
-        Status: <span className={status?.enabled ? 'text-green-400' : 'text-ivory-dim'}>
+        Status: <span className={status?.enabled ? 'text-success' : 'text-ivory-dim'}>
           {status?.enabled ? `connected (${status.status})` : 'not connected'}
         </span>
       </p>
@@ -600,7 +600,7 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
               deleteCard(businessId, card.id).then(onChange);
             }
           }}
-          className="rounded border border-red-400/40 px-2 py-1 text-base text-red-400 hover:bg-red-400/10"
+          className="rounded border border-danger/40 px-2 py-1 text-base text-danger hover:bg-danger/10"
         >
           Delete
         </button>

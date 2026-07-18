@@ -211,7 +211,7 @@ function MenuPageContent({ slug }: { slug: string }) {
                       <span className="block text-xs text-brass/70">+ {l.selectedAddons.map((a) => a.name).join(', ')}</span>
                     )}
                   </button>
-                  <button onClick={() => cart.removeLine(i)} className="ms-2 shrink-0 text-red-400">✕</button>
+                  <button onClick={() => cart.removeLine(i)} className="ms-2 shrink-0 text-danger">✕</button>
                 </div>
               ))}
             </div>
@@ -221,7 +221,7 @@ function MenuPageContent({ slug }: { slug: string }) {
               onChange={(e) => setOrderNote(e.target.value)}
               className="mb-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
             />
-            {error && <p className="mb-2 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-2 text-sm text-danger">{error}</p>}
             <button
               onClick={handleSubmitOrder}
               disabled={submitting}

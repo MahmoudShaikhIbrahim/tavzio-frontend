@@ -16,10 +16,10 @@ const STATUS_LABEL: Record<BookingStatus, string> = {
 
 const STATUS_STYLE: Record<BookingStatus, string> = {
   pending: 'border-brass text-brass',
-  confirmed: 'border-green-400/50 text-green-300',
-  declined: 'border-red-400/40 text-red-400',
+  confirmed: 'border-success/50 text-success',
+  declined: 'border-danger/40 text-danger',
   completed: 'border-ink-line text-ivory-dim',
-  cancelled: 'border-red-400/40 text-red-400',
+  cancelled: 'border-danger/40 text-danger',
 };
 
 export default function BookingsPage() {
@@ -110,7 +110,7 @@ function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow
           </button>
           <button
             onClick={() => updateBookingStatus(businessId, booking.id, 'declined').then(onChange)}
-            className="rounded-lg border border-red-400/40 px-3 py-2 text-base text-red-400 hover:bg-red-400/10"
+            className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10"
           >
             Decline
           </button>

@@ -96,9 +96,9 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
             {(Number(payment.amount) + Number(payment.tip_amount)).toFixed(2)} AED{payment.tip_amount > 0 && ` (incl. ${payment.tip_amount} tip)`}
           </span>
           {payment.refunded ? (
-            <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-sm text-red-400">Refunded {payment.refund_amount}</span>
+            <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">Refunded {payment.refund_amount}</span>
           ) : (
-            <button onClick={() => setShowRefund((s) => !s)} className="text-base text-red-400 hover:underline">Refund</button>
+            <button onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">Refund</button>
           )}
         </div>
       </div>
@@ -122,11 +122,11 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
               className="flex-1 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
             />
           </div>
-          {error && <p className="text-base text-red-400">{error}</p>}
+          {error && <p className="text-base text-danger">{error}</p>}
           <button
             onClick={handleRefund}
             disabled={submitting}
-            className="w-full rounded-lg bg-red-400/10 border border-red-400/40 px-3 py-1.5 text-base text-red-400 disabled:opacity-50"
+            className="w-full rounded-lg bg-danger/10 border border-danger/40 px-3 py-1.5 text-base text-danger disabled:opacity-50"
           >
             {submitting ? 'Processing...' : `Confirm refund of ${amount.toFixed(2)} AED`}
           </button>
@@ -172,7 +172,7 @@ function TapPaymentsSetup({ businessId }: { businessId: string }) {
       </p>
       {integration?.status && (
         <p className="text-base">
-          Status: <span className={integration.status === 'connected' ? 'text-green-400' : 'text-ivory-dim'}>{integration.status}</span>
+          Status: <span className={integration.status === 'connected' ? 'text-success' : 'text-ivory-dim'}>{integration.status}</span>
         </p>
       )}
       <div className="space-y-3 rounded-lg border border-ink-line p-3">

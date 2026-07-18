@@ -195,7 +195,7 @@ function ItemRow({ item, businessId, categories, onChange }: {
           <div>
             <span className="text-ivory">{item.name}</span>
             <span className="ml-2 text-ivory-dim">{item.price.toFixed(2)}</span>
-            {!item.is_available && <span className="ml-2 text-base text-red-400">unavailable</span>}
+            {!item.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
           </div>
         </div>
         <div className="flex items-center gap-2">

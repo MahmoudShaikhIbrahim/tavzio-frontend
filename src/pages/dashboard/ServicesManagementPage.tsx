@@ -88,7 +88,7 @@ function ServiceRow({ service, businessId, onChange }: { service: Service; busin
       <div>
         <span className="text-ivory">{service.name}</span>
         <span className="ml-2 text-ivory-dim">{service.price.toFixed(2)} · {service.duration_minutes} min</span>
-        {!service.is_available && <span className="ml-2 text-base text-red-400">unavailable</span>}
+        {!service.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
       </div>
       <div className="flex items-center gap-2">
         <ActionButton onClick={() => updateService(businessId, service.id, { isAvailable: !service.is_available }).then(onChange)}>

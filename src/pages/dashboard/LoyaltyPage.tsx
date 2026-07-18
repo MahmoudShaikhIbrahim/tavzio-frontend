@@ -216,7 +216,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
                     <Field label={`Threshold (${measureLabel})`}>
                       <input type="number" min={1} value={tier.threshold} onChange={(e) => updateTier(i, { threshold: Number(e.target.value) })} className={`${inputClass} w-28`} />
                     </Field>
-                    <button type="button" onClick={() => removeTier(i)} className="mb-0.5 shrink-0 rounded-lg border border-red-400/40 px-3 py-2.5 text-base text-red-400 hover:bg-red-400/10">
+                    <button type="button" onClick={() => removeTier(i)} className="mb-0.5 shrink-0 rounded-lg border border-danger/40 px-3 py-2.5 text-base text-danger hover:bg-danger/10">
                       Remove
                     </button>
                   </div>
@@ -271,7 +271,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
           Enabled — shows on the public landing page
         </label>
 
-        {error && <p className="text-base text-red-400">{error}</p>}
+        {error && <p className="text-base text-danger">{error}</p>}
         <PrimaryButton disabled={saving}>{saving ? 'Saving...' : 'Save program'}</PrimaryButton>
       </form>
     </Section>
@@ -312,7 +312,7 @@ function MemberRow({ member, businessId, program, onChange }: {
           )}
         </div>
       </div>
-      {redeemError && <p className="mt-1.5 text-base text-red-400">{redeemError}</p>}
+      {redeemError && <p className="mt-1.5 text-base text-danger">{redeemError}</p>}
       {showAdjust && <AdjustForm businessId={businessId} membershipId={member.id} program={program} onDone={() => { setShowAdjust(false); onChange(); }} />}
     </div>
   );

@@ -103,7 +103,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
             {cart.lines.map((l, i) => (
               <div key={i} className="flex items-center justify-between text-ivory-dim">
                 <span>{l.quantity}× {l.name}{l.note ? ` (${l.note})` : ''}</span>
-                <button onClick={() => cart.removeLine(i)} className="text-red-400">✕</button>
+                <button onClick={() => cart.removeLine(i)} className="text-danger">✕</button>
               </div>
             ))}
             <p className="pt-1 text-ivory">Total: {cart.total.toFixed(2)}</p>
@@ -117,7 +117,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
           className="mt-3 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
 
-        {error && <p className="mt-2 text-base text-red-400">{error}</p>}
+        {error && <p className="mt-2 text-base text-danger">{error}</p>}
 
         <button
           onClick={handleSubmit}

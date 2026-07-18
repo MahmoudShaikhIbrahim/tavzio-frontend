@@ -2,6 +2,8 @@ export interface LinkButtonConfig {
   enabled: boolean;
   value: string;
   icon?: string;
+  label?: string; // overrides the default label (e.g. "Message on WhatsApp") if set
+  imageUrl?: string | null; // overrides the icon entirely if set - an uploaded logo/picture
 }
 
 // Trimmed to the 7 buttons that work as plain external links on their own.

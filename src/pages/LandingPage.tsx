@@ -106,7 +106,15 @@ function LandingPageContent({ business, tapEventId }: { business: Business; tapE
         {/* Plain external links */}
         <div className="mt-2.5 space-y-2.5">
           {enabledLinks.map((key) => (
-            <LinkButton key={key} linkKey={key} value={business.links[key].value} icon={business.links[key].icon} slug={business.slug} />
+            <LinkButton
+              key={key}
+              linkKey={key}
+              value={business.links[key].value}
+              icon={business.links[key].icon}
+              label={business.links[key].label}
+              imageUrl={business.links[key].imageUrl}
+              slug={business.slug}
+            />
           ))}
         </div>
 

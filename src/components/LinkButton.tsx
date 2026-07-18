@@ -7,6 +7,8 @@ interface Props {
   linkKey: keyof BusinessLinks;
   value: string;
   icon?: string;
+  label?: string;
+  imageUrl?: string | null;
   slug: string;
 }
 
@@ -21,7 +23,7 @@ const EVENT_TYPE: Partial<Record<keyof BusinessLinks, string>> = {
   directions: 'directions_click',
 };
 
-export default function LinkButton({ linkKey, value, icon, slug }: Props) {
+export default function LinkButton({ linkKey, value, icon, label, imageUrl, slug }: Props) {
   const meta = LINK_META[linkKey];
   const iconKey = icon || meta.defaultIcon;
   const Icon = getIcon(iconKey);
@@ -40,13 +42,19 @@ export default function LinkButton({ linkKey, value, icon, slug }: Props) {
                  text-ivory transition-colors duration-150 hover:border-brass/60 active:bg-ink
                  active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]"
     >
-      <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
-        style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
-      >
-        <Icon size={17} />
-      </span>
-      <span className="font-body text-[15px] font-medium">{meta.label}</span>
+      {imageUrl ? (
+        <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
+          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+        </span>
+      ) : (
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+          style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
+        >
+          <Icon size={17} />
+        </span>
+      )}
+      <span className="font-body text-[15px] font-medium">{label || meta.label}</span>
     </a>
   );
 }

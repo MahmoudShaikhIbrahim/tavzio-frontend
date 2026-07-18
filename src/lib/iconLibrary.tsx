@@ -1,8 +1,15 @@
 import type { IconType } from 'react-icons';
+// Simple Icons (the `si` set) - unlike FontAwesome's `fa` set, these are
+// built specifically to match each company's real, official brand mark,
+// sourced from their own published brand assets - the actual logo, not a
+// generic icon-font interpretation of it.
 import {
-  FaInstagram, FaWhatsapp, FaTiktok, FaFacebookF, FaGoogle, FaGlobe, FaMapMarkerAlt,
-  FaStar, FaPhone, FaEnvelope, FaMusic, FaGift, FaHeart, FaTicketAlt, FaCamera,
-  FaShoppingBag, FaLink, FaSnapchatGhost, FaYoutube, FaTwitter, FaLinkedin, FaPinterest,
+  SiInstagram, SiWhatsapp, SiTiktok, SiFacebook, SiGoogle, SiYoutube,
+  SiX, SiLinkedin, SiPinterest, SiSnapchat,
+} from 'react-icons/si';
+import {
+  FaGlobe, FaMapMarkerAlt, FaStar, FaPhone, FaEnvelope, FaMusic, FaGift,
+  FaHeart, FaTicketAlt, FaCamera, FaShoppingBag, FaLink,
 } from 'react-icons/fa';
 
 export interface IconOption {
@@ -17,16 +24,16 @@ export interface IconOption {
 // only ever one consistent picker in the whole app, not several
 // different ones with different options.
 export const ICON_LIBRARY: IconOption[] = [
-  { key: 'instagram', label: 'Instagram', Icon: FaInstagram, brandColor: '#E4405F' },
-  { key: 'whatsapp', label: 'WhatsApp', Icon: FaWhatsapp, brandColor: '#25D366' },
-  { key: 'tiktok', label: 'TikTok', Icon: FaTiktok, brandColor: '#25F4EE' },
-  { key: 'facebook', label: 'Facebook', Icon: FaFacebookF, brandColor: '#1877F2' },
-  { key: 'google', label: 'Google', Icon: FaGoogle, brandColor: '#4285F4' },
-  { key: 'youtube', label: 'YouTube', Icon: FaYoutube, brandColor: '#FF0000' },
-  { key: 'twitter', label: 'X / Twitter', Icon: FaTwitter, brandColor: '#1DA1F2' },
-  { key: 'linkedin', label: 'LinkedIn', Icon: FaLinkedin, brandColor: '#0A66C2' },
-  { key: 'pinterest', label: 'Pinterest', Icon: FaPinterest, brandColor: '#E60023' },
-  { key: 'snapchat', label: 'Snapchat', Icon: FaSnapchatGhost, brandColor: '#FFFC00' },
+  { key: 'instagram', label: 'Instagram', Icon: SiInstagram, brandColor: '#E4405F' },
+  { key: 'whatsapp', label: 'WhatsApp', Icon: SiWhatsapp, brandColor: '#25D366' },
+  { key: 'tiktok', label: 'TikTok', Icon: SiTiktok, brandColor: '#25F4EE' },
+  { key: 'facebook', label: 'Facebook', Icon: SiFacebook, brandColor: '#1877F2' },
+  { key: 'google', label: 'Google', Icon: SiGoogle, brandColor: '#4285F4' },
+  { key: 'youtube', label: 'YouTube', Icon: SiYoutube, brandColor: '#FF0000' },
+  { key: 'twitter', label: 'X / Twitter', Icon: SiX, brandColor: '#1DA1F2' },
+  { key: 'linkedin', label: 'LinkedIn', Icon: SiLinkedin, brandColor: '#0A66C2' },
+  { key: 'pinterest', label: 'Pinterest', Icon: SiPinterest, brandColor: '#E60023' },
+  { key: 'snapchat', label: 'Snapchat', Icon: SiSnapchat, brandColor: '#FFFC00' },
   { key: 'globe', label: 'Website / Globe', Icon: FaGlobe },
   { key: 'mapPin', label: 'Location / Directions', Icon: FaMapMarkerAlt },
   { key: 'star', label: 'Star / Review', Icon: FaStar },

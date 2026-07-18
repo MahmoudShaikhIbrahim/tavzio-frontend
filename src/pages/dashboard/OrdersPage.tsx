@@ -28,10 +28,10 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
   pending: 'border-brass text-brass',
-  preparing: 'border-blue-400/50 text-blue-300',
-  ready: 'border-green-400/50 text-green-300',
+  preparing: 'border-info/50 text-info',
+  ready: 'border-success/50 text-success',
   completed: 'border-ink-line text-ivory-dim',
-  cancelled: 'border-red-400/40 text-red-400',
+  cancelled: 'border-danger/40 text-danger',
 };
 
 export default function OrdersPage() {
@@ -153,7 +153,7 @@ function TableGroup({ table, orders, businessId, onChange }: {
           <button
             onClick={handleClearTable}
             disabled={clearing}
-            className="rounded-lg border border-red-400/40 px-3 py-1.5 text-base text-red-400 hover:bg-red-400/10 disabled:opacity-50"
+            className="rounded-lg border border-danger/40 px-3 py-1.5 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
           >
             {clearing ? 'Clearing...' : 'Clear table'}
           </button>
@@ -194,7 +194,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
             </div>
             <button
               onClick={() => voidOrderItem(businessId, order.id, item.id).then(onChange)}
-              className="shrink-0 text-base text-red-400 hover:underline"
+              className="shrink-0 text-base text-danger hover:underline"
               title="Void just this item"
             >
               Void
@@ -227,7 +227,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         {order.status !== 'cancelled' && order.status !== 'completed' && (
           <button
             onClick={() => updateOrderStatus(businessId, order.id, 'cancelled').then(onChange)}
-            className="rounded-lg border border-red-400/40 px-3 py-2 text-base text-red-400 hover:bg-red-400/10"
+            className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10"
           >
             Cancel
           </button>

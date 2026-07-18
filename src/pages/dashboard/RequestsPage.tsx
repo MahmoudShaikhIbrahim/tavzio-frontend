@@ -14,8 +14,8 @@ import type { NotificationSettings } from '../../types';
 // wants their bill" apart from "reward ready" without walking up to read
 // small print.
 const REQUEST_STYLE = {
-  call_waiter: { border: 'border-blue-400/50', bg: 'bg-blue-400/10', text: 'text-blue-300', label: 'Call waiter' },
-  request_bill: { border: 'border-green-400/50', bg: 'bg-green-400/10', text: 'text-green-300', label: 'Request bill' },
+  call_waiter: { border: 'border-info/50', bg: 'bg-info/10', text: 'text-info', label: 'Call waiter' },
+  request_bill: { border: 'border-success/50', bg: 'bg-success/10', text: 'text-success', label: 'Request bill' },
 } as const;
 
 export default function RequestsPage() {

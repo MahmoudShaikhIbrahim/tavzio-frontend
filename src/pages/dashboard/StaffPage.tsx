@@ -37,7 +37,7 @@ export default function StaffPage() {
             <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
               <span className="text-ivory">
                 {s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span>
-                {!s.is_active && <span className="ml-2 text-base text-red-400">deactivated</span>}
+                {!s.is_active && <span className="ml-2 text-base text-danger">deactivated</span>}
               </span>
               {s.role === 'staff' && (
                 <button

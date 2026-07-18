@@ -100,7 +100,7 @@ export default function CreateBusiness() {
           </select>
         </Field>
 
-        {error && <p className="text-base text-red-400">{error}</p>}
+        {error && <p className="text-base text-danger">{error}</p>}
         <button
           type="submit"
           disabled={loading}

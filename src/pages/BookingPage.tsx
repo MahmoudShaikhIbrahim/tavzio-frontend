@@ -182,7 +182,7 @@ function BookingForm({ slug, service, tapEventId, onBack, onConfirmed }: {
             rows={2}
             className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-ivory placeholder:text-ivory-dim/60"
           />
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
           <button
             type="submit"
             disabled={submitting}

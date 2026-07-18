@@ -19,6 +19,10 @@
     --color-brass-bright: 217 180 127;
     --color-ivory: 244 238 227;
     --color-ivory-dim: 167 154 135;
+    --color-danger: 248 113 113;
+    --color-success: 74 222 128;
+    --color-info: 96 165 250;
+    --color-warning: 250 204 21;
   }
 
   [data-theme='light'] {
@@ -29,6 +33,10 @@
     --color-brass-bright: 184 146 90;
     --color-ivory: 33 28 22;
     --color-ivory-dim: 107 95 78;
+    --color-danger: 185 28 28;
+    --color-success: 21 128 61;
+    --color-info: 29 78 216;
+    --color-warning: 161 98 7;
   }
 
   html {

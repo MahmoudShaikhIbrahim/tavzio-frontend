@@ -17,6 +17,13 @@ export default {
         'brass-bright': 'rgb(var(--color-brass-bright) / <alpha-value>)',
         ivory: 'rgb(var(--color-ivory) / <alpha-value>)',
         'ivory-dim': 'rgb(var(--color-ivory-dim) / <alpha-value>)',
+        // Status colors - also theme-aware, following the same principle:
+        // brighter in dark mode, deepened in light mode, so contrast holds
+        // in both instead of one theme inheriting the other's tuning.
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        info: 'rgb(var(--color-info) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
       },
       fontFamily: {
         display: ['"Fraunces"', 'serif'],

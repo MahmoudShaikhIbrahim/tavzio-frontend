@@ -129,7 +129,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
           {imageUrl && <img src={imageUrl} alt="" className="h-10 w-10 rounded-full border border-ink-line object-cover" />}
           <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-ivory-dim" />
           {imageUrl && (
-            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-red-400 hover:underline">
+            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-danger hover:underline">
               Remove
             </button>
           )}
@@ -140,7 +140,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
       <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
         {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
       </button>
-      {error && <p className="text-base text-red-400">{error}</p>}
+      {error && <p className="text-base text-danger">{error}</p>}
     </form>
   );
 }
@@ -215,7 +215,7 @@ function ImageUploadField({ label, businessId, kind, value, onUploaded }: {
             {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
             <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
           </label>
-          {error && <p className="mt-1 text-base text-red-400">{error}</p>}
+          {error && <p className="mt-1 text-base text-danger">{error}</p>}
         </div>
       </div>
       <input
@@ -292,13 +292,38 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
     setLinks((prev) => ({ ...prev, [key]: { ...prev[key], icon } }));
   }
 
+  function updateLabel(key: keyof BusinessLinks, label: string) {
+    setLinks((prev) => ({ ...prev, [key]: { ...prev[key], label } }));
+  }
+
+  function updateImage(key: keyof BusinessLinks, imageUrl: string | null) {
+    setLinks((prev) => ({ ...prev, [key]: { ...prev[key], imageUrl } }));
+  }
+
+  async function handleImageUpload(key: keyof BusinessLinks, e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await uploadBusinessFile(businessId, file, `links/${key}`);
+      updateImage(key, url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload image');
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
     setError('');
     try {
-      const payload: Record<string, { value: string; enabled: boolean; icon: string }> = {};
+      const payload: Record<string, { value: string; enabled: boolean; icon: string; label: string | null; imageUrl: string | null }> = {};
       (Object.keys(links) as (keyof BusinessLinks)[]).forEach((key) => {
-        payload[key] = { value: links[key].value, enabled: links[key].enabled, icon: links[key].icon || LINK_META[key].defaultIcon };
+        payload[key] = {
+          value: links[key].value,
+          enabled: links[key].enabled,
+          icon: links[key].icon || LINK_META[key].defaultIcon,
+          label: links[key].label ?? null,
+          imageUrl: links[key].imageUrl ?? null,
+        };
       });
       const updated = await updateBusiness(businessId, { links: payload as unknown as BusinessLinks });
       onSaved(updated);
@@ -324,7 +349,8 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
     >
       <p className="text-base text-ivory-dim">
         Toggle a button on and fill in its link — it'll show on your landing
-        page in this order. Add more of your own further below.
+        page in this order. Rename it, pick an icon, or upload your own
+        image for it. Add more of your own further below.
       </p>
       <div className="space-y-2">
         {LINK_ORDER.map((key) => {
@@ -333,39 +359,60 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
           const SelectedIcon = getIcon(cfg.icon || meta.defaultIcon);
           const selectedColor = getIconColor(cfg.icon || meta.defaultIcon);
           return (
-            <div key={key} className="flex items-center gap-3 rounded-lg border border-ink-line px-3.5 py-2.5">
-              <button
-                type="button"
-                onClick={() => toggleEnabled(key)}
-                className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
-              >
-                {cfg.enabled ? 'On' : 'Off'}
-              </button>
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
-                style={selectedColor ? { color: selectedColor, borderColor: `${selectedColor}66` } : undefined}
-              >
-                <SelectedIcon size={14} />
-              </span>
-              <select
-                value={cfg.icon || meta.defaultIcon}
-                onChange={(e) => updateIcon(key, e.target.value)}
-                className="shrink-0 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
-              >
-                {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
-              </select>
-              <span className="w-40 shrink-0 text-base text-ivory">{meta.label}</span>
-              <input
-                value={cfg.value}
-                onChange={(e) => updateValue(key, e.target.value)}
-                placeholder={key === 'whatsapp' ? '971...' : 'https://...'}
-                className={`${inputClass} flex-1`}
-              />
+            <div key={key} className="space-y-2 rounded-lg border border-ink-line px-3.5 py-3">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => toggleEnabled(key)}
+                  className={`shrink-0 rounded-lg border px-3 py-1.5 text-sm ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                >
+                  {cfg.enabled ? 'On' : 'Off'}
+                </button>
+                {cfg.imageUrl ? (
+                  <img src={cfg.imageUrl} alt="" className="h-8 w-8 shrink-0 rounded-full border border-ink-line object-cover" />
+                ) : (
+                  <span
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+                    style={selectedColor ? { color: selectedColor, borderColor: `${selectedColor}66` } : undefined}
+                  >
+                    <SelectedIcon size={14} />
+                  </span>
+                )}
+                <select
+                  value={cfg.icon || meta.defaultIcon}
+                  onChange={(e) => updateIcon(key, e.target.value)}
+                  className="shrink-0 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
+                >
+                  {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                </select>
+                <label className="shrink-0 cursor-pointer rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory">
+                  Upload image
+                  <input type="file" accept="image/*" onChange={(e) => handleImageUpload(key, e)} className="hidden" />
+                </label>
+                {cfg.imageUrl && (
+                  <button type="button" onClick={() => updateImage(key, null)} className="shrink-0 text-sm text-danger hover:underline">
+                    Remove image
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={cfg.label ?? meta.label}
+                  onChange={(e) => updateLabel(key, e.target.value)}
+                  className={`${inputClass} w-52 shrink-0`}
+                />
+                <input
+                  value={cfg.value}
+                  onChange={(e) => updateValue(key, e.target.value)}
+                  placeholder={key === 'whatsapp' ? '971...' : 'https://...'}
+                  className={`${inputClass} flex-1`}
+                />
+              </div>
             </div>
           );
         })}
       </div>
-      {error && <p className="text-base text-red-400">{error}</p>}
+      {error && <p className="text-base text-danger">{error}</p>}
 
       <div className="mt-2 border-t border-ink-line pt-4">
         <div className="space-y-1.5">

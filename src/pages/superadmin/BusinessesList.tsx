@@ -4,9 +4,9 @@ import { listBusinesses } from '../../lib/authApi';
 import type { AdminBusiness } from '../../types';
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'text-green-400 border-green-400/40',
+  active: 'text-success border-success/40',
   pending: 'text-brass border-brass/40',
-  suspended: 'text-red-400 border-red-400/40',
+  suspended: 'text-danger border-danger/40',
 };
 
 export default function BusinessesList() {

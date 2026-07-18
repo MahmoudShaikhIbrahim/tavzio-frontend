@@ -253,7 +253,7 @@ function BillPageContent({ slug }: { slug: string }) {
               <span>{tip.toFixed(2)}</span>
             </div>
           )}
-          {error && <p className="mb-2 text-sm text-red-400">{error}</p>}
+          {error && <p className="mb-2 text-sm text-danger">{error}</p>}
           <button
             onClick={handlePay}
             disabled={paying}

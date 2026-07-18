@@ -124,7 +124,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
             {setting.customUrl && (
               <button
                 onClick={() => patch({ sound: 'default', customUrl: '' })}
-                className="text-base text-red-400 hover:underline"
+                className="text-base text-danger hover:underline"
               >
                 Remove custom sound
               </button>
