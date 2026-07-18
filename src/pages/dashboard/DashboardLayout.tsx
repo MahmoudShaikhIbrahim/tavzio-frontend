@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { getBusiness } from '../../lib/authApi';
 import type { BusinessFeatures } from '../../types';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const TABS = [
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const },
@@ -49,6 +50,7 @@ export default function DashboardLayout() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>
           <div className="flex items-center gap-4 text-base text-ivory-dim">
+            <ThemeToggle />
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>

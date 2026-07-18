@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './lib/ThemeContext';
 import Home from './pages/Home';
 import TapHandler from './pages/TapHandler';
 import LandingPage from './pages/LandingPage';
@@ -32,7 +33,8 @@ import MessagesPage from './pages/dashboard/MessagesPage';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
 
@@ -85,6 +87,7 @@ export default function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

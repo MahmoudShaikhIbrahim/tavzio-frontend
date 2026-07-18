@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { getInbox } from '../../lib/authApi';
+import ThemeToggle from '../../components/ThemeToggle';
 
 export default function SuperAdminLayout() {
   const { user, logout } = useSession();
@@ -39,6 +40,7 @@ export default function SuperAdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-4 text-base text-ivory-dim">
+            <ThemeToggle />
             <span>{user?.name}</span>
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>

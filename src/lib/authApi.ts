@@ -398,6 +398,7 @@ export function listCustomButtons(businessId: string) {
 export interface CustomButtonPayload {
   label?: string;
   icon?: string;
+  imageUrl?: string | null;
   url?: string;
   enabled?: boolean;
   sortOrder?: number;

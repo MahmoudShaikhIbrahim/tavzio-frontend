@@ -401,6 +401,7 @@ export interface CustomButton {
   business_id: string;
   label: string;
   icon: string;
+  image_url: string | null;
   url: string;
   enabled: boolean;
   sort_order: number;

@@ -4,10 +4,10 @@ import {
   getBusiness, updateBusiness,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
 } from '../../lib/authApi';
-import { uploadBusinessImage } from '../../lib/supabaseClient';
+import { uploadBusinessImage, uploadBusinessFile } from '../../lib/supabaseClient';
 import type { AdminBusiness, BusinessLinks, CustomButton } from '../../types';
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
-import { ICON_LIBRARY, getIcon } from '../../lib/iconLibrary';
+import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import MenuManagementPage from './MenuManagementPage';
 import LoyaltyPage from './LoyaltyPage';
@@ -71,9 +71,30 @@ export default function SettingsPage() {
 function CustomButtonForm({ businessId, existing, onDone }: { businessId: string; existing?: CustomButton; onDone: () => void }) {
   const [label, setLabel] = useState(existing?.label || '');
   const [icon, setIcon] = useState(existing?.icon || 'link');
+  const [imageUrl, setImageUrl] = useState<string | null>(existing?.image_url || null);
   const [url, setUrl] = useState(existing?.url || '');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+
+  async function handleImageUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError('');
+    try {
+      // Existing buttons upload under their own id; a brand-new button
+      // doesn't have one yet, so a timestamp keeps the path unique until
+      // it's actually created.
+      const subPath = `custom-buttons/${existing?.id || Date.now()}`;
+      const url = await uploadBusinessFile(businessId, file, subPath);
+      setImageUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload image');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -81,9 +102,9 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
     setError('');
     try {
       if (existing) {
-        await updateCustomButton(businessId, existing.id, { label, icon, url });
+        await updateCustomButton(businessId, existing.id, { label, icon, imageUrl, url });
       } else {
-        await createCustomButton(businessId, { label, icon, url });
+        await createCustomButton(businessId, { label, icon, imageUrl, url });
       }
       onDone();
     } catch (err) {
@@ -97,14 +118,26 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
     <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
       <div className="grid grid-cols-2 gap-3">
         <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
-        <Field label="Icon">
+        <Field label="Icon (used unless you upload your own image below)">
           <select value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
             {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
         </Field>
       </div>
+      <Field label="Or upload your own logo/picture">
+        <div className="flex items-center gap-3">
+          {imageUrl && <img src={imageUrl} alt="" className="h-10 w-10 rounded-full border border-ink-line object-cover" />}
+          <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-ivory-dim" />
+          {imageUrl && (
+            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-red-400 hover:underline">
+              Remove
+            </button>
+          )}
+        </div>
+        {uploading && <p className="mt-1 text-sm text-ivory-dim">Uploading...</p>}
+      </Field>
       <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
-      <button disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
         {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
       </button>
       {error && <p className="text-base text-red-400">{error}</p>}
@@ -117,13 +150,21 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
   const Icon = getIcon(button.icon);
+  const brandColor = getIconColor(button.icon);
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
       <span className="flex items-center gap-2 text-ivory">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
-          <Icon size={13} />
-        </span>
+        {button.image_url ? (
+          <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />
+        ) : (
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+            style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
+          >
+            <Icon size={13} />
+          </span>
+        )}
         {button.label}
       </span>
       <div className="flex items-center gap-2">
@@ -290,6 +331,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
           const meta = LINK_META[key];
           const cfg = links[key];
           const SelectedIcon = getIcon(cfg.icon || meta.defaultIcon);
+          const selectedColor = getIconColor(cfg.icon || meta.defaultIcon);
           return (
             <div key={key} className="flex items-center gap-3 rounded-lg border border-ink-line px-3.5 py-2.5">
               <button
@@ -299,7 +341,10 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
               >
                 {cfg.enabled ? 'On' : 'Off'}
               </button>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+                style={selectedColor ? { color: selectedColor, borderColor: `${selectedColor}66` } : undefined}
+              >
                 <SelectedIcon size={14} />
               </span>
               <select

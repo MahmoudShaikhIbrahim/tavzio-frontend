@@ -1,6 +1,6 @@
 import type { BusinessLinks } from '../types';
 import { LINK_META } from '../lib/linkMeta';
-import { getIcon } from '../lib/iconLibrary';
+import { getIcon, getIconColor } from '../lib/iconLibrary';
 import { logEvent } from '../lib/api';
 
 interface Props {
@@ -23,7 +23,9 @@ const EVENT_TYPE: Partial<Record<keyof BusinessLinks, string>> = {
 
 export default function LinkButton({ linkKey, value, icon, slug }: Props) {
   const meta = LINK_META[linkKey];
-  const Icon = getIcon(icon || meta.defaultIcon);
+  const iconKey = icon || meta.defaultIcon;
+  const Icon = getIcon(iconKey);
+  const brandColor = getIconColor(iconKey);
   const eventType = EVENT_TYPE[linkKey];
 
   return (
@@ -38,7 +40,10 @@ export default function LinkButton({ linkKey, value, icon, slug }: Props) {
                  text-ivory transition-colors duration-150 hover:border-brass/60 active:bg-ink
                  active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+        style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
+      >
         <Icon size={17} />
       </span>
       <span className="font-body text-[15px] font-medium">{meta.label}</span>

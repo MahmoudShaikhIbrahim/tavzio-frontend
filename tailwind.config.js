@@ -4,13 +4,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#14110F',        // page background - warm near-black, not pure black
-        'ink-soft': '#1F1A15', // card/surface background
-        'ink-line': '#332B23', // hairline borders on dark surfaces
-        brass: '#B8925A',      // primary accent - the "engraved metal" color
-        'brass-bright': '#D9B47F',
-        ivory: '#F4EEE3',      // primary text on dark
-        'ivory-dim': '#A79A87', // secondary/muted text
+        // CSS variables, not fixed hex - this is what makes theme
+        // switching (light/dark/system) apply everywhere automatically:
+        // every existing bg-ink, text-ivory, border-brass usage across
+        // the whole app already uses these names, so swapping the
+        // underlying variable values (see index.css) re-themes
+        // everything at once, with zero changes needed in any component.
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        'ink-soft': 'rgb(var(--color-ink-soft) / <alpha-value>)',
+        'ink-line': 'rgb(var(--color-ink-line) / <alpha-value>)',
+        brass: 'rgb(var(--color-brass) / <alpha-value>)',
+        'brass-bright': 'rgb(var(--color-brass-bright) / <alpha-value>)',
+        ivory: 'rgb(var(--color-ivory) / <alpha-value>)',
+        'ivory-dim': 'rgb(var(--color-ivory-dim) / <alpha-value>)',
       },
       fontFamily: {
         display: ['"Fraunces"', 'serif'],

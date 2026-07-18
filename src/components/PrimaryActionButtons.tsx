@@ -4,7 +4,7 @@ import { UtensilsCrossed, CalendarCheck, BellRing, Receipt, CreditCard } from 'l
 import type { Business } from '../types';
 import { submitQuickRequest } from '../lib/api';
 import { useLanguage } from '../lib/i18n/LanguageContext';
-import { getIcon } from '../lib/iconLibrary';
+import { getIcon, getIconColor } from '../lib/iconLibrary';
 
 interface Props {
   business: Business;
@@ -55,9 +55,18 @@ export default function PrimaryActionButtons({ business, tapEventId }: Props) {
 
       {business.customButtons.map((btn) => {
         const Icon = getIcon(btn.icon);
+        const brandColor = getIconColor(btn.icon);
         return (
           <a key={btn.id} href={btn.url} target="_blank" rel="noreferrer" className={buttonClass}>
-            <span className={iconWrapClass}><Icon size={15} /></span>
+            {btn.image_url ? (
+              <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
+                <img src={btn.image_url} alt="" className="h-full w-full object-cover" />
+              </span>
+            ) : (
+              <span className={iconWrapClass} style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
+                <Icon size={15} />
+              </span>
+            )}
             {/* Custom button labels are owner-typed content, same reasoning
                 as menu items - never auto-translated. */}
             <span className="font-body text-[15px] font-medium">{btn.label}</span>

@@ -7,6 +7,7 @@ import LinkButton from '../components/LinkButton';
 import PrimaryActionButtons from '../components/PrimaryActionButtons';
 import LoyaltyWidget from '../components/LoyaltyWidget';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import ThemeToggle from '../components/ThemeToggle';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import NotFound from './NotFound';
 
@@ -61,7 +62,8 @@ function LandingPageContent({ business, tapEventId }: { business: Business; tapE
       {/* Deliberately OUTSIDE the cover's overflow-hidden box - the switcher
           just sits visually in the same spot via absolute positioning
           against the page itself, but its dropdown is never clipped now. */}
-      <div className="absolute end-4 top-4 z-10">
+      <div className="absolute end-4 top-4 z-10 flex items-center gap-2">
+        <ThemeToggle />
         <LanguageSwitcher />
       </div>
 

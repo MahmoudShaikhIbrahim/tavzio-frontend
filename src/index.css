@@ -5,11 +5,37 @@
 @tailwind utilities;
 
 @layer base {
+  /* Dark is the default and original design - every screenshot and every
+     decision in this whole build was made against this palette. Light
+     mode is deliberately NOT a naive inversion (which tends to look
+     cheap) - it's a genuinely separate warm cream/parchment palette with
+     a deepened brass for contrast, aiming for the same "engraved luxury"
+     feeling in both modes. */
+  :root {
+    --color-ink: 20 17 15;
+    --color-ink-soft: 31 26 21;
+    --color-ink-line: 51 43 35;
+    --color-brass: 184 146 90;
+    --color-brass-bright: 217 180 127;
+    --color-ivory: 244 238 227;
+    --color-ivory-dim: 167 154 135;
+  }
+
+  [data-theme='light'] {
+    --color-ink: 247 243 236;
+    --color-ink-soft: 239 230 214;
+    --color-ink-line: 221 208 188;
+    --color-brass: 150 115 62;
+    --color-brass-bright: 184 146 90;
+    --color-ivory: 33 28 22;
+    --color-ivory-dim: 107 95 78;
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-ink text-ivory font-body antialiased;
+    @apply bg-ink text-ivory font-body antialiased transition-colors duration-200;
   }
   /* Visible keyboard focus everywhere - accessibility floor, not optional */
   :focus-visible {

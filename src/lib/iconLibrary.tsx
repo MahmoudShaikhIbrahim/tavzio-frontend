@@ -9,6 +9,7 @@ export interface IconOption {
   key: string;
   label: string;
   Icon: IconType;
+  brandColor?: string; // real platform color - omitted for generic/utility icons, which stay theme-colored (brass)
 }
 
 // One shared list - the 7 fixed links, custom buttons, and anywhere else
@@ -16,16 +17,16 @@ export interface IconOption {
 // only ever one consistent picker in the whole app, not several
 // different ones with different options.
 export const ICON_LIBRARY: IconOption[] = [
-  { key: 'instagram', label: 'Instagram', Icon: FaInstagram },
-  { key: 'whatsapp', label: 'WhatsApp', Icon: FaWhatsapp },
-  { key: 'tiktok', label: 'TikTok', Icon: FaTiktok },
-  { key: 'facebook', label: 'Facebook', Icon: FaFacebookF },
-  { key: 'google', label: 'Google', Icon: FaGoogle },
-  { key: 'youtube', label: 'YouTube', Icon: FaYoutube },
-  { key: 'twitter', label: 'X / Twitter', Icon: FaTwitter },
-  { key: 'linkedin', label: 'LinkedIn', Icon: FaLinkedin },
-  { key: 'pinterest', label: 'Pinterest', Icon: FaPinterest },
-  { key: 'snapchat', label: 'Snapchat', Icon: FaSnapchatGhost },
+  { key: 'instagram', label: 'Instagram', Icon: FaInstagram, brandColor: '#E4405F' },
+  { key: 'whatsapp', label: 'WhatsApp', Icon: FaWhatsapp, brandColor: '#25D366' },
+  { key: 'tiktok', label: 'TikTok', Icon: FaTiktok, brandColor: '#25F4EE' },
+  { key: 'facebook', label: 'Facebook', Icon: FaFacebookF, brandColor: '#1877F2' },
+  { key: 'google', label: 'Google', Icon: FaGoogle, brandColor: '#4285F4' },
+  { key: 'youtube', label: 'YouTube', Icon: FaYoutube, brandColor: '#FF0000' },
+  { key: 'twitter', label: 'X / Twitter', Icon: FaTwitter, brandColor: '#1DA1F2' },
+  { key: 'linkedin', label: 'LinkedIn', Icon: FaLinkedin, brandColor: '#0A66C2' },
+  { key: 'pinterest', label: 'Pinterest', Icon: FaPinterest, brandColor: '#E60023' },
+  { key: 'snapchat', label: 'Snapchat', Icon: FaSnapchatGhost, brandColor: '#FFFC00' },
   { key: 'globe', label: 'Website / Globe', Icon: FaGlobe },
   { key: 'mapPin', label: 'Location / Directions', Icon: FaMapMarkerAlt },
   { key: 'star', label: 'Star / Review', Icon: FaStar },
@@ -40,8 +41,14 @@ export const ICON_LIBRARY: IconOption[] = [
   { key: 'link', label: 'Generic Link', Icon: FaLink },
 ];
 
-const ICON_MAP: Record<string, IconType> = Object.fromEntries(ICON_LIBRARY.map((o) => [o.key, o.Icon]));
+const ICON_MAP: Record<string, IconOption> = Object.fromEntries(ICON_LIBRARY.map((o) => [o.key, o]));
 
 export function getIcon(key: string | undefined | null): IconType {
-  return (key && ICON_MAP[key]) || FaLink;
+  return (key && ICON_MAP[key]?.Icon) || FaLink;
+}
+
+// Real platform color if this icon has one, otherwise undefined - callers
+// fall back to the theme's brass color when this is undefined.
+export function getIconColor(key: string | undefined | null): string | undefined {
+  return key ? ICON_MAP[key]?.brandColor : undefined;
 }
