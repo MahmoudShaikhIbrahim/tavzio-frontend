@@ -2,14 +2,17 @@ import type { IconType } from 'react-icons';
 // Simple Icons (the `si` set) - unlike FontAwesome's `fa` set, these are
 // built specifically to match each company's real, official brand mark,
 // sourced from their own published brand assets - the actual logo, not a
-// generic icon-font interpretation of it.
+// generic icon-font interpretation of it. LinkedIn is the one exception
+// below - two attempts at its Simple Icons name both failed to match
+// anything in the installed version, so it stays on the FontAwesome
+// version rather than risk a third wrong guess.
 import {
   SiInstagram, SiWhatsapp, SiTiktok, SiFacebook, SiGoogle, SiYoutube,
-  SiX, SiLinkedin, SiPinterest, SiSnapchat,
+  SiX, SiPinterest, SiSnapchat,
 } from 'react-icons/si';
 import {
   FaGlobe, FaMapMarkerAlt, FaStar, FaPhone, FaEnvelope, FaMusic, FaGift,
-  FaHeart, FaTicketAlt, FaCamera, FaShoppingBag, FaLink,
+  FaHeart, FaTicketAlt, FaCamera, FaShoppingBag, FaLink, FaLinkedin,
 } from 'react-icons/fa';
 
 export interface IconOption {
@@ -31,7 +34,7 @@ export const ICON_LIBRARY: IconOption[] = [
   { key: 'google', label: 'Google', Icon: SiGoogle, brandColor: '#4285F4' },
   { key: 'youtube', label: 'YouTube', Icon: SiYoutube, brandColor: '#FF0000' },
   { key: 'twitter', label: 'X / Twitter', Icon: SiX, brandColor: '#1DA1F2' },
-  { key: 'linkedin', label: 'LinkedIn', Icon: SiLinkedin, brandColor: '#0A66C2' },
+  { key: 'linkedin', label: 'LinkedIn', Icon: FaLinkedin, brandColor: '#0A66C2' },
   { key: 'pinterest', label: 'Pinterest', Icon: SiPinterest, brandColor: '#E60023' },
   { key: 'snapchat', label: 'Snapchat', Icon: SiSnapchat, brandColor: '#FFFC00' },
   { key: 'globe', label: 'Website / Globe', Icon: FaGlobe },
