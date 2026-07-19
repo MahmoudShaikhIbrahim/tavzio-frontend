@@ -39,7 +39,7 @@ export default function CardsPage() {
         created by the platform operator, since it's them who physically
         programs the chip.
       </p>
-      <div className="space-y-1.5">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {customerCards.map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
         {customerCards.length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
       </div>

@@ -155,6 +155,7 @@ export interface Profile {
   business_id: string | null;
   is_active: boolean;
   email?: string;
+  theme_preference: 'light' | 'dark' | 'system';
 }
 
 // The full business record as seen by an authenticated admin - a superset

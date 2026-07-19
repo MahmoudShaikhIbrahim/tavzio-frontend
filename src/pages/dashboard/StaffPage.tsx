@@ -32,7 +32,7 @@ export default function StaffPage() {
   return (
     <div className="space-y-6">
       <Section title="Team">
-        <div className="space-y-1.5">
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {staff.map((s) => (
             <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
               <span className="text-ivory">

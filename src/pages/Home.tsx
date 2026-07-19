@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { QrCode, Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
+import { useLiveSystemTheme } from '../lib/ThemeContext';
 
 const WHATSAPP_NUMBER = '971500000000'; // TODO: replace with the real business WhatsApp number before going live
 
@@ -18,10 +19,15 @@ const STEPS = [
 ];
 
 export default function Home() {
+  // A new visitor here has no account, no stored preference - this
+  // should just match their own device's setting, live, never anything
+  // tied to any logged-in account (seeing someone else's theme choice on
+  // a page you've never logged into would make no sense).
+  const theme = useLiveSystemTheme();
   const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to learn more about Tavzio for my business.")}`;
 
   return (
-    <div data-theme="dark" className="min-h-screen bg-ink">
+    <div data-theme={theme} className="min-h-screen bg-ink">
       {/* Header - a real Sign In, visible to everyone. There's nothing
           insecure about that: the login form itself is what checks
           credentials - someone without real access just gets rejected

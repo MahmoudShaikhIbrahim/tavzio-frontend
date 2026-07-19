@@ -2,8 +2,13 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { login, getMe } from '../lib/authApi';
+import { useLiveSystemTheme } from '../lib/ThemeContext';
 
 export default function AdminLogin() {
+  // Same reasoning as the marketing homepage - nobody's logged in yet
+  // here, so this follows the visitor's own device setting live, never
+  // any stored account preference.
+  const theme = useLiveSystemTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +31,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div data-theme="dark" className="flex min-h-screen items-center justify-center bg-ink px-6">
+    <div data-theme={theme} className="flex min-h-screen items-center justify-center bg-ink px-6">
       <div className="w-full max-w-sm">
         <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</p>
         <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>

@@ -5,13 +5,14 @@ const CYCLE: ThemeMode[] = ['dark', 'light', 'system'];
 const ICONS: Record<ThemeMode, typeof Sun> = { dark: Moon, light: Sun, system: MonitorSmartphone };
 const LABELS: Record<ThemeMode, string> = { dark: 'Dark', light: 'Light', system: 'System' };
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ onChange }: { onChange?: (mode: ThemeMode) => void }) {
   const { mode, setMode } = useTheme();
   const Icon = ICONS[mode];
 
   function cycle() {
     const next = CYCLE[(CYCLE.indexOf(mode) + 1) % CYCLE.length];
     setMode(next);
+    onChange?.(next);
   }
 
   return (

@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
-import { getInbox } from '../../lib/authApi';
+import { getInbox, updateMyTheme } from '../../lib/authApi';
 import ThemeToggle from '../../components/ThemeToggle';
+import { useTheme } from '../../lib/ThemeContext';
 
 export default function SuperAdminLayout() {
   const { user, logout } = useSession();
   const location = useLocation();
   const [unreadTotal, setUnreadTotal] = useState(0);
+  const { setMode } = useTheme();
+
+  useEffect(() => {
+    if (user?.theme_preference) setMode(user.theme_preference);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.theme_preference]);
 
   useEffect(() => {
     getInbox().then((threads) => setUnreadTotal(threads.reduce((sum, t) => sum + t.unreadCount, 0)));
@@ -16,7 +23,7 @@ export default function SuperAdminLayout() {
   return (
     <div className="min-h-screen bg-ink">
       <header className="border-b border-ink-line">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-6">
             <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio · Platform</span>
             <nav className="flex gap-4 text-base">
@@ -40,13 +47,13 @@ export default function SuperAdminLayout() {
             </nav>
           </div>
           <div className="flex items-center gap-4 text-base text-ivory-dim">
-            <ThemeToggle />
+            <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name}</span>
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-5 py-8">
         <Outlet />
       </main>
     </div>

@@ -11,8 +11,21 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'tavzio_theme';
 
-function getSystemPreference(): 'light' | 'dark' {
+export function getSystemPreference(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+export function useLiveSystemTheme(): 'light' | 'dark' {
+  const [theme, setTheme] = useState<'light' | 'dark'>(getSystemPreference);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => setTheme(getSystemPreference());
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  return theme;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

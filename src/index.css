@@ -25,6 +25,20 @@
     --color-warning: 250 204 21;
   }
 
+  [data-theme='dark'] {
+    --color-ink: 20 17 15;
+    --color-ink-soft: 31 26 21;
+    --color-ink-line: 51 43 35;
+    --color-brass: 184 146 90;
+    --color-brass-bright: 217 180 127;
+    --color-ivory: 244 238 227;
+    --color-ivory-dim: 167 154 135;
+    --color-danger: 248 113 113;
+    --color-success: 74 222 128;
+    --color-info: 96 165 250;
+    --color-warning: 250 204 21;
+  }
+
   [data-theme='light'] {
     --color-ink: 247 243 236;
     --color-ink-soft: 239 230 214;

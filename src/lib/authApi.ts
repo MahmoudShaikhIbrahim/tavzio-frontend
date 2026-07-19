@@ -30,6 +30,16 @@ export function getMe() {
   return authFetch<Profile>('/api/auth/me');
 }
 
+// Ties theme to the actual logged-in account, not just this browser -
+// switches to the account's own saved preference the moment they log in,
+// and follows them to any other device they use.
+export function updateMyTheme(theme: 'light' | 'dark' | 'system') {
+  return authFetch<Profile>('/api/auth/theme', {
+    method: 'PATCH',
+    body: JSON.stringify({ theme }),
+  });
+}
+
 // --- Business onboarding (super_admin) ---
 
 export interface RegisterBusinessPayload {
