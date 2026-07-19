@@ -247,16 +247,18 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
   return (
     <Section title="Business profile">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Name">
-          <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-        </Field>
+        <div className="flex flex-wrap gap-4">
+          <Field label="Name">
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-64 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
+          </Field>
+          <Field label="Category">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-48 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass">
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Field>
+        </div>
         <Field label="Description">
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} className={inputClass} />
-        </Field>
-        <Field label="Category">
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} className={`${inputClass} max-w-2xl`} />
         </Field>
 
         <ImageUploadField label="Logo" businessId={businessId} kind="logo" value={logoUrl} onUploaded={setLogoUrl} />
@@ -352,70 +354,69 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         page in this order. Rename it, pick an icon, or upload your own
         image for it. Add more of your own further below.
       </p>
-      <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
         {LINK_ORDER.map((key) => {
           const meta = LINK_META[key];
           const cfg = links[key];
           const SelectedIcon = getIcon(cfg.icon || meta.defaultIcon);
           const selectedColor = getIconColor(cfg.icon || meta.defaultIcon);
           return (
-            <div key={key} className="space-y-4 rounded-xl border border-ink-line p-5">
+            <div key={key} className="space-y-3 rounded-xl border border-ink-line p-4">
               {/* Identity - what this button is and whether it's live */}
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => toggleEnabled(key)}
-                  className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                  className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
                 >
                   {cfg.enabled ? 'On' : 'Off'}
                 </button>
                 {cfg.imageUrl ? (
-                  <img src={cfg.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-full border border-ink-line object-cover" />
+                  <img src={cfg.imageUrl} alt="" className="h-9 w-9 shrink-0 rounded-full border border-ink-line object-cover" />
                 ) : (
                   <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
                     style={selectedColor ? { color: selectedColor, borderColor: `${selectedColor}66` } : undefined}
                   >
-                    <SelectedIcon size={18} />
+                    <SelectedIcon size={16} />
                   </span>
                 )}
                 <input
                   value={cfg.label ?? meta.label}
                   onChange={(e) => updateLabel(key, e.target.value)}
-                  className={`${inputClass} flex-1`}
+                  className="min-w-0 flex-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
                   placeholder="Button label"
                 />
               </div>
 
-              {/* Appearance - icon or a real uploaded image, its own clear row */}
-              <div className="flex flex-wrap items-center gap-3 border-t border-ink-line pt-4">
-                <span className="text-sm text-ivory-dim">Icon</span>
+              {/* Appearance - sized to their own content, wraps naturally on narrow screens */}
+              <div className="flex flex-wrap items-center gap-2 border-t border-ink-line pt-3">
                 <select
                   value={cfg.icon || meta.defaultIcon}
                   onChange={(e) => updateIcon(key, e.target.value)}
-                  className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
+                  className="w-auto rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
                 >
                   {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
                 <span className="text-sm text-ivory-dim">or</span>
-                <label className="cursor-pointer rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim hover:border-brass/60 hover:text-ivory">
-                  Upload your own image
+                <label className="w-auto cursor-pointer rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/60 hover:text-ivory">
+                  Upload image
                   <input type="file" accept="image/*" onChange={(e) => handleImageUpload(key, e)} className="hidden" />
                 </label>
                 {cfg.imageUrl && (
-                  <button type="button" onClick={() => updateImage(key, null)} className="text-sm text-danger hover:underline">
-                    Remove image
+                  <button type="button" onClick={() => updateImage(key, null)} className="w-auto text-sm text-danger hover:underline">
+                    Remove
                   </button>
                 )}
               </div>
 
-              {/* The actual destination - full width, its own clear row */}
-              <div className="border-t border-ink-line pt-4">
+              {/* The actual destination - sized to what's realistic for a phone number or URL, not stretched */}
+              <div className="border-t border-ink-line pt-3">
                 <input
                   value={cfg.value}
                   onChange={(e) => updateValue(key, e.target.value)}
                   placeholder={key === 'whatsapp' ? 'WhatsApp number, e.g. 971501234567' : 'https://...'}
-                  className={`${inputClass} w-full`}
+                  className="w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
                 />
               </div>
             </div>

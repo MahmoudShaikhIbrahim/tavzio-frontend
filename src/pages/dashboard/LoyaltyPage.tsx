@@ -135,7 +135,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
 
   return (
     <Section title="Loyalty program">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="How it's earned">
             <select value={earnMethod} onChange={(e) => setEarnMethod(e.target.value as LoyaltyEarnMethod)} className={inputClass}>

@@ -146,7 +146,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
+    <form onSubmit={handleSubmit} className="mb-3 max-w-xl space-y-3 rounded-lg border border-ink-line p-3">
       <div className="flex items-center gap-3">
         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-ink-line bg-ink">
           {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}

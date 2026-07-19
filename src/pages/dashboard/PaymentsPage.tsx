@@ -175,7 +175,7 @@ function TapPaymentsSetup({ businessId }: { businessId: string }) {
           Status: <span className={integration.status === 'connected' ? 'text-success' : 'text-ivory-dim'}>{integration.status}</span>
         </p>
       )}
-      <div className="space-y-3 rounded-lg border border-ink-line p-3">
+      <div className="max-w-lg space-y-3 rounded-lg border border-ink-line p-3">
         <Field label="Tap secret key">
           <input
             value={secretKey}

@@ -58,7 +58,7 @@ export default function CreateBusiness() {
         once you issue one, on the business's page after this.
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-4">
         <Field label="Owner's full name">
           <input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputClass} />
         </Field>
