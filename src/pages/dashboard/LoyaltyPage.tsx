@@ -35,7 +35,7 @@ export default function LoyaltyPage() {
 
   return (
     <div className="space-y-6">
-      <ProgramConfigForm businessId={businessId} program={program} onSaved={setProgram} />
+      <ProgramConfigForm key={program?.id || 'new'} businessId={businessId} program={program} onSaved={setProgram} />
 
       {program && (
         <Section title="Members">
@@ -164,20 +164,20 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
             <>
               <Field label="Currency"><input value={currency} onChange={(e) => setCurrency(e.target.value)} className={inputClass} /></Field>
               {structure === 'threshold' && (
-                <Field label="Threshold amount"><input type="number" min={1} value={thresholdAmount} onChange={(e) => setThresholdAmount(Number(e.target.value))} className={inputClass} /></Field>
+                <Field label="Threshold amount"><input type="number" onFocus={(e) => e.target.select()} min={1} value={thresholdAmount} onChange={(e) => setThresholdAmount(Number(e.target.value))} className={inputClass} /></Field>
               )}
             </>
           )}
           {earnMethod === 'visit' && usePoints && (
             <>
-              <Field label="Points per visit"><input type="number" min={1} value={pointsPerVisit} onChange={(e) => setPointsPerVisit(Number(e.target.value))} className={inputClass} /></Field>
+              <Field label="Points per visit"><input type="number" onFocus={(e) => e.target.select()} min={1} value={pointsPerVisit} onChange={(e) => setPointsPerVisit(Number(e.target.value))} className={inputClass} /></Field>
               {structure === 'threshold' && (
-                <Field label="Redeem threshold"><input type="number" min={1} value={redeemThreshold} onChange={(e) => setRedeemThreshold(Number(e.target.value))} className={inputClass} /></Field>
+                <Field label="Redeem threshold"><input type="number" onFocus={(e) => e.target.select()} min={1} value={redeemThreshold} onChange={(e) => setRedeemThreshold(Number(e.target.value))} className={inputClass} /></Field>
               )}
             </>
           )}
           {earnMethod === 'visit' && !usePoints && structure === 'threshold' && (
-            <Field label="Visits required"><input type="number" min={1} value={visitsRequired} onChange={(e) => setVisitsRequired(Number(e.target.value))} className={inputClass} /></Field>
+            <Field label="Visits required"><input type="number" onFocus={(e) => e.target.select()} min={1} value={visitsRequired} onChange={(e) => setVisitsRequired(Number(e.target.value))} className={inputClass} /></Field>
           )}
         </div>
 
@@ -191,7 +191,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
             </Field>
             {rewardType !== 'manual' && (
               <Field label={rewardType === 'percentage' ? 'Percentage (%)' : `Amount (${currency || 'AED'})`}>
-                <input type="number" min={0} value={rewardValue} onChange={(e) => setRewardValue(Number(e.target.value))} className={inputClass} />
+                <input type="number" onFocus={(e) => e.target.select()} min={0} value={rewardValue} onChange={(e) => setRewardValue(Number(e.target.value))} className={inputClass} />
               </Field>
             )}
             <Field label="Description (shown to customer & staff)">
@@ -214,7 +214,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
                       <input value={tier.name} onChange={(e) => updateTier(i, { name: e.target.value })} placeholder="Silver" className={`${inputClass} w-32`} />
                     </Field>
                     <Field label={`Threshold (${measureLabel})`}>
-                      <input type="number" min={1} value={tier.threshold} onChange={(e) => updateTier(i, { threshold: Number(e.target.value) })} className={`${inputClass} w-28`} />
+                      <input type="number" onFocus={(e) => e.target.select()} min={1} value={tier.threshold} onChange={(e) => updateTier(i, { threshold: Number(e.target.value) })} className={`${inputClass} w-28`} />
                     </Field>
                     <button type="button" onClick={() => removeTier(i)} className="mb-0.5 shrink-0 rounded-lg border border-danger/40 px-3 py-2.5 text-base text-danger hover:bg-danger/10">
                       Remove
@@ -228,7 +228,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
                     </Field>
                     {tier.rewardType !== 'manual' && (
                       <Field label={tier.rewardType === 'percentage' ? 'Percentage (%)' : 'Amount'}>
-                        <input type="number" min={0} value={tier.rewardValue} onChange={(e) => updateTier(i, { rewardValue: Number(e.target.value) })} className={inputClass} />
+                        <input type="number" onFocus={(e) => e.target.select()} min={0} value={tier.rewardValue} onChange={(e) => updateTier(i, { rewardValue: Number(e.target.value) })} className={inputClass} />
                       </Field>
                     )}
                     <Field label="Description">
@@ -255,7 +255,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
                 <option value="custom">Custom</option>
               </select>
               {cooldownType === 'custom' && (
-                <input type="number" min={1} value={cooldownHours} onChange={(e) => setCooldownHours(Number(e.target.value))} placeholder="Hours" className={`${inputClass} w-28`} />
+                <input type="number" onFocus={(e) => e.target.select()} min={1} value={cooldownHours} onChange={(e) => setCooldownHours(Number(e.target.value))} placeholder="Hours" className={`${inputClass} w-28`} />
               )}
             </div>
             <p className="mt-1 text-base text-ivory-dim">
@@ -342,9 +342,9 @@ function AdjustForm({ businessId, membershipId, program, onDone }: {
 
   return (
     <form onSubmit={submit} className="mt-2.5 flex flex-wrap items-end gap-2 border-t border-ink-line pt-2.5">
-      {isSpend && <Field label="+ Spend"><input type="number" value={spendAmount} onChange={(e) => setSpendAmount(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
-      {isPoints && <Field label="± Points"><input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
-      {!isSpend && !isPoints && <Field label="± Visits"><input type="number" value={visits} onChange={(e) => setVisits(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
+      {isSpend && <Field label="+ Spend"><input type="number" onFocus={(e) => e.target.select()} value={spendAmount} onChange={(e) => setSpendAmount(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
+      {isPoints && <Field label="± Points"><input type="number" onFocus={(e) => e.target.select()} value={points} onChange={(e) => setPoints(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
+      {!isSpend && !isPoints && <Field label="± Visits"><input type="number" onFocus={(e) => e.target.select()} value={visits} onChange={(e) => setVisits(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
       <Field label="Note"><input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} /></Field>
       <PrimaryButton>Apply</PrimaryButton>
     </form>

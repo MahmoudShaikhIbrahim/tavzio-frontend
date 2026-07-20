@@ -159,7 +159,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-        <Field label="Price"><input type="number" step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label="Price"><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
       </div>
       <Field label="Description">
         <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
@@ -241,7 +241,7 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
       {addons.length === 0 && <p className="text-base text-ivory-dim">No add-ons yet.</p>}
       <form onSubmit={handleAdd} className="flex gap-2 pt-1">
         <input placeholder="e.g. Extra cheese" value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} flex-1`} />
-        <input type="number" step="0.01" min={0} placeholder="Price" value={price} onChange={(e) => setPrice(Number(e.target.value))} className={`${inputClass} w-24`} />
+        <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} placeholder="Price" value={price} onChange={(e) => setPrice(Number(e.target.value))} className={`${inputClass} w-24`} />
         <PrimaryButton>Add</PrimaryButton>
       </form>
     </div>

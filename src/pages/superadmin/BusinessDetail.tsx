@@ -533,7 +533,7 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
 
   return (
     <form onSubmit={submit} className="flex gap-2 border-t border-ink-line pt-3">
-      <input type="number" min={1} max={100} value={count} onChange={(e) => setCount(Number(e.target.value))}
+      <input type="number" onFocus={(e) => e.target.select()} min={1} max={100} value={count} onChange={(e) => setCount(Number(e.target.value))}
         className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Label (e.g. Table 4)" value={label} onChange={(e) => setLabel(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />

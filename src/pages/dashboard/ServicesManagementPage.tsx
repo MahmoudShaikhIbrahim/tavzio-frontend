@@ -65,8 +65,8 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
     <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
       <div className="grid grid-cols-3 gap-3">
         <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-        <Field label="Price"><input type="number" step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
-        <Field label="Duration (min)"><input type="number" min={5} step={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label="Price"><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label="Duration (min)"><input type="number" onFocus={(e) => e.target.select()} min={5} step={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className={inputClass} /></Field>
       </div>
       <Field label="Description">
         <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />

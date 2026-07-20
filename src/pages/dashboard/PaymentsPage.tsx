@@ -107,7 +107,7 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
         <div className="mt-2 space-y-2 border-t border-ink-line pt-2">
           <div className="flex gap-2">
             <input
-              type="number"
+              type="number" onFocus={(e) => e.target.select()}
               step="0.01"
               min={0}
               max={Number(payment.amount) + Number(payment.tip_amount)}
