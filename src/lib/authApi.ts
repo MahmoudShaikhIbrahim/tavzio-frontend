@@ -382,7 +382,7 @@ export function getPaymentIntegration(businessId: string) {
   return authFetch<PosIntegration | null>(`/api/businesses/${businessId}/payment-integration`);
 }
 
-export function upsertPaymentIntegration(businessId: string, enabled: boolean, config: Record<string, string | boolean>) {
+export function upsertPaymentIntegration(businessId: string, enabled: boolean, config: Record<string, unknown>) {
   return authFetch<PosIntegration>(`/api/businesses/${businessId}/payment-integration`, {
     method: 'PUT',
     body: JSON.stringify({ enabled, config }),
