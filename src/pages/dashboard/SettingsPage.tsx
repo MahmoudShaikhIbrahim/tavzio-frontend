@@ -153,7 +153,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   const brandColor = getIconColor(button.icon);
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
       <span className="flex items-center gap-2 text-ivory">
         {button.image_url ? (
           <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />
@@ -211,7 +211,7 @@ function ImageUploadField({ label, businessId, kind, value, onUploaded }: {
           />
         )}
         <div className="flex-1">
-          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-3.5 py-2 text-base text-ivory-dim hover:text-ivory">
+          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim hover:text-ivory">
             {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
             <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
           </label>
@@ -390,7 +390,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
               </div>
 
               {/* Appearance - sized to their own content, wraps naturally on narrow screens */}
-              <div className="flex flex-wrap items-center gap-2 border-t border-ink-line pt-3">
+              <div className="flex flex-wrap items-center gap-2.5 border-t border-ink-line pt-4">
                 <select
                   value={cfg.icon || meta.defaultIcon}
                   onChange={(e) => updateIcon(key, e.target.value)}
@@ -434,7 +434,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         ) : (
           <button
             onClick={() => setShowAddForm(true)}
-            className="mt-2 rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10"
+            className="mt-2 rounded-lg border border-brass/40 px-4 py-3 text-base text-brass hover:bg-brass/10"
           >
             + Add another link
           </button>

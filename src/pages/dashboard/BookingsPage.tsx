@@ -76,7 +76,7 @@ function Group({ title, bookings, businessId, onChange }: {
   return (
     <div>
       <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">{title}</h2>
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} onChange={onChange} />)}
       </div>
     </div>

@@ -223,7 +223,7 @@ export function createMenuCategory(businessId: string, name: string, sortOrder =
   });
 }
 
-export function updateMenuCategory(businessId: string, categoryId: string, payload: { name?: string; sortOrder?: number }) {
+export function updateMenuCategory(businessId: string, categoryId: string, payload: { name?: string; sortOrder?: number; paused?: boolean }) {
   return authFetch<MenuCategory>(`/api/businesses/${businessId}/menu/categories/${categoryId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),

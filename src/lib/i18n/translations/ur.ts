@@ -3,7 +3,7 @@ import type { TranslationDict } from '../types';
 export const ur: TranslationDict = {
   poweredBy: 'Tavzio کی مدد سے',
 
-  orderNow: 'ابھی آرڈر کریں',
+  orderNow: 'مینو',
   bookAppointment: 'اپائنٹمنٹ بک کریں',
   payBill: 'بل ادا کریں',
   callWaiter: 'ویٹر کو بلائیں',
@@ -33,6 +33,7 @@ export const ur: TranslationDict = {
 
   menu: 'مینو',
   menuNotAvailable: 'مینو دستیاب نہیں ہے',
+  unavailable: 'دستیاب نہیں',
   menuNotAvailableDesc: 'اس کاروبار نے ابھی آرڈرنگ سیٹ اپ نہیں کی ہے۔',
   orderSent: 'آرڈر بھیج دیا گیا',
   orderSentDesc: 'آپ کا آرڈر باورچی خانے کی طرف جا رہا ہے۔',

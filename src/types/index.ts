@@ -114,6 +114,7 @@ export interface Business {
   features: BusinessFeatures;
   loyaltyProgram: LoyaltyProgram | null;
   paymentEnabled: boolean;
+  paymentProvider: string;
   customButtons: CustomButton[];
 }
 
@@ -173,6 +174,7 @@ export interface AdminBusiness {
   theme: { darkMode: boolean; accentColor: string };
   status: 'active' | 'suspended' | 'pending';
   features: BusinessFeatures;
+  ordering_paused: boolean;
   notification_settings: NotificationSettings;
   created_at: string;
 }
@@ -255,6 +257,7 @@ export interface MenuCategory {
   business_id: string;
   name: string;
   sort_order: number;
+  paused: boolean;
 }
 
 export interface MenuItemAddon {

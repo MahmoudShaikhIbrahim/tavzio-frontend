@@ -87,17 +87,17 @@ function BookingPageContent({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-md px-5 pt-8 pb-16">
+      <div className="mx-auto max-w-md px-6 pt-10 pb-16">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('bookAppointment')}</h1>
           <LanguageSwitcher />
         </div>
-        <div className="mt-6 space-y-2">
+        <div className="mt-6 space-y-3">
           {services.map((service) => (
             <button
               key={service.id}
               onClick={() => setSelected(service)}
-              className="flex w-full items-center justify-between rounded-xl border border-ink-line bg-ink-soft px-4 py-3.5 text-start"
+              className="flex w-full items-center justify-between rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start"
             >
               <div>
                 <p className="font-body text-[15px] font-medium text-ivory">{service.name}</p>
@@ -143,7 +143,7 @@ function BookingForm({ slug, service, tapEventId, onBack, onConfirmed }: {
 
   return (
     <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-md px-5 pt-8 pb-16">
+      <div className="mx-auto max-w-md px-6 pt-10 pb-16">
         <div className="flex items-center justify-between">
           <button onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
           <LanguageSwitcher />

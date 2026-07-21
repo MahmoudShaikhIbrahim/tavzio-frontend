@@ -3,7 +3,7 @@ import type { TranslationDict } from '../types';
 export const zh: TranslationDict = {
   poweredBy: '由 Tavzio 提供支持',
 
-  orderNow: '立即点餐',
+  orderNow: '菜单',
   bookAppointment: '预约',
   payBill: '支付账单',
   callWaiter: '呼叫服务员',
@@ -33,6 +33,7 @@ export const zh: TranslationDict = {
 
   menu: '菜单',
   menuNotAvailable: '菜单暂不可用',
+  unavailable: '暂不可用',
   menuNotAvailableDesc: '该商家尚未开通点餐功能。',
   orderSent: '订单已发送',
   orderSentDesc: '您的订单正在送往厨房。',

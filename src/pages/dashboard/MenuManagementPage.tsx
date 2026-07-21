@@ -1,17 +1,18 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent, useRef } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listMenuCategories, createMenuCategory, deleteMenuCategory,
+  listMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
   listMenuItems, createMenuItem, updateMenuItem, deleteMenuItem,
-  listAddons, createAddon, deleteAddon,
+  listAddons, createAddon, deleteAddon, getBusiness, updateBusiness,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
-import type { MenuCategory, MenuItem, MenuItemAddon } from '../../types';
+import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 
 export default function MenuManagementPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
+  const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
 
@@ -19,14 +20,37 @@ export default function MenuManagementPage() {
     if (!businessId) return;
     listMenuCategories(businessId).then(setCategories);
     listMenuItems(businessId).then(setItems);
+    getBusiness(businessId).then(setBusiness);
   }
 
   useEffect(reload, [businessId]);
 
-  if (!businessId) return null;
+  if (!businessId || !business) return null;
+
+  async function togglePauseAll() {
+    const updated = await updateBusiness(businessId!, { orderingPaused: !business!.ordering_paused } as Partial<AdminBusiness>);
+    setBusiness(updated);
+  }
 
   return (
     <div className="space-y-6">
+      <Section title="Ordering status">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-base text-ivory">Pause all ordering</p>
+            <p className="text-sm text-ivory-dim">
+              Turns every item on the customer menu grayed-out and un-orderable, all at once — for when the
+              kitchen's closed or too busy, without touching each item individually.
+            </p>
+          </div>
+          <button
+            onClick={togglePauseAll}
+            className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
+          >
+            {business.ordering_paused ? 'Paused — tap to resume' : 'Ordering is open'}
+          </button>
+        </div>
+      </Section>
       <CategoriesSection businessId={businessId} categories={categories} onChange={reload} />
       <ItemsSection businessId={businessId} categories={categories} items={items} onChange={reload} />
     </div>
@@ -50,16 +74,24 @@ function CategoriesSection({ businessId, categories, onChange }: {
 
   return (
     <Section title="Categories">
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {categories.map((c) => (
-          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
             <span className="text-ivory">{c.name}</span>
-            <ActionButton danger onClick={() => deleteMenuCategory(businessId, c.id).then(onChange)}>Remove</ActionButton>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => updateMenuCategory(businessId, c.id, { paused: !c.paused }).then(onChange)}
+                className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
+              >
+                {c.paused ? 'Paused' : 'Orderable'}
+              </button>
+              <ActionButton danger onClick={() => deleteMenuCategory(businessId, c.id).then(onChange)}>Remove</ActionButton>
+            </div>
           </div>
         ))}
         {categories.length === 0 && <p className="text-base text-ivory-dim">No categories yet — items can also exist without one.</p>}
       </div>
-      <form onSubmit={handleAdd} className="flex gap-2 border-t border-ink-line pt-3">
+      <form onSubmit={handleAdd} className="flex gap-2.5 border-t border-ink-line pt-4">
         <input placeholder="e.g. Starters" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         <PrimaryButton disabled={saving}>{saving ? 'Adding...' : 'Add category'}</PrimaryButton>
       </form>
@@ -91,7 +123,7 @@ function ItemsSection({ businessId, categories, items, onChange }: {
           onDone={() => { setShowForm(false); onChange(); }}
         />
       )}
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {items.map((item) => (
           <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onChange={onChange} />
         ))}
@@ -152,7 +184,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
           {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}
         </div>
         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
-          className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
+          className="rounded-lg border border-brass/40 px-4 py-3 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
           {imageUrl ? 'Change photo' : 'Add photo'}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />

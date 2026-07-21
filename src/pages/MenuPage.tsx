@@ -17,10 +17,11 @@ export default function MenuPage() {
 }
 
 function MenuPageContent({ slug }: { slug: string }) {
-  const { t, isRtl } = useLanguage();
+  const { language, t, isRtl } = useLanguage();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [orderingPaused, setOrderingPaused] = useState(false);
   const [submissionEnabled, setSubmissionEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -38,16 +39,45 @@ function MenuPageContent({ slug }: { slug: string }) {
     return stored ? Number(stored) : null;
   })();
 
+  function isOrderable(item: MenuItem): boolean {
+    if (orderingPaused) return false;
+    if (!item.is_available) return false;
+    const category = categories.find((c) => c.id === item.category_id);
+    if (category?.paused) return false;
+    return true;
+  }
+
   useEffect(() => {
-    getMenu(slug)
-      .then((res) => {
-        setCategories(res.categories);
-        setItems(res.items);
-        setSubmissionEnabled(res.submissionEnabled);
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
-  }, [slug]);
+    function fetchMenu() {
+      getMenu(slug, language)
+        .then((res) => {
+          setCategories(res.categories);
+          setItems(res.items);
+          setOrderingPaused(res.orderingPaused);
+          setSubmissionEnabled(res.submissionEnabled);
+
+          // Drop anything now unavailable straight out of the cart -
+          // a customer should never be able to submit an order for
+          // something that went sold-out while they were still browsing.
+          const unavailableIds = new Set(
+            res.items
+              .filter((i) => !i.is_available || res.orderingPaused || res.categories.find((c) => c.id === i.category_id)?.paused)
+              .map((i) => i.id)
+          );
+          if (unavailableIds.size > 0) cart.removeByMenuItemIds(unavailableIds);
+        })
+        .catch(() => setNotFound(true))
+        .finally(() => setLoading(false));
+    }
+
+    fetchMenu();
+    // Periodic refresh, not just on load - catches an item, category, or
+    // the whole business getting paused while a customer is still on
+    // this page, not just on their next visit.
+    const interval = setInterval(fetchMenu, 20000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, language]);
 
   async function handleSubmitOrder() {
     if (!tapEventId || cart.lines.length === 0) return;
@@ -112,7 +142,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       return (
         <div
           key={item.id}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-line bg-ink-soft px-4 py-3.5 text-start"
+          className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start"
         >
           {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
           <div className="flex-1">
@@ -123,17 +153,22 @@ function MenuPageContent({ slug }: { slug: string }) {
         </div>
       );
     }
+    const orderable = isOrderable(item);
     return (
       <button
         key={item.id}
-        onClick={() => setActiveItem(item)}
-        className="flex w-full items-center gap-3 justify-between rounded-xl border border-ink-line bg-ink-soft px-4 py-3.5 text-start"
+        onClick={() => orderable && setActiveItem(item)}
+        disabled={!orderable}
+        className={`flex w-full items-center gap-4 justify-between rounded-xl border px-5 py-4 text-start ${
+          orderable ? 'border-ink-line bg-ink-soft' : 'cursor-not-allowed border-ink-line bg-ink-soft/40 opacity-60'
+        }`}
       >
         {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
         <div className="flex-1">
           <p className="font-body text-[15px] font-medium text-ivory">{item.name}</p>
           {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{item.description}</p>}
-          {(item.addons && item.addons.length > 0) && <p className="mt-0.5 text-xs text-brass/70">{t('addonsAvailable')}</p>}
+          {orderable && (item.addons && item.addons.length > 0) && <p className="mt-0.5 text-xs text-brass/70">{t('addonsAvailable')}</p>}
+          {!orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}
         </div>
         <span className="shrink-0 ps-3 text-sm text-brass">{item.price.toFixed(2)}</span>
       </button>
@@ -145,7 +180,7 @@ function MenuPageContent({ slug }: { slug: string }) {
 
   return (
     <div className={`min-h-screen bg-ink ${submissionEnabled ? 'pb-32' : 'pb-16'}`} dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-md px-5 pt-8">
+      <div className="mx-auto max-w-md px-6 pt-10">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('menu')}</h1>
           <LanguageSwitcher />
@@ -157,7 +192,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           return (
             <div key={cat.id} className="mt-6">
               <h2 className="font-mono text-[11px] uppercase tracking-wider text-brass">{cat.name}</h2>
-              <div className="mt-2 space-y-2">
+              <div className="mt-2 space-y-3">
                 {catItems.map(renderItem)}
               </div>
             </div>
@@ -165,7 +200,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         })}
 
         {items.some((i) => !i.category_id) && (
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 space-y-3">
             {items.filter((i) => !i.category_id).map(renderItem)}
           </div>
         )}

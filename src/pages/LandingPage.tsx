@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Business } from '../types';
 import { getBusiness } from '../lib/api';
@@ -26,7 +26,11 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!slug) return;
-    getBusiness(slug)
+    // Matches LanguageProvider's own initial-language logic exactly, so
+    // the very first fetch already comes back in whatever language this
+    // visitor last used on this specific business.
+    const savedLang = localStorage.getItem(`tavzio_lang_${slug}`) || 'en';
+    getBusiness(slug, savedLang)
       .then(setBusiness)
       .catch(() => setNotFound(true));
   }, [slug]);
@@ -36,13 +40,29 @@ export default function LandingPage() {
 
   return (
     <LanguageProvider slug={slug}>
-      <LandingPageContent business={business} tapEventId={tapEventId} />
+      <LandingPageContent business={business} tapEventId={tapEventId} slug={slug} onBusinessUpdate={setBusiness} />
     </LanguageProvider>
   );
 }
 
-function LandingPageContent({ business, tapEventId }: { business: Business; tapEventId: number | null }) {
-  const { t, isRtl } = useLanguage();
+function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
+  business: Business; tapEventId: number | null; slug: string; onBusinessUpdate: (b: Business) => void;
+}) {
+  const { language, t, isRtl } = useLanguage();
+
+  // Re-fetch with the new language whenever the customer actually
+  // switches - skips the very first render, since the outer component
+  // already fetched using the correct saved language before this even
+  // mounted.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    getBusiness(slug, language).then(onBusinessUpdate).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
   // The 7 plain external-link buttons - Menu/Book/Call Waiter/Request Bill
   // are NOT part of this list anymore, they're rendered separately by

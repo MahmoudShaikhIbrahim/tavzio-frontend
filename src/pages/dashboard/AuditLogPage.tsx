@@ -56,7 +56,7 @@ export default function AuditLogPage() {
         Every void, refund, staff-placed order, and card deletion — who did
         it, and when. Not a general activity feed by design.
       </p>
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {entries.map((e) => {
           const { label, description } = describeAction(e);
           return (

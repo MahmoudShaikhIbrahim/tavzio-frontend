@@ -112,7 +112,7 @@ export default function BusinessDetail() {
           excluded here, since they no longer serve any function and don't
           belong in a list of physical table cards. */}
       <Section title={`Table / customer cards (${cards.filter((c) => !c.linked_user_id).length})`}>
-        <div className="space-y-1.5">
+        <div className="space-y-2.5">
           {cards.filter((c) => !c.linked_user_id).map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
           {cards.filter((c) => !c.linked_user_id).length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
         </div>
@@ -139,7 +139,7 @@ function ActionButton({ children, onClick, disabled, danger }: { children: React
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
+      className={`rounded-lg border px-4 py-3 text-base disabled:opacity-50 ${
         danger ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
       }`}
     >
@@ -160,7 +160,7 @@ function ToggleRow({ label, description, checked, onChange, disabled }: {
       <button
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`shrink-0 rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
+        className={`shrink-0 rounded-lg border px-4 py-3 text-base disabled:opacity-50 ${
           checked ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
         }`}
       >
@@ -402,7 +402,7 @@ function CustomButtonsSection({ businessId }: { businessId: string }) {
         icon, and link. Owner and staff can manage these too.
       </p>
       {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {buttons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reload} />)}
         {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
       </div>
@@ -451,7 +451,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
       <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
       <div className="flex items-center gap-2">
         <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
@@ -468,9 +468,9 @@ function StaffTable({ staff, businessId, onChange, busy, setBusy }: {
   staff: StaffMember[]; businessId: string; onChange: () => void; busy: boolean; setBusy: (b: boolean) => void;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2.5">
       {staff.map((s) => (
-        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
           <span className="text-ivory">{s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span></span>
           <button
             disabled={busy}
@@ -510,7 +510,7 @@ function InviteStaffForm({ businessId, onDone }: { businessId: string; onDone: (
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-3.5 py-2 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink disabled:opacity-50">
         Add staff
       </button>
     </form>
@@ -532,12 +532,12 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2 border-t border-ink-line pt-3">
+    <form onSubmit={submit} className="flex gap-2.5 border-t border-ink-line pt-4">
       <input type="number" onFocus={(e) => e.target.select()} min={1} max={100} value={count} onChange={(e) => setCount(Number(e.target.value))}
         className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Label (e.g. Table 4)" value={label} onChange={(e) => setLabel(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-3.5 py-2 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink disabled:opacity-50">
         Add
       </button>
     </form>
@@ -563,7 +563,7 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-3.5 py-2 text-base">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-4 py-3 text-base">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {editing ? (
           <>

@@ -38,7 +38,7 @@ export default function BusinessesList() {
         placeholder="Search by name..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mt-5 w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2 text-base
+        className="mt-5 w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base
                    text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
       />
 

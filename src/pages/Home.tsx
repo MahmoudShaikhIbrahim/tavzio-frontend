@@ -32,7 +32,7 @@ export default function Home() {
           insecure about that: the login form itself is what checks
           credentials - someone without real access just gets rejected
           there, same as any normal website. */}
-      <div className="flex items-center justify-between border-b border-ink-line px-6 py-4">
+      <div className="flex items-center justify-between border-b border-ink-line px-8 py-5">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full border border-brass/60">
             <span className="font-display text-sm text-brass">T</span>

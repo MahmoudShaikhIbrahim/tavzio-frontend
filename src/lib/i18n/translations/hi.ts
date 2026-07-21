@@ -3,7 +3,7 @@ import type { TranslationDict } from '../types';
 export const hi: TranslationDict = {
   poweredBy: 'Tavzio द्वारा संचालित',
 
-  orderNow: 'अभी ऑर्डर करें',
+  orderNow: 'मेन्यू',
   bookAppointment: 'अपॉइंटमेंट बुक करें',
   payBill: 'बिल का भुगतान करें',
   callWaiter: 'वेटर को बुलाएँ',
@@ -33,6 +33,7 @@ export const hi: TranslationDict = {
 
   menu: 'मेन्यू',
   menuNotAvailable: 'मेन्यू उपलब्ध नहीं है',
+  unavailable: 'अनुपलब्ध',
   menuNotAvailableDesc: 'इस बिज़नेस ने अभी ऑर्डरिंग सेट अप नहीं की है।',
   orderSent: 'ऑर्डर भेज दिया गया',
   orderSentDesc: 'आपका ऑर्डर रसोई की ओर जा रहा है।',

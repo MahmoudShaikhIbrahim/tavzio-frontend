@@ -23,7 +23,7 @@ export default function SuperAdminLayout() {
   return (
     <div className="min-h-screen bg-ink">
       <header className="border-b border-ink-line">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-6">
             <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio · Platform</span>
             <nav className="flex gap-4 text-base">
@@ -53,7 +53,7 @@ export default function SuperAdminLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-6 py-10">
         <Outlet />
       </main>
     </div>

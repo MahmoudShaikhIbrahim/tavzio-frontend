@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getBill, payBill } from '../lib/api';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment } from '../lib/api';
 import { getSavedPhone } from '../lib/loyaltyStorage';
 import type { BillItem, Receipt } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
@@ -21,6 +21,7 @@ export default function BillPage() {
 function BillPageContent({ slug }: { slug: string }) {
   const { t, isRtl } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<BillItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -32,11 +33,36 @@ function BillPageContent({ slug }: { slug: string }) {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [rewardDescription, setRewardDescription] = useState('');
+  const [provider, setProvider] = useState('tap');
 
   const tapEventId = (() => {
     const stored = sessionStorage.getItem(`tavzio_tap_${slug}`);
     return stored ? Number(stored) : null;
   })();
+
+  // Landing back from a redirect provider's page (Telr / N-Genius): the
+  // URL carries the paymentId, and the ONLY thing that decides success is
+  // the backend's verification against the provider's own status API.
+  const returningPaymentId = searchParams.get('paymentId');
+  useEffect(() => {
+    if (!returningPaymentId) return;
+    setLoading(true);
+    const savedPhone = getSavedPhone(slug) || undefined;
+    confirmBillPayment(slug, returningPaymentId, savedPhone)
+      .then((res) => {
+        if (res.status === 'completed') {
+          setReceipt(res.receipt || null);
+          setPaid(true);
+        }
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Payment was not completed'))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [returningPaymentId]);
+
+  useEffect(() => {
+    getBusiness(slug).then((b) => setProvider(b.paymentProvider || 'tap')).catch(() => {});
+  }, [slug]);
 
   function loadBill() {
     if (!tapEventId) return;
@@ -82,8 +108,20 @@ function BillPageContent({ slug }: { slug: string }) {
     setPaying(true);
     setError('');
     try {
+      const savedPhone = getSavedPhone(slug) || undefined;
+      const itemIds = payingSpecificItems ? itemsToPay.map((i) => i.id) : null;
+
+      // Redirect providers (Telr / N-Genius): the provider's own hosted
+      // page takes the card details - nothing sensitive ever touches
+      // Tavzio, and no client-side SDK is needed at all.
+      if (provider === 'telr' || provider === 'ngenius') {
+        const session = await createBillPaySession(slug, tapEventId, itemIds, tip, savedPhone);
+        window.location.href = session.redirectUrl;
+        return; // navigating away - the return URL brings them back here
+      }
+
       // =====================================================================
-      // TODO — real Apple Pay / Google Pay tokenization goes here.
+      // TODO — real Apple Pay / Google Pay tokenization goes here (Tap only).
       // =====================================================================
       // Everything above this point (itemized selection, split-payment
       // logic, tip calculation, running total) is complete and correct.
@@ -101,8 +139,7 @@ function BillPageContent({ slug }: { slug: string }) {
       const tapToken = 'TODO_REPLACE_WITH_REAL_TAP_SDK_TOKEN';
       // =====================================================================
 
-      const savedPhone = getSavedPhone(slug) || undefined;
-      const res = await payBill(slug, tapEventId, payingSpecificItems ? itemsToPay.map((i) => i.id) : null, tip, tapToken, savedPhone);
+      const res = await payBill(slug, tapEventId, itemIds, tip, tapToken, savedPhone);
       setReceipt(res.receipt);
       setPaid(true);
     } catch (err) {
@@ -132,6 +169,18 @@ function BillPageContent({ slug }: { slug: string }) {
   // Digital receipt - deliberately English only, per explicit decision,
   // not run through the language switcher, regardless of what language
   // the rest of this page is shown in.
+
+  // Refreshing the return page after a payment was already confirmed:
+  // the backend reports completed without re-sending the receipt - a
+  // clear success beats falling through to a confusing "Nothing to pay."
+  if (paid && !receipt) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-ink px-8 text-center">
+        <p className="font-display text-xl text-ivory">{t('paymentSuccessful')}</p>
+      </div>
+    );
+  }
+
   if (paid && receipt) {
     return (
       <div className="min-h-screen bg-ink px-6 py-10">
@@ -190,19 +239,19 @@ function BillPageContent({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-ink pb-40" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-md px-5 pt-8">
+      <div className="mx-auto max-w-md px-6 pt-10">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('payBill')}</h1>
           <LanguageSwitcher />
         </div>
         <p className="mt-1 text-sm text-ivory-dim">{t('payBillInstructions')}</p>
 
-        <div className="mt-5 space-y-2">
+        <div className="mt-5 space-y-3">
           {items.map((item) => (
             <button
               key={item.id}
               onClick={() => toggleItem(item.id)}
-              className={`flex w-full items-center justify-between rounded-xl border px-4 py-3.5 text-start transition-colors ${
+              className={`flex w-full items-center justify-between rounded-xl border px-5 py-4 text-start transition-colors ${
                 selected.has(item.id) ? 'border-brass bg-brass/10' : 'border-ink-line bg-ink-soft'
               }`}
             >

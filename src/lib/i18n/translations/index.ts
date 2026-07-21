@@ -7,5 +7,6 @@ import { hi } from './hi';
 import { ur } from './ur';
 import { tl } from './tl';
 import { zh } from './zh';
+import { fr } from './fr';
 
-export const TRANSLATIONS: Record<LanguageCode, TranslationDict> = { en, ar, ru, es, hi, ur, tl, zh };
+export const TRANSLATIONS: Record<LanguageCode, TranslationDict> = { en, ar, ru, es, hi, ur, tl, zh, fr };

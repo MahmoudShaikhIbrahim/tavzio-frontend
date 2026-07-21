@@ -1,4 +1,4 @@
-export type LanguageCode = 'en' | 'ar' | 'ru' | 'es' | 'hi' | 'ur' | 'tl' | 'zh';
+export type LanguageCode = 'en' | 'ar' | 'ru' | 'es' | 'hi' | 'ur' | 'tl' | 'zh' | 'fr';
 
 export interface LanguageMeta {
   code: LanguageCode;
@@ -16,6 +16,7 @@ export const LANGUAGES: LanguageMeta[] = [
   { code: 'ur', label: 'اردو', flag: '🇵🇰', rtl: true },
   { code: 'tl', label: 'Filipino', flag: '🇵🇭', rtl: false },
   { code: 'zh', label: '中文', flag: '🇨🇳', rtl: false },
+  { code: 'fr', label: 'Français', flag: '🇫🇷', rtl: false },
 ];
 
 // Every key that appears anywhere in the 5 customer-facing surfaces
@@ -59,6 +60,7 @@ export interface TranslationDict {
   // Menu
   menu: string;
   menuNotAvailable: string;
+  unavailable: string;
   menuNotAvailableDesc: string;
   orderSent: string;
   orderSentDesc: string;

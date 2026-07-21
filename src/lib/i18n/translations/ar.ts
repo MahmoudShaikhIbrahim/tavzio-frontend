@@ -3,7 +3,7 @@ import type { TranslationDict } from '../types';
 export const ar: TranslationDict = {
   poweredBy: 'بدعم من Tavzio',
 
-  orderNow: 'اطلب الآن',
+  orderNow: 'القائمة',
   bookAppointment: 'احجز موعدًا',
   payBill: 'ادفع الفاتورة',
   callWaiter: 'نادِ النادل',
@@ -33,6 +33,7 @@ export const ar: TranslationDict = {
 
   menu: 'القائمة',
   menuNotAvailable: 'القائمة غير متاحة',
+  unavailable: 'غير متوفر',
   menuNotAvailableDesc: 'لم يقم هذا العمل بإعداد نظام الطلب بعد.',
   orderSent: 'تم إرسال الطلب',
   orderSentDesc: 'طلبك في طريقه إلى المطبخ.',

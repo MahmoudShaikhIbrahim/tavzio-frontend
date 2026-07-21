@@ -18,6 +18,15 @@ export function useCart() {
     setLines((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // Silently drops any cart lines referencing items that just went
+  // unavailable (individually, or via a paused category/business-wide
+  // pause) - the customer never gets to submit something that's no
+  // longer orderable, without needing an error message interrupting them
+  // mid-browse.
+  function removeByMenuItemIds(ids: Set<string>) {
+    setLines((prev) => prev.filter((l) => !ids.has(l.menuItemId)));
+  }
+
   function clear() {
     setLines([]);
   }
@@ -29,5 +38,5 @@ export function useCart() {
 
   const total = lines.reduce((sum, l) => sum + lineTotal(l), 0);
 
-  return { lines, addItem, updateLine, removeLine, clear, total, lineTotal };
+  return { lines, addItem, updateLine, removeLine, removeByMenuItemIds, clear, total, lineTotal };
 }

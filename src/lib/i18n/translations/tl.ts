@@ -3,7 +3,7 @@ import type { TranslationDict } from '../types';
 export const tl: TranslationDict = {
   poweredBy: 'Pinapatakbo ng Tavzio',
 
-  orderNow: 'Mag-order na',
+  orderNow: 'Menu',
   bookAppointment: 'Mag-book ng appointment',
   payBill: 'Bayaran ang bill',
   callWaiter: 'Tawagin ang waiter',
@@ -33,6 +33,7 @@ export const tl: TranslationDict = {
 
   menu: 'Menu',
   menuNotAvailable: 'Hindi available ang menu',
+  unavailable: 'Hindi available',
   menuNotAvailableDesc: 'Hindi pa naka-set up ng negosyong ito ang pag-order.',
   orderSent: 'Naipadala ang order',
   orderSentDesc: 'Papunta na sa kusina ang order mo.',

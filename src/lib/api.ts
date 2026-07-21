@@ -39,8 +39,8 @@ export function resolveCardTap(cardUid: string) {
   });
 }
 
-export function getBusiness(slug: string) {
-  return request<Business>(`/api/public/business/${slug}`);
+export function getBusiness(slug: string, lang?: string) {
+  return request<Business>(`/api/public/business/${slug}${lang ? `?lang=${lang}` : ''}`);
 }
 
 export function logEvent(slug: string, type: string, cardUid?: string) {
@@ -71,11 +71,11 @@ export function claimReward(slug: string, phone: string, tapEventId: number) {
   });
 }
 
-export function getMenu(slug: string) {
+export function getMenu(slug: string, lang?: string) {
   return request<{
-    categories: MenuCategory[]; items: MenuItem[];
+    categories: MenuCategory[]; items: MenuItem[]; orderingPaused: boolean;
     submissionEnabled: boolean; callWaiterEnabled: boolean; requestBillEnabled: boolean;
-  }>(`/api/public/business/${slug}/menu`);
+  }>(`/api/public/business/${slug}/menu${lang ? `?lang=${lang}` : ''}`);
 }
 
 export function submitOrder(
@@ -146,5 +146,23 @@ export function payBill(
   return request<{ payment: PaymentRow; receipt: Receipt }>(`/api/public/business/${slug}/bill/pay`, {
     method: 'POST',
     body: JSON.stringify({ tapEventId, itemIds, tipAmount, tapToken, phone }),
+  });
+}
+
+// Redirect providers (Telr, N-Genius): starts the payment and returns the
+// provider's hosted page URL to send the customer to.
+export function createBillPaySession(slug: string, tapEventId: number, itemIds: string[] | null, tipAmount: number, phone?: string) {
+  return request<{ paymentId: string; redirectUrl: string }>(`/api/public/business/${slug}/bill/pay-session`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId, itemIds, tipAmount, phone }),
+  });
+}
+
+// Called when the customer lands back from the provider's page - the
+// backend verifies the real outcome with the provider before completing.
+export function confirmBillPayment(slug: string, paymentId: string, phone?: string) {
+  return request<{ status: string; payment?: PaymentRow; receipt?: Receipt }>(`/api/public/business/${slug}/bill/confirm`, {
+    method: 'POST',
+    body: JSON.stringify({ paymentId, phone }),
   });
 }

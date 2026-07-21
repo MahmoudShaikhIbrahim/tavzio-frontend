@@ -34,7 +34,7 @@ export default function StaffPage() {
       <Section title="Team">
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {staff.map((s) => (
-            <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+            <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
               <span className="text-ivory">
                 {s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span>
                 {!s.is_active && <span className="ml-2 text-base text-danger">deactivated</span>}
@@ -55,7 +55,7 @@ export default function StaffPage() {
           New staff sign in with their own email and password — no card
           needed, since staff sign in through the website.
         </p>
-        <form onSubmit={handleInvite} className="flex gap-2 border-t border-ink-line pt-3">
+        <form onSubmit={handleInvite} className="flex gap-2.5 border-t border-ink-line pt-4">
           <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
           <Field label="Email"><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
           <div className="self-end"><PrimaryButton disabled={saving}>{saving ? 'Adding...' : 'Add staff'}</PrimaryButton></div>

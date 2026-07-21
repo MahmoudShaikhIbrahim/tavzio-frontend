@@ -82,7 +82,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
         <button
           onClick={() => patch({ enabled: !setting.enabled })}
           disabled={saving}
-          className={`rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${
+          className={`rounded-lg border px-4 py-3 text-base disabled:opacity-50 ${
             setting.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
           }`}
         >
@@ -116,7 +116,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={saving}
-              className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+              className="rounded-lg border border-brass/40 px-4 py-3 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
             >
               Upload custom sound
             </button>

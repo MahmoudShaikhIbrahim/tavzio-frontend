@@ -109,9 +109,9 @@ export default function OrdersPage() {
       {past.length > 0 && (
         <div>
           <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">Earlier today</h2>
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             {past.slice(0, 10).map((order) => (
-              <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+              <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
                 <span className="text-ivory-dim">{order.table_label || 'No table'} — {order.total.toFixed(2)}</span>
                 <span className={`rounded-full border px-2 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
                   {STATUS_LABEL[order.status]}
@@ -184,7 +184,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         </span>
       </div>
 
-      <div className="mt-2 space-y-1.5 text-base">
+      <div className="mt-2 space-y-2.5 text-base">
         {visibleItems.map((item) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>

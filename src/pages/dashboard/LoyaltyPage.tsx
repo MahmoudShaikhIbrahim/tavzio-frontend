@@ -45,7 +45,7 @@ export default function LoyaltyPage() {
             onChange={(e) => setSearch(e.target.value)}
             className={inputClass}
           />
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             {members.map((m) => (
               <MemberRow key={m.id} member={m} businessId={businessId} program={program} onChange={() => listLoyaltyMembers(businessId, search).then(setMembers)} />
             ))}
@@ -239,7 +239,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
               ))}
               {tiers.length === 0 && <p className="text-base text-ivory-dim">No tiers yet — add at least one below.</p>}
             </div>
-            <button type="button" onClick={addTier} className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10">
+            <button type="button" onClick={addTier} className="rounded-lg border border-brass/40 px-4 py-3 text-base text-brass hover:bg-brass/10">
               + Add tier
             </button>
           </div>

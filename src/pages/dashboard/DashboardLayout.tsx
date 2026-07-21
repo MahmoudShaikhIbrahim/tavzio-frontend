@@ -58,7 +58,7 @@ export default function DashboardLayout() {
   return (
     <div className="min-h-screen bg-ink">
       <header className="border-b border-ink-line">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>
           <div className="flex items-center gap-4 text-base text-ivory-dim">
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
@@ -66,7 +66,7 @@ export default function DashboardLayout() {
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-5">
+        <nav className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto px-6">
           {visibleTabs.map((t) => (
             <Link
               key={t.path}
@@ -82,7 +82,7 @@ export default function DashboardLayout() {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-6 py-10">
         <Outlet />
       </main>
     </div>

@@ -92,9 +92,9 @@ export default function AnalyticsPage() {
       </Section>
 
       <Section title="Card performance">
-        <div className="space-y-1.5">
+        <div className="space-y-2.5">
           {cardBreakdown.map((c) => (
-            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2 text-base">
+            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
               <span className="text-ivory">{c.label || 'Untitled'}</span>
               <span className="text-ivory-dim">{c.taps} taps</span>
             </div>

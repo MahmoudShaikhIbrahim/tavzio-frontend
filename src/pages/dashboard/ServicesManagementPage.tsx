@@ -31,7 +31,7 @@ export default function ServicesManagementPage() {
       }
     >
       {showForm && <ServiceForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
-      <div className="space-y-1.5">
+      <div className="space-y-2.5">
         {services.map((service) => (
           <ServiceRow key={service.id} service={service} businessId={businessId} onChange={reload} />
         ))}
