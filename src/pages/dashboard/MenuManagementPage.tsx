@@ -33,7 +33,7 @@ export default function MenuManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Section title="Ordering status">
         <div className="flex items-center justify-between">
           <div>
@@ -74,9 +74,9 @@ function CategoriesSection({ businessId, categories, onChange }: {
 
   return (
     <Section title="Categories">
-      <div className="space-y-2.5">
+      <div className="space-y-4">
         {categories.map((c) => (
-          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
               <button
@@ -123,7 +123,7 @@ function ItemsSection({ businessId, categories, items, onChange }: {
           onDone={() => { setShowForm(false); onChange(); }}
         />
       )}
-      <div className="space-y-2.5">
+      <div className="space-y-4">
         {items.map((item) => (
           <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onChange={onChange} />
         ))}
@@ -184,7 +184,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
           {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}
         </div>
         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
-          className="rounded-lg border border-brass/40 px-4 py-3 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
+          className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
           {imageUrl ? 'Change photo' : 'Add photo'}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />

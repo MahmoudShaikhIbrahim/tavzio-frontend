@@ -27,7 +27,7 @@ export default function FeaturesPage() {
   const { ordering, booking } = business.features;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Section title="Ordering">
         <div className="space-y-2">
           <ToggleRow label="Menu view" description="Customers can browse the menu after tapping."

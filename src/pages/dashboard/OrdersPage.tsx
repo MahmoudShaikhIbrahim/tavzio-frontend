@@ -82,7 +82,7 @@ export default function OrdersPage() {
   }, {});
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="font-display text-3xl text-ivory">Orders</h1>
@@ -99,7 +99,7 @@ export default function OrdersPage() {
       {Object.keys(tableGroups).length === 0 ? (
         <p className="text-base text-ivory-dim">No active orders right now.</p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-10">
           {Object.keys(tableGroups).map((table) => (
             <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} onChange={reload} />
           ))}
@@ -109,9 +109,9 @@ export default function OrdersPage() {
       {past.length > 0 && (
         <div>
           <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">Earlier today</h2>
-          <div className="space-y-2.5">
+          <div className="space-y-4">
             {past.slice(0, 10).map((order) => (
-              <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+              <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
                 <span className="text-ivory-dim">{order.table_label || 'No table'} — {order.total.toFixed(2)}</span>
                 <span className={`rounded-full border px-2 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
                   {STATUS_LABEL[order.status]}
@@ -184,7 +184,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         </span>
       </div>
 
-      <div className="mt-2 space-y-2.5 text-base">
+      <div className="mt-2 space-y-4 text-base">
         {visibleItems.map((item) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>

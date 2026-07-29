@@ -65,7 +65,7 @@ export default function RequestsPage() {
   const nothingPending = requests.length === 0 && claims.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <h1 className="font-display text-3xl text-ivory">Requests</h1>
 
       {nothingPending ? (

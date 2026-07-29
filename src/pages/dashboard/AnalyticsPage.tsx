@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Total taps (30d)" value={summary.totalTaps + liveTapCount} live={liveTapCount > 0} />
         <Stat label="Top hour" value={summary.topHours[0] ? `${summary.topHours[0].hour}:00` : '—'} />
@@ -92,9 +92,9 @@ export default function AnalyticsPage() {
       </Section>
 
       <Section title="Card performance">
-        <div className="space-y-2.5">
+        <div className="space-y-4">
           {cardBreakdown.map((c) => (
-            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
               <span className="text-ivory">{c.label || 'Untitled'}</span>
               <span className="text-ivory-dim">{c.taps} taps</span>
             </div>

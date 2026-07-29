@@ -8,6 +8,7 @@ import type {
   PosIntegration, PosIntegrationStatus, PosProvider, PosPurpose,
   Service, BookingRow, BookingStatus,
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
+  BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -582,4 +583,61 @@ export function getInbox() {
 
 export function deleteCard(businessId: string, cardId: string) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/cards/${cardId}`, { method: 'DELETE' });
+}
+
+// --- Billing receipts ---
+
+export function listReceipts(businessId: string) {
+  return authFetch<BillingReceipt[]>(`/api/businesses/${businessId}/receipts`);
+}
+
+// super_admin only.
+export function createReceipt(
+  businessId: string,
+  payload: { receiptType: 'one_time' | 'monthly' | 'adjustment'; lineItems: BillingReceiptLineItem[]; periodLabel?: string; notes?: string }
+) {
+  return authFetch<BillingReceipt>(`/api/businesses/${businessId}/receipts`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// super_admin only.
+export function voidReceipt(businessId: string, receiptId: string) {
+  return authFetch<BillingReceipt>(`/api/businesses/${businessId}/receipts/${receiptId}`, { method: 'DELETE' });
+}
+
+// Fetches the PDF with the auth token attached (a plain <a href> can't
+// carry that header) and triggers a real browser download - same
+// established pattern as downloadExport above.
+export async function downloadReceiptPdf(businessId: string, receiptId: string, receiptNumber: string) {
+  const token = getToken();
+  const res = await fetchWithTimeout(
+    `${BASE}/api/businesses/${businessId}/receipts/${receiptId}/pdf`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    30000
+  );
+  if (!res.ok) throw new Error('Could not download receipt');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${receiptNumber}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// super_admin only - the currently-active stamp/signature/legal name new
+// receipts will use going forward (past receipts are unaffected).
+export function getReceiptBranding() {
+  return authFetch<ReceiptBranding>('/api/businesses/receipt-branding');
+}
+
+export function updateReceiptBranding(payload: { stampUrl?: string; signatureUrl?: string; legalName?: string }) {
+  return authFetch<ReceiptBranding>('/api/businesses/receipt-branding', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }

@@ -87,7 +87,7 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
         <LanguageSwitcher />
       </div>
 
-      <div className="relative mx-auto max-w-md px-5">
+      <div className="relative mx-auto max-w-md px-6">
         {/* Logo medallion, overlapping the cover, with the tap-ripple signature moment */}
         <div className="relative -mt-12 flex justify-center">
           <span className="absolute inline-flex h-24 w-24 animate-tap-ripple rounded-full border border-brass" />
@@ -124,7 +124,7 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
         </div>
 
         {/* Plain external links */}
-        <div className="mt-2.5 space-y-2.5">
+        <div className="mt-5 space-y-4">
           {enabledLinks.map((key) => (
             <LinkButton
               key={key}

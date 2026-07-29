@@ -19,12 +19,12 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 
 export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-ink-line p-7">
+    <div className="rounded-xl border border-ink-line p-9">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-xl text-ivory">{title}</h2>
         {action}
       </div>
-      <div className="mt-5 space-y-4">{children}</div>
+      <div className="mt-6 space-y-6">{children}</div>
     </div>
   );
 }

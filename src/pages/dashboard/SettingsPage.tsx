@@ -153,7 +153,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   const brandColor = getIconColor(button.icon);
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
       <span className="flex items-center gap-2 text-ivory">
         {button.image_url ? (
           <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />
@@ -211,7 +211,7 @@ function ImageUploadField({ label, businessId, kind, value, onUploaded }: {
           />
         )}
         <div className="flex-1">
-          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim hover:text-ivory">
+          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-5 py-4 text-base text-ivory-dim hover:text-ivory">
             {uploading ? 'Uploading...' : value ? 'Replace image' : 'Upload image'}
             <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
           </label>
@@ -354,7 +354,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         page in this order. Rename it, pick an icon, or upload your own
         image for it. Add more of your own further below.
       </p>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {LINK_ORDER.map((key) => {
           const meta = LINK_META[key];
           const cfg = links[key];
@@ -426,7 +426,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
       {error && <p className="text-base text-danger">{error}</p>}
 
       <div className="mt-2 border-t border-ink-line pt-4">
-        <div className="space-y-2.5">
+        <div className="space-y-4">
           {extraButtons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reloadExtras} />)}
         </div>
         {showAddForm ? (
@@ -434,7 +434,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         ) : (
           <button
             onClick={() => setShowAddForm(true)}
-            className="mt-2 rounded-lg border border-brass/40 px-4 py-3 text-base text-brass hover:bg-brass/10"
+            className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10"
           >
             + Add another link
           </button>

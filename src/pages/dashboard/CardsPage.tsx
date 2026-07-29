@@ -39,7 +39,7 @@ export default function CardsPage() {
         created by the platform operator, since it's them who physically
         programs the chip.
       </p>
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {customerCards.map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
         {customerCards.length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
       </div>
@@ -67,7 +67,7 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-4 py-3 text-base">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-5 py-4 text-base">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {editing ? (
           <>

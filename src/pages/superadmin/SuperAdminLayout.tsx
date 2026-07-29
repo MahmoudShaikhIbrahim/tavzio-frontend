@@ -44,6 +44,12 @@ export default function SuperAdminLayout() {
                   </span>
                 )}
               </Link>
+              <Link
+                to="/admin/super/billing-settings"
+                className={location.pathname.startsWith('/admin/super/billing-settings') ? 'text-ivory' : 'text-ivory-dim hover:text-ivory'}
+              >
+                Billing Settings
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4 text-base text-ivory-dim">
@@ -53,7 +59,7 @@ export default function SuperAdminLayout() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-8 py-14">
         <Outlet />
       </main>
     </div>

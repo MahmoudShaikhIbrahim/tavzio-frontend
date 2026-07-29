@@ -12,6 +12,7 @@ const TABS = [
   { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const },
   { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null },
+  { path: 'receipts', label: 'Receipts', ownerOnly: false, requires: null },
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
   { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
   { path: 'features', label: 'Features', ownerOnly: false, requires: null }, // self-service toggles - never gated by its own flag
@@ -82,7 +83,7 @@ export default function DashboardLayout() {
           ))}
         </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-6 py-10">
+      <main className="mx-auto max-w-7xl px-8 py-14">
         <Outlet />
       </main>
     </div>

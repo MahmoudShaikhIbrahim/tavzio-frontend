@@ -17,6 +17,7 @@ import BusinessesList from './pages/superadmin/BusinessesList';
 import CreateBusiness from './pages/superadmin/CreateBusiness';
 import BusinessDetail from './pages/superadmin/BusinessDetail';
 import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
+import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
 
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
@@ -28,6 +29,7 @@ import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import FeaturesPage from './pages/dashboard/FeaturesPage';
 import PaymentsPage from './pages/dashboard/PaymentsPage';
+import ReceiptsPage from './pages/dashboard/ReceiptsPage';
 import AuditLogPage from './pages/dashboard/AuditLogPage';
 import MessagesPage from './pages/dashboard/MessagesPage';
 
@@ -56,6 +58,7 @@ export default function App() {
             <Route path="businesses/new" element={<CreateBusiness />} />
             <Route path="businesses/:businessId" element={<BusinessDetail />} />
             <Route path="messages" element={<MessagesInboxPage />} />
+            <Route path="billing-settings" element={<BillingSettingsPage />} />
           </Route>
         </Route>
 
@@ -72,6 +75,7 @@ export default function App() {
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="features" element={<FeaturesPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="receipts" element={<ReceiptsPage />} />
             <Route path="audit-log" element={<AuditLogPage />} />
             <Route path="messages" element={<MessagesPage />} />
           </Route>

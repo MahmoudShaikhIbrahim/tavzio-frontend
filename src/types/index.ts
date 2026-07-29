@@ -473,6 +473,34 @@ export interface Receipt {
 
 export type AuditAction = 'void_order' | 'void_item' | 'refund' | 'staff_order_placed' | 'card_deleted';
 
+// --- Platform billing receipts - issued by super_admin to a business,
+// distinct from the digital Pay Bill Receipt above (that's a customer's
+// dine-in receipt; this is Tavzio's own invoice to the restaurant) ---
+
+export interface BillingReceiptLineItem {
+  description: string;
+  amount: number;
+}
+
+export interface BillingReceipt {
+  id: string;
+  business_id: string;
+  receipt_number: string;
+  receipt_type: 'one_time' | 'monthly' | 'adjustment';
+  line_items: BillingReceiptLineItem[];
+  amount: number;
+  period_label: string;
+  notes: string;
+  status: 'issued' | 'void';
+  created_at: string;
+}
+
+export interface ReceiptBranding {
+  stamp_url: string;
+  signature_url: string;
+  legal_name: string;
+}
+
 export interface AuditLogEntry {
   id: string;
   business_id: string;

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { QrCode, Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
+import Card3D from '../components/Card3D';
 
 const WHATSAPP_NUMBER = '971500000000'; // TODO: replace with the real business WhatsApp number before going live
 
@@ -76,6 +77,13 @@ export default function Home() {
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ivory-dim">
             One tap turns a table, a counter, or a door into a menu, a loyalty
             program, a booking page, and a way to pay — all without an app.
+          </p>
+
+          <div className="mt-10 origin-top scale-[0.82] sm:scale-100">
+            <Card3D />
+          </div>
+          <p className="-mt-2 text-xs uppercase tracking-wider text-ivory-dim/60">
+            Your actual NFC stand — every tap starts here
           </p>
 
           <a

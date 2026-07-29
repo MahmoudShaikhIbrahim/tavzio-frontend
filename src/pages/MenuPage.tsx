@@ -142,7 +142,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       return (
         <div
           key={item.id}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start"
+          className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-5 text-start"
         >
           {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
           <div className="flex-1">
@@ -159,7 +159,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         key={item.id}
         onClick={() => orderable && setActiveItem(item)}
         disabled={!orderable}
-        className={`flex w-full items-center gap-4 justify-between rounded-xl border px-5 py-4 text-start ${
+        className={`flex w-full items-center gap-4 justify-between rounded-xl border px-5 py-5 text-start ${
           orderable ? 'border-ink-line bg-ink-soft' : 'cursor-not-allowed border-ink-line bg-ink-soft/40 opacity-60'
         }`}
       >
@@ -180,7 +180,7 @@ function MenuPageContent({ slug }: { slug: string }) {
 
   return (
     <div className={`min-h-screen bg-ink ${submissionEnabled ? 'pb-32' : 'pb-16'}`} dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-md px-6 pt-10">
+      <div className="mx-auto max-w-md px-6 pt-14">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('menu')}</h1>
           <LanguageSwitcher />

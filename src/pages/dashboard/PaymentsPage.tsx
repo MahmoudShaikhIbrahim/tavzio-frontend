@@ -43,7 +43,7 @@ export default function PaymentsPage() {
     .reduce((sum, p) => sum + Number(p.amount) + Number(p.tip_amount), 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Section
         title="Payment history"
         action={
@@ -53,7 +53,7 @@ export default function PaymentsPage() {
         }
       >
         <p className="text-base text-ivory-dim">Today's total: <span className="text-ivory">{totalToday.toFixed(2)} AED</span></p>
-        <div className="space-y-2.5">
+        <div className="space-y-4">
           {completed.map((p) => (
             <PaymentRowItem key={p.id} payment={p} businessId={businessId} onChange={reload} />
           ))}

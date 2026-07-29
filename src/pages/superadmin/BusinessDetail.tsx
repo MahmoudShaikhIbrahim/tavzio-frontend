@@ -7,10 +7,11 @@ import {
   getPosIntegration, upsertPosIntegration,
   getPaymentStatus,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
+  listReceipts, createReceipt, voidReceipt, downloadReceiptPdf,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { Field, inputClass } from '../../components/ui';
-import type { AdminBusiness, Card, StaffMember, PosIntegration, PosPurpose, PosProvider, CustomButton } from '../../types';
+import type { AdminBusiness, Card, StaffMember, PosIntegration, PosPurpose, PosProvider, CustomButton, BillingReceipt, BillingReceiptLineItem } from '../../types';
 
 export default function BusinessDetail() {
   const { businessId } = useParams<{ businessId: string }>();
@@ -101,6 +102,9 @@ export default function BusinessDetail() {
       {/* Custom buttons - full parity with owner/staff */}
       <CustomButtonsSection businessId={businessId} />
 
+      {/* Billing receipts - issued to this business, one at a time */}
+      <ReceiptsSection businessId={businessId} />
+
       {/* Staff */}
       <Section title="Staff">
         <StaffTable staff={staff} businessId={businessId} onChange={reload} busy={busy} setBusy={setBusy} />
@@ -112,7 +116,7 @@ export default function BusinessDetail() {
           excluded here, since they no longer serve any function and don't
           belong in a list of physical table cards. */}
       <Section title={`Table / customer cards (${cards.filter((c) => !c.linked_user_id).length})`}>
-        <div className="space-y-2.5">
+        <div className="space-y-4">
           {cards.filter((c) => !c.linked_user_id).map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
           {cards.filter((c) => !c.linked_user_id).length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
         </div>
@@ -139,7 +143,7 @@ function ActionButton({ children, onClick, disabled, danger }: { children: React
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg border px-4 py-3 text-base disabled:opacity-50 ${
+      className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
         danger ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
       }`}
     >
@@ -160,7 +164,7 @@ function ToggleRow({ label, description, checked, onChange, disabled }: {
       <button
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`shrink-0 rounded-lg border px-4 py-3 text-base disabled:opacity-50 ${
+        className={`shrink-0 rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
           checked ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
         }`}
       >
@@ -379,6 +383,164 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
 
 const ICON_OPTIONS = ['Link', 'Star', 'Gift', 'Music', 'ShoppingBag', 'Heart', 'Phone', 'Mail', 'Globe', 'MapPin', 'Camera', 'Ticket'];
 
+function ReceiptsSection({ businessId }: { businessId: string }) {
+  const [receipts, setReceipts] = useState<BillingReceipt[]>([]);
+  const [showForm, setShowForm] = useState(false);
+
+  function reload() {
+    listReceipts(businessId).then(setReceipts);
+  }
+  useEffect(reload, [businessId]);
+
+  return (
+    <Section
+      title="Billing receipts"
+      action={
+        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          + New receipt
+        </button>
+      }
+    >
+      <p className="text-base text-ivory-dim">
+        Issued directly to this business's own Receipts page the moment
+        you generate one - stamped with whatever stamp and signature is
+        currently active in Billing Settings, frozen onto that receipt
+        permanently.
+      </p>
+      {showForm && <ReceiptForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
+      <div className="space-y-3">
+        {receipts.map((r) => <ReceiptRow key={r.id} receipt={r} businessId={businessId} onChange={reload} />)}
+        {receipts.length === 0 && <p className="text-base text-ivory-dim">No receipts issued yet.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function ReceiptForm({ businessId, onDone }: { businessId: string; onDone: () => void }) {
+  const [receiptType, setReceiptType] = useState<'one_time' | 'monthly' | 'adjustment'>('one_time');
+  const [periodLabel, setPeriodLabel] = useState('');
+  const [notes, setNotes] = useState('');
+  const [lines, setLines] = useState<BillingReceiptLineItem[]>([{ description: '', amount: 0 }]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function updateLine(i: number, field: 'description' | 'amount', value: string) {
+    setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: field === 'amount' ? Number(value) : value } : l)));
+  }
+
+  const total = lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    const validLines = lines.filter((l) => l.description.trim() && l.amount > 0);
+    if (validLines.length === 0) {
+      setError('Add at least one line item with a description and amount');
+      return;
+    }
+    setSaving(true);
+    try {
+      await createReceipt(businessId, { receiptType, lineItems: validLines, periodLabel, notes });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create receipt');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-lg border border-ink-line p-4">
+      <div className="flex flex-wrap gap-4">
+        <Field label="Receipt type">
+          <select value={receiptType} onChange={(e) => setReceiptType(e.target.value as typeof receiptType)} className="w-48 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <option value="one_time">One-time</option>
+            <option value="monthly">Monthly subscription</option>
+            <option value="adjustment">Adjustment</option>
+          </select>
+        </Field>
+        {receiptType === 'monthly' && (
+          <Field label="Period">
+            <input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} placeholder="e.g. July 2026" className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+          </Field>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm text-ivory-dim">Line items</p>
+        {lines.map((line, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              value={line.description}
+              onChange={(e) => updateLine(i, 'description', e.target.value)}
+              placeholder="e.g. 10 NFC cards - setup"
+              className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+            />
+            <input
+              type="number"
+              onFocus={(e) => e.target.select()}
+              value={line.amount || ''}
+              onChange={(e) => updateLine(i, 'amount', e.target.value)}
+              placeholder="AED"
+              className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+            />
+            {lines.length > 1 && (
+              <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
+                Remove
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={() => setLines((prev) => [...prev, { description: '', amount: 0 }])} className="text-sm text-brass hover:underline">
+          + Add line
+        </button>
+      </div>
+
+      <Field label="Notes (optional, shown on the receipt)">
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} />
+      </Field>
+
+      <div className="flex items-center justify-between border-t border-ink-line pt-3">
+        <p className="text-base text-ivory">Total: <span className="font-medium text-brass">AED {total.toFixed(2)}</span></p>
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Generating...' : 'Generate & send'}
+        </button>
+      </div>
+      {error && <p className="text-base text-danger">{error}</p>}
+    </form>
+  );
+}
+
+function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt; businessId: string; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function handleVoid() {
+    if (!confirm(`Void receipt ${receipt.receipt_number}? This can't be undone.`)) return;
+    setBusy(true);
+    await voidReceipt(businessId, receipt.id);
+    setBusy(false);
+    onChange();
+  }
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+      <div>
+        <p className="text-ivory">{receipt.receipt_number} <span className="text-ivory-dim">— {receipt.period_label || receipt.receipt_type.replace('_', ' ')}</span></p>
+        <p className="text-sm text-ivory-dim">{new Date(receipt.created_at).toLocaleDateString()} · AED {Number(receipt.amount).toFixed(2)}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => downloadReceiptPdf(businessId, receipt.id, receipt.receipt_number)}
+          className="rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10"
+        >
+          Download
+        </button>
+        <ActionButton danger onClick={handleVoid} disabled={busy}>Void</ActionButton>
+      </div>
+    </div>
+  );
+}
+
 function CustomButtonsSection({ businessId }: { businessId: string }) {
   const [buttons, setButtons] = useState<CustomButton[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -402,7 +564,7 @@ function CustomButtonsSection({ businessId }: { businessId: string }) {
         icon, and link. Owner and staff can manage these too.
       </p>
       {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
-      <div className="space-y-2.5">
+      <div className="space-y-4">
         {buttons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reload} />)}
         {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
       </div>
@@ -451,7 +613,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+    <div className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
       <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
       <div className="flex items-center gap-2">
         <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
@@ -468,9 +630,9 @@ function StaffTable({ staff, businessId, onChange, busy, setBusy }: {
   staff: StaffMember[]; businessId: string; onChange: () => void; busy: boolean; setBusy: (b: boolean) => void;
 }) {
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
       {staff.map((s) => (
-        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
           <span className="text-ivory">{s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span></span>
           <button
             disabled={busy}
@@ -510,7 +672,7 @@ function InviteStaffForm({ businessId, onDone }: { businessId: string; onDone: (
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50">
         Add staff
       </button>
     </form>
@@ -537,7 +699,7 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
         className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Label (e.g. Table 4)" value={label} onChange={(e) => setLabel(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50">
         Add
       </button>
     </form>
@@ -563,7 +725,7 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-4 py-3 text-base">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-5 py-4 text-base">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {editing ? (
           <>

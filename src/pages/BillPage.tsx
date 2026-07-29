@@ -239,7 +239,7 @@ function BillPageContent({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-ink pb-40" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="mx-auto max-w-md px-6 pt-10">
+      <div className="mx-auto max-w-md px-6 pt-14">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('payBill')}</h1>
           <LanguageSwitcher />
@@ -251,7 +251,7 @@ function BillPageContent({ slug }: { slug: string }) {
             <button
               key={item.id}
               onClick={() => toggleItem(item.id)}
-              className={`flex w-full items-center justify-between rounded-xl border px-5 py-4 text-start transition-colors ${
+              className={`flex w-full items-center justify-between rounded-xl border px-5 py-5 text-start transition-colors ${
                 selected.has(item.id) ? 'border-brass bg-brass/10' : 'border-ink-line bg-ink-soft'
               }`}
             >
