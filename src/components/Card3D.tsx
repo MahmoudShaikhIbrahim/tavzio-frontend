@@ -13,6 +13,13 @@ const BASE_D = 40 * SCALE;
 // back slightly and stays balanced - matches the real standee's actual
 // resting angle, not an arbitrary number.
 const BASE_FOLD_DEG = 100;
+// How far the camera looks down on the whole object. -8deg was too
+// shallow - at that angle the folded base (already tilted ~100deg back)
+// foreshortens to almost nothing, so the "stand" part never actually
+// read as visible even though it was correctly rendered. -24deg gives
+// enough of a top-down look to actually see the fold, still reads as a
+// natural product-shot angle rather than looking down flat on it.
+const CAMERA_TILT_DEG = -24;
 
 export default function Card3D() {
   const [angle, setAngle] = useState(0);
@@ -49,7 +56,16 @@ export default function Card3D() {
   return (
     <div
       className="mx-auto flex items-center justify-center"
-      style={{ perspective: '1400px', height: FACE_H + BASE_D * 0.6, width: FACE_W + 60 }}
+      style={{
+        perspective: '1400px',
+        // Enough headroom for the folded base to swing fully into view
+        // as the object rotates on Y, and enough width for it to swing
+        // sideways too - the old +60 / *0.6 allowance was too tight and
+        // let the ancestor's overflow-hidden clip the base at several
+        // angles, which is why the fold never seemed to appear.
+        height: FACE_H + BASE_D + 40,
+        width: FACE_W + BASE_D * 1.6,
+      }}
     >
       <div
         style={{
@@ -57,18 +73,25 @@ export default function Card3D() {
           width: FACE_W,
           height: FACE_H,
           transformStyle: 'preserve-3d',
-          transform: `rotateX(-8deg) rotateY(${angle}deg)`,
+          transform: `rotateX(${CAMERA_TILT_DEG}deg) rotateY(${angle}deg)`,
         }}
       >
-        {/* Front - the real, actual uploaded design */}
+        {/* Front - the real, actual uploaded design. `contain` (not
+            `cover`) so the full artwork always shows regardless of the
+            source PNG's exact aspect ratio - `cover` was cropping edges
+            of the design whenever it didn't match the 85:100 face
+            exactly. Matching background color fills any letterbox
+            sliver instead of leaving it transparent. */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             borderRadius: 14,
             backgroundImage: 'url(/brand/card-front.png)',
-            backgroundSize: 'cover',
+            backgroundSize: 'contain',
             backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundColor: '#f4eee3',
             backfaceVisibility: 'hidden',
             boxShadow: '0 30px 60px -20px rgba(0,0,0,0.6)',
             overflow: 'hidden',
