@@ -41,18 +41,33 @@ export default function ReceiptsPage() {
                 <p className="text-ivory">
                   {r.receipt_number}
                   <span className="text-ivory-dim"> — {r.period_label || r.receipt_type.replace('_', ' ')}</span>
+                  <span className={`ms-2 rounded-full border px-2 py-0.5 text-xs ${r.payment_status === 'paid' ? 'border-success/40 text-success' : 'border-brass/40 text-brass'}`}>
+                    {r.payment_status === 'paid' ? 'Paid' : 'Payment due'}
+                  </span>
                 </p>
                 <p className="text-sm text-ivory-dim">
                   {new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} · AED {Number(r.amount).toFixed(2)}
                 </p>
               </div>
-              <button
-                onClick={() => handleDownload(r)}
-                disabled={downloadingId === r.id}
-                className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
-              >
-                {downloadingId === r.id ? 'Downloading...' : 'Download PDF'}
-              </button>
+              <div className="flex items-center gap-2">
+                {r.payment_status !== 'paid' && r.payment_link_url && (
+                  <a
+                    href={r.payment_link_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90"
+                  >
+                    Pay now
+                  </a>
+                )}
+                <button
+                  onClick={() => handleDownload(r)}
+                  disabled={downloadingId === r.id}
+                  className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
+                >
+                  {downloadingId === r.id ? 'Downloading...' : 'Download PDF'}
+                </button>
+              </div>
             </div>
           ))}
           {receipts.length === 0 && (

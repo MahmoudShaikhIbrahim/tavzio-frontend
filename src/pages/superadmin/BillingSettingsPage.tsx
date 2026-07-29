@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getReceiptBranding, updateReceiptBranding } from '../../lib/authApi';
+import { getReceiptBranding, updateReceiptBranding, registerZiinaWebhook } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
 import { Field, Section, inputClass } from '../../components/ui';
 import type { ReceiptBranding } from '../../types';
@@ -12,6 +12,8 @@ export default function BillingSettingsPage() {
   const [branding, setBranding] = useState<ReceiptBranding | null>(null);
   const [legalName, setLegalName] = useState('');
   const [saving, setSaving] = useState<'stamp' | 'signature' | 'name' | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [registerResult, setRegisterResult] = useState('');
 
   function reload() {
     getReceiptBranding().then((b) => {
@@ -34,6 +36,22 @@ export default function BillingSettingsPage() {
     await updateReceiptBranding({ legalName });
     setSaving(null);
     reload();
+  }
+
+  async function handleRegisterWebhook() {
+    if (!confirm(
+      "This points Ziina's account-wide webhook at Tavzio. Since Scripzio shares the same Ziina account, this OVERWRITES whatever webhook is currently registered - Tavzio will then forward anything that isn't its own back to Scripzio automatically. Only run this once, when first setting this up. Continue?"
+    )) return;
+    setRegistering(true);
+    setRegisterResult('');
+    try {
+      const res = await registerZiinaWebhook();
+      setRegisterResult(res.message);
+    } catch (err) {
+      setRegisterResult(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setRegistering(false);
+    }
   }
 
   if (!branding) return null;
@@ -84,6 +102,30 @@ export default function BillingSettingsPage() {
             </label>
           </div>
         </div>
+      </Section>
+
+      <Section title="Ziina automatic payments">
+        <p className="text-base text-ivory-dim">
+          Every receipt automatically gets its own Ziina payment link, sized
+          to that exact receipt's total. The moment the business pays, this
+          is confirmed automatically — nothing to check or send back
+          manually.
+        </p>
+        <p className="text-base text-ivory-dim">
+          One-time setup only: since Scripzio uses the same Ziina account,
+          registering Tavzio's webhook here takes over the account-wide
+          webhook. Tavzio forwards anything that isn't its own receipt
+          straight back to Scripzio automatically, so Scripzio keeps
+          working exactly as before.
+        </p>
+        <button
+          onClick={handleRegisterWebhook}
+          disabled={registering}
+          className="rounded-lg border border-brass/40 px-4 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+        >
+          {registering ? 'Registering...' : 'Register Tavzio as the Ziina webhook (one-time)'}
+        </button>
+        {registerResult && <p className="text-sm text-ivory-dim">{registerResult}</p>}
       </Section>
     </div>
   );

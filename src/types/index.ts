@@ -492,6 +492,9 @@ export interface BillingReceipt {
   period_label: string;
   notes: string;
   status: 'issued' | 'void';
+  payment_status: 'unpaid' | 'paid';
+  payment_link_url: string;
+  paid_at: string | null;
   created_at: string;
 }
 

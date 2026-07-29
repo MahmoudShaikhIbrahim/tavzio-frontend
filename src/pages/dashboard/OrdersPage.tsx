@@ -108,11 +108,18 @@ export default function OrdersPage() {
 
       {past.length > 0 && (
         <div>
-          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">Earlier today</h2>
+          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">Recent</h2>
           <div className="space-y-4">
             {past.slice(0, 10).map((order) => (
               <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
-                <span className="text-ivory-dim">{order.table_label || 'No table'} — {order.total.toFixed(2)}</span>
+                <span className="text-ivory-dim">
+                  {order.table_label || 'No table'} — {order.total.toFixed(2)}
+                  <span className="ms-2 text-sm text-ivory-dim/60">
+                    {new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                    {' · '}
+                    {new Date(order.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </span>
                 <span className={`rounded-full border px-2 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
                   {STATUS_LABEL[order.status]}
                 </span>

@@ -12,12 +12,12 @@ const TABS = [
   { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const },
   { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null },
-  { path: 'receipts', label: 'Receipts', ownerOnly: false, requires: null },
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
   { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
   { path: 'features', label: 'Features', ownerOnly: false, requires: null }, // self-service toggles - never gated by its own flag
   { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const },
   { path: 'settings', label: 'Settings', ownerOnly: false, requires: null }, // Menu, Loyalty, Cards, Notifications, and Landing Page Buttons all live here now - business info specifically stays owner-only, enforced inside the page itself
+  { path: 'receipts', label: 'Receipts', ownerOnly: false, requires: null },
   { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
 ];
 

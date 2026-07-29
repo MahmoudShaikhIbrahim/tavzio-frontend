@@ -525,8 +525,18 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
   return (
     <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
       <div>
-        <p className="text-ivory">{receipt.receipt_number} <span className="text-ivory-dim">— {receipt.period_label || receipt.receipt_type.replace('_', ' ')}</span></p>
+        <p className="text-ivory">
+          {receipt.receipt_number} <span className="text-ivory-dim">— {receipt.period_label || receipt.receipt_type.replace('_', ' ')}</span>
+          <span className={`ms-2 rounded-full border px-2 py-0.5 text-xs ${receipt.payment_status === 'paid' ? 'border-success/40 text-success' : 'border-ink-line text-ivory-dim'}`}>
+            {receipt.payment_status === 'paid' ? 'Paid' : 'Awaiting payment'}
+          </span>
+        </p>
         <p className="text-sm text-ivory-dim">{new Date(receipt.created_at).toLocaleDateString()} · AED {Number(receipt.amount).toFixed(2)}</p>
+        {receipt.payment_link_url && receipt.payment_status !== 'paid' && (
+          <a href={receipt.payment_link_url} target="_blank" rel="noreferrer" className="text-sm text-brass hover:underline">
+            Payment link ↗
+          </a>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <button

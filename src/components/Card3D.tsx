@@ -116,7 +116,14 @@ export default function Card3D() {
           )}
         </div>
 
-        {/* The folded base - real shape, confirmed blank */}
+        {/* The folded base - real shape, confirmed blank. Rotation sign
+            verified mathematically: origin at 'top' (the crease shared
+            with the front face), so a NEGATIVE rotateX pushes the far
+            edge into negative-Z (away from the viewer) - a positive
+            value here folds it forward instead, which was the exact bug
+            in the previous version. backfaceVisibility hidden too, so
+            it correctly disappears rather than rendering through the
+            card at angles where it shouldn't be visible at all. */}
         <div
           style={{
             position: 'absolute',
@@ -126,7 +133,8 @@ export default function Card3D() {
             height: BASE_D,
             background: '#f4eee3',
             transformOrigin: 'top',
-            transform: `rotateX(${180 - BASE_FOLD_DEG}deg)`,
+            transform: `rotateX(${BASE_FOLD_DEG - 180}deg)`,
+            backfaceVisibility: 'hidden',
             boxShadow: 'inset 0 8px 12px -8px rgba(0,0,0,0.25)',
             borderRadius: '0 0 10px 10px',
           }}

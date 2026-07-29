@@ -641,3 +641,9 @@ export function updateReceiptBranding(payload: { stampUrl?: string; signatureUrl
     body: JSON.stringify(payload),
   });
 }
+
+// super_admin only - one-time, deliberate action. Overwrites whichever
+// webhook is currently registered for the whole Ziina account.
+export function registerZiinaWebhook() {
+  return authFetch<{ message: string }>('/api/ziina/register-webhook', { method: 'POST' });
+}
