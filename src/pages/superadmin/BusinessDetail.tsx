@@ -407,7 +407,7 @@ function ReceiptsSection({ businessId }: { businessId: string }) {
         currently active in Billing Settings, frozen onto that receipt
         permanently.
       </p>
-      {showForm && <ReceiptForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
+      {showForm && <ReceiptForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}
       <div className="space-y-3">
         {receipts.map((r) => <ReceiptRow key={r.id} receipt={r} businessId={businessId} onChange={reload} />)}
         {receipts.length === 0 && <p className="text-base text-ivory-dim">No receipts issued yet.</p>}
@@ -416,7 +416,7 @@ function ReceiptsSection({ businessId }: { businessId: string }) {
   );
 }
 
-function ReceiptForm({ businessId, onDone }: { businessId: string; onDone: () => void }) {
+function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onDone: () => void; onReload: () => void }) {
   const [receiptType, setReceiptType] = useState<'one_time' | 'monthly' | 'adjustment'>('one_time');
   const [periodLabel, setPeriodLabel] = useState('');
   const [notes, setNotes] = useState('');
@@ -440,7 +440,18 @@ function ReceiptForm({ businessId, onDone }: { businessId: string; onDone: () =>
     }
     setSaving(true);
     try {
-      await createReceipt(businessId, { receiptType, lineItems: validLines, periodLabel, notes });
+      const receipt = await createReceipt(businessId, { receiptType, lineItems: validLines, periodLabel, notes });
+      onReload();
+      if (receipt.ziinaError) {
+        // The receipt itself saved fine (by design, this is best-effort) -
+        // but no payment_link_url was generated, so the business's Pay
+        // Now button won't show for it. Keep the form open with the real
+        // reason visible instead of silently closing as if everything
+        // worked - that silence was exactly why a reissue could fail
+        // the same way twice with no indication anything was wrong.
+        setError(`Receipt ${receipt.receipt_number} was created, but Ziina did not return a payment link: ${receipt.ziinaError}. The receipt exists without a "Pay now" button until this is resolved and reissued.`);
+        return;
+      }
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create receipt');

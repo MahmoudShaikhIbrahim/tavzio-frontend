@@ -496,6 +496,10 @@ export interface BillingReceipt {
   payment_link_url: string;
   paid_at: string | null;
   created_at: string;
+  // Present only when the receipt saved successfully but Ziina's
+  // payment-link call failed at creation time - the receipt still
+  // exists (best-effort design), it just has no payment_link_url yet.
+  ziinaError?: string;
 }
 
 export interface ReceiptBranding {
