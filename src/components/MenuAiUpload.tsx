@@ -295,7 +295,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                       {item.lowResPhoto && (
                         <p className="text-center text-[10px] leading-tight text-warning">may look soft</p>
                       )}
-                      <label className="block cursor-pointer text-center text-[10px] leading-tight text-brass hover:underline">
+                      <label className="block cursor-pointer text-center text-xs font-medium leading-tight text-brass hover:underline">
                         {replacingPhoto === `${ci}-${ii}` ? 'Uploading…' : item.photoUrl ? 'Replace' : 'Add photo'}
                         <input
                           type="file"

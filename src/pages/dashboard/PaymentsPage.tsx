@@ -159,6 +159,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
   const [ziinaApiKey, setZiinaApiKey] = useState('');
   const [testMode, setTestMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -181,14 +182,23 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
   async function handleSave() {
     setSaving(true);
-    const config =
-      provider === 'tap' ? { provider, secretKey }
-      : provider === 'telr' ? { provider, storeId, authKey, testMode }
-      : provider === 'ngenius' ? { provider, apiKey, outletRef, testMode }
-      : { provider, apiKey: ziinaApiKey, testMode };
-    const updated = await upsertPaymentIntegration(businessId, enabled, config);
-    setIntegration(updated);
-    setSaving(false);
+    setSaveError('');
+    try {
+      const config =
+        provider === 'tap' ? { provider, secretKey }
+        : provider === 'telr' ? { provider, storeId, authKey, testMode }
+        : provider === 'ngenius' ? { provider, apiKey, outletRef, testMode }
+        : { provider, apiKey: ziinaApiKey, testMode };
+      const updated = await upsertPaymentIntegration(businessId, enabled, config);
+      setIntegration(updated);
+    } catch (err) {
+      // Previously this threw uncaught and left the button stuck on
+      // "Saving..." forever with zero indication anything had gone
+      // wrong - now the real reason actually reaches the screen.
+      setSaveError(err instanceof Error ? err.message : 'Could not save payment settings');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!loaded) return null;
@@ -288,6 +298,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
+          {saveError && <p className="text-sm text-danger">{saveError}</p>}
         </div>
       </div>
     </Section>
