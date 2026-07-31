@@ -260,7 +260,12 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                 {category.items.map((item, ii) => (
                   <div key={ii} className="flex items-start gap-3 rounded-lg border border-ink-line bg-ink-soft p-3">
                     {item.photoUrl && (
-                      <img src={item.photoUrl} alt="" className="h-14 w-14 shrink-0 rounded-md object-cover" />
+                      <div className="shrink-0">
+                        <img src={item.photoUrl} alt="" className="h-14 w-14 rounded-md object-cover" />
+                        {item.lowResPhoto && (
+                          <p className="mt-1 w-14 text-center text-[10px] leading-tight text-warning">may look soft</p>
+                        )}
+                      </div>
                     )}
                     <div className="flex-1 space-y-2">
                       <input

@@ -275,6 +275,11 @@ export interface MenuAiDraftItem {
   currency?: string;
   description?: string;
   photoUrl?: string;
+  // True when the cropped photo came from a small region of the source
+  // upload and had to be upscaled significantly to reach a usable size -
+  // an honest signal that this specific photo may look softer than a
+  // genuinely high-resolution source photo would.
+  lowResPhoto?: boolean;
 }
 
 export interface MenuAiDraftCategory {
