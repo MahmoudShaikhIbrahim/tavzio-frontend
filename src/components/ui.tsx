@@ -48,11 +48,12 @@ export function ActionButton({
   );
 }
 
-export function PrimaryButton({ children, disabled, type = 'submit' }: { children: ReactNode; disabled?: boolean; type?: 'button' | 'submit' }) {
+export function PrimaryButton({ children, disabled, type = 'submit', onClick }: { children: ReactNode; disabled?: boolean; type?: 'button' | 'submit'; onClick?: () => void }) {
   return (
     <button
       type={type}
       disabled={disabled}
+      onClick={onClick}
       className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
     >
       {children}

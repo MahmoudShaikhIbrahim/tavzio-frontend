@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment } from '../lib/api';
+import { subscribeToBillItems } from '../lib/supabaseClient';
 import { getSavedPhone } from '../lib/loyaltyStorage';
 import type { BillItem, Receipt } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
@@ -23,6 +24,8 @@ function BillPageContent({ slug }: { slug: string }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState<BillItem[]>([]);
+  const [paidItems, setPaidItems] = useState<BillItem[]>([]);
+  const [paidSectionOpen, setPaidSectionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -70,6 +73,7 @@ function BillPageContent({ slug }: { slug: string }) {
     getBill(slug, tapEventId, savedPhone)
       .then((res) => {
         setItems(res.items);
+        setPaidItems(res.paidItems || []);
         setDiscountAmount(res.discountAmount || 0);
         setRewardDescription(res.rewardDescription || '');
       })
@@ -78,6 +82,53 @@ function BillPageContent({ slug }: { slug: string }) {
   }
 
   useEffect(loadBill, [slug, tapEventId]);
+
+  // Live updates: any diner's screen reflects payments the moment they
+  // happen, elsewhere at the same table - no manual refresh, and no risk
+  // of two people both trying to pay for something someone else just
+  // settled. Falls back to nothing if the tap isn't live yet; a plain
+  // 20s safety-net refresh underneath covers the rare edge case of a
+  // brand-new order appearing after the initial load (a new order_id the
+  // realtime filter wasn't subscribed to yet).
+  useEffect(() => {
+    if (!tapEventId || items.length === 0) return;
+    const orderIds = Array.from(new Set(items.map((i) => i.order_id)));
+    const unsubscribe = subscribeToBillItems(orderIds, (row) => {
+      const changed = row as unknown as BillItem;
+      if (changed.voided) {
+        setItems((prev) => prev.filter((i) => i.id !== changed.id));
+        setPaidItems((prev) => prev.filter((i) => i.id !== changed.id));
+        setSelected((prev) => {
+          if (!prev.has(changed.id)) return prev;
+          const next = new Set(prev);
+          next.delete(changed.id);
+          return next;
+        });
+        return;
+      }
+      if (changed.paid) {
+        setItems((prev) => prev.filter((i) => i.id !== changed.id));
+        setPaidItems((prev) => (prev.some((i) => i.id === changed.id) ? prev : [...prev, changed]));
+        setSelected((prev) => {
+          if (!prev.has(changed.id)) return prev;
+          const next = new Set(prev);
+          next.delete(changed.id);
+          return next;
+        });
+      } else {
+        // Newly-added item (INSERT) or an unusual re-open case - only
+        // add if genuinely new to us, never duplicate.
+        setItems((prev) => (prev.some((i) => i.id === changed.id) ? prev : [...prev, changed]));
+      }
+    });
+
+    const safetyNet = setInterval(loadBill, 20000);
+    return () => {
+      unsubscribe();
+      clearInterval(safetyNet);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tapEventId, items.length > 0]);
 
   function toggleItem(id: string) {
     setSelected((prev) => {
@@ -111,10 +162,10 @@ function BillPageContent({ slug }: { slug: string }) {
       const savedPhone = getSavedPhone(slug) || undefined;
       const itemIds = payingSpecificItems ? itemsToPay.map((i) => i.id) : null;
 
-      // Redirect providers (Telr / N-Genius): the provider's own hosted
-      // page takes the card details - nothing sensitive ever touches
-      // Tavzio, and no client-side SDK is needed at all.
-      if (provider === 'telr' || provider === 'ngenius') {
+      // Redirect providers (Telr / N-Genius / Ziina): the provider's own
+      // hosted page takes the card details - nothing sensitive ever
+      // touches Tavzio, and no client-side SDK is needed at all.
+      if (provider === 'telr' || provider === 'ngenius' || provider === 'ziina') {
         const session = await createBillPaySession(slug, tapEventId, itemIds, tip, savedPhone);
         window.location.href = session.redirectUrl;
         return; // navigating away - the return URL brings them back here
@@ -221,14 +272,20 @@ function BillPageContent({ slug }: { slug: string }) {
             <div className="flex justify-between text-sm text-ivory"><span>Total</span><span>{receipt.total.toFixed(2)} AED</span></div>
           </div>
 
-          <button onClick={() => navigate(`/${slug}`)} className="mt-6 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10">
+          <button
+            onClick={() => { setPaid(false); setReceipt(null); setSelected(new Set()); setTipPercent(0); loadBill(); }}
+            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10"
+          >
+            View live bill
+          </button>
+          <button onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft">
             {t('backTo', { slug })}
           </button>
         </div>
       </div>
     );
   }
-  if (items.length === 0) {
+  if (items.length === 0 && paidItems.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-ink px-6 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
         <p className="font-display text-xl text-ivory">{t('nothingToPayHeading')}</p>
@@ -247,6 +304,12 @@ function BillPageContent({ slug }: { slug: string }) {
         <p className="mt-1 text-sm text-ivory-dim">{t('payBillInstructions')}</p>
 
         <div className="mt-5 space-y-3">
+          {items.length === 0 && (
+            <div className="rounded-xl border border-ink-line bg-ink-soft px-5 py-6 text-center">
+              <p className="font-body text-[15px] text-ivory">Everything's been paid</p>
+              <p className="mt-1 text-xs text-ivory-dim">Check the Paid section below, or your bill again for a reference.</p>
+            </div>
+          )}
           {items.map((item) => (
             <button
               key={item.id}
@@ -266,6 +329,34 @@ function BillPageContent({ slug }: { slug: string }) {
           ))}
         </div>
 
+        {paidItems.length > 0 && (
+          <div className="mt-4">
+            <button
+              onClick={() => setPaidSectionOpen((v) => !v)}
+              className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-sm text-ivory-dim hover:bg-ink-soft"
+            >
+              <span>Paid ({paidItems.length} item{paidItems.length === 1 ? '' : 's'})</span>
+              <span className="text-xs">{paidSectionOpen ? '▲ Hide' : '▼ Show'}</span>
+            </button>
+            {paidSectionOpen && (
+              <div className="mt-2 space-y-2">
+                {paidItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between rounded-xl border border-ink-line bg-ink-soft/50 px-5 py-4 opacity-60">
+                    <div>
+                      <p className="font-body text-[15px] text-ivory line-through">
+                        {item.quantity}× {item.item_name}
+                      </p>
+                      {item.note && <p className="mt-0.5 text-xs italic text-ivory-dim">{item.note}</p>}
+                    </div>
+                    <span className="shrink-0 ps-3 text-sm text-ivory-dim">{(item.unit_price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {items.length > 0 && (
         <div className="mt-6">
           <p className="mb-2 text-sm text-ivory-dim">{t('addTip')}</p>
           <div className="flex gap-2">
@@ -282,8 +373,10 @@ function BillPageContent({ slug }: { slug: string }) {
             ))}
           </div>
         </div>
+        )}
       </div>
 
+      {items.length > 0 && (
       <div className="fixed inset-x-0 bottom-0 border-t border-ink-line bg-ink-soft px-5 py-4">
         <div className="mx-auto max-w-md">
           <div className="mb-2 flex justify-between text-sm text-ivory-dim">
@@ -312,6 +405,7 @@ function BillPageContent({ slug }: { slug: string }) {
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 }

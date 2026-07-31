@@ -140,12 +140,13 @@ const PROVIDERS = [
   { key: 'tap', label: 'Tap Payments' },
   { key: 'telr', label: 'Telr' },
   { key: 'ngenius', label: 'N-Genius Online (Network International)' },
+  { key: 'ziina', label: 'Ziina' },
 ] as const;
 
 function PaymentProviderSetup({ businessId }: { businessId: string }) {
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
   const [enabled, setEnabled] = useState(false);
-  const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius'>('tap');
+  const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius' | 'ziina'>('tap');
   // Tap
   const [secretKey, setSecretKey] = useState('');
   // Telr
@@ -154,6 +155,8 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
   // N-Genius
   const [apiKey, setApiKey] = useState('');
   const [outletRef, setOutletRef] = useState('');
+  // Ziina
+  const [ziinaApiKey, setZiinaApiKey] = useState('');
   const [testMode, setTestMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -163,12 +166,13 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
       setIntegration(data);
       if (data) {
         setEnabled(data.enabled);
-        setProvider((data.config?.provider as 'tap' | 'telr' | 'ngenius') || 'tap');
+        setProvider((data.config?.provider as 'tap' | 'telr' | 'ngenius' | 'ziina') || 'tap');
         setSecretKey(data.config?.secretKey || '');
         setStoreId(data.config?.storeId || '');
         setAuthKey(data.config?.authKey || '');
-        setApiKey(data.config?.apiKey || '');
+        setApiKey(data.config?.provider === 'ngenius' ? (data.config?.apiKey || '') : '');
         setOutletRef(data.config?.outletRef || '');
+        setZiinaApiKey(data.config?.provider === 'ziina' ? (data.config?.apiKey || '') : '');
         setTestMode(!!data.config?.testMode);
       }
       setLoaded(true);
@@ -180,7 +184,8 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
     const config =
       provider === 'tap' ? { provider, secretKey }
       : provider === 'telr' ? { provider, storeId, authKey, testMode }
-      : { provider, apiKey, outletRef, testMode };
+      : provider === 'ngenius' ? { provider, apiKey, outletRef, testMode }
+      : { provider, apiKey: ziinaApiKey, testMode };
     const updated = await upsertPaymentIntegration(businessId, enabled, config);
     setIntegration(updated);
     setSaving(false);
@@ -204,7 +209,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
         <Field label="Payment provider">
           <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius')}
+            onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina')}
             className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
           >
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
@@ -249,6 +254,18 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
             <Field label="Outlet reference">
               <input value={outletRef} onChange={(e) => setOutletRef(e.target.value)} placeholder="N-Genius portal → Settings → Organization Hierarchy" className={inputClass} />
             </Field>
+          </div>
+        )}
+
+        {provider === 'ziina' && (
+          <div className="space-y-4 border-t border-ink-line pt-5">
+            <Field label="Ziina API key">
+              <input value={ziinaApiKey} onChange={(e) => setZiinaApiKey(e.target.value)} placeholder="From your Ziina Business dashboard → Developers" className={inputClass} />
+            </Field>
+            <p className="text-sm text-ivory-dim">
+              This is your own Ziina account, separate from Tavzio's — money
+              goes straight to your Ziina balance, not through us.
+            </p>
           </div>
         )}
 

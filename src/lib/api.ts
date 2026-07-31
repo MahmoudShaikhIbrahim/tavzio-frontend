@@ -130,7 +130,7 @@ export function submitBooking(
 
 export function getBill(slug: string, tapEventId: number, phone?: string) {
   const qs = phone ? `&phone=${encodeURIComponent(phone)}` : '';
-  return request<{ items: BillItem[]; total: number; subtotal: number; discountAmount: number; rewardDescription: string }>(
+  return request<{ items: BillItem[]; paidItems: BillItem[]; total: number; subtotal: number; discountAmount: number; rewardDescription: string }>(
     `/api/public/business/${slug}/bill?tapEventId=${tapEventId}${qs}`
   );
 }

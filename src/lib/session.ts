@@ -123,3 +123,39 @@ export async function authFetch<T>(path: string, options?: RequestInit, isRetry 
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data as T;
 }
+
+// FormData variant for file uploads (e.g. AI menu extraction) - deliberately
+// does NOT set Content-Type, since the browser must set its own multipart
+// boundary automatically; authFetch above always forces
+// 'Content-Type: application/json', which would silently break any
+// multipart upload sent through it. Same auth/401-refresh/retry behavior.
+export async function authFetchForm<T>(path: string, formData: FormData, isRetry = false, timeoutMs = 10000): Promise<T> {
+  const token = getToken();
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${BASE}${path}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }, timeoutMs);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('This is taking too long — check your connection and try again');
+    }
+    throw err;
+  }
+
+  if (res.status === 401) {
+    if (!isRetry) {
+      const newToken = await refreshAccessToken();
+      if (newToken) return authFetchForm<T>(path, formData, true, timeoutMs);
+    }
+    clearSession();
+    window.location.href = '/admin/login';
+    throw new Error('Session expired');
+  }
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data as T;
+}

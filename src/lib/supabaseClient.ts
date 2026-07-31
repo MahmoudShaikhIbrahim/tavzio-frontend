@@ -49,6 +49,36 @@ export function subscribeToBusinessTable(
   };
 }
 
+// Public/anonymous version for the customer-facing Pay Bill page - no
+// login, so this uses the plain anon client rather than an authorized
+// one. Backed by migration 0023's scoped RLS policy: anon can only see
+// order_items whose order belongs to a card with a genuinely recent NFC
+// tap, so this is never a blanket "watch everything" subscription even
+// though there's no session identity to scope it by otherwise.
+//
+// Filtered to the specific order_ids this bill session already knows
+// about (from the initial getBill fetch) rather than every order_item
+// change happening anywhere - both tighter and cheaper than a broad
+// listen would be. Fires on both INSERT (a new item is added to the
+// table mid-meal) and UPDATE (an item gets marked paid, by anyone).
+export function subscribeToBillItems(
+  orderIds: string[],
+  onChange: (row: Record<string, unknown>) => void
+) {
+  if (orderIds.length === 0) return () => {};
+
+  const filter = `order_id=in.(${orderIds.join(',')})`;
+  const channel = client
+    .channel(`bill-items-${orderIds.join('-').slice(0, 40)}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_items', filter }, (payload) => onChange(payload.new as Record<string, unknown>))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items', filter }, (payload) => onChange(payload.new as Record<string, unknown>))
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 // Uploads a logo or cover image to the `business-assets` bucket, under a
 // fixed path per business+kind (so re-uploading overwrites cleanly rather
 // than accumulating orphaned files), and returns its public URL.

@@ -1,4 +1,4 @@
-import { authFetch, setSession, getToken } from './session';
+import { authFetch, authFetchForm, setSession, getToken } from './session';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import type {
   Profile, AdminBusiness, Card, StaffMember,
@@ -265,6 +265,49 @@ export function updateMenuItem(businessId: string, itemId: string, payload: Menu
 
 export function deleteMenuItem(businessId: string, itemId: string) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/menu/items/${itemId}`, { method: 'DELETE' });
+}
+
+// --- AI menu upload (PDF / Excel / photos -> draft for review) ---
+
+export interface MenuAiDraftItem {
+  name: string;
+  price: number;
+  currency?: string;
+  description?: string;
+  photoUrl?: string;
+}
+
+export interface MenuAiDraftCategory {
+  name: string;
+  items: MenuAiDraftItem[];
+}
+
+export interface MenuAiUnclear {
+  imageIndex: number;
+  reason: string;
+}
+
+export interface MenuAiExtractResult {
+  categories: MenuAiDraftCategory[];
+  unclear: MenuAiUnclear[];
+  warnings: string[];
+}
+
+// Long timeout (90s) - this call sends every uploaded file through
+// Claude for real reading, not a quick lookup; the default 10s timeout
+// used everywhere else would abort a genuine multi-page menu upload
+// well before it finishes.
+export function extractMenuAi(businessId: string, files: File[]) {
+  const formData = new FormData();
+  files.forEach((f) => formData.append('files', f));
+  return authFetchForm<MenuAiExtractResult>(`/api/businesses/${businessId}/menu/ai/extract`, formData, false, 90000);
+}
+
+export function publishMenuAi(businessId: string, categories: MenuAiDraftCategory[]) {
+  return authFetch<{ categoriesCreated: number; itemsCreated: number; errors: string[] }>(
+    `/api/businesses/${businessId}/menu/ai/publish`,
+    { method: 'POST', body: JSON.stringify({ categories }) }
+  );
 }
 
 // --- Orders (owner/staff) ---

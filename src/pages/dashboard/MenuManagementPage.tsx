@@ -6,6 +6,7 @@ import {
   listAddons, createAddon, deleteAddon, getBusiness, updateBusiness,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
+import MenuAiUpload from '../../components/MenuAiUpload';
 import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 
@@ -51,6 +52,8 @@ export default function MenuManagementPage() {
           </button>
         </div>
       </Section>
+
+      <MenuAiUpload businessId={businessId} onPublished={reload} />
       <CategoriesSection businessId={businessId} categories={categories} onChange={reload} />
       <ItemsSection businessId={businessId} categories={categories} items={items} onChange={reload} />
     </div>
