@@ -4,6 +4,7 @@ import {
   type MenuAiDraftCategory,
 } from '../lib/authApi';
 import { Section, PrimaryButton, ActionButton } from './ui';
+import { uploadBusinessFile } from '../lib/supabaseClient';
 
 const ACCEPT = '.pdf,.xlsx,.xls,.csv,image/*';
 
@@ -98,6 +99,30 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
       setError(err instanceof Error ? err.message : 'Could not read the replacement photo');
     } finally {
       setRetryingSlot(null);
+    }
+  }
+
+  const [replacingPhoto, setReplacingPhoto] = useState<string | null>(null);
+
+  // The actual reliable fix for a bad crop: upload the correct photo
+  // directly, bypassing AI cropping entirely for this item. Works
+  // regardless of how the source menu was structured or how confident
+  // the AI was - a manual replacement can never come out wrong the way
+  // an automated crop occasionally will.
+  async function replaceItemPhoto(ci: number, ii: number, e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const key = `${ci}-${ii}`;
+    setReplacingPhoto(key);
+    setError('');
+    try {
+      const url = await uploadBusinessFile(businessId, file, `menu-ai-manual/${Date.now()}-${ci}-${ii}`);
+      updateItem(ci, ii, { photoUrl: url, lowResPhoto: false });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload the photo');
+    } finally {
+      setReplacingPhoto(null);
     }
   }
 
@@ -259,14 +284,28 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
               <div className="mt-3 space-y-3">
                 {category.items.map((item, ii) => (
                   <div key={ii} className="flex items-start gap-3 rounded-lg border border-ink-line bg-ink-soft p-3">
-                    {item.photoUrl && (
-                      <div className="shrink-0">
+                    <div className="w-14 shrink-0 space-y-1">
+                      {item.photoUrl ? (
                         <img src={item.photoUrl} alt="" className="h-14 w-14 rounded-md object-cover" />
-                        {item.lowResPhoto && (
-                          <p className="mt-1 w-14 text-center text-[10px] leading-tight text-warning">may look soft</p>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-ink-line text-[10px] text-ivory-dim">
+                          no photo
+                        </div>
+                      )}
+                      {item.lowResPhoto && (
+                        <p className="text-center text-[10px] leading-tight text-warning">may look soft</p>
+                      )}
+                      <label className="block cursor-pointer text-center text-[10px] leading-tight text-brass hover:underline">
+                        {replacingPhoto === `${ci}-${ii}` ? 'Uploading…' : item.photoUrl ? 'Replace' : 'Add photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={replacingPhoto !== null}
+                          onChange={(e) => replaceItemPhoto(ci, ii, e)}
+                        />
+                      </label>
+                    </div>
                     <div className="flex-1 space-y-2">
                       <input
                         value={item.name}

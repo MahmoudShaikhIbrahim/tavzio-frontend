@@ -38,6 +38,7 @@ export default function OrdersPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [recentOpen, setRecentOpen] = useState(false);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [showStaffOrder, setShowStaffOrder] = useState(false);
@@ -108,7 +109,14 @@ export default function OrdersPage() {
 
       {past.length > 0 && (
         <div>
-          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">Recent</h2>
+          <button
+            onClick={() => setRecentOpen((v) => !v)}
+            className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim hover:text-ivory"
+          >
+            <span>Recent ({past.length})</span>
+            <span>{recentOpen ? '▲' : '▼'}</span>
+          </button>
+          {recentOpen && (
           <div className="space-y-4">
             {past.slice(0, 10).map((order) => (
               <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
@@ -126,6 +134,7 @@ export default function OrdersPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
