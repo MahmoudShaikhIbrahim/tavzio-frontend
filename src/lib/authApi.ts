@@ -521,6 +521,13 @@ export function voidOrder(businessId: string, orderId: string, reason?: string) 
   });
 }
 
+export function recordManualPayment(businessId: string, orderId: string, itemIds: string[], method: 'card_machine' | 'cash') {
+  return authFetch<{ amount: number; itemCount: number; method: string }>(
+    `/api/businesses/${businessId}/orders/${orderId}/manual-payment`,
+    { method: 'POST', body: JSON.stringify({ itemIds, method }) }
+  );
+}
+
 // --- Call Waiter / Request Bill - a separate, lightweight feed, never
 // mixed into the kitchen's order queue ---
 

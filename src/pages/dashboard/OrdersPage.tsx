@@ -2,17 +2,16 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listOrders, updateOrderStatus, getBusiness,
-  voidOrder, voidOrderItem, clearTable,
+  voidOrder, voidOrderItem, clearTable, recordManualPayment,
 } from '../../lib/authApi';
-import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings } from '../../types';
 import StaffOrderModal from '../../components/StaffOrderModal';
 import ExportButtons from '../../components/ExportButtons';
 
 const STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
-  pending: 'preparing',
-  preparing: 'ready',
+  pending: 'ready',
   ready: 'completed',
   completed: null,
   cancelled: null,
@@ -20,7 +19,6 @@ const STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'New',
-  preparing: 'Preparing',
   ready: 'Ready',
   completed: 'Completed',
   cancelled: 'Cancelled',
@@ -28,7 +26,6 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
   pending: 'border-brass text-brass',
-  preparing: 'border-info/50 text-info',
   ready: 'border-success/50 text-success',
   completed: 'border-ink-line text-ivory-dim',
   cancelled: 'border-danger/40 text-danger',
@@ -65,6 +62,21 @@ export default function OrdersPage() {
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, notificationSettings]);
+
+  // A customer marking items "pay in cash" needs staff to actually notice
+  // and go collect it - same alert treatment as a new order coming in,
+  // since both mean "someone needs to walk over to a table."
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderItemsForBusiness((row) => {
+      if (!row.cash_pending) return;
+      reload();
+      setNewOrderPulse(true);
+      setTimeout(() => setNewOrderPulse(false), 2000);
+      if (notificationSettings) playNotificationSound(notificationSettings.newOrder);
+    });
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationSettings]);
 
   if (!businessId) return null;
 
@@ -187,6 +199,41 @@ function TableGroup({ table, orders, businessId, onChange }: {
 function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessId: string; onChange: () => void }) {
   const next = STATUS_FLOW[order.status];
   const visibleItems = order.order_items.filter((i) => !i.voided);
+  const unpaidItems = visibleItems.filter((i) => !i.paid);
+
+  const [showPayment, setShowPayment] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [method, setMethod] = useState<'card_machine' | 'cash'>('card_machine');
+  const [recording, setRecording] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
+  function toggleSelected(itemId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
+  async function handleRecordPayment() {
+    if (selected.size === 0) {
+      setPaymentError('Select at least one item');
+      return;
+    }
+    setRecording(true);
+    setPaymentError('');
+    try {
+      await recordManualPayment(businessId, order.id, Array.from(selected), method);
+      setSelected(new Set());
+      setShowPayment(false);
+      onChange();
+    } catch (err) {
+      setPaymentError(err instanceof Error ? err.message : 'Could not record payment');
+    } finally {
+      setRecording(false);
+    }
+  }
 
   return (
     <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
@@ -205,6 +252,9 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>
               <span className="text-ivory">{item.quantity}×</span> {item.item_name}
+              {item.cash_pending && (
+                <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">Cash pending</span>
+              )}
               {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
               {item.note && <span className="block italic">— {item.note}</span>}
             </div>
@@ -229,6 +279,48 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
           POS sync: {order.pos_sync_status}
           {order.pos_sync_status === 'failed' && order.pos_sync_error ? ` — ${order.pos_sync_error}` : ''}
         </p>
+      )}
+
+      {unpaidItems.length > 0 && (
+        <div className="mt-3 rounded-lg border border-ink-line p-3">
+          <button onClick={() => setShowPayment((v) => !v)} className="text-base font-medium text-brass hover:underline">
+            {showPayment ? 'Hide' : 'Record payment'} ({unpaidItems.length} unpaid)
+          </button>
+          {showPayment && (
+            <div className="mt-3 space-y-3">
+              <p className="text-sm text-ivory-dim">Select what was actually paid, outside Tavzio (card machine, cash, or other):</p>
+              <div className="space-y-2">
+                {unpaidItems.map((item) => (
+                  <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
+                    <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelected(item.id)} className="accent-brass" />
+                    {item.quantity}× {item.item_name}
+                    {item.cash_pending && <span className="text-xs text-warning">(cash pending)</span>}
+                    <span className="ml-auto text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                {(['card_machine', 'cash'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMethod(m)}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-sm ${method === m ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                  >
+                    {m === 'card_machine' ? 'Card machine' : 'Cash'}
+                  </button>
+                ))}
+              </div>
+              {paymentError && <p className="text-sm text-danger">{paymentError}</p>}
+              <button
+                onClick={handleRecordPayment}
+                disabled={recording}
+                className="w-full rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              >
+                {recording ? 'Recording…' : 'Confirm payment received'}
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="mt-3 flex gap-2">

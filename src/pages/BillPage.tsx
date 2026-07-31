@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment } from '../lib/api';
+import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, markItemsCashPending } from '../lib/api';
 import { subscribeToBillItems } from '../lib/supabaseClient';
 import { getSavedPhone } from '../lib/loyaltyStorage';
 import type { BillItem, Receipt } from '../types';
@@ -153,6 +153,25 @@ function BillPageContent({ slug }: { slug: string }) {
   const subtotal = Math.max(0, rawSubtotal - previewDiscount);
   const tip = Math.round(subtotal * (tipPercent / 100) * 100) / 100;
   const total = subtotal + tip;
+
+  const [markingCash, setMarkingCash] = useState(false);
+  const [cashMarkedMessage, setCashMarkedMessage] = useState('');
+
+  async function handleMarkCash() {
+    if (!tapEventId || !payingSpecificItems) return;
+    setMarkingCash(true);
+    setError('');
+    try {
+      await markItemsCashPending(slug, tapEventId, itemsToPay.map((i) => i.id));
+      setCashMarkedMessage('Marked as cash — let your server know when they\'re free.');
+      setSelected(new Set());
+      loadBill();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not mark as cash');
+    } finally {
+      setMarkingCash(false);
+    }
+  }
 
   async function handlePay() {
     if (!tapEventId || itemsToPay.length === 0) return;
@@ -321,6 +340,11 @@ function BillPageContent({ slug }: { slug: string }) {
               <div>
                 <p className="font-body text-[15px] font-medium text-ivory">
                   {item.quantity}× {item.item_name}
+                  {item.cash_pending && (
+                    <span className="ms-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] font-normal text-warning">
+                      Cash pending
+                    </span>
+                  )}
                 </p>
                 {item.note && <p className="mt-0.5 text-xs italic text-ivory-dim">{item.note}</p>}
               </div>
@@ -396,6 +420,7 @@ function BillPageContent({ slug }: { slug: string }) {
             </div>
           )}
           {error && <p className="mb-2 text-sm text-danger">{error}</p>}
+          {cashMarkedMessage && <p className="mb-2 text-sm text-warning">{cashMarkedMessage}</p>}
           <button
             onClick={handlePay}
             disabled={paying}
@@ -403,6 +428,15 @@ function BillPageContent({ slug }: { slug: string }) {
           >
             {paying ? t('processing') : t('payAmount', { amount: total.toFixed(2) })}
           </button>
+          {payingSpecificItems && (
+            <button
+              onClick={handleMarkCash}
+              disabled={markingCash || paying}
+              className="mt-2 w-full rounded-lg border border-warning/40 px-4 py-2.5 text-sm text-warning hover:bg-warning/10 disabled:opacity-50"
+            >
+              {markingCash ? 'Marking…' : 'Pay in cash instead'}
+            </button>
+          )}
         </div>
       </div>
       )}

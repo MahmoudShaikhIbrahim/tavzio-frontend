@@ -149,6 +149,16 @@ export function payBill(
   });
 }
 
+// Customer intent only - never marks anything paid, just flags the
+// selected items and alerts staff to come collect cash. See BillPage's
+// "Pay in cash" action.
+export function markItemsCashPending(slug: string, tapEventId: number, itemIds: string[]) {
+  return request<{ message: string; itemIds: string[] }>(`/api/public/business/${slug}/bill/cash-pending`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId, itemIds }),
+  });
+}
+
 // Redirect providers (Telr, N-Genius): starts the payment and returns the
 // provider's hosted page URL to send the customer to.
 export function createBillPaySession(slug: string, tapEventId: number, itemIds: string[] | null, tipAmount: number, phone?: string) {

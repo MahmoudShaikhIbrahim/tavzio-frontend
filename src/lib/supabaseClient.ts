@@ -49,6 +49,26 @@ export function subscribeToBusinessTable(
   };
 }
 
+// Staff-side order_items updates (e.g. a customer marking "pay in cash",
+// which needs to alert staff to go collect it). Deliberately NOT using
+// subscribeToBusinessTable above for this - its business_id filter
+// doesn't work for order_items at all (no such column on that table,
+// same root cause as the anon case below), it just happens that nothing
+// has called it that way yet. No filter is needed here anyway: this
+// uses the authenticated, RLS-bound connection, and staff already only
+// ever see their own business's rows via the existing order_items
+// SELECT policy - Realtime naturally respects that.
+export function subscribeToOrderItemsForBusiness(onUpdate: (row: Record<string, unknown>) => void) {
+  const channel = client
+    .channel(`staff-order-items-${Math.random().toString(36).slice(2)}`)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items' }, (payload) => onUpdate(payload.new as Record<string, unknown>))
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 // Public/anonymous version for the customer-facing Pay Bill page - no
 // login, so this uses the plain anon client rather than an authorized
 // one. Backed by migration 0023's scoped RLS policy: anon can only see

@@ -256,6 +256,11 @@ export interface MenuCategory {
   id: string;
   business_id: string;
   name: string;
+  // Populated by the public getPublicMenu endpoint (select('*') already
+  // includes it) - the translated name per language code, e.g. { fr:
+  // "Plats principaux" }. Falls back to `name` when a language has no
+  // translation yet.
+  name_i18n?: Record<string, string>;
   sort_order: number;
   paused: boolean;
 }
@@ -273,7 +278,9 @@ export interface MenuItem {
   business_id: string;
   category_id: string | null;
   name: string;
+  name_i18n?: Record<string, string>;
   description: string;
+  description_i18n?: Record<string, string>;
   price: number;
   image_url: string;
   is_available: boolean;
@@ -295,7 +302,7 @@ export interface CartLine {
   selectedAddons: MenuItemAddon[]; // priced server-side again on submit, this is just for display + the ids sent
 }
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+export type OrderStatus = 'pending' | 'ready' | 'completed' | 'cancelled';
 export type OrderRequestType = 'order' | 'call_waiter' | 'request_bill';
 
 export interface OrderItemAddonSnapshot {
@@ -310,6 +317,7 @@ export interface OrderItemRow {
   quantity: number;
   note: string;
   paid: boolean;
+  cash_pending: boolean;
   voided: boolean;
   addons: OrderItemAddonSnapshot[];
   addon_total: number;
@@ -423,6 +431,7 @@ export interface BillItem {
   quantity: number;
   note: string;
   paid: boolean;
+  cash_pending: boolean;
   voided: boolean;
   addons: OrderItemAddonSnapshot[];
   addon_total: number;

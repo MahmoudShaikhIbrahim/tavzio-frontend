@@ -6,6 +6,14 @@ import type { MenuCategory, MenuItem, MenuItemAddon } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
+// Falls back to the original text whenever a translation is missing for
+// the current language (item just added, translation API hiccup, etc.) -
+// same graceful-fallback behavior already documented for this feature,
+// it just wasn't actually wired up on this page until now.
+function translated(base: string, i18n: Record<string, string> | undefined, language: string): string {
+  return i18n?.[language] || base;
+}
+
 export default function MenuPage() {
   const { slug } = useParams<{ slug: string }>();
   if (!slug) return <LoadingShell />;
@@ -146,8 +154,8 @@ function MenuPageContent({ slug }: { slug: string }) {
         >
           {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
           <div className="flex-1">
-            <p className="font-body text-[15px] font-medium text-ivory">{item.name}</p>
-            {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{item.description}</p>}
+            <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+            {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
           </div>
           <span className="shrink-0 ps-3 text-sm text-brass">{item.price.toFixed(2)}</span>
         </div>
@@ -165,8 +173,8 @@ function MenuPageContent({ slug }: { slug: string }) {
       >
         {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
         <div className="flex-1">
-          <p className="font-body text-[15px] font-medium text-ivory">{item.name}</p>
-          {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{item.description}</p>}
+          <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+          {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
           {orderable && (item.addons && item.addons.length > 0) && <p className="mt-0.5 text-xs text-brass/70">{t('addonsAvailable')}</p>}
           {!orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}
         </div>
@@ -191,7 +199,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           if (catItems.length === 0) return null;
           return (
             <div key={cat.id} className="mt-6">
-              <h2 className="font-mono text-[11px] uppercase tracking-wider text-brass">{cat.name}</h2>
+              <h2 className="font-mono text-[11px] uppercase tracking-wider text-brass">{translated(cat.name, cat.name_i18n, language)}</h2>
               <div className="mt-2 space-y-3">
                 {catItems.map(renderItem)}
               </div>
@@ -280,7 +288,7 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
   onClose: () => void;
   onSave: (qty: number, note: string, addons: MenuItemAddon[]) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [quantity, setQuantity] = useState(initialQuantity);
   const [note, setNote] = useState(initialNote);
   const [selectedAddonIds, setSelectedAddonIds] = useState<Set<string>>(new Set(initialAddons.map((a) => a.id)));
@@ -304,8 +312,8 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
         onClick={(e) => e.stopPropagation()}
       >
         {item.image_url && <img src={item.image_url} alt="" className="mb-3 h-40 w-full rounded-xl object-cover" />}
-        <p className="font-display text-lg text-ivory">{item.name}</p>
-        {item.description && <p className="mt-1 text-sm text-ivory-dim">{item.description}</p>}
+        <p className="font-display text-lg text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+        {item.description && <p className="mt-1 text-sm text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
         <p className="mt-1 text-sm text-brass">{item.price.toFixed(2)}</p>
 
         {(item.addons && item.addons.length > 0) && (
