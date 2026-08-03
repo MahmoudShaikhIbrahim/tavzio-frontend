@@ -29,6 +29,7 @@ export const zh: TranslationDict = {
   claimReward: '领取奖励',
   claiming: '领取中...',
   rewardClaimed: '奖励已领取 — 请向员工出示',
+  rewardClaimedPendingNote: '这是上次到访的奖励 — 请让员工先兑现，之后才能获得新的奖励。',
   yourReward: '您的奖励',
 
   menu: '菜单',

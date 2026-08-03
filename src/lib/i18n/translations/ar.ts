@@ -29,6 +29,7 @@ export const ar: TranslationDict = {
   claimReward: 'اطلب المكافأة',
   claiming: 'جارٍ المطالبة...',
   rewardClaimed: 'تم المطالبة بالمكافأة — أظهر هذا للموظفين',
+  rewardClaimedPendingNote: 'هذه من زيارة سابقة — اطلب من الموظفين استبدالها قبل أن تتمكن من كسب مكافأة جديدة.',
   yourReward: 'مكافأتك',
 
   menu: 'القائمة',

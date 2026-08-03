@@ -29,6 +29,7 @@ export const hi: TranslationDict = {
   claimReward: 'रिवॉर्ड क्लेम करें',
   claiming: 'क्लेम किया जा रहा है...',
   rewardClaimed: 'रिवॉर्ड क्लेम हो गया — यह स्टाफ को दिखाएँ',
+  rewardClaimedPendingNote: 'यह पिछली विज़िट का है — नया रिवॉर्ड पाने से पहले स्टाफ से इसे रिडीम करने के लिए कहें।',
   yourReward: 'आपका रिवॉर्ड',
 
   menu: 'मेन्यू',

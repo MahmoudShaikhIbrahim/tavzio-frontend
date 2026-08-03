@@ -173,7 +173,8 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
           )}
           {rewardReady && pendingClaim && (
             <div className="rounded-lg border border-brass bg-brass/10 px-3.5 py-2.5 text-sm text-brass-bright">
-              {t('rewardClaimed')}
+              <p>{t('rewardClaimed')} — {reward?.description || t('yourReward')}</p>
+              <p className="mt-1 text-xs text-ivory-dim">{t('rewardClaimedPendingNote')}</p>
             </div>
           )}
           {!rewardReady && alreadyCounted && (

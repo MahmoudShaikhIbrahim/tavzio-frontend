@@ -302,9 +302,9 @@ function MemberRow({ member, businessId, program, onChange }: {
 
   return (
     <div className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-ivory">{member.customers?.phone || 'Unknown'}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-ivory-dim">{progressText}</span>
           <ActionButton onClick={() => setShowAdjust((s) => !s)}>Adjust</ActionButton>
           {program.structure === 'threshold' && (

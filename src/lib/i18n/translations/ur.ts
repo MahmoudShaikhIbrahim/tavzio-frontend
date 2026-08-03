@@ -29,6 +29,7 @@ export const ur: TranslationDict = {
   claimReward: 'انعام کا دعویٰ کریں',
   claiming: 'دعویٰ کیا جا رہا ہے...',
   rewardClaimed: 'انعام کا دعویٰ ہو گیا — یہ عملے کو دکھائیں',
+  rewardClaimedPendingNote: 'یہ پچھلی وزٹ کا ہے — نیا انعام حاصل کرنے سے پہلے عملے سے اسے ریڈیم کرنے کو کہیں۔',
   yourReward: 'آپ کا انعام',
 
   menu: 'مینو',

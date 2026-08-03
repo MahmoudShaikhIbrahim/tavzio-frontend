@@ -55,6 +55,7 @@ export interface TranslationDict {
   claimReward: string;
   claiming: string;
   rewardClaimed: string;
+  rewardClaimedPendingNote: string;
   yourReward: string;
 
   // Menu

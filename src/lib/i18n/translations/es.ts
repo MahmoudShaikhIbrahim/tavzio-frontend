@@ -29,6 +29,7 @@ export const es: TranslationDict = {
   claimReward: 'Reclamar recompensa',
   claiming: 'Reclamando...',
   rewardClaimed: 'Recompensa reclamada — muéstraselo al personal',
+  rewardClaimedPendingNote: 'Esto es de una visita anterior — pide al personal que la canjee antes de poder ganar una nueva.',
   yourReward: 'Tu recompensa',
 
   menu: 'Menú',

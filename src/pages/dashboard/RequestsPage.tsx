@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems, recordManualPayment,
-  markSectionViewed, type RequestRow, type CashPendingItem,
+  type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import type { LoyaltyClaim } from '../../types';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
@@ -52,9 +52,6 @@ export default function RequestsPage() {
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
   useEffect(reloadCashPending, [businessId]);
-  useEffect(() => {
-    if (businessId) markSectionViewed(businessId, 'requests').catch(() => {});
-  }, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);

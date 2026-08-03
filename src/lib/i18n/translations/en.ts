@@ -29,6 +29,7 @@ export const en: TranslationDict = {
   claimReward: 'Claim reward',
   claiming: 'Claiming...',
   rewardClaimed: 'Reward claimed — show this to staff',
+  rewardClaimedPendingNote: "This is from a previous visit — ask staff to redeem it before you can earn a new one.",
   yourReward: 'Your reward',
 
   menu: 'Menu',

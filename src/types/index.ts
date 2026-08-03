@@ -451,6 +451,7 @@ export interface PaymentRow {
   amount: number;
   tip_amount: number;
   status: 'pending' | 'completed' | 'failed';
+  provider: string;
   tap_charge_id: string;
   failure_reason: string;
   refunded: boolean;

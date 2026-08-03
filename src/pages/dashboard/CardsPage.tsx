@@ -67,8 +67,8 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-ink-line px-5 py-4 text-base">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         {editing ? (
           <>
             <input
@@ -88,7 +88,7 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
           </>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
           {copied ? 'Copied!' : 'Copy URL'}
         </button>

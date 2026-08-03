@@ -92,12 +92,12 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
 
       {setting.enabled && (
         <div className="space-y-2 rounded-lg border border-ink-line p-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={setting.sound === 'custom' ? 'custom' : setting.sound}
               onChange={(e) => patch({ sound: e.target.value })}
               disabled={saving}
-              className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+              className="min-w-0 flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             >
               {SOUND_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
               {setting.customUrl && <option value="custom">Custom upload</option>}
@@ -112,7 +112,7 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={saving}

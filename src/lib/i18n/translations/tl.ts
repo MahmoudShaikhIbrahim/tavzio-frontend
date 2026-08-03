@@ -29,6 +29,7 @@ export const tl: TranslationDict = {
   claimReward: 'I-claim ang reward',
   claiming: 'Kino-claim...',
   rewardClaimed: 'Na-claim ang reward — ipakita ito sa staff',
+  rewardClaimedPendingNote: 'Ito ay mula sa nakaraang pagbisita — hilingin sa staff na i-redeem ito bago ka makakuha ng bago.',
   yourReward: 'Ang reward mo',
 
   menu: 'Menu',

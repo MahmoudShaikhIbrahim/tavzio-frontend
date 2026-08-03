@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listPayments, getBusiness,
-  getPaymentIntegration, upsertPaymentIntegration, refundPayment, markSectionViewed,
+  getPaymentIntegration, upsertPaymentIntegration, refundPayment,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -21,9 +21,6 @@ export default function PaymentsPage() {
     if (businessId) listPayments(businessId).then(setPayments);
   }
   useEffect(reload, [businessId]);
-  useEffect(() => {
-    if (businessId) markSectionViewed(businessId, 'payments').catch(() => {});
-  }, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
@@ -69,22 +66,38 @@ export default function PaymentsPage() {
   );
 }
 
+const METHOD_LABEL: Record<string, string> = {
+  tap: 'Tap',
+  telr: 'Telr',
+  ngenius: 'N-Genius',
+  ziina: 'Ziina',
+  manual_cash: 'Cash',
+  manual_card_machine: 'Card machine',
+};
+
 function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow; businessId: string; onChange: () => void }) {
   const [showRefund, setShowRefund] = useState(false);
   const [amount, setAmount] = useState(Number(payment.amount) + Number(payment.tip_amount));
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const isManual = payment.provider?.startsWith('manual_');
+  const methodLabel = METHOD_LABEL[payment.provider] || payment.provider || 'Unknown';
 
   async function handleRefund() {
     setSubmitting(true);
     setError('');
     try {
-      await refundPayment(businessId, payment.id, amount, reason);
+      // Manual payments can only be undone in full - the backend
+      // enforces this too, this just avoids a round-trip for the
+      // obvious case of a partial amount typed into a field that
+      // shouldn't even be editable for a manual payment.
+      const refundAmount = isManual ? Number(payment.amount) + Number(payment.tip_amount) : amount;
+      await refundPayment(businessId, payment.id, refundAmount, reason);
       setShowRefund(false);
       onChange();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Refund failed');
+      setError(err instanceof Error ? err.message : (isManual ? 'Could not undo this payment' : 'Refund failed'));
     } finally {
       setSubmitting(false);
     }
@@ -92,21 +105,46 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
 
   return (
     <div className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
-      <div className="flex items-center justify-between">
-        <span className="text-ivory-dim">{new Date(payment.created_at).toLocaleString()}</span>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-ivory-dim">
+          {new Date(payment.created_at).toLocaleString()}
+          <span className="ms-2 inline-block rounded-full border border-ink-line px-2 py-0.5 text-xs text-ivory-dim">{methodLabel}</span>
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-ivory">
             {(Number(payment.amount) + Number(payment.tip_amount)).toFixed(2)} AED{payment.tip_amount > 0 && ` (incl. ${payment.tip_amount} tip)`}
           </span>
           {payment.refunded ? (
-            <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">Refunded {payment.refund_amount}</span>
+            <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">
+              {isManual ? `Undone ${payment.refund_amount}` : `Refunded ${payment.refund_amount}`}
+            </span>
           ) : (
-            <button onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">Refund</button>
+            <button onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">
+              {isManual ? 'Mark as unpaid again' : 'Refund'}
+            </button>
           )}
         </div>
       </div>
 
-      {showRefund && !payment.refunded && (
+      {showRefund && !payment.refunded && isManual && (
+        <div className="mt-2 space-y-2 border-t border-ink-line pt-2">
+          <p className="text-sm text-ivory-dim">
+            This only corrects Tavzio's own record - it was {methodLabel.toLowerCase()}, so no money moves through
+            this action. If the customer needs cash or a card-machine transaction reversed, that happens at the till,
+            same as always.
+          </p>
+          {error && <p className="text-base text-danger">{error}</p>}
+          <button
+            onClick={handleRefund}
+            disabled={submitting}
+            className="w-full rounded-lg bg-danger/10 border border-danger/40 px-3 py-1.5 text-base text-danger disabled:opacity-50"
+          >
+            {submitting ? 'Undoing...' : 'Confirm - mark this item unpaid again'}
+          </button>
+        </div>
+      )}
+
+      {showRefund && !payment.refunded && !isManual && (
         <div className="mt-2 space-y-2 border-t border-ink-line pt-2">
           <div className="flex gap-2">
             <input

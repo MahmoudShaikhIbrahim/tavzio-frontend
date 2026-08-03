@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
-import { getBusiness, updateMyTheme, getNotificationCounts, type NotificationCounts } from '../../lib/authApi';
+import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, type NotificationCounts } from '../../lib/authApi';
 import type { BusinessFeatures } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
 import { useTheme } from '../../lib/ThemeContext';
@@ -52,12 +52,29 @@ export default function DashboardLayout() {
   // refresh is plenty responsive for "should I go check that tab" while
   // being far simpler than wiring up three more realtime subscriptions
   // on top of the ones already running on the actual pages.
+  // Single source of truth for "clear the badge for whatever tab I just
+  // opened" - determines the section from the URL, marks it viewed
+  // server-side, THEN refreshes counts, in that guaranteed order. This
+  // used to be split across each page (marking viewed) and this layout
+  // (reading counts) as two independent effects with no ordering between
+  // them - occasionally the count would refresh a moment before the
+  // mark-viewed call finished, showing a stale badge that then never
+  // updated again until the next poll or navigation.
+  useEffect(() => {
+    if (!user?.business_id) return;
+    const section = TABS.find((t) => t.badge && location.pathname.includes(t.path))?.badge;
+    (section ? markSectionViewed(user.business_id, section) : Promise.resolve())
+      .catch(() => {})
+      .finally(() => {
+        if (user?.business_id) getNotificationCounts(user.business_id).then(setCounts).catch(() => {});
+      });
+  }, [location.pathname, user?.business_id]);
+
   useEffect(() => {
     if (!user?.business_id) return;
     function refresh() {
       if (user?.business_id) getNotificationCounts(user.business_id).then(setCounts).catch(() => {});
     }
-    refresh();
     const interval = setInterval(refresh, 15000);
     return () => clearInterval(interval);
   }, [user?.business_id]);
@@ -83,7 +100,7 @@ export default function DashboardLayout() {
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto px-6">
+        <nav className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto px-6 pt-1.5">
           {visibleTabs.map((t) => {
             const count = t.badge ? counts[t.badge] : 0;
             return (
@@ -98,7 +115,7 @@ export default function DashboardLayout() {
               >
                 {t.label}
                 {count > 0 && (
-                  <span className="absolute -top-0.5 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
+                  <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
                     {count > 9 ? '9+' : count}
                   </span>
                 )}
