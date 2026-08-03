@@ -526,7 +526,7 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
   const [busy, setBusy] = useState(false);
 
   async function handleVoid() {
-    if (!confirm(`Void receipt ${receipt.receipt_number}? This can't be undone.`)) return;
+    if (!confirm(`Delete receipt ${receipt.receipt_number}? This can't be undone.`)) return;
     setBusy(true);
     await voidReceipt(businessId, receipt.id);
     setBusy(false);
@@ -556,7 +556,7 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
         >
           Download
         </button>
-        <ActionButton danger onClick={handleVoid} disabled={busy}>Void</ActionButton>
+        <ActionButton danger onClick={handleVoid} disabled={busy}>Delete</ActionButton>
       </div>
     </div>
   );

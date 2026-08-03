@@ -8,8 +8,8 @@ const ACTION_STYLE: Record<AuditAction, string> = {
   void_order: 'border-danger/40 text-danger',
   void_item: 'border-danger/40 text-danger',
   refund: 'border-danger/40 text-danger',
-  staff_order_placed: 'border-brass/40 text-brass',
-  card_deleted: 'border-danger/40 text-danger',
+  manual_payment_recorded: 'border-success/40 text-success',
+  payment_integration_updated: 'border-brass/40 text-brass',
 };
 
 // Turns each action's raw details into an actual sentence, instead of a
@@ -20,20 +20,20 @@ function describeAction(entry: AuditLogEntry): { label: string; description: str
   const d = entry.details as Record<string, unknown>;
 
   switch (entry.action) {
-    case 'card_deleted':
-      return { label: 'Card deleted', description: `"${d.label || 'Untitled'}" (${d.uid || 'unknown UID'})` };
     case 'void_item':
-      return { label: 'Voided item', description: `"${d.itemName}" removed from an order` };
-    case 'staff_order_placed':
-      return { label: 'Order placed by staff', description: `${d.table || 'No table'} — ${d.itemCount} item(s), ${d.total} total` };
+      return { label: 'Deleted item', description: `"${d.itemName}" removed from an order` };
     case 'refund':
       return { label: 'Refund issued', description: `${d.amount} refunded${d.reason ? ` — ${d.reason}` : ''}` };
+    case 'manual_payment_recorded':
+      return { label: 'Payment recorded', description: `${d.amount} via ${d.method === 'cash' ? 'cash' : 'card machine'} (${d.itemCount} item${d.itemCount === 1 ? '' : 's'})` };
+    case 'payment_integration_updated':
+      return { label: 'Payment settings changed', description: `${d.provider} ${d.enabled ? 'enabled' : 'disabled'}` };
     case 'void_order':
       if (d.clearedTable) {
         const count = Array.isArray(d.orderIds) ? d.orderIds.length : 0;
-        return { label: 'Table cleared', description: `${count} order${count === 1 ? '' : 's'} voided` };
+        return { label: 'Table cleared', description: `${count} order${count === 1 ? '' : 's'} deleted` };
       }
-      return { label: 'Voided order', description: `${d.table || 'No table'}${d.reason ? ` — ${d.reason}` : ''}` };
+      return { label: 'Deleted order', description: `${d.table || 'No table'}${d.reason ? ` — ${d.reason}` : ''}` };
     default:
       return { label: entry.action, description: '' };
   }

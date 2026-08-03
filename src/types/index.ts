@@ -487,7 +487,7 @@ export interface Receipt {
 
 // --- Audit log - scoped to exactly 4 action types ---
 
-export type AuditAction = 'void_order' | 'void_item' | 'refund' | 'staff_order_placed' | 'card_deleted';
+export type AuditAction = 'void_order' | 'void_item' | 'refund' | 'manual_payment_recorded' | 'payment_integration_updated';
 
 // --- Platform billing receipts - issued by super_admin to a business,
 // distinct from the digital Pay Bill Receipt above (that's a customer's

@@ -261,9 +261,9 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
             <button
               onClick={() => voidOrderItem(businessId, order.id, item.id).then(onChange)}
               className="shrink-0 text-base text-danger hover:underline"
-              title="Void just this item"
+              title="Delete just this item"
             >
-              Void
+              Delete
             </button>
           </div>
         ))}
@@ -341,11 +341,11 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
           </button>
         )}
         <button
-          onClick={() => { if (confirm('Void this entire order? This is for stray leftover orders, not a customer cancelling.')) voidOrder(businessId, order.id).then(onChange); }}
+          onClick={() => { if (confirm('Delete this entire order? This is for stray leftover orders, not a customer cancelling.')) voidOrder(businessId, order.id).then(onChange); }}
           className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
-          title="Void the whole order"
+          title="Delete the whole order"
         >
-          Void order
+          Delete order
         </button>
       </div>
     </div>
