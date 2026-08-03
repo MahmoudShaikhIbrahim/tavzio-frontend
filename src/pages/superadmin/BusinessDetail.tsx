@@ -534,11 +534,11 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-base">
+    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-4 py-3 text-base sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="text-ivory">
           {receipt.receipt_number} <span className="text-ivory-dim">— {receipt.period_label || receipt.receipt_type.replace('_', ' ')}</span>
-          <span className={`ms-2 rounded-full border px-2 py-0.5 text-xs ${receipt.payment_status === 'paid' ? 'border-success/40 text-success' : 'border-ink-line text-ivory-dim'}`}>
+          <span className={`ms-2 inline-block rounded-full border px-2 py-0.5 text-xs ${receipt.payment_status === 'paid' ? 'border-success/40 text-success' : 'border-ink-line text-ivory-dim'}`}>
             {receipt.payment_status === 'paid' ? 'Paid' : 'Awaiting payment'}
           </span>
         </p>
@@ -549,7 +549,7 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
           </a>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => downloadReceiptPdf(businessId, receipt.id, receipt.receipt_number)}
           className="rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10"
@@ -634,9 +634,9 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
+    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
       <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
           {button.enabled ? 'On' : 'Off'}
         </ActionButton>

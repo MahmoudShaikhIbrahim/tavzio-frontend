@@ -144,13 +144,22 @@ function ItemForm({ businessId, categories, existing, onDone }: {
   const [price, setPrice] = useState(existing?.price ?? 0);
   const [categoryId, setCategoryId] = useState(existing?.category_id || '');
   const [imageUrl, setImageUrl] = useState(existing?.image_url || '');
+  const [offerEnabled, setOfferEnabled] = useState(!!existing?.offer_price);
+  const [offerPrice, setOfferPrice] = useState(existing?.offer_price ?? 0);
+  const [offerStartsAt, setOfferStartsAt] = useState(existing?.offer_starts_at?.slice(0, 16) || '');
+  const [offerEndsAt, setOfferEndsAt] = useState(existing?.offer_ends_at?.slice(0, 16) || '');
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const payload = { name, description, price, categoryId: categoryId || null, imageUrl };
+    const payload = {
+      name, description, price, categoryId: categoryId || null, imageUrl,
+      offerPrice: offerEnabled ? offerPrice : null,
+      offerStartsAt: offerEnabled && offerStartsAt ? new Date(offerStartsAt).toISOString() : null,
+      offerEndsAt: offerEnabled && offerEndsAt ? new Date(offerEndsAt).toISOString() : null,
+    };
     if (existing) {
       await updateMenuItem(businessId, existing.id, payload);
     } else {
@@ -192,7 +201,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
         <Field label="Price"><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
       </div>
@@ -205,6 +214,33 @@ function ItemForm({ businessId, categories, existing, onDone }: {
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </Field>
+
+      <div className="rounded-lg border border-ink-line p-3">
+        <label className="flex items-center gap-2 text-base text-ivory">
+          <input type="checkbox" checked={offerEnabled} onChange={(e) => setOfferEnabled(e.target.checked)} className="accent-brass" />
+          Special offer
+        </label>
+        {offerEnabled && (
+          <div className="mt-3 space-y-3">
+            <p className="text-sm text-ivory-dim">
+              Shows in a "Special Offers" section at the top of the menu during this window, with the
+              original price crossed out. Reverts automatically when it ends - nothing to undo manually.
+            </p>
+            <Field label="Offer price">
+              <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={offerPrice} onChange={(e) => setOfferPrice(Number(e.target.value))} className={inputClass} />
+            </Field>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Starts">
+                <input type="datetime-local" value={offerStartsAt} onChange={(e) => setOfferStartsAt(e.target.value)} className={inputClass} />
+              </Field>
+              <Field label="Ends">
+                <input type="datetime-local" value={offerEndsAt} onChange={(e) => setOfferEndsAt(e.target.value)} className={inputClass} />
+              </Field>
+            </div>
+          </div>
+        )}
+      </div>
+
       <PrimaryButton disabled={saving}>{saving ? 'Saving...' : existing ? 'Save changes' : 'Add item'}</PrimaryButton>
     </form>
   );
@@ -222,7 +258,7 @@ function ItemRow({ item, businessId, categories, onChange }: {
 
   return (
     <div className="rounded-lg border border-ink-line">
-      <div className="flex items-center justify-between px-3.5 py-2.5 text-base">
+      <div className="flex flex-col gap-3 px-3.5 py-2.5 text-base sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {item.image_url && (
             <img src={item.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
@@ -231,9 +267,10 @@ function ItemRow({ item, businessId, categories, onChange }: {
             <span className="text-ivory">{item.name}</span>
             <span className="ml-2 text-ivory-dim">{item.price.toFixed(2)}</span>
             {!item.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
+            {item.offer_price != null && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">Special offer</span>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ActionButton onClick={() => updateMenuItem(businessId, item.id, { isAvailable: !item.is_available }).then(onChange)}>
             {item.is_available ? 'Mark unavailable' : 'Mark available'}
           </ActionButton>

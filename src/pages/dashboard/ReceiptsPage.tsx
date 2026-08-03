@@ -36,12 +36,12 @@ export default function ReceiptsPage() {
         </p>
         <div className="space-y-4">
           {receipts.map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
+            <div key={r.id} className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-ivory">
                   {r.receipt_number}
                   <span className="text-ivory-dim"> — {r.period_label || r.receipt_type.replace('_', ' ')}</span>
-                  <span className={`ms-2 rounded-full border px-2 py-0.5 text-xs ${r.payment_status === 'paid' ? 'border-success/40 text-success' : 'border-brass/40 text-brass'}`}>
+                  <span className={`ms-2 inline-block rounded-full border px-2 py-0.5 text-xs ${r.payment_status === 'paid' ? 'border-success/40 text-success' : 'border-brass/40 text-brass'}`}>
                     {r.payment_status === 'paid' ? 'Paid' : 'Payment due'}
                   </span>
                 </p>
@@ -49,7 +49,7 @@ export default function ReceiptsPage() {
                   {new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} · AED {Number(r.amount).toFixed(2)}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {r.payment_status !== 'paid' && r.payment_link_url && (
                   <a
                     href={r.payment_link_url}

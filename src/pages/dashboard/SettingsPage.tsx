@@ -153,7 +153,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
   const brandColor = getIconColor(button.icon);
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
+    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
       <span className="flex items-center gap-2 text-ivory">
         {button.image_url ? (
           <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />
@@ -167,7 +167,7 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
         )}
         {button.label}
       </span>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
           {button.enabled ? 'On' : 'Off'}
         </ActionButton>

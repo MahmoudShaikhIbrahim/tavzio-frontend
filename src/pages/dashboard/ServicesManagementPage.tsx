@@ -84,13 +84,13 @@ function ServiceRow({ service, businessId, onChange }: { service: Service; busin
   }
 
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
+    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-3.5 py-2.5 text-base sm:flex-row sm:items-center sm:justify-between">
       <div>
         <span className="text-ivory">{service.name}</span>
         <span className="ml-2 text-ivory-dim">{service.price.toFixed(2)} · {service.duration_minutes} min</span>
         {!service.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <ActionButton onClick={() => updateService(businessId, service.id, { isAvailable: !service.is_available }).then(onChange)}>
           {service.is_available ? 'Mark unavailable' : 'Mark available'}
         </ActionButton>

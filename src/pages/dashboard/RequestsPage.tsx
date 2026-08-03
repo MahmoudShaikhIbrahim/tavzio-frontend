@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, type RequestRow,
+  listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems, recordManualPayment,
+  markSectionViewed, type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import type { LoyaltyClaim } from '../../types';
-import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import { getBusiness } from '../../lib/authApi';
 import type { NotificationSettings } from '../../types';
@@ -23,6 +24,8 @@ export default function RequestsPage() {
   const businessId = user?.business_id;
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [claims, setClaims] = useState<LoyaltyClaim[]>([]);
+  const [cashPending, setCashPending] = useState<CashPendingItem[]>([]);
+  const [confirmingCash, setConfirmingCash] = useState<string | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
 
   function reloadRequests() {
@@ -31,9 +34,27 @@ export default function RequestsPage() {
   function reloadClaims() {
     if (businessId) listLoyaltyClaims(businessId).then(setClaims);
   }
+  function reloadCashPending() {
+    if (businessId) listCashPendingItems(businessId).then(setCashPending);
+  }
+
+  async function handleConfirmCash(item: CashPendingItem) {
+    if (!businessId) return;
+    setConfirmingCash(item.id);
+    try {
+      await recordManualPayment(businessId, item.order_id, [item.id], 'cash');
+      reloadCashPending();
+    } finally {
+      setConfirmingCash(null);
+    }
+  }
 
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
+  useEffect(reloadCashPending, [businessId]);
+  useEffect(() => {
+    if (businessId) markSectionViewed(businessId, 'requests').catch(() => {});
+  }, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
@@ -53,6 +74,19 @@ export default function RequestsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, notificationSettings]);
 
+  // Live: a customer marking "pay in cash" shows up here the moment it
+  // happens, same as Call Waiter already does - no reason cash-pending
+  // should be the one thing on this page staff has to manually refresh for.
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderItemsForBusiness((row) => {
+      if (!row.cash_pending && !row.paid) return; // covers both a new flag and a resolution elsewhere
+      reloadCashPending();
+      if (row.cash_pending && notificationSettings) playNotificationSound(notificationSettings.requestBill);
+    });
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationSettings]);
+
   useEffect(() => {
     if (!businessId) return;
     const unsubscribe = subscribeToBusinessTable(businessId, 'loyalty_reward_claims', reloadClaims);
@@ -62,7 +96,7 @@ export default function RequestsPage() {
 
   if (!businessId) return null;
 
-  const nothingPending = requests.length === 0 && claims.length === 0;
+  const nothingPending = requests.length === 0 && claims.length === 0 && cashPending.length === 0;
 
   return (
     <div className="space-y-10">
@@ -88,6 +122,22 @@ export default function RequestsPage() {
               </div>
             );
           })}
+
+          {cashPending.map((item) => (
+            <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
+              <span className="text-xl font-medium text-warning">
+                Cash pending — <span className="text-ivory">{item.table_label || 'No table'}</span>
+                <span className="text-ivory-dim"> ({item.quantity}× {item.item_name}, {((item.unit_price + item.addon_total) * item.quantity).toFixed(2)})</span>
+              </span>
+              <button
+                onClick={() => handleConfirmCash(item)}
+                disabled={confirmingCash === item.id}
+                className="rounded-lg border-2 border-warning px-4 py-2 text-lg text-warning hover:bg-warning/10 disabled:opacity-50"
+              >
+                {confirmingCash === item.id ? 'Confirming…' : 'Mark received'}
+              </button>
+            </div>
+          ))}
 
           {claims.map((c) => (
             <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">

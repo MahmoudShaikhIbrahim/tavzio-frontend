@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getMenu, submitOrder } from '../lib/api';
 import { useCart } from '../hooks/useCart';
 import type { MenuCategory, MenuItem, MenuItemAddon } from '../types';
@@ -27,6 +27,9 @@ export default function MenuPage() {
 function MenuPageContent({ slug }: { slug: string }) {
   const { language, t, isRtl } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const jumpedRef = useRef(false);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [orderingPaused, setOrderingPaused] = useState(false);
@@ -86,6 +89,23 @@ function MenuPageContent({ slug }: { slug: string }) {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, language]);
+
+  function scrollToCategory(categoryId: string) {
+    categoryRefs.current[categoryId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Landing-page "jump straight to Hookah" buttons link here as
+  // ?category=<id> - only fires once per load, and only after the menu
+  // has actually rendered (the ref needs to exist), otherwise there's
+  // nothing to scroll to yet.
+  useEffect(() => {
+    if (jumpedRef.current || items.length === 0) return;
+    const target = searchParams.get('category');
+    if (target && categoryRefs.current[target]) {
+      jumpedRef.current = true;
+      setTimeout(() => scrollToCategory(target), 100);
+    }
+  }, [items, searchParams]);
 
   async function handleSubmitOrder() {
     if (!tapEventId || cart.lines.length === 0) return;
@@ -149,7 +169,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       // no way to add it to an order, since there's no ordering to add it to.
       return (
         <div
-          key={item.id}
+          key={`${item.id}-${item.category_id}`}
           className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-5 text-start"
         >
           {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
@@ -157,14 +177,17 @@ function MenuPageContent({ slug }: { slug: string }) {
             <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
             {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
           </div>
-          <span className="shrink-0 ps-3 text-sm text-brass">{item.price.toFixed(2)}</span>
+          <span className="shrink-0 ps-3 text-sm text-brass">
+            {item.original_price != null && <span className="me-1.5 text-ivory-dim line-through">{item.original_price.toFixed(2)}</span>}
+            {item.price.toFixed(2)}
+          </span>
         </div>
       );
     }
     const orderable = isOrderable(item);
     return (
       <button
-        key={item.id}
+        key={`${item.id}-${item.category_id}`}
         onClick={() => orderable && setActiveItem(item)}
         disabled={!orderable}
         className={`flex w-full items-center gap-4 justify-between rounded-xl border px-5 py-5 text-start ${
@@ -178,7 +201,10 @@ function MenuPageContent({ slug }: { slug: string }) {
           {orderable && (item.addons && item.addons.length > 0) && <p className="mt-0.5 text-xs text-brass/70">{t('addonsAvailable')}</p>}
           {!orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}
         </div>
-        <span className="shrink-0 ps-3 text-sm text-brass">{item.price.toFixed(2)}</span>
+        <span className="shrink-0 ps-3 text-sm text-brass">
+          {item.original_price != null && <span className="me-1.5 text-ivory-dim line-through">{item.original_price.toFixed(2)}</span>}
+          {item.price.toFixed(2)}
+        </span>
       </button>
     );
   }
@@ -194,11 +220,27 @@ function MenuPageContent({ slug }: { slug: string }) {
           <LanguageSwitcher />
         </div>
 
+        {categories.length > 1 && (
+          <div className="mt-4 -mx-6 flex gap-2 overflow-x-auto px-6 pb-1" style={{ scrollbarWidth: 'none' }}>
+            {categories.map((cat) => (
+              items.some((i) => i.category_id === cat.id) && (
+                <button
+                  key={cat.id}
+                  onClick={() => scrollToCategory(cat.id)}
+                  className="shrink-0 rounded-full border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass"
+                >
+                  {translated(cat.name, cat.name_i18n, language)}
+                </button>
+              )
+            ))}
+          </div>
+        )}
+
         {categories.map((cat) => {
           const catItems = items.filter((i) => i.category_id === cat.id);
           if (catItems.length === 0) return null;
           return (
-            <div key={cat.id} className="mt-6">
+            <div key={cat.id} ref={(el) => { categoryRefs.current[cat.id] = el; }} className="mt-6 scroll-mt-16">
               <h2 className="font-mono text-[11px] uppercase tracking-wider text-brass">{translated(cat.name, cat.name_i18n, language)}</h2>
               <div className="mt-2 space-y-3">
                 {catItems.map(renderItem)}

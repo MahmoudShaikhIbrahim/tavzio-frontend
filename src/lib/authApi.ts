@@ -247,6 +247,9 @@ export interface MenuItemPayload {
   imageUrl?: string;
   isAvailable?: boolean;
   sortOrder?: number;
+  offerPrice?: number | null;
+  offerStartsAt?: string | null;
+  offerEndsAt?: string | null;
 }
 
 export function createMenuItem(businessId: string, payload: MenuItemPayload) {
@@ -528,6 +531,22 @@ export function recordManualPayment(businessId: string, orderId: string, itemIds
   );
 }
 
+export interface NotificationCounts {
+  orders: number;
+  requests: number;
+  payments: number;
+}
+
+export function getNotificationCounts(businessId: string) {
+  return authFetch<NotificationCounts>(`/api/businesses/${businessId}/notifications/counts`);
+}
+
+export function markSectionViewed(businessId: string, section: 'orders' | 'requests' | 'payments') {
+  return authFetch<{ section: string; viewedAt: string }>(`/api/businesses/${businessId}/notifications/${section}/mark-viewed`, {
+    method: 'POST',
+  });
+}
+
 // --- Call Waiter / Request Bill - a separate, lightweight feed, never
 // mixed into the kitchen's order queue ---
 
@@ -545,6 +564,20 @@ export function listRequests(businessId: string) {
 
 export function dismissRequest(businessId: string, requestId: string) {
   return authFetch<RequestRow>(`/api/businesses/${businessId}/orders/requests/${requestId}/dismiss`, { method: 'PATCH' });
+}
+
+export interface CashPendingItem {
+  id: string;
+  order_id: string;
+  table_label: string;
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+  addon_total: number;
+}
+
+export function listCashPendingItems(businessId: string) {
+  return authFetch<CashPendingItem[]>(`/api/businesses/${businessId}/orders/cash-pending`);
 }
 
 export function voidOrderItem(businessId: string, orderId: string, itemId: string) {

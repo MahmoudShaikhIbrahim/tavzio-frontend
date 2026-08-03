@@ -282,6 +282,12 @@ export interface MenuItem {
   description: string;
   description_i18n?: Record<string, string>;
   price: number;
+  // Only present on the Special Offers virtual-category duplicate of an
+  // item - the crossed-out price to show alongside the discounted one.
+  original_price?: number;
+  offer_price?: number | null;
+  offer_starts_at?: string | null;
+  offer_ends_at?: string | null;
   image_url: string;
   is_available: boolean;
   sort_order: number;

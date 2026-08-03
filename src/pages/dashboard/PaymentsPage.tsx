@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listPayments, getBusiness,
-  getPaymentIntegration, upsertPaymentIntegration, refundPayment,
+  getPaymentIntegration, upsertPaymentIntegration, refundPayment, markSectionViewed,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -21,6 +21,9 @@ export default function PaymentsPage() {
     if (businessId) listPayments(businessId).then(setPayments);
   }
   useEffect(reload, [businessId]);
+  useEffect(() => {
+    if (businessId) markSectionViewed(businessId, 'payments').catch(() => {});
+  }, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);

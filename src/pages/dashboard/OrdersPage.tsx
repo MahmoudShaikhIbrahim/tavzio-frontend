@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listOrders, updateOrderStatus, getBusiness,
-  voidOrder, voidOrderItem, clearTable, recordManualPayment,
+  voidOrder, voidOrderItem, clearTable, recordManualPayment, markSectionViewed,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -45,6 +45,9 @@ export default function OrdersPage() {
   }
 
   useEffect(reload, [businessId]);
+  useEffect(() => {
+    if (businessId) markSectionViewed(businessId, 'orders').catch(() => {});
+  }, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
