@@ -26,6 +26,16 @@ export default function MenuPage() {
 
 function MenuPageContent({ slug }: { slug: string }) {
   const { language, t, isRtl } = useLanguage();
+  const [layoutMode, setLayoutMode] = useState<'rows' | 'grid'>(
+    () => (localStorage.getItem('tavzio_menu_layout') as 'rows' | 'grid') || 'rows'
+  );
+  function toggleLayout() {
+    setLayoutMode((prev) => {
+      const next = prev === 'rows' ? 'grid' : 'rows';
+      localStorage.setItem('tavzio_menu_layout', next);
+      return next;
+    });
+  }
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -164,6 +174,43 @@ function MenuPageContent({ slug }: { slug: string }) {
   }
 
   function renderItem(item: MenuItem) {
+    const orderable = submissionEnabled && isOrderable(item);
+    const priceTag = (
+      <span className="shrink-0 ps-3 text-sm text-brass">
+        {item.original_price != null && <span className="me-1.5 text-ivory-dim line-through">{item.original_price.toFixed(2)}</span>}
+        {item.price.toFixed(2)}
+      </span>
+    );
+
+    if (layoutMode === 'grid') {
+      // Big-square variant, customer's own choice - larger image on top,
+      // name/price below, two per row. Description dropped here
+      // deliberately - at half-width on a phone there isn't room for it
+      // without the card feeling cramped; tapping still opens the full
+      // item detail with the description intact.
+      return (
+        <button
+          key={`${item.id}-${item.category_id}`}
+          onClick={() => submissionEnabled && orderable && setActiveItem(item)}
+          disabled={submissionEnabled && !orderable}
+          className={`flex flex-col overflow-hidden rounded-xl border text-start ${
+            !submissionEnabled || orderable ? 'border-ink-line bg-ink-soft' : 'cursor-not-allowed border-ink-line bg-ink-soft/40 opacity-60'
+          }`}
+        >
+          <div className="aspect-square w-full bg-ink">
+            {item.image_url && <img src={item.image_url} alt="" className="h-full w-full object-cover" />}
+          </div>
+          <div className="flex items-start justify-between gap-2 p-3">
+            <div className="min-w-0">
+              <p className="truncate font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+              {submissionEnabled && !orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}
+            </div>
+            {priceTag}
+          </div>
+        </button>
+      );
+    }
+
     if (!submissionEnabled) {
       // Read-only: name, description, photo, and price still show - just
       // no way to add it to an order, since there's no ordering to add it to.
@@ -177,14 +224,10 @@ function MenuPageContent({ slug }: { slug: string }) {
             <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
             {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
           </div>
-          <span className="shrink-0 ps-3 text-sm text-brass">
-            {item.original_price != null && <span className="me-1.5 text-ivory-dim line-through">{item.original_price.toFixed(2)}</span>}
-            {item.price.toFixed(2)}
-          </span>
+          {priceTag}
         </div>
       );
     }
-    const orderable = isOrderable(item);
     return (
       <button
         key={`${item.id}-${item.category_id}`}
@@ -201,10 +244,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           {orderable && (item.addons && item.addons.length > 0) && <p className="mt-0.5 text-xs text-brass/70">{t('addonsAvailable')}</p>}
           {!orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}
         </div>
-        <span className="shrink-0 ps-3 text-sm text-brass">
-          {item.original_price != null && <span className="me-1.5 text-ivory-dim line-through">{item.original_price.toFixed(2)}</span>}
-          {item.price.toFixed(2)}
-        </span>
+        {priceTag}
       </button>
     );
   }
@@ -217,7 +257,21 @@ function MenuPageContent({ slug }: { slug: string }) {
       <div className="mx-auto max-w-md px-6 pt-14">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('menu')}</h1>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleLayout}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:text-ivory"
+              title={layoutMode === 'rows' ? 'Switch to grid view' : 'Switch to list view'}
+              aria-label={layoutMode === 'rows' ? 'Switch to grid view' : 'Switch to list view'}
+            >
+              {layoutMode === 'rows' ? (
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="10" y="1" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="10" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="10" y="10" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="2" width="16" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="8" width="16" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="14" width="16" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>
+              )}
+            </button>
+            <LanguageSwitcher />
+          </div>
         </div>
 
         {categories.length > 1 && (
@@ -242,7 +296,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           return (
             <div key={cat.id} ref={(el) => { categoryRefs.current[cat.id] = el; }} className="mt-6 scroll-mt-16">
               <h2 className="font-mono text-[11px] uppercase tracking-wider text-brass">{translated(cat.name, cat.name_i18n, language)}</h2>
-              <div className="mt-2 space-y-3">
+              <div className={layoutMode === 'grid' ? 'mt-2 grid grid-cols-2 gap-3' : 'mt-2 space-y-3'}>
                 {catItems.map(renderItem)}
               </div>
             </div>
