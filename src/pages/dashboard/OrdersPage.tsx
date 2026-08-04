@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
-  voidOrder, voidOrderItem, clearTable, recordManualPayment,
+  voidOrderItem, clearTable, recordManualPayment,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
   getPaymentIntegration,
   type RequestRow, type CashPendingItem,
@@ -323,7 +323,6 @@ function TableGroup({ table, orders, businessId, onChange }: {
 function OrderSection({ order, index, businessId, onChange }: { order: OrderRow; index: number; businessId: string; onChange: () => void }) {
   const visibleItems = order.order_items.filter((i) => !i.voided);
   const [cancelling, setCancelling] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   async function handleCancel() {
     setCancelling(true);
@@ -332,17 +331,6 @@ function OrderSection({ order, index, businessId, onChange }: { order: OrderRow;
       onChange();
     } finally {
       setCancelling(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!confirm('Delete this order? This is for stray leftover orders, not a customer cancelling.')) return;
-    setDeleting(true);
-    try {
-      await voidOrder(businessId, order.id);
-      onChange();
-    } finally {
-      setDeleting(false);
     }
   }
 
@@ -391,8 +379,8 @@ function OrderSection({ order, index, businessId, onChange }: { order: OrderRow;
         </p>
       )}
 
-      <div className="mt-3 flex gap-2">
-        {order.status !== 'cancelled' && (
+      {order.status !== 'cancelled' && (
+        <div className="mt-3">
           <button
             onClick={handleCancel}
             disabled={cancelling}
@@ -400,16 +388,8 @@ function OrderSection({ order, index, businessId, onChange }: { order: OrderRow;
           >
             {cancelling ? 'Cancelling...' : 'Cancel'}
           </button>
-        )}
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory disabled:opacity-50"
-          title="Delete this order"
-        >
-          {deleting ? 'Deleting...' : 'Delete order'}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -499,6 +479,15 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
         ) : (
           <div className="space-y-4">
             <button onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">← Back to tables</button>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-ivory-dim">{selected.size} of {itemToOrder.size} selected</p>
+              <button
+                onClick={() => setSelected(selected.size === itemToOrder.size ? new Set() : new Set(itemToOrder.keys()))}
+                className="text-sm text-brass hover:underline"
+              >
+                {selected.size === itemToOrder.size ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div className="space-y-2">
               {tableOrders.map((o) => o.order_items.filter((i) => !i.voided && !i.paid).map((item) => (
                 <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
