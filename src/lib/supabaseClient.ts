@@ -33,14 +33,19 @@ export function getSupabase() {
 export function subscribeToBusinessTable(
   businessId: string,
   table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims',
-  onInsert: (row: Record<string, unknown>) => void
+  onChange: (row: Record<string, unknown>) => void
 ) {
   const channel = client
     .channel(`business-${businessId}-${table}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table, filter: `business_id=eq.${businessId}` },
-      (payload) => onInsert(payload.new as Record<string, unknown>)
+      (payload) => onChange(payload.new as Record<string, unknown>)
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table, filter: `business_id=eq.${businessId}` },
+      (payload) => onChange(payload.new as Record<string, unknown>)
     )
     .subscribe();
 

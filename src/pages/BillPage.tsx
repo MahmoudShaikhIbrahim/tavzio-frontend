@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, markItemsCashPending } from '../lib/api';
 import { subscribeToBillItems } from '../lib/supabaseClient';
@@ -33,6 +33,14 @@ function BillPageContent({ slug }: { slug: string }) {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
   const [paid, setPaid] = useState(false);
+  // Deliberately separate from 'paid' above, and never reset - 'paid'
+  // flips back to false when the person taps "View live bill" to keep
+  // browsing, but this stays true for the rest of this tab's session.
+  // It's what lets the Paid section correctly show right after YOUR OWN
+  // payment, while a genuinely fresh tap (new customer, or the same one
+  // tomorrow) with nothing left owing shows a clean "nothing to pay"
+  // screen instead of someone else's old paid history.
+  const hasPaidThisSessionRef = useRef(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [rewardDescription, setRewardDescription] = useState('');
@@ -56,6 +64,7 @@ function BillPageContent({ slug }: { slug: string }) {
         if (res.status === 'completed') {
           setReceipt(res.receipt || null);
           setPaid(true);
+          hasPaidThisSessionRef.current = true;
         }
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Payment was not completed'))
@@ -212,6 +221,7 @@ function BillPageContent({ slug }: { slug: string }) {
       const res = await payBill(slug, tapEventId, itemIds, tip, tapToken, savedPhone);
       setReceipt(res.receipt);
       setPaid(true);
+      hasPaidThisSessionRef.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Payment failed');
     } finally {
@@ -304,7 +314,7 @@ function BillPageContent({ slug }: { slug: string }) {
       </div>
     );
   }
-  if (items.length === 0 && paidItems.length === 0) {
+  if (items.length === 0 && (paidItems.length === 0 || !hasPaidThisSessionRef.current)) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-ink px-6 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
         <p className="font-display text-xl text-ivory">{t('nothingToPayHeading')}</p>

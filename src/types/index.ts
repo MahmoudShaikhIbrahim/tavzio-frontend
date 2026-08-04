@@ -335,6 +335,7 @@ export interface OrderRow {
   card_id: string | null;
   table_label: string;
   status: OrderStatus;
+  ready_ack: boolean;
   request_type: OrderRequestType;
   note: string;
   total: number;

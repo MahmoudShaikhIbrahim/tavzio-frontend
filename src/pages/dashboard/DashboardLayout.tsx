@@ -7,18 +7,18 @@ import ThemeToggle from '../../components/ThemeToggle';
 import { useTheme } from '../../lib/ThemeContext';
 
 const TABS = [
-  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const },
-  { path: 'requests', label: 'Requests', ownerOnly: false, requires: 'ordering' as const, badge: 'requests' as const },
-  { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const, badge: null },
-  { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const, badge: null },
-  { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const },
-  { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null, badge: null },
-  { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null, badge: null },
-  { path: 'features', label: 'Features', ownerOnly: false, requires: null, badge: null }, // self-service toggles - never gated by its own flag
-  { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const, badge: null },
-  { path: 'settings', label: 'Settings', ownerOnly: false, requires: null, badge: null }, // Menu, Loyalty, Cards, Notifications, and Landing Page Buttons all live here now - business info specifically stays owner-only, enforced inside the page itself
-  { path: 'receipts', label: 'Receipts', ownerOnly: false, requires: null, badge: null },
-  { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null, badge: null },
+  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
+  { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const, badge: null, badge2: null },
+  { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const, badge: null, badge2: null },
+  { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
+  { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null, badge: null, badge2: null },
+  { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null, badge: null, badge2: null },
+  { path: 'features', label: 'Features', ownerOnly: false, requires: null, badge: null, badge2: null }, // self-service toggles - never gated by its own flag
+  { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const, badge: null, badge2: null },
+  { path: 'settings', label: 'Settings', ownerOnly: false, requires: null, badge: null, badge2: null }, // Menu, Loyalty, Cards, Notifications, and Landing Page Buttons all live here now - business info specifically stays owner-only, enforced inside the page itself
+  { path: 'receipts', label: 'Receipts', ownerOnly: false, requires: null, badge: null, badge2: null },
+  { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null, badge: null, badge2: null },
 ];
 
 export default function DashboardLayout() {
@@ -62,8 +62,9 @@ export default function DashboardLayout() {
   // updated again until the next poll or navigation.
   useEffect(() => {
     if (!user?.business_id) return;
-    const section = TABS.find((t) => t.badge && location.pathname.includes(t.path))?.badge;
-    (section ? markSectionViewed(user.business_id, section) : Promise.resolve())
+    const tab = TABS.find((t) => (t.badge || t.badge2) && location.pathname.includes(t.path));
+    const sections = [tab?.badge, tab?.badge2].filter((s): s is 'orders' | 'requests' | 'payments' => !!s);
+    Promise.all(sections.map((s) => markSectionViewed(user.business_id, s)))
       .catch(() => {})
       .finally(() => {
         if (user?.business_id) getNotificationCounts(user.business_id).then(setCounts).catch(() => {});
@@ -102,7 +103,7 @@ export default function DashboardLayout() {
         </div>
         <nav className="mx-auto flex max-w-7xl gap-1.5 overflow-x-auto px-6 pt-1.5">
           {visibleTabs.map((t) => {
-            const count = t.badge ? counts[t.badge] : 0;
+            const count = (t.badge ? counts[t.badge] : 0) + (t.badge2 ? counts[t.badge2] : 0);
             return (
               <Link
                 key={t.path}

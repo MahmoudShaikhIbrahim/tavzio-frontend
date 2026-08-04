@@ -42,11 +42,11 @@
   [data-theme='light'] {
     --color-ink: 247 243 236;
     --color-ink-soft: 239 230 214;
-    --color-ink-line: 221 208 188;
+    --color-ink-line: 196 178 148;
     --color-brass: 150 115 62;
     --color-brass-bright: 184 146 90;
     --color-ivory: 33 28 22;
-    --color-ivory-dim: 107 95 78;
+    --color-ivory-dim: 82 71 56;
     --color-danger: 185 28 28;
     --color-success: 21 128 61;
     --color-info: 29 78 216;

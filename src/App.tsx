@@ -24,7 +24,7 @@ import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
-import RequestsPage from './pages/dashboard/RequestsPage';
+import KitchenPage from './pages/dashboard/KitchenPage';
 import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import FeaturesPage from './pages/dashboard/FeaturesPage';
@@ -70,7 +70,7 @@ export default function App() {
             <Route path="staff" element={<StaffPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="requests" element={<RequestsPage />} />
+            <Route path="kitchen" element={<KitchenPage />} />
             <Route path="services" element={<ServicesManagementPage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="features" element={<FeaturesPage />} />

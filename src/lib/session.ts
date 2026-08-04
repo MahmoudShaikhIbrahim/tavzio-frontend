@@ -6,27 +6,37 @@ const REFRESH_TOKEN_KEY = 'tavzio_refresh_token';
 const ROLE_KEY = 'tavzio_role';
 const DEVICE_TOKEN_KEY = 'tavzio_device_token';
 
+// sessionStorage, not localStorage: localStorage is shared across every
+// tab of the same browser, so logging into a second account in a second
+// tab would silently overwrite the first tab's session - exactly what
+// was happening (an owner account "becoming" super_admin after a
+// refresh, because both tabs were reading/writing the same shared slot).
+// sessionStorage is isolated per tab - each tab now has to log in
+// independently, but none of them can ever kick another one out.
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function getRefreshToken() {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return sessionStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 export function setSession(token: string, role?: string, refreshToken?: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-  if (role) localStorage.setItem(ROLE_KEY, role);
-  if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  sessionStorage.setItem(TOKEN_KEY, token);
+  if (role) sessionStorage.setItem(ROLE_KEY, role);
+  if (refreshToken) sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export function getStoredRole() {
-  return localStorage.getItem(ROLE_KEY);
+  return sessionStorage.getItem(ROLE_KEY);
 }
 
 // Only relevant if REQUIRE_DEVICE_CONFIRMATION=true on the backend (off by
 // default). Once a device is confirmed via the emailed link, this gets set
 // so future taps from the same browser skip straight to instant login.
+// Deliberately still localStorage - "is this browser/device recognized"
+// is a real per-device fact, not per-tab session state, so sharing it
+// across tabs is correct here, unlike the token itself above.
 export function getDeviceToken() {
   return localStorage.getItem(DEVICE_TOKEN_KEY);
 }
@@ -36,9 +46,9 @@ export function setDeviceToken(token: string) {
 }
 
 export function clearSession() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(ROLE_KEY);
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';

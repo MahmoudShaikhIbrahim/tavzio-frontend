@@ -37,6 +37,9 @@ export default function PaymentsPage() {
   const totalToday = completed
     .filter((p) => new Date(p.created_at).toDateString() === new Date().toDateString())
     .reduce((sum, p) => sum + Number(p.amount) + Number(p.tip_amount), 0);
+  // Default view is last 24h only - full history stays one Export click
+  // away, same pattern as Orders' Recent section.
+  const recent = completed.filter((p) => Date.now() - new Date(p.created_at).getTime() < 24 * 60 * 60 * 1000);
 
   return (
     <div className="space-y-10">
@@ -49,11 +52,12 @@ export default function PaymentsPage() {
         }
       >
         <p className="text-base text-ivory-dim">Today's total: <span className="text-ivory">{totalToday.toFixed(2)} AED</span></p>
+        <p className="text-sm text-ivory-dim">Showing last 24h - use Export for older dates.</p>
         <div className="space-y-4">
-          {completed.map((p) => (
+          {recent.map((p) => (
             <PaymentRowItem key={p.id} payment={p} businessId={businessId} onChange={reload} />
           ))}
-          {completed.length === 0 && <p className="text-base text-ivory-dim">No payments yet.</p>}
+          {recent.length === 0 && <p className="text-base text-ivory-dim">No payments in the last 24h.</p>}
         </div>
       </Section>
     </div>

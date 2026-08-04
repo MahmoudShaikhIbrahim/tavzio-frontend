@@ -1,21 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listOrders, updateOrderStatus, getBusiness,
+  listOrders, updateOrderStatus, getBusiness, ackOrderReady,
   voidOrder, voidOrderItem, clearTable, recordManualPayment,
+  listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
+  getPaymentIntegration,
+  type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
-import type { OrderRow, OrderStatus, NotificationSettings } from '../../types';
+import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
 import StaffOrderModal from '../../components/StaffOrderModal';
 import ExportButtons from '../../components/ExportButtons';
-
-const STATUS_FLOW: Record<OrderStatus, OrderStatus | null> = {
-  pending: 'ready',
-  ready: 'completed',
-  completed: null,
-  cancelled: null,
-};
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'New',
@@ -31,6 +27,8 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
   cancelled: 'border-danger/40 text-danger',
 };
 
+const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 export default function OrdersPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
@@ -39,44 +37,98 @@ export default function OrdersPage() {
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [showStaffOrder, setShowStaffOrder] = useState(false);
+  const [payBillEnabled, setPayBillEnabled] = useState(false);
+  const [showRecordPayment, setShowRecordPayment] = useState(false);
+
+  // Attention panel state - same four sources as the old Requests page,
+  // now living at the top of Orders instead, plus the new "order ready"
+  // notification.
+  const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [claims, setClaims] = useState<LoyaltyClaim[]>([]);
+  const [cashPending, setCashPending] = useState<CashPendingItem[]>([]);
 
   function reload() {
     if (businessId) listOrders(businessId).then(setOrders);
   }
+  function reloadRequests() {
+    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed')));
+  }
+  function reloadClaims() {
+    if (businessId) listLoyaltyClaims(businessId).then(setClaims);
+  }
+  function reloadCashPending() {
+    if (businessId) listCashPendingItems(businessId).then(setCashPending);
+  }
 
   useEffect(reload, [businessId]);
+  useEffect(reloadRequests, [businessId]);
+  useEffect(reloadClaims, [businessId]);
+  useEffect(reloadCashPending, [businessId]);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
+  useEffect(() => {
+    if (businessId) getPaymentIntegration(businessId).then((i) => setPayBillEnabled(!!i?.enabled));
+  }, [businessId]);
 
+  // Real-time, instant, everywhere on this page - a new order, an order
+  // going ready, a cash-pending flag, all reflect immediately across
+  // every open screen without anyone needing to refresh.
   useEffect(() => {
     if (!businessId) return;
     const unsubscribe = subscribeToBusinessTable(businessId, 'orders', (row) => {
       const requestType = row.request_type as string;
-      if (requestType !== 'order') return; // Call Waiter/Request Bill live on the Requests page now
-      reload();
-      setNewOrderPulse(true);
-      setTimeout(() => setNewOrderPulse(false), 2000);
-      if (notificationSettings) playNotificationSound(notificationSettings.newOrder);
+      if (requestType === 'order') {
+        reload();
+        if (row.status === 'pending') {
+          setNewOrderPulse(true);
+          setTimeout(() => setNewOrderPulse(false), 2000);
+          if (notificationSettings) playNotificationSound(notificationSettings.newOrder);
+        }
+      } else {
+        reloadRequests();
+        if (notificationSettings) {
+          if (requestType === 'call_waiter') playNotificationSound(notificationSettings.callWaiter);
+          else if (requestType === 'request_bill') playNotificationSound(notificationSettings.requestBill);
+        }
+      }
     });
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, notificationSettings]);
 
-  // A customer marking items "pay in cash" needs staff to actually notice
-  // and go collect it - same alert treatment as a new order coming in,
-  // since both mean "someone needs to walk over to a table."
   useEffect(() => {
     const unsubscribe = subscribeToOrderItemsForBusiness((row) => {
-      if (!row.cash_pending) return;
+      if (!row.cash_pending && !row.paid) return;
+      reloadCashPending();
       reload();
-      setNewOrderPulse(true);
-      setTimeout(() => setNewOrderPulse(false), 2000);
-      if (notificationSettings) playNotificationSound(notificationSettings.newOrder);
+      if (row.cash_pending && notificationSettings) {
+        setNewOrderPulse(true);
+        setTimeout(() => setNewOrderPulse(false), 2000);
+        playNotificationSound(notificationSettings.requestBill);
+      }
     });
     return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notificationSettings]);
+
+  async function handleDismissRequest(id: string) {
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await dismissRequest(businessId!, id);
+    } catch {
+      reloadRequests();
+    }
+  }
+
+  async function handleAckReady(orderId: string) {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ready_ack: true } : o)));
+    try {
+      await ackOrderReady(businessId!, orderId);
+    } catch {
+      reload();
+    }
+  }
 
   if (!businessId) return null;
 
@@ -84,30 +136,91 @@ export default function OrdersPage() {
   // that's the actual point of voiding, not just a status label.
   const visible = orders.filter((o) => !o.voided);
   const active = visible.filter((o) => o.status !== 'completed' && o.status !== 'cancelled');
-  const past = visible.filter((o) => o.status === 'completed' || o.status === 'cancelled');
+  const past = visible
+    .filter((o) => o.status === 'completed' || o.status === 'cancelled')
+    .filter((o) => Date.now() - new Date(o.created_at).getTime() < RECENT_WINDOW_MS);
+  const readyUnacked = visible.filter((o) => o.status === 'ready' && !o.ready_ack);
 
-  // Grouped by table - so a busy screen with several tables at once shows
-  // each table's own state at a glance, instead of one flat mixed list.
+  // Grouped by table - one card per table, each order inside it shown as
+  // its own labeled section (never merged at the data level - each order
+  // stays a real, separate record, this is purely a display grouping).
   const tableGroups = active.reduce<Record<string, OrderRow[]>>((acc, o) => {
     const key = o.table_label || 'No table';
     (acc[key] ||= []).push(o);
     return acc;
   }, {});
 
+  const hasAttentionItems = requests.length > 0 || claims.length > 0 || cashPending.length > 0 || readyUnacked.length > 0;
+
   return (
     <div className="space-y-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <h1 className="font-display text-3xl text-ivory">Orders</h1>
           {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setShowStaffOrder(true)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
             + Order for a table
           </button>
+          {payBillEnabled && (
+            <button
+              onClick={() => setShowRecordPayment(true)}
+              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
+            >
+              Record payment
+            </button>
+          )}
           <ExportButtons businessId={businessId} kind="orders" />
         </div>
       </div>
+
+      {hasAttentionItems && (
+        <div className="space-y-3">
+          {readyUnacked.map((o) => (
+            <div key={o.id} className="flex items-center justify-between rounded-xl border-2 border-success/50 bg-success/10 px-5 py-4">
+              <span className="text-xl font-medium text-success">
+                Ready — <span className="text-ivory">{o.table_label || 'No table'}</span>
+              </span>
+              <button onClick={() => handleAckReady(o.id)} className="rounded-lg border-2 border-success px-4 py-2 text-lg text-success hover:bg-success/10">
+                Dismiss
+              </button>
+            </div>
+          ))}
+          {requests.map((r) => (
+            <div key={r.id} className="flex items-center justify-between rounded-xl border-2 border-brass/50 bg-brass/10 px-5 py-4">
+              <span className="text-xl font-medium text-brass">
+                {r.request_type === 'call_waiter' ? 'Call Waiter' : 'Request Bill'} — <span className="text-ivory">{r.table_label || 'No table'}</span>
+              </span>
+              <button onClick={() => handleDismissRequest(r.id)} className="rounded-lg border-2 border-brass px-4 py-2 text-lg text-brass hover:bg-brass/10">
+                Dismiss
+              </button>
+            </div>
+          ))}
+          {cashPending.map((item) => (
+            <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
+              <span className="text-xl font-medium text-warning">
+                Cash pending — <span className="text-ivory">{item.table_label || 'No table'}</span>
+                <span className="text-ivory-dim"> ({item.quantity}× {item.item_name})</span>
+              </span>
+              <span className="text-sm text-ivory-dim">Use Record payment to confirm</span>
+            </div>
+          ))}
+          {claims.map((c) => (
+            <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass/50 bg-brass/10 px-5 py-4">
+              <span className="text-xl font-medium text-brass">
+                Loyalty reward — <span className="text-ivory">{c.table_label || 'No table'}</span>
+              </span>
+              <button
+                onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
+                className="rounded-lg border-2 border-brass px-4 py-2 text-lg text-brass hover:bg-brass/10"
+              >
+                Mark redeemed
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {Object.keys(tableGroups).length === 0 ? (
         <p className="text-base text-ivory-dim">No active orders right now.</p>
@@ -125,7 +238,7 @@ export default function OrdersPage() {
             onClick={() => setRecentOpen((v) => !v)}
             className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim hover:text-ivory"
           >
-            <span>Recent ({past.length})</span>
+            <span>Recent, last 24h ({past.length})</span>
             <span>{recentOpen ? '▲' : '▼'}</span>
           </button>
           {recentOpen && (
@@ -153,6 +266,10 @@ export default function OrdersPage() {
       {showStaffOrder && (
         <StaffOrderModal businessId={businessId} onClose={() => setShowStaffOrder(false)} onPlaced={() => { setShowStaffOrder(false); reload(); }} />
       )}
+
+      {showRecordPayment && (
+        <RecordPaymentFlow businessId={businessId} orders={active} onClose={() => setShowRecordPayment(false)} onDone={() => { setShowRecordPayment(false); reload(); }} />
+      )}
     </div>
   );
 }
@@ -163,6 +280,7 @@ function TableGroup({ table, orders, businessId, onChange }: {
   const [clearing, setClearing] = useState(false);
   // Any of these orders' card_id works to identify the table for clearing.
   const cardId = orders[0]?.card_id;
+  const tableTotal = orders.reduce((sum, o) => sum + Number(o.total), 0);
 
   async function handleClearTable() {
     if (!cardId) return;
@@ -174,9 +292,12 @@ function TableGroup({ table, orders, businessId, onChange }: {
   }
 
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-display text-xl text-ivory">{table}</h2>
+    <div className="rounded-2xl border border-ink-line p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl text-ivory">{table}</h2>
+          <p className="text-sm text-ivory-dim">{orders.length} order{orders.length === 1 ? '' : 's'} · {tableTotal.toFixed(2)} total</p>
+        </div>
         {cardId && (
           <button
             onClick={handleClearTable}
@@ -187,59 +308,49 @@ function TableGroup({ table, orders, businessId, onChange }: {
           </button>
         )}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {orders.map((order) => (
-          <OrderCard key={order.id} order={order} businessId={businessId} onChange={onChange} />
+      <div className="space-y-3">
+        {orders.map((order, i) => (
+          <OrderSection key={order.id} order={order} index={i + 1} businessId={businessId} onChange={onChange} />
         ))}
       </div>
     </div>
   );
 }
 
-function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessId: string; onChange: () => void }) {
-  const next = STATUS_FLOW[order.status];
+// Each order within a table's card is its own clearly-labeled section -
+// grouped visually for organization, but every order underneath is a
+// genuinely separate record, matching exactly what Kitchen sees.
+function OrderSection({ order, index, businessId, onChange }: { order: OrderRow; index: number; businessId: string; onChange: () => void }) {
   const visibleItems = order.order_items.filter((i) => !i.voided);
-  const unpaidItems = visibleItems.filter((i) => !i.paid);
+  const [cancelling, setCancelling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const [showPayment, setShowPayment] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [method, setMethod] = useState<'card_machine' | 'cash'>('card_machine');
-  const [recording, setRecording] = useState(false);
-  const [paymentError, setPaymentError] = useState('');
-
-  function toggleSelected(itemId: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      await updateOrderStatus(businessId, order.id, 'cancelled');
+      onChange();
+    } finally {
+      setCancelling(false);
+    }
   }
 
-  async function handleRecordPayment() {
-    if (selected.size === 0) {
-      setPaymentError('Select at least one item');
-      return;
-    }
-    setRecording(true);
-    setPaymentError('');
+  async function handleDelete() {
+    if (!confirm('Delete this order? This is for stray leftover orders, not a customer cancelling.')) return;
+    setDeleting(true);
     try {
-      await recordManualPayment(businessId, order.id, Array.from(selected), method);
-      setSelected(new Set());
-      setShowPayment(false);
+      await voidOrder(businessId, order.id);
       onChange();
-    } catch (err) {
-      setPaymentError(err instanceof Error ? err.message : 'Could not record payment');
     } finally {
-      setRecording(false);
+      setDeleting(false);
     }
   }
 
   return (
     <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
       <div className="flex items-center justify-between">
-        <p className="font-display text-xl text-ivory">
-          {order.table_label || 'No table'}
+        <p className="text-base font-medium text-ivory">
+          Order {index}
           {order.placed_by_staff_id && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Added by staff</span>}
         </p>
         <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
@@ -247,7 +358,7 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         </span>
       </div>
 
-      <div className="mt-2 space-y-4 text-base">
+      <div className="mt-2 space-y-3 text-base">
         {visibleItems.map((item) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>
@@ -267,11 +378,10 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
             </button>
           </div>
         ))}
-        {visibleItems.length === 0 && <p className="text-base italic text-ivory-dim">All items voided</p>}
+        {visibleItems.length === 0 && <p className="text-base italic text-ivory-dim">All items deleted</p>}
       </div>
 
       {order.note && <p className="mt-2 text-base italic text-brass">Note: {order.note}</p>}
-
       <p className="mt-2 text-base text-ivory">{order.total.toFixed(2)}</p>
 
       {order.pos_sync_status !== 'not_applicable' && (
@@ -281,72 +391,145 @@ function OrderCard({ order, businessId, onChange }: { order: OrderRow; businessI
         </p>
       )}
 
-      {unpaidItems.length > 0 && (
-        <div className="mt-3 rounded-lg border border-ink-line p-3">
-          <button onClick={() => setShowPayment((v) => !v)} className="text-base font-medium text-brass hover:underline">
-            {showPayment ? 'Hide' : 'Record payment'} ({unpaidItems.length} unpaid)
-          </button>
-          {showPayment && (
-            <div className="mt-3 space-y-3">
-              <p className="text-sm text-ivory-dim">Select what was actually paid, outside Tavzio (card machine, cash, or other):</p>
-              <div className="space-y-2">
-                {unpaidItems.map((item) => (
-                  <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
-                    <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelected(item.id)} className="accent-brass" />
-                    {item.quantity}× {item.item_name}
-                    {item.cash_pending && <span className="text-xs text-warning">(cash pending)</span>}
-                    <span className="ml-auto text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                {(['card_machine', 'cash'] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMethod(m)}
-                    className={`flex-1 rounded-lg border px-3 py-2 text-sm ${method === m ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
-                  >
-                    {m === 'card_machine' ? 'Card machine' : 'Cash'}
-                  </button>
-                ))}
-              </div>
-              {paymentError && <p className="text-sm text-danger">{paymentError}</p>}
-              <button
-                onClick={handleRecordPayment}
-                disabled={recording}
-                className="w-full rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
-              >
-                {recording ? 'Recording…' : 'Confirm payment received'}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="mt-3 flex gap-2">
-        {next && (
+        {order.status !== 'cancelled' && (
           <button
-            onClick={() => updateOrderStatus(businessId, order.id, next).then(onChange)}
-            className="flex-1 rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90"
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
           >
-            Mark {STATUS_LABEL[next].toLowerCase()}
-          </button>
-        )}
-        {order.status !== 'cancelled' && order.status !== 'completed' && (
-          <button
-            onClick={() => updateOrderStatus(businessId, order.id, 'cancelled').then(onChange)}
-            className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10"
-          >
-            Cancel
+            {cancelling ? 'Cancelling...' : 'Cancel'}
           </button>
         )}
         <button
-          onClick={() => { if (confirm('Delete this entire order? This is for stray leftover orders, not a customer cancelling.')) voidOrder(businessId, order.id).then(onChange); }}
-          className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
-          title="Delete the whole order"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory disabled:opacity-50"
+          title="Delete this order"
         >
-          Delete order
+          {deleting ? 'Deleting...' : 'Delete order'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// The relocated Record Payment flow - table picker, then that table's
+// unpaid items across all its separate orders, then card machine/cash.
+// Gated to Pay-Bill-enabled businesses only, by the parent component.
+function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
+  businessId: string; orders: OrderRow[]; onClose: () => void; onDone: () => void;
+}) {
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [method, setMethod] = useState<'card_machine' | 'cash'>('card_machine');
+  const [recording, setRecording] = useState(false);
+  const [error, setError] = useState('');
+
+  const tableGroups = orders.reduce<Record<string, OrderRow[]>>((acc, o) => {
+    const key = o.table_label || 'No table';
+    const unpaid = o.order_items.filter((i) => !i.voided && !i.paid);
+    if (unpaid.length > 0) (acc[key] ||= []).push(o);
+    return acc;
+  }, {});
+
+  const tableOrders = selectedTable ? tableGroups[selectedTable] || [] : [];
+  // itemId -> orderId, so a table with several separate orders can still
+  // be settled in one pass - each affected order gets its own
+  // recordManualPayment call underneath, since orders always stay
+  // genuinely separate records.
+  const itemToOrder = new Map<string, string>();
+  tableOrders.forEach((o) => o.order_items.forEach((i) => { if (!i.voided && !i.paid) itemToOrder.set(i.id, o.id); }));
+
+  function toggle(itemId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
+  async function handleConfirm() {
+    if (selected.size === 0) {
+      setError('Select at least one item');
+      return;
+    }
+    setRecording(true);
+    setError('');
+    try {
+      const byOrder = new Map<string, string[]>();
+      selected.forEach((itemId) => {
+        const orderId = itemToOrder.get(itemId);
+        if (!orderId) return;
+        const existing = byOrder.get(orderId);
+        if (existing) existing.push(itemId);
+        else byOrder.set(orderId, [itemId]);
+      });
+      await Promise.all(Array.from(byOrder.entries()).map(([orderId, itemIds]) => recordManualPayment(businessId, orderId, itemIds, method)));
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not record payment');
+    } finally {
+      setRecording(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
+      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-ink-line bg-ink p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-xl text-ivory">Record payment</h2>
+          <button onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">Close</button>
+        </div>
+
+        {!selectedTable ? (
+          <div className="space-y-2">
+            {Object.keys(tableGroups).length === 0 && <p className="text-base text-ivory-dim">No unpaid items right now.</p>}
+            {Object.keys(tableGroups).map((table) => (
+              <button
+                key={table}
+                onClick={() => setSelectedTable(table)}
+                className="block w-full rounded-lg border border-ink-line px-4 py-3 text-start text-base text-ivory hover:border-brass/40"
+              >
+                {table}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <button onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">← Back to tables</button>
+            <div className="space-y-2">
+              {tableOrders.map((o) => o.order_items.filter((i) => !i.voided && !i.paid).map((item) => (
+                <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
+                  <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="accent-brass" />
+                  {item.quantity}× {item.item_name}
+                  {item.cash_pending && <span className="text-xs text-warning">(cash pending)</span>}
+                  <span className="ml-auto text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
+                </label>
+              )))}
+            </div>
+            <div className="flex gap-2">
+              {(['card_machine', 'cash'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMethod(m)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-sm ${method === m ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                >
+                  {m === 'card_machine' ? 'Card machine' : 'Cash'}
+                </button>
+              ))}
+            </div>
+            {error && <p className="text-sm text-danger">{error}</p>}
+            <button
+              onClick={handleConfirm}
+              disabled={recording}
+              className="w-full rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            >
+              {recording ? 'Recording…' : 'Confirm payment received'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

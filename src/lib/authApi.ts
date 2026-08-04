@@ -332,6 +332,10 @@ export function updateOrderStatus(businessId: string, orderId: string, status: O
   });
 }
 
+export function ackOrderReady(businessId: string, orderId: string) {
+  return authFetch<OrderRow>(`/api/businesses/${businessId}/orders/${orderId}/ready-ack`, { method: 'POST' });
+}
+
 // --- POS integration (purpose-scoped: 'ordering' or 'booking') ---
 
 // super_admin only - full config including credentials
