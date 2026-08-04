@@ -304,7 +304,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         })}
 
         {items.some((i) => !i.category_id) && (
-          <div className="mt-6 space-y-3">
+          <div className={layoutMode === 'grid' ? 'mt-6 grid grid-cols-2 gap-3' : 'mt-6 space-y-3'}>
             {items.filter((i) => !i.category_id).map(renderItem)}
           </div>
         )}

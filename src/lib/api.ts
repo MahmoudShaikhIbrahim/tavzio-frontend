@@ -5,6 +5,7 @@ import type {
 import { getDeviceToken } from './session';
 import { getVisitorId } from './visitor';
 import { fetchWithTimeout } from './fetchWithTimeout';
+import { safeJson } from './safeJson';
 
 // In dev, Vite's proxy (see vite.config.ts) forwards /api to localhost:5000.
 // In production, set VITE_API_BASE_URL to the deployed backend's URL.
