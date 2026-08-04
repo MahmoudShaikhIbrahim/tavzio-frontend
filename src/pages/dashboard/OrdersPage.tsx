@@ -176,44 +176,44 @@ export default function OrdersPage() {
       </div>
 
       {hasAttentionItems && (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {readyUnacked.map((o) => (
-            <div key={o.id} className="flex items-center justify-between rounded-xl border-2 border-success/50 bg-success/10 px-5 py-4">
-              <span className="text-xl font-medium text-success">
+            <div key={o.id} className="rounded-xl border border-success/50 bg-success/10 p-4">
+              <p className="text-base font-medium text-success">
                 Ready — <span className="text-ivory">{o.table_label || 'No table'}</span>
-              </span>
-              <button onClick={() => handleAckReady(o.id)} className="rounded-lg border-2 border-success px-4 py-2 text-lg text-success hover:bg-success/10">
+              </p>
+              <button onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-2 text-base text-success hover:bg-success/10">
                 Dismiss
               </button>
             </div>
           ))}
           {requests.map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-xl border-2 border-brass/50 bg-brass/10 px-5 py-4">
-              <span className="text-xl font-medium text-brass">
+            <div key={r.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
+              <p className="text-base font-medium text-brass">
                 {r.request_type === 'call_waiter' ? 'Call Waiter' : 'Request Bill'} — <span className="text-ivory">{r.table_label || 'No table'}</span>
-              </span>
-              <button onClick={() => handleDismissRequest(r.id)} className="rounded-lg border-2 border-brass px-4 py-2 text-lg text-brass hover:bg-brass/10">
+              </p>
+              <button onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10">
                 Dismiss
               </button>
             </div>
           ))}
           {cashPending.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
-              <span className="text-xl font-medium text-warning">
+            <div key={item.id} className="rounded-xl border border-warning/50 bg-warning/10 p-4">
+              <p className="text-base font-medium text-warning">
                 Cash pending — <span className="text-ivory">{item.table_label || 'No table'}</span>
-                <span className="text-ivory-dim"> ({item.quantity}× {item.item_name})</span>
-              </span>
-              <span className="text-sm text-ivory-dim">Use Record payment to confirm</span>
+              </p>
+              <p className="mt-1 text-sm text-ivory-dim">{item.quantity}× {item.item_name}</p>
+              <p className="mt-2 text-sm text-ivory-dim">Use Record payment to confirm</p>
             </div>
           ))}
           {claims.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass/50 bg-brass/10 px-5 py-4">
-              <span className="text-xl font-medium text-brass">
+            <div key={c.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
+              <p className="text-base font-medium text-brass">
                 Loyalty reward — <span className="text-ivory">{c.table_label || 'No table'}</span>
-              </span>
+              </p>
               <button
                 onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
-                className="rounded-lg border-2 border-brass px-4 py-2 text-lg text-brass hover:bg-brass/10"
+                className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10"
               >
                 Mark redeemed
               </button>
@@ -308,7 +308,7 @@ function TableGroup({ table, orders, businessId, onChange }: {
           </button>
         )}
       </div>
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((order, i) => (
           <OrderSection key={order.id} order={order} index={i + 1} businessId={businessId} onChange={onChange} />
         ))}
