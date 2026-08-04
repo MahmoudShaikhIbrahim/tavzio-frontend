@@ -219,7 +219,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           key={`${item.id}-${item.category_id}`}
           className="flex w-full items-center justify-between gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-5 text-start"
         >
-          {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
+          {item.image_url && <img src={item.image_url} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />}
           <div className="flex-1">
             <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
             {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
@@ -237,7 +237,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           orderable ? 'border-ink-line bg-ink-soft' : 'cursor-not-allowed border-ink-line bg-ink-soft/40 opacity-60'
         }`}
       >
-        {item.image_url && <img src={item.image_url} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />}
+        {item.image_url && <img src={item.image_url} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />}
         <div className="flex-1">
           <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
           {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
@@ -407,7 +407,7 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
         className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        {item.image_url && <img src={item.image_url} alt="" className="mb-3 h-40 w-full rounded-xl object-cover" />}
+        {item.image_url && <img src={item.image_url} alt="" className="mb-3 h-40 w-full rounded-xl bg-ink-soft object-contain" />}
         <p className="font-display text-lg text-ivory">{translated(item.name, item.name_i18n, language)}</p>
         {item.description && <p className="mt-1 text-sm text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
         <p className="mt-1 text-sm text-brass">{item.price.toFixed(2)}</p>

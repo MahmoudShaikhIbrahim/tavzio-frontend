@@ -75,13 +75,43 @@ function CategoriesSection({ businessId, categories, onChange }: {
     onChange();
   }
 
+  // Reassigns sort_order as clean sequential integers matching the new
+  // display order, rather than swapping the two categories' existing raw
+  // values - a plain swap would silently do nothing if they happened to
+  // share the same sort_order, which is exactly the current state for
+  // any category that's never been reordered before (all default equal).
+  async function moveCategory(index: number, direction: -1 | 1) {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= categories.length) return;
+    const reordered = [...categories];
+    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+    await Promise.all(reordered.map((cat, i) => updateMenuCategory(businessId, cat.id, { sortOrder: i })));
+    onChange();
+  }
+
   return (
     <Section title="Categories">
       <div className="space-y-4">
-        {categories.map((c) => (
+        {categories.map((c, i) => (
           <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => moveCategory(i, -1)}
+                disabled={i === 0}
+                className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
+                title="Move up"
+              >
+                ↑
+              </button>
+              <button
+                onClick={() => moveCategory(i, 1)}
+                disabled={i === categories.length - 1}
+                className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
+                title="Move down"
+              >
+                ↓
+              </button>
               <button
                 onClick={() => updateMenuCategory(businessId, c.id, { paused: !c.paused }).then(onChange)}
                 className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
