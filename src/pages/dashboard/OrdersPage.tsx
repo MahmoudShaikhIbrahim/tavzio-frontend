@@ -122,12 +122,6 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, notificationSettings]);
 
-  useEffect(() => {
-    if (!businessId) return;
-    const unsubscribe = subscribeToBusinessTable(businessId, 'loyalty_reward_claims', reloadClaims);
-    return unsubscribe;
-  }, [businessId]);
-
   async function handleDismissRequest(id: string) {
     setRequests((prev) => prev.filter((r) => r.id !== id));
     try {
@@ -228,7 +222,10 @@ export default function OrdersPage() {
                 Loyalty reward — <span className="text-ivory">{c.table_label || 'No table'}</span>
               </p>
               <button
-                onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
+                onClick={() => {
+                  setClaims((prev) => prev.filter((claim) => claim.id !== c.id));
+                  applyManualClaim(businessId, c.id).catch(reloadClaims);
+                }}
                 className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10"
               >
                 Mark redeemed

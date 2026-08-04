@@ -117,7 +117,7 @@ export default function BusinessDetail() {
           belong in a list of physical table cards. */}
       <Section title={`Table / customer cards (${cards.filter((c) => !c.linked_user_id).length})`}>
         <div className="space-y-4">
-          {cards.filter((c) => !c.linked_user_id).map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
+          {cards.filter((c) => !c.linked_user_id).map((c) => <CardRow key={c.id} card={c} cards={cards} businessId={businessId} onCardsChange={setCards} onChange={reload} />)}
           {cards.filter((c) => !c.linked_user_id).length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
         </div>
         <AddCardsForm businessId={businessId} onDone={reload} />
@@ -586,7 +586,7 @@ function CustomButtonsSection({ businessId }: { businessId: string }) {
       </p>
       {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
       <div className="space-y-4">
-        {buttons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reload} />)}
+        {buttons.map((b) => <CustomButtonRow key={b.id} button={b} buttons={buttons} businessId={businessId} onButtonsChange={setButtons} onChange={reload} />)}
         {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
       </div>
     </Section>
@@ -629,7 +629,9 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
   );
 }
 
-function CustomButtonRow({ button, businessId, onChange }: { button: CustomButton; businessId: string; onChange: () => void }) {
+function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChange }: {
+  button: CustomButton; buttons: CustomButton[]; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
@@ -637,11 +639,24 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
     <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
       <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
       <div className="flex flex-wrap items-center gap-2">
-        <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
+        <ActionButton
+          onClick={() => {
+            onButtonsChange(buttons.map((b) => (b.id === button.id ? { ...b, enabled: !b.enabled } : b)));
+            updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
+          }}
+        >
           {button.enabled ? 'On' : 'Off'}
         </ActionButton>
         <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
-        <ActionButton danger onClick={() => deleteCustomButton(businessId, button.id).then(onChange)}>Delete</ActionButton>
+        <ActionButton
+          danger
+          onClick={() => {
+            onButtonsChange(buttons.filter((b) => b.id !== button.id));
+            deleteCustomButton(businessId, button.id).catch(onChange);
+          }}
+        >
+          Delete
+        </ActionButton>
       </div>
     </div>
   );
@@ -727,7 +742,9 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
   );
 }
 
-function CardRow({ card, businessId, onChange }: { card: Card; businessId: string; onChange: () => void }) {
+function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
+  card: Card; cards: Card[]; businessId: string; onCardsChange: (c: Card[]) => void; onChange: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(card.label);
   const [copied, setCopied] = useState(false);
@@ -769,7 +786,11 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
         </button>
         <select
           value={card.status}
-          onChange={(e) => updateCard(businessId, card.id, { status: e.target.value }).then(onChange)}
+          onChange={(e) => {
+            const status = e.target.value as Card['status'];
+            onCardsChange(cards.map((c) => (c.id === card.id ? { ...c, status } : c)));
+            updateCard(businessId, card.id, { status }).catch(onChange);
+          }}
           className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim"
         >
           <option value="active">active</option>
@@ -780,7 +801,8 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
         <button
           onClick={() => {
             if (confirm(`Permanently delete this card? If the physical chip still exists, it will stop working entirely - only do this for a genuinely broken or lost card.`)) {
-              deleteCard(businessId, card.id).then(onChange);
+              onCardsChange(cards.filter((c) => c.id !== card.id));
+              deleteCard(businessId, card.id).catch(onChange);
             }
           }}
           className="rounded border border-danger/40 px-2 py-1 text-base text-danger hover:bg-danger/10"
