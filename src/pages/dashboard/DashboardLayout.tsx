@@ -61,13 +61,14 @@ export default function DashboardLayout() {
   // mark-viewed call finished, showing a stale badge that then never
   // updated again until the next poll or navigation.
   useEffect(() => {
-    if (!user?.business_id) return;
+    const bizId = user?.business_id;
+    if (!bizId) return;
     const tab = TABS.find((t) => (t.badge || t.badge2) && location.pathname.includes(t.path));
     const sections = [tab?.badge, tab?.badge2].filter((s): s is 'orders' | 'requests' | 'payments' => !!s);
-    Promise.all(sections.map((s) => markSectionViewed(user.business_id, s)))
+    Promise.all(sections.map((s) => markSectionViewed(bizId, s)))
       .catch(() => {})
       .finally(() => {
-        if (user?.business_id) getNotificationCounts(user.business_id).then(setCounts).catch(() => {});
+        getNotificationCounts(bizId).then(setCounts).catch(() => {});
       });
   }, [location.pathname, user?.business_id]);
 
