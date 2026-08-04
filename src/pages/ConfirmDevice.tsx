@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { setSession, setDeviceToken } from '../lib/session';
 import { fetchWithTimeout } from '../lib/fetchWithTimeout';
+import { safeJson } from '../lib/safeJson';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -14,7 +15,7 @@ export default function ConfirmDevice() {
     if (!pendingId) return;
     fetchWithTimeout(`${BASE}/api/auth/confirm-device/${pendingId}`)
       .then(async (res) => {
-        const data = await res.json();
+        const data = await safeJson(res);
         if (!res.ok) throw new Error(data.message || 'This link is no longer valid');
         setSession(data.accessToken, data.role, data.refreshToken);
         setDeviceToken(data.deviceToken);

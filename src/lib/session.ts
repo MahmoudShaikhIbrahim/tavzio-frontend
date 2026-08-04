@@ -1,5 +1,6 @@
 import { authorizeSupabase } from './supabaseClient';
 import { fetchWithTimeout } from './fetchWithTimeout';
+import { safeJson } from './safeJson';
 
 const TOKEN_KEY = 'tavzio_access_token';
 const REFRESH_TOKEN_KEY = 'tavzio_refresh_token';
@@ -62,7 +63,7 @@ const BASE = import.meta.env.VITE_API_BASE_URL || '';
 // call in the app - a hung request here can't leave someone stuck forever.
 let refreshInFlight: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+async function refreshAccessToken(): Promise<string | 'invalid' | null> {
   if (refreshInFlight) return refreshInFlight;
 
   const refreshToken = getRefreshToken();
@@ -70,23 +71,46 @@ async function refreshAccessToken(): Promise<string | null> {
 
   refreshInFlight = (async () => {
     try {
-      const res = await fetchWithTimeout(`${BASE}/api/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
+      let res: Response;
+      try {
+        res = await fetchWithTimeout(`${BASE}/api/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {
+        // Network-level failure - the server may be temporarily
+        // unreachable (deploy in progress, brief outage). This does NOT
+        // mean the refresh token is actually invalid, so the session must
+        // not be cleared here - that was the exact bug: a 15-30 minute
+        // outage getting misread as "you need to log in again."
+        return null;
+      }
+
+      // An explicit rejection from the server - the refresh token really
+      // is expired or revoked. This is the ONLY case that should force a
+      // real re-login.
+      if (res.status === 401 || res.status === 403) return 'invalid';
+
+      // Any other non-2xx (500, 502, 503 from an outage/gateway) is a
+      // server-side problem, not a statement about whether this session
+      // is valid - same treatment as the network failure above.
       if (!res.ok) return null;
 
-      const data = await res.json();
-      setSession(data.accessToken, undefined, data.refreshToken);
-      // Realtime subscriptions and Storage uploads authenticate directly
-      // against Supabase, separately from authFetch's own header - without
-      // this, they'd silently keep using the old, soon-to-be-invalid token
-      // even after REST calls have already moved on to the new one.
-      authorizeSupabase(data.accessToken);
-      return data.accessToken as string;
-    } catch {
-      return null;
+      try {
+        const data = await safeJson(res);
+        setSession(data.accessToken, undefined, data.refreshToken);
+        // Realtime subscriptions and Storage uploads authenticate directly
+        // against Supabase, separately from authFetch's own header - without
+        // this, they'd silently keep using the old, soon-to-be-invalid token
+        // even after REST calls have already moved on to the new one.
+        authorizeSupabase(data.accessToken);
+        return data.accessToken as string;
+      } catch {
+        // 2xx status but an unparseable body (rare, but possible with a
+        // misbehaving proxy) - again, not evidence the session is invalid.
+        return null;
+      }
     } finally {
       refreshInFlight = null;
     }
@@ -121,15 +145,24 @@ export async function authFetch<T>(path: string, options?: RequestInit, isRetry 
 
   if (res.status === 401) {
     if (!isRetry) {
-      const newToken = await refreshAccessToken();
-      if (newToken) return authFetch<T>(path, options, true);
+      const result = await refreshAccessToken();
+      if (result && result !== 'invalid') return authFetch<T>(path, options, true);
+      if (result === null) {
+        // Refresh itself couldn't be attempted properly (server
+        // unreachable, outage) - the session might still be perfectly
+        // valid. Don't clear it; just tell this one request it failed
+        // and let the next action retry naturally.
+        throw new Error('The server is temporarily unavailable — please try again in a moment.');
+      }
+      // result === 'invalid': the refresh token was genuinely rejected -
+      // this is the one case that means a real re-login is needed.
     }
     clearSession();
     window.location.href = '/admin/login';
     throw new Error('Session expired');
   }
 
-  const data = await res.json();
+  const data = await safeJson(res);
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data as T;
 }
@@ -157,15 +190,18 @@ export async function authFetchForm<T>(path: string, formData: FormData, isRetry
 
   if (res.status === 401) {
     if (!isRetry) {
-      const newToken = await refreshAccessToken();
-      if (newToken) return authFetchForm<T>(path, formData, true, timeoutMs);
+      const result = await refreshAccessToken();
+      if (result && result !== 'invalid') return authFetchForm<T>(path, formData, true, timeoutMs);
+      if (result === null) {
+        throw new Error('The server is temporarily unavailable — please try again in a moment.');
+      }
     }
     clearSession();
     window.location.href = '/admin/login';
     throw new Error('Session expired');
   }
 
-  const data = await res.json();
+  const data = await safeJson(res);
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data as T;
 }

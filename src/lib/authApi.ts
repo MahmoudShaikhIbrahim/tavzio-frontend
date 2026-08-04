@@ -1,5 +1,6 @@
 import { authFetch, authFetchForm, setSession, getToken } from './session';
 import { fetchWithTimeout } from './fetchWithTimeout';
+import { safeJson } from './safeJson';
 import type {
   Profile, AdminBusiness, Card, StaffMember,
   AnalyticsSummary, CardBreakdownItem, LoyaltyProgramAdmin, LoyaltyMemberRow, LoyaltyProgramConfig,
@@ -21,7 +22,7 @@ export async function login(email: string, password: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  const data = await res.json();
+  const data = await safeJson(res);
   if (!res.ok) throw new Error(data.message || 'Login failed');
   setSession(data.accessToken, undefined, data.refreshToken);
   return data as { accessToken: string; refreshToken: string; user: { id: string; email: string } };
@@ -60,7 +61,7 @@ export async function registerBusiness(payload: RegisterBusinessPayload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
+  const data = await safeJson(res);
   if (!res.ok) throw new Error(data.message || 'Registration failed');
   return data as { business: { id: string; slug: string; name: string } };
 }
