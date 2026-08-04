@@ -62,28 +62,35 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      <Group title="Needs a response" bookings={pending} businessId={businessId} onChange={reload} />
-      <Group title="Upcoming" bookings={upcoming} businessId={businessId} onChange={reload} />
-      <Group title="History" bookings={past.slice(0, 10)} businessId={businessId} onChange={reload} />
+      <Group title="Needs a response" bookings={pending} businessId={businessId} onBookingsChange={setBookings} onChange={reload} />
+      <Group title="Upcoming" bookings={upcoming} businessId={businessId} onBookingsChange={setBookings} onChange={reload} />
+      <Group title="History" bookings={past.slice(0, 10)} businessId={businessId} onBookingsChange={setBookings} onChange={reload} />
     </div>
   );
 }
 
-function Group({ title, bookings, businessId, onChange }: {
-  title: string; bookings: BookingRow[]; businessId: string; onChange: () => void;
+function Group({ title, bookings, businessId, onBookingsChange, onChange }: {
+  title: string; bookings: BookingRow[]; businessId: string; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void;
 }) {
   if (bookings.length === 0) return null;
   return (
     <div>
       <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">{title}</h2>
       <div className="space-y-4">
-        {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} onChange={onChange} />)}
+        {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} onBookingsChange={onBookingsChange} onChange={onChange} />)}
       </div>
     </div>
   );
 }
 
-function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow; businessId: string; onChange: () => void }) {
+function BookingRowItem({ booking, businessId, onBookingsChange, onChange }: {
+  booking: BookingRow; businessId: string; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void;
+}) {
+  function setStatus(status: BookingStatus) {
+    onBookingsChange((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status } : b)));
+    updateBookingStatus(businessId, booking.id, status).catch(onChange);
+  }
+
   return (
     <div className="rounded-lg border border-ink-line px-3.5 py-3 text-base">
       <div className="flex items-center justify-between">
@@ -103,13 +110,13 @@ function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow
       {booking.status === 'pending' && (
         <div className="mt-2.5 flex gap-2">
           <button
-            onClick={() => updateBookingStatus(businessId, booking.id, 'confirmed').then(onChange)}
+            onClick={() => setStatus('confirmed')}
             className="flex-1 rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90"
           >
             Confirm
           </button>
           <button
-            onClick={() => updateBookingStatus(businessId, booking.id, 'declined').then(onChange)}
+            onClick={() => setStatus('declined')}
             className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10"
           >
             Decline
@@ -118,7 +125,7 @@ function BookingRowItem({ booking, businessId, onChange }: { booking: BookingRow
       )}
       {booking.status === 'confirmed' && (
         <button
-          onClick={() => updateBookingStatus(businessId, booking.id, 'completed').then(onChange)}
+          onClick={() => setStatus('completed')}
           className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10"
         >
           Mark completed

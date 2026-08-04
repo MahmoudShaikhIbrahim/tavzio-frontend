@@ -112,6 +112,22 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notificationSettings]);
 
+  useEffect(() => {
+    if (!businessId) return;
+    const unsubscribe = subscribeToBusinessTable(businessId, 'loyalty_reward_claims', () => {
+      reloadClaims();
+      if (notificationSettings) playNotificationSound(notificationSettings.callWaiter);
+    });
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId, notificationSettings]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    const unsubscribe = subscribeToBusinessTable(businessId, 'loyalty_reward_claims', reloadClaims);
+    return unsubscribe;
+  }, [businessId]);
+
   async function handleDismissRequest(id: string) {
     setRequests((prev) => prev.filter((r) => r.id !== id));
     try {
@@ -227,7 +243,7 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-10">
           {Object.keys(tableGroups).map((table) => (
-            <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} onChange={reload} />
+            <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} onOrdersChange={setOrders} onChange={reload} />
           ))}
         </div>
       )}
@@ -274,8 +290,8 @@ export default function OrdersPage() {
   );
 }
 
-function TableGroup({ table, orders, businessId, onChange }: {
-  table: string; orders: OrderRow[]; businessId: string; onChange: () => void;
+function TableGroup({ table, orders, businessId, onOrdersChange, onChange }: {
+  table: string; orders: OrderRow[]; businessId: string; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
 }) {
   const [clearing, setClearing] = useState(false);
   // Any of these orders' card_id works to identify the table for clearing.
@@ -286,9 +302,17 @@ function TableGroup({ table, orders, businessId, onChange }: {
     if (!cardId) return;
     if (!confirm(`Clear ${table}? This voids everything currently unpaid at this table.`)) return;
     setClearing(true);
-    await clearTable(businessId, cardId);
-    setClearing(false);
-    onChange();
+    const affectedOrderIds = new Set(
+      orders.filter((o) => o.order_items.some((i) => !i.paid && !i.voided)).map((o) => o.id)
+    );
+    onOrdersChange((prev) => prev.filter((o) => !affectedOrderIds.has(o.id)));
+    try {
+      await clearTable(businessId, cardId);
+    } catch {
+      onChange(); // re-sync with the server if the clear actually failed
+    } finally {
+      setClearing(false);
+    }
   }
 
   return (
@@ -310,7 +334,7 @@ function TableGroup({ table, orders, businessId, onChange }: {
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {orders.map((order, i) => (
-          <OrderSection key={order.id} order={order} index={i + 1} businessId={businessId} onChange={onChange} />
+          <OrderSection key={order.id} order={order} index={i + 1} businessId={businessId} onOrdersChange={onOrdersChange} onChange={onChange} />
         ))}
       </div>
     </div>
@@ -320,7 +344,9 @@ function TableGroup({ table, orders, businessId, onChange }: {
 // Each order within a table's card is its own clearly-labeled section -
 // grouped visually for organization, but every order underneath is a
 // genuinely separate record, matching exactly what Kitchen sees.
-function OrderSection({ order, index, businessId, onChange }: { order: OrderRow; index: number; businessId: string; onChange: () => void }) {
+function OrderSection({ order, index, businessId, onOrdersChange, onChange }: {
+  order: OrderRow; index: number; businessId: string; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
+}) {
   const visibleItems = order.order_items.filter((i) => !i.voided);
   const [cancelling, setCancelling] = useState(false);
 
@@ -358,7 +384,16 @@ function OrderSection({ order, index, businessId, onChange }: { order: OrderRow;
               {item.note && <span className="block italic">— {item.note}</span>}
             </div>
             <button
-              onClick={() => voidOrderItem(businessId, order.id, item.id).then(onChange)}
+              onClick={() => {
+                onOrdersChange((prev) =>
+                  prev.map((o) =>
+                    o.id === order.id
+                      ? { ...o, order_items: o.order_items.map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
+                      : o
+                  )
+                );
+                voidOrderItem(businessId, order.id, item.id).catch(onChange);
+              }}
               className="shrink-0 text-base text-danger hover:underline"
               title="Delete just this item"
             >

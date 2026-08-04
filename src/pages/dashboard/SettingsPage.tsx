@@ -147,7 +147,9 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
   );
 }
 
-function CustomButtonRow({ button, businessId, onChange }: { button: CustomButton; businessId: string; onChange: () => void }) {
+function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChange }: {
+  button: CustomButton; buttons: CustomButton[]; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
@@ -170,11 +172,24 @@ function CustomButtonRow({ button, businessId, onChange }: { button: CustomButto
         {button.label}
       </span>
       <div className="flex flex-wrap items-center gap-2">
-        <ActionButton onClick={() => updateCustomButton(businessId, button.id, { enabled: !button.enabled }).then(onChange)}>
+        <ActionButton
+          onClick={() => {
+            onButtonsChange(buttons.map((b) => (b.id === button.id ? { ...b, enabled: !b.enabled } : b)));
+            updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
+          }}
+        >
           {button.enabled ? 'On' : 'Off'}
         </ActionButton>
         <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
-        <ActionButton danger onClick={() => deleteCustomButton(businessId, button.id).then(onChange)}>Delete</ActionButton>
+        <ActionButton
+          danger
+          onClick={() => {
+            onButtonsChange(buttons.filter((b) => b.id !== button.id));
+            deleteCustomButton(businessId, button.id).catch(onChange);
+          }}
+        >
+          Delete
+        </ActionButton>
       </div>
     </div>
   );
@@ -429,7 +444,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
 
       <div className="mt-2 border-t border-ink-line pt-4">
         <div className="space-y-4">
-          {extraButtons.map((b) => <CustomButtonRow key={b.id} button={b} businessId={businessId} onChange={reloadExtras} />)}
+          {extraButtons.map((b) => <CustomButtonRow key={b.id} button={b} buttons={extraButtons} businessId={businessId} onButtonsChange={setExtraButtons} onChange={reloadExtras} />)}
         </div>
         {showAddForm ? (
           <CustomButtonForm businessId={businessId} onDone={() => { setShowAddForm(false); reloadExtras(); }} />

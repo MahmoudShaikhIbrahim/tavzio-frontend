@@ -38,6 +38,11 @@ export default function NotificationsPage() {
           businessId={businessId}
           event={event}
           setting={business.notification_settings[event]}
+          onOptimisticUpdate={(update) =>
+            setBusiness((prev) =>
+              prev ? { ...prev, notification_settings: { ...prev.notification_settings, [event]: { ...prev.notification_settings[event], ...update } } } : prev
+            )
+          }
           onChange={reload}
         />
       ))}
@@ -45,18 +50,16 @@ export default function NotificationsPage() {
   );
 }
 
-function NotificationEventCard({ businessId, event, setting, onChange }: {
-  businessId: string; event: NotificationEvent; setting: NotificationSetting; onChange: () => void;
+function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate, onChange }: {
+  businessId: string; event: NotificationEvent; setting: NotificationSetting; onOptimisticUpdate: (update: Partial<NotificationSetting>) => void; onChange: () => void;
 }) {
   const meta = EVENT_META[event];
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function patch(update: Partial<NotificationSetting>) {
-    setSaving(true);
-    await updateNotificationSettings(businessId, { [event]: update });
-    setSaving(false);
-    onChange();
+  function patch(update: Partial<NotificationSetting>) {
+    onOptimisticUpdate(update);
+    updateNotificationSettings(businessId, { [event]: update }).catch(onChange);
   }
 
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
@@ -65,7 +68,9 @@ function NotificationEventCard({ businessId, event, setting, onChange }: {
     setSaving(true);
     try {
       const url = await uploadBusinessFile(businessId, file, `sounds/${event}`);
+      onOptimisticUpdate({ sound: 'custom', customUrl: url });
       await updateNotificationSettings(businessId, { [event]: { sound: 'custom', customUrl: url } });
+    } catch {
       onChange();
     } finally {
       setSaving(false);

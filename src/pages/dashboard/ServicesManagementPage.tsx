@@ -33,7 +33,7 @@ export default function ServicesManagementPage() {
       {showForm && <ServiceForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
       <div className="space-y-4">
         {services.map((service) => (
-          <ServiceRow key={service.id} service={service} businessId={businessId} onChange={reload} />
+          <ServiceRow key={service.id} service={service} services={services} businessId={businessId} onServicesChange={setServices} onChange={reload} />
         ))}
         {services.length === 0 && <p className="text-base text-ivory-dim">No services yet.</p>}
       </div>
@@ -76,7 +76,9 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
   );
 }
 
-function ServiceRow({ service, businessId, onChange }: { service: Service; businessId: string; onChange: () => void }) {
+function ServiceRow({ service, services, businessId, onServicesChange, onChange }: {
+  service: Service; services: Service[]; businessId: string; onServicesChange: (s: Service[]) => void; onChange: () => void;
+}) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -91,11 +93,24 @@ function ServiceRow({ service, businessId, onChange }: { service: Service; busin
         {!service.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <ActionButton onClick={() => updateService(businessId, service.id, { isAvailable: !service.is_available }).then(onChange)}>
+        <ActionButton
+          onClick={() => {
+            onServicesChange(services.map((s) => (s.id === service.id ? { ...s, is_available: !s.is_available } : s)));
+            updateService(businessId, service.id, { isAvailable: !service.is_available }).catch(onChange);
+          }}
+        >
           {service.is_available ? 'Mark unavailable' : 'Mark available'}
         </ActionButton>
         <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
-        <ActionButton danger onClick={() => deleteService(businessId, service.id).then(onChange)}>Remove</ActionButton>
+        <ActionButton
+          danger
+          onClick={() => {
+            onServicesChange(services.filter((s) => s.id !== service.id));
+            deleteService(businessId, service.id).catch(onChange);
+          }}
+        >
+          Remove
+        </ActionButton>
       </div>
     </div>
   );

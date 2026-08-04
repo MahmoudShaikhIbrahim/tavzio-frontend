@@ -41,7 +41,10 @@ export default function StaffPage() {
               </span>
               {s.role === 'staff' && (
                 <button
-                  onClick={() => setStaffActive(businessId, s.id, !s.is_active).then(reload)}
+                  onClick={() => {
+                    setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, is_active: !m.is_active } : m)));
+                    setStaffActive(businessId, s.id, !s.is_active).catch(reload);
+                  }}
                   className="text-base text-ivory-dim hover:text-ivory"
                 >
                   {s.is_active ? 'Deactivate' : 'Reactivate'}

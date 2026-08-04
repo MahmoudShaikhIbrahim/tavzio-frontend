@@ -40,14 +40,14 @@ export default function CardsPage() {
         programs the chip.
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {customerCards.map((c) => <CardRow key={c.id} card={c} businessId={businessId} onChange={reload} />)}
+        {customerCards.map((c) => <CardRow key={c.id} card={c} cards={cards} businessId={businessId} onCardsChange={setCards} onChange={reload} />)}
         {customerCards.length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
       </div>
     </Section>
   );
 }
 
-function CardRow({ card, businessId, onChange }: { card: Card; businessId: string; onChange: () => void }) {
+function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: Card; cards: Card[]; businessId: string; onCardsChange: (c: Card[]) => void; onChange: () => void }) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(card.label);
   const [copied, setCopied] = useState(false);
@@ -94,7 +94,11 @@ function CardRow({ card, businessId, onChange }: { card: Card; businessId: strin
         </button>
         <select
           value={card.status}
-          onChange={(e) => updateCard(businessId, card.id, { status: e.target.value }).then(onChange)}
+          onChange={(e) => {
+            const status = e.target.value;
+            onCardsChange(cards.map((c) => (c.id === card.id ? { ...c, status } : c)));
+            updateCard(businessId, card.id, { status }).catch(onChange);
+          }}
           className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim"
         >
           <option value="active">active</option>

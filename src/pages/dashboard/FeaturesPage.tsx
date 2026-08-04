@@ -17,11 +17,22 @@ export default function FeaturesPage() {
 
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
-  async function patch(body: Record<string, unknown>) {
-    setSaving(true);
-    await updateBusinessFeatures(businessId!, body);
-    setSaving(false);
-    reload();
+  function patch(body: Record<string, unknown>) {
+    setBusiness((prev) => {
+      if (!prev) return prev;
+      const nextFeatures = { ...prev.features };
+      for (const [key, value] of Object.entries(body)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          // ordering/booking come in as partial nested objects
+          (nextFeatures as any)[key] = { ...(nextFeatures as any)[key], ...value };
+        } else {
+          // loyalty/staffAccounts are flat booleans
+          (nextFeatures as any)[key] = value;
+        }
+      }
+      return { ...prev, features: nextFeatures };
+    });
+    updateBusinessFeatures(businessId!, body).catch(reload);
   }
 
   const { ordering, booking } = business.features;

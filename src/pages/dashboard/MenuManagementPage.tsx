@@ -54,14 +54,14 @@ export default function MenuManagementPage() {
       </Section>
 
       <MenuAiUpload businessId={businessId} onPublished={reload} />
-      <CategoriesSection businessId={businessId} categories={categories} onChange={reload} />
-      <ItemsSection businessId={businessId} categories={categories} items={items} onChange={reload} />
+      <CategoriesSection businessId={businessId} categories={categories} onCategoriesChange={setCategories} onChange={reload} />
+      <ItemsSection businessId={businessId} categories={categories} items={items} onItemsChange={setItems} onChange={reload} />
     </div>
   );
 }
 
-function CategoriesSection({ businessId, categories, onChange }: {
-  businessId: string; categories: MenuCategory[]; onChange: () => void;
+function CategoriesSection({ businessId, categories, onCategoriesChange, onChange }: {
+  businessId: string; categories: MenuCategory[]; onCategoriesChange: (cats: MenuCategory[]) => void; onChange: () => void;
 }) {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -85,8 +85,12 @@ function CategoriesSection({ businessId, categories, onChange }: {
     if (targetIndex < 0 || targetIndex >= categories.length) return;
     const reordered = [...categories];
     [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
-    await Promise.all(reordered.map((cat, i) => updateMenuCategory(businessId, cat.id, { sortOrder: i })));
-    onChange();
+    onCategoriesChange(reordered);
+    try {
+      await Promise.all(reordered.map((cat, i) => updateMenuCategory(businessId, cat.id, { sortOrder: i })));
+    } catch {
+      onChange(); // re-sync with the server if the save actually failed
+    }
   }
 
   return (
@@ -113,12 +117,23 @@ function CategoriesSection({ businessId, categories, onChange }: {
                 ↓
               </button>
               <button
-                onClick={() => updateMenuCategory(businessId, c.id, { paused: !c.paused }).then(onChange)}
+                onClick={() => {
+                  onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
+                  updateMenuCategory(businessId, c.id, { paused: !c.paused }).catch(onChange);
+                }}
                 className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
               >
                 {c.paused ? 'Paused' : 'Orderable'}
               </button>
-              <ActionButton danger onClick={() => deleteMenuCategory(businessId, c.id).then(onChange)}>Remove</ActionButton>
+              <ActionButton
+                danger
+                onClick={() => {
+                  onCategoriesChange(categories.filter((cat) => cat.id !== c.id));
+                  deleteMenuCategory(businessId, c.id).catch(onChange);
+                }}
+              >
+                Remove
+              </ActionButton>
             </div>
           </div>
         ))}
@@ -132,8 +147,8 @@ function CategoriesSection({ businessId, categories, onChange }: {
   );
 }
 
-function ItemsSection({ businessId, categories, items, onChange }: {
-  businessId: string; categories: MenuCategory[]; items: MenuItem[]; onChange: () => void;
+function ItemsSection({ businessId, categories, items, onItemsChange, onChange }: {
+  businessId: string; categories: MenuCategory[]; items: MenuItem[]; onItemsChange: (items: MenuItem[]) => void; onChange: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -158,7 +173,7 @@ function ItemsSection({ businessId, categories, items, onChange }: {
       )}
       <div className="space-y-4">
         {items.map((item) => (
-          <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onChange={onChange} />
+          <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onItemsChange={onItemsChange} items={items} onChange={onChange} />
         ))}
         {items.length === 0 && <p className="text-base text-ivory-dim">No items yet.</p>}
       </div>
@@ -276,8 +291,8 @@ function ItemForm({ businessId, categories, existing, onDone }: {
   );
 }
 
-function ItemRow({ item, businessId, categories, onChange }: {
-  item: MenuItem; businessId: string; categories: MenuCategory[]; onChange: () => void;
+function ItemRow({ item, items, businessId, categories, onItemsChange, onChange }: {
+  item: MenuItem; items: MenuItem[]; businessId: string; categories: MenuCategory[]; onItemsChange: (items: MenuItem[]) => void; onChange: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [showAddons, setShowAddons] = useState(false);
@@ -301,12 +316,25 @@ function ItemRow({ item, businessId, categories, onChange }: {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <ActionButton onClick={() => updateMenuItem(businessId, item.id, { isAvailable: !item.is_available }).then(onChange)}>
+          <ActionButton
+            onClick={() => {
+              onItemsChange(items.map((i) => (i.id === item.id ? { ...i, is_available: !i.is_available } : i)));
+              updateMenuItem(businessId, item.id, { isAvailable: !item.is_available }).catch(onChange);
+            }}
+          >
             {item.is_available ? 'Mark unavailable' : 'Mark available'}
           </ActionButton>
           <ActionButton onClick={() => setShowAddons((s) => !s)}>Add-ons</ActionButton>
           <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
-          <ActionButton danger onClick={() => deleteMenuItem(businessId, item.id).then(onChange)}>Remove</ActionButton>
+          <ActionButton
+            danger
+            onClick={() => {
+              onItemsChange(items.filter((i) => i.id !== item.id));
+              deleteMenuItem(businessId, item.id).catch(onChange);
+            }}
+          >
+            Remove
+          </ActionButton>
         </div>
       </div>
       {showAddons && <AddonManager businessId={businessId} itemId={item.id} />}
@@ -337,7 +365,15 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
       {addons.map((a) => (
         <div key={a.id} className="flex items-center justify-between text-base">
           <span className="text-ivory-dim">{a.name} — +{a.price.toFixed(2)}</span>
-          <ActionButton danger onClick={() => deleteAddon(businessId, itemId, a.id).then(reload)}>Remove</ActionButton>
+          <ActionButton
+            danger
+            onClick={() => {
+              setAddons((prev) => prev.filter((addon) => addon.id !== a.id));
+              deleteAddon(businessId, itemId, a.id).catch(reload);
+            }}
+          >
+            Remove
+          </ActionButton>
         </div>
       ))}
       {addons.length === 0 && <p className="text-base text-ivory-dim">No add-ons yet.</p>}
