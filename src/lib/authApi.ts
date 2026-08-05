@@ -1,4 +1,4 @@
-import { authFetch, authFetchForm, setSession, getToken, clearSession } from './session';
+import { authFetch, setSession, getToken, clearSession } from './session';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { safeJson } from './safeJson';
 import type {
@@ -317,9 +317,9 @@ export async function extractMenuAi(businessId: string, files: File[]): Promise<
   files.forEach((f) => formData.append('files', f));
 
   const controller = new AbortController();
-  let idleTimer: ReturnType<typeof setTimeout>;
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
   function resetIdleTimer() {
-    clearTimeout(idleTimer);
+    if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(() => controller.abort(), EXTRACT_IDLE_TIMEOUT_MS);
   }
   resetIdleTimer();
