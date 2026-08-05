@@ -1,4 +1,4 @@
-import { authFetch, authFetchForm, setSession, getToken } from './session';
+import { authFetch, authFetchForm, setSession, getToken, clearSession } from './session';
 import { fetchWithTimeout } from './fetchWithTimeout';
 import { safeJson } from './safeJson';
 import type {
@@ -302,14 +302,91 @@ export interface MenuAiExtractResult {
   warnings: string[];
 }
 
-// Long timeout (90s) - this call sends every uploaded file through
-// Claude for real reading, not a quick lookup; the default 10s timeout
-// used everywhere else would abort a genuine multi-page menu upload
-// well before it finishes.
-export function extractMenuAi(businessId: string, files: File[]) {
+// Reads the server's newline-delimited JSON stream (ping/result/error
+// lines) instead of a single JSON response. Deliberately NOT using
+// fetchWithTimeout's fixed total-duration timeout here - that's exactly
+// the kind of timeout that was killing large menu uploads before, since
+// a genuinely big menu can take minutes as long as it's actively
+// working. Instead this uses an IDLE timeout that resets on every chunk
+// received - only fires if the connection actually goes silent, not
+// just because the whole thing is taking a while.
+const EXTRACT_IDLE_TIMEOUT_MS = 45000;
+
+export async function extractMenuAi(businessId: string, files: File[]): Promise<MenuAiExtractResult> {
   const formData = new FormData();
   files.forEach((f) => formData.append('files', f));
-  return authFetchForm<MenuAiExtractResult>(`/api/businesses/${businessId}/menu/ai/extract`, formData, false, 90000);
+
+  const controller = new AbortController();
+  let idleTimer: ReturnType<typeof setTimeout>;
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => controller.abort(), EXTRACT_IDLE_TIMEOUT_MS);
+  }
+  resetIdleTimer();
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/api/businesses/${businessId}/menu/ai/extract`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch {
+    clearTimeout(idleTimer);
+    throw new Error('The server is temporarily unavailable — please try again in a moment.');
+  }
+
+  // This call bypasses authFetch's shared refresh-and-retry logic (that
+  // helper expects a single JSON response, not a stream) - a 401 here
+  // just means signing in again, rather than the fuller silent-refresh
+  // dance the rest of the app gets. Rare in practice: this call happens
+  // right after opening the upload screen, not deep into a long session.
+  if (res.status === 401) {
+    clearTimeout(idleTimer);
+    clearSession();
+    window.location.href = '/admin/login';
+    throw new Error('Session expired');
+  }
+
+  if (!res.body) {
+    clearTimeout(idleTimer);
+    throw new Error('The server is temporarily unavailable — please try again in a moment.');
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      resetIdleTimer(); // real activity - push the idle deadline back out
+      buffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+        if (!line) continue;
+
+        const parsed = JSON.parse(line);
+        if (parsed.type === 'result') return parsed.data as MenuAiExtractResult;
+        if (parsed.type === 'error') throw new Error(parsed.message || 'Could not read the menu from these files');
+        // type === 'ping' - just keeps the idle timer reset, nothing to do
+      }
+    }
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('The upload timed out - the connection went idle. Please try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(idleTimer);
+  }
+
+  throw new Error('The connection ended before a result was received - please try again.');
 }
 
 export function publishMenuAi(businessId: string, categories: MenuAiDraftCategory[]) {

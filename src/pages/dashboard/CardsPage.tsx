@@ -95,7 +95,7 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: C
         <select
           value={card.status}
           onChange={(e) => {
-            const status = e.target.value as Card['status'];
+            const status = e.target.value;
             onCardsChange(cards.map((c) => (c.id === card.id ? { ...c, status } : c)));
             updateCard(businessId, card.id, { status }).catch(onChange);
           }}

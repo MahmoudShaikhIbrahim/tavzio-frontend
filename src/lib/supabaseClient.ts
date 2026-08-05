@@ -35,15 +35,8 @@ export function subscribeToBusinessTable(
   table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims',
   onChange: (row: Record<string, unknown>) => void
 ) {
-  // Deliberately a unique name per call, not just business+table - a
-  // deterministic name meant two subscriptions to the same table could
-  // collide on a fast remount (unmount's cleanup hadn't finished before
-  // the new mount tried to subscribe again), and adding a listener to a
-  // channel that already had .subscribe() called on it throws and crashes
-  // the whole page. A random suffix means every call always gets its own
-  // fresh channel, no matter how quickly components remount.
   const channel = client
-    .channel(`business-${businessId}-${table}-${Math.random().toString(36).slice(2)}`)
+    .channel(`business-${businessId}-${table}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table, filter: `business_id=eq.${businessId}` },
@@ -101,7 +94,7 @@ export function subscribeToBillItems(
 
   const filter = `order_id=in.(${orderIds.join(',')})`;
   const channel = client
-    .channel(`bill-items-${orderIds.join('-').slice(0, 40)}-${Math.random().toString(36).slice(2)}`)
+    .channel(`bill-items-${orderIds.join('-').slice(0, 40)}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'order_items', filter }, (payload) => onChange(payload.new as Record<string, unknown>))
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'order_items', filter }, (payload) => onChange(payload.new as Record<string, unknown>))
     .subscribe();
