@@ -4,6 +4,13 @@ import { getPaymentIntegration, upsertPaymentIntegration } from '../../lib/authA
 import type { PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
+const PROVIDERS = [
+  { key: 'tap', label: 'Tap Payments' },
+  { key: 'telr', label: 'Telr' },
+  { key: 'ngenius', label: 'N-Genius Online (Network International)' },
+  { key: 'ziina', label: 'Ziina' },
+] as const;
+
 export default function PayBillSetupPage() {
   const { user } = useSession();
   const businessId = user?.business_id;

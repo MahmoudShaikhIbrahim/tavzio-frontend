@@ -198,12 +198,6 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
   );
 }
 
-const PROVIDERS = [
-  { key: 'tap', label: 'Tap Payments' },
-  { key: 'telr', label: 'Telr' },
-  { key: 'ngenius', label: 'N-Genius Online (Network International)' },
-  { key: 'ziina', label: 'Ziina' },
-] as const;
 
 
 function CustomButtonForm({ businessId, existing, onDone }: { businessId: string; existing?: CustomButton; onDone: () => void }) {
