@@ -134,28 +134,30 @@ export default function DashboardLayout() {
             <button onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 overflow-x-auto px-6 pt-1.5">
-          {visibleTabs.map((t) => {
-            const count = (t.badge ? counts[t.badge] : 0) + (t.badge2 ? counts[t.badge2] : 0);
-            return (
-              <Link
-                key={t.path}
-                to={`/admin/dashboard/${t.path}`}
-                className={`relative shrink-0 border-b-2 px-3 py-2.5 text-base ${
-                  location.pathname.includes(t.path)
-                    ? 'border-brass text-ivory'
-                    : 'border-transparent text-ivory-dim hover:text-ivory'
-                }`}
-              >
-                {t.label}
-                {count > 0 && (
-                  <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
-                    {count > 9 ? '9+' : count}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
+          <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
+            {visibleTabs.map((t) => {
+              const count = (t.badge ? counts[t.badge] : 0) + (t.badge2 ? counts[t.badge2] : 0);
+              return (
+                <Link
+                  key={t.path}
+                  to={`/admin/dashboard/${t.path}`}
+                  className={`relative shrink-0 border-b-2 px-3 py-2.5 text-base ${
+                    location.pathname.includes(t.path)
+                      ? 'border-brass text-ivory'
+                      : 'border-transparent text-ivory-dim hover:text-ivory'
+                  }`}
+                >
+                  {t.label}
+                  {count > 0 && (
+                    <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
+                      {count > 9 ? '9+' : count}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
 
           <div ref={settingsRef} className="relative shrink-0">
             <button
@@ -171,14 +173,14 @@ export default function DashboardLayout() {
             </button>
 
             {settingsOpen && (
-              <div className="absolute end-0 top-full z-20 mt-2 w-64 overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
-                <div className="max-h-[70vh] overflow-y-auto py-1.5">
+              <div className="absolute end-0 top-full z-30 mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
+                <div className="grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2">
                   {visibleSettingsItems.map((t) => (
                     <Link
                       key={t.path}
                       to={`/admin/dashboard/${t.path}`}
                       onClick={() => setSettingsOpen(false)}
-                      className={`block px-4 py-2.5 text-base transition-colors ${
+                      className={`rounded-lg px-3 py-2.5 text-base transition-colors ${
                         location.pathname.includes(t.path)
                           ? 'bg-brass/10 text-brass'
                           : 'text-ivory-dim hover:bg-ink hover:text-ivory'
