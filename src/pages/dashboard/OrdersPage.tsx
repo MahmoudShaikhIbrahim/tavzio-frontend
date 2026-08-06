@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listOrders, updateOrderStatus, getBusiness, ackOrderReady,
+  listOrders, getBusiness, ackOrderReady,
   voidOrderItem, clearTable, recordManualPayment,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
   getPaymentIntegration,
@@ -241,7 +241,7 @@ export default function OrdersPage() {
       {Object.keys(tableGroups).length === 0 ? (
         <p className="text-base text-ivory-dim">No active orders right now.</p>
       ) : (
-        <div className="space-y-10">
+        <div className="flex flex-wrap items-start gap-6">
           {Object.keys(tableGroups).map((table) => (
             <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} onOrdersChange={setOrders} onChange={reload} />
           ))}
@@ -298,6 +298,17 @@ function TableGroup({ table, orders, businessId, onOrdersChange, onChange }: {
   const cardId = orders[0]?.card_id;
   const tableTotal = orders.reduce((sum, o) => sum + Number(o.total), 0);
 
+  // Flattened across every order for this table, oldest first - this is
+  // what actually makes a later order "land in the same square" instead
+  // of opening a new labeled box: there's no longer a per-order
+  // container at all, just one continuous list every item joins.
+  const allItems = orders.flatMap((order) =>
+    order.order_items.filter((i) => !i.voided).map((item) => ({ item, order }))
+  );
+  const notes = orders.filter((o) => o.note).map((o) => o.note as string);
+  const hasStaffPlaced = orders.some((o) => o.placed_by_staff_id);
+  const syncIssue = orders.find((o) => o.pos_sync_status === 'failed');
+
   async function handleClearTable() {
     if (!cardId) return;
     if (!confirm(`Clear ${table}? This voids everything currently unpaid at this table.`)) return;
@@ -315,65 +326,35 @@ function TableGroup({ table, orders, businessId, onOrdersChange, onChange }: {
     }
   }
 
+  // Matches the container's width to how many orders are actually
+  // inside it, instead of always stretching to the full page width -
+  // a single order sitting in a full-width box left "Clear table" far
+  // off to the right with a lot of empty space in between.
+  const widthClass = orders.length === 1 ? 'max-w-sm' : orders.length === 2 ? 'max-w-2xl' : 'max-w-none';
+
   return (
-    <div className="rounded-2xl border border-ink-line p-4">
-      <div className="mb-3 flex items-center justify-between">
+    <div className={`w-full ${widthClass} rounded-2xl border border-ink-line p-4`}>
+      <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-xl text-ivory">{table}</h2>
-          <p className="text-sm text-ivory-dim">{orders.length} order{orders.length === 1 ? '' : 's'} · {tableTotal.toFixed(2)} total</p>
+          <p className="text-sm text-ivory-dim">
+            {orders.length} order{orders.length === 1 ? '' : 's'} · {tableTotal.toFixed(2)} total
+            {hasStaffPlaced && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Includes staff-added items</span>}
+          </p>
         </div>
         {cardId && (
           <button
             onClick={handleClearTable}
             disabled={clearing}
-            className="rounded-lg border border-danger/40 px-3 py-1.5 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
+            className="shrink-0 rounded-lg border border-danger/40 px-3 py-1.5 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
           >
             {clearing ? 'Clearing...' : 'Clear table'}
           </button>
         )}
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {orders.map((order, i) => (
-          <OrderSection key={order.id} order={order} index={i + 1} businessId={businessId} onOrdersChange={onOrdersChange} onChange={onChange} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
-// Each order within a table's card is its own clearly-labeled section -
-// grouped visually for organization, but every order underneath is a
-// genuinely separate record, matching exactly what Kitchen sees.
-function OrderSection({ order, index, businessId, onOrdersChange, onChange }: {
-  order: OrderRow; index: number; businessId: string; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
-}) {
-  const visibleItems = order.order_items.filter((i) => !i.voided);
-  const [cancelling, setCancelling] = useState(false);
-
-  async function handleCancel() {
-    setCancelling(true);
-    try {
-      await updateOrderStatus(businessId, order.id, 'cancelled');
-      onChange();
-    } finally {
-      setCancelling(false);
-    }
-  }
-
-  return (
-    <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-base font-medium text-ivory">
-          Order {index}
-          {order.placed_by_staff_id && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Added by staff</span>}
-        </p>
-        <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
-          {STATUS_LABEL[order.status]}
-        </span>
-      </div>
-
-      <div className="mt-2 space-y-3 text-base">
-        {visibleItems.map((item) => (
+      <div className="space-y-3 text-base">
+        {allItems.map(({ item, order }) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>
               <span className="text-ivory">{item.quantity}×</span> {item.item_name}
@@ -401,29 +382,17 @@ function OrderSection({ order, index, businessId, onOrdersChange, onChange }: {
             </button>
           </div>
         ))}
-        {visibleItems.length === 0 && <p className="text-base italic text-ivory-dim">All items deleted</p>}
+        {allItems.length === 0 && <p className="text-base italic text-ivory-dim">All items deleted</p>}
       </div>
 
-      {order.note && <p className="mt-2 text-base italic text-brass">Note: {order.note}</p>}
-      <p className="mt-2 text-base text-ivory">{order.total.toFixed(2)}</p>
-
-      {order.pos_sync_status !== 'not_applicable' && (
-        <p className="mt-1 text-base text-ivory-dim">
-          POS sync: {order.pos_sync_status}
-          {order.pos_sync_status === 'failed' && order.pos_sync_error ? ` — ${order.pos_sync_error}` : ''}
-        </p>
+      {notes.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {notes.map((n, i) => <p key={i} className="text-base italic text-brass">Note: {n}</p>)}
+        </div>
       )}
 
-      {order.status !== 'cancelled' && (
-        <div className="mt-3">
-          <button
-            onClick={handleCancel}
-            disabled={cancelling}
-            className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
-          >
-            {cancelling ? 'Cancelling...' : 'Cancel'}
-          </button>
-        </div>
+      {syncIssue && (
+        <p className="mt-2 text-base text-ivory-dim">POS sync failed{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
       )}
     </div>
   );
