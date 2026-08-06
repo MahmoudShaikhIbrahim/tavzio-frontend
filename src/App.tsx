@@ -23,6 +23,13 @@ import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
+import BusinessProfilePage from './pages/dashboard/BusinessProfilePage';
+import PayBillSetupPage from './pages/dashboard/PayBillSetupPage';
+import LandingButtonsPage from './pages/dashboard/LandingButtonsPage';
+import MenuManagementPage from './pages/dashboard/MenuManagementPage';
+import LoyaltyPage from './pages/dashboard/LoyaltyPage';
+import CardsPage from './pages/dashboard/CardsPage';
+import NotificationsPage from './pages/dashboard/NotificationsPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
 import KitchenPage from './pages/dashboard/KitchenPage';
 import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
@@ -69,6 +76,13 @@ export default function App() {
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/business-profile" element={<BusinessProfilePage />} />
+            <Route path="settings/pay-bill" element={<PayBillSetupPage />} />
+            <Route path="settings/landing-buttons" element={<LandingButtonsPage />} />
+            <Route path="settings/menu" element={<MenuManagementPage />} />
+            <Route path="settings/loyalty" element={<LoyaltyPage />} />
+            <Route path="settings/cards" element={<CardsPage />} />
+            <Route path="settings/notifications" element={<NotificationsPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="kitchen" element={<KitchenPage />} />
             <Route path="services" element={<ServicesManagementPage />} />
