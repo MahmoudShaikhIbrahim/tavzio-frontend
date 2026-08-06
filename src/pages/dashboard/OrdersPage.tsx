@@ -307,7 +307,6 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
     order.order_items.filter((i) => !i.voided).map((item) => ({ item, order }))
   );
   const notes = orders.filter((o) => o.note).map((o) => o.note as string);
-  const hasStaffPlaced = orders.some((o) => o.placed_by_staff_id);
   const syncIssue = orders.find((o) => o.pos_sync_status === 'failed');
 
   async function handleClearTable() {
@@ -340,20 +339,13 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
     }
   }
 
-  // Matches the container's width to how many orders are actually
-  // inside it, instead of always stretching to the full page width -
-  // a single order sitting in a full-width box left "Clear table" far
-  // off to the right with a lot of empty space in between.
-  const widthClass = orders.length === 1 ? 'max-w-sm' : orders.length === 2 ? 'max-w-2xl' : 'max-w-none';
-
   return (
-    <div className={`w-full ${widthClass} rounded-2xl border border-ink-line p-4`}>
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <div className="w-full max-w-sm rounded-2xl border border-ink-line p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-xl text-ivory">{table}</h2>
           <p className="text-sm text-ivory-dim">
             {orders.length} order{orders.length === 1 ? '' : 's'} · {tableTotal.toFixed(2)} total
-            {hasStaffPlaced && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Includes staff-added items</span>}
           </p>
         </div>
         {cardId && (
@@ -370,7 +362,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
             <button
               onClick={handleClearTable}
               disabled={clearing}
-              className="rounded-lg border border-danger/40 px-3 py-1.5 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
+              className="rounded-lg border border-danger/40 px-2.5 py-1 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
             >
               {clearing ? 'Clearing...' : 'Clear table'}
             </button>
@@ -378,7 +370,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
         )}
       </div>
 
-      <div className="space-y-3 text-base">
+      <div className="space-y-3 text-lg">
         {allItems.map(({ item, order }) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>

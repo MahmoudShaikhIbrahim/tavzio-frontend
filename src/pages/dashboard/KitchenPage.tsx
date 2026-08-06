@@ -75,7 +75,7 @@ export default function KitchenPage() {
         {orders.map((order) => (
           <div key={order.id} className="rounded-xl border border-ink-line bg-ink-soft p-4">
             <p className="font-display text-xl text-ivory">{order.table_label || 'No table'}</p>
-            <div className="mt-3 space-y-2 text-base">
+            <div className="mt-3 space-y-2 text-lg">
               {order.order_items.filter((i) => !i.voided).map((item) => (
                 <div key={item.id} className="text-ivory-dim">
                   <span className="text-ivory">{item.quantity}×</span> {item.item_name}
