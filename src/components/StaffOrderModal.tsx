@@ -55,9 +55,9 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-end bg-black/70" onClick={onClose}>
+    <div className="fixed inset-0 z-20 flex items-center justify-center bg-ink/80 p-4" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
+        className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-ink-line bg-ink-soft p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

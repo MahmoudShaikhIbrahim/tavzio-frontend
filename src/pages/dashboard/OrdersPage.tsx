@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listOrders, getBusiness, ackOrderReady,
+  listOrders, updateOrderStatus, getBusiness, ackOrderReady,
   voidOrderItem, clearTable, recordManualPayment,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
   getPaymentIntegration,
@@ -243,7 +243,7 @@ export default function OrdersPage() {
       ) : (
         <div className="flex flex-wrap items-start gap-6">
           {Object.keys(tableGroups).map((table) => (
-            <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} onOrdersChange={setOrders} onChange={reload} />
+            <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
           ))}
         </div>
       )}
@@ -290,10 +290,11 @@ export default function OrdersPage() {
   );
 }
 
-function TableGroup({ table, orders, businessId, onOrdersChange, onChange }: {
-  table: string; orders: OrderRow[]; businessId: string; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
+function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange, onChange }: {
+  table: string; orders: OrderRow[]; businessId: string; payBillEnabled: boolean; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
 }) {
   const [clearing, setClearing] = useState(false);
+  const [completing, setCompleting] = useState(false);
   // Any of these orders' card_id works to identify the table for clearing.
   const cardId = orders[0]?.card_id;
   const tableTotal = orders.reduce((sum, o) => sum + Number(o.total), 0);
@@ -326,6 +327,19 @@ function TableGroup({ table, orders, businessId, onOrdersChange, onChange }: {
     }
   }
 
+  async function handleMarkCompleted() {
+    setCompleting(true);
+    const orderIds = orders.map((o) => o.id);
+    onOrdersChange((prev) => prev.filter((o) => !orderIds.includes(o.id)));
+    try {
+      await Promise.all(orderIds.map((id) => updateOrderStatus(businessId, id, 'completed')));
+    } catch {
+      onChange(); // re-sync with the server if any of them actually failed
+    } finally {
+      setCompleting(false);
+    }
+  }
+
   // Matches the container's width to how many orders are actually
   // inside it, instead of always stretching to the full page width -
   // a single order sitting in a full-width box left "Clear table" far
@@ -343,13 +357,24 @@ function TableGroup({ table, orders, businessId, onOrdersChange, onChange }: {
           </p>
         </div>
         {cardId && (
-          <button
-            onClick={handleClearTable}
-            disabled={clearing}
-            className="shrink-0 rounded-lg border border-danger/40 px-3 py-1.5 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
-          >
-            {clearing ? 'Clearing...' : 'Clear table'}
-          </button>
+          <div className="flex shrink-0 gap-2">
+            {!payBillEnabled && (
+              <button
+                onClick={handleMarkCompleted}
+                disabled={completing}
+                className="rounded-lg border border-brass/40 px-3 py-1.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+              >
+                {completing ? 'Completing...' : 'Mark completed'}
+              </button>
+            )}
+            <button
+              onClick={handleClearTable}
+              disabled={clearing}
+              className="rounded-lg border border-danger/40 px-3 py-1.5 text-base text-danger hover:bg-danger/10 disabled:opacity-50"
+            >
+              {clearing ? 'Clearing...' : 'Clear table'}
+            </button>
+          </div>
         )}
       </div>
 
