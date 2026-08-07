@@ -39,6 +39,7 @@ import PaymentsPage from './pages/dashboard/PaymentsPage';
 import ReceiptsPage from './pages/dashboard/ReceiptsPage';
 import AuditLogPage from './pages/dashboard/AuditLogPage';
 import MessagesPage from './pages/dashboard/MessagesPage';
+import TableReceiptsPage from './pages/dashboard/TableReceiptsPage';
 
 export default function App() {
   return (
@@ -92,6 +93,7 @@ export default function App() {
             <Route path="receipts" element={<ReceiptsPage />} />
             <Route path="audit-log" element={<AuditLogPage />} />
             <Route path="messages" element={<MessagesPage />} />
+            <Route path="table-receipts" element={<TableReceiptsPage />} />
           </Route>
         </Route>
 

@@ -76,7 +76,61 @@ export function getMenu(slug: string, lang?: string) {
   return request<{
     categories: MenuCategory[]; items: MenuItem[]; orderingPaused: boolean;
     submissionEnabled: boolean; callWaiterEnabled: boolean; requestBillEnabled: boolean;
+    payBeforeOrderEnabled: boolean;
   }>(`/api/public/business/${slug}/menu${lang ? `?lang=${lang}` : ''}`);
+}
+
+function cartItemsPayload(cart: CartLine[]) {
+  return cart.map((c) => ({
+    menuItemId: c.menuItemId,
+    quantity: c.quantity,
+    note: c.note,
+    addonIds: c.selectedAddons.map((a) => a.id),
+  }));
+}
+
+// Tap in-page flow (pay-before-order) - charges immediately with a card
+// token and, only on success, sends the order to the kitchen.
+export function payOrder(slug: string, tapEventId: number, note: string, cart: CartLine[], tapToken: string) {
+  return request<{ order: OrderRow; payment: PaymentRow }>(`/api/public/business/${slug}/orders/pay`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId, note, items: cartItemsPayload(cart), tapToken }),
+  });
+}
+
+// Redirect providers (Telr/N-Genius/Ziina) - returns the hosted page URL
+// to send the customer to before anything reaches the kitchen.
+export function createOrderPaySession(slug: string, tapEventId: number, note: string, cart: CartLine[]) {
+  return request<{ paymentId: string; redirectUrl: string; orderId: string }>(`/api/public/business/${slug}/orders/pay-session`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId, note, items: cartItemsPayload(cart) }),
+  });
+}
+
+// Called when the customer lands back from the provider's page.
+export function confirmOrderPayment(slug: string, paymentId: string) {
+  return request<{ status: string; order?: OrderRow }>(`/api/public/business/${slug}/orders/confirm-payment`, {
+    method: 'POST',
+    body: JSON.stringify({ paymentId }),
+  });
+}
+
+// Pay in cash - no charge happens; the order is created and flagged for
+// staff to collect cash for, same "pay at cashier" pattern as Pay Bill.
+export function payOrderWithCash(slug: string, tapEventId: number, note: string, cart: CartLine[]) {
+  return request<{ order: OrderRow; message: string }>(`/api/public/business/${slug}/orders/pay-cash`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId, note, items: cartItemsPayload(cart) }),
+  });
+}
+
+// Customer backs out of checkout before paying - the order (if created)
+// is cancelled and never reaches the kitchen.
+export function cancelOrderPayment(slug: string, orderId: string, tapEventId: number) {
+  return request<{ message: string }>(`/api/public/business/${slug}/orders/${orderId}/cancel-payment`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId }),
+  });
 }
 
 export function submitOrder(

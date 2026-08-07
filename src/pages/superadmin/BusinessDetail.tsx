@@ -245,6 +245,12 @@ const PROVIDER_LABEL: Record<PosProvider, string> = {
   fresha: 'Fresha (no confirmed API - will fail until Fresha grants access)',
   tap: 'Tap Payments',
   custom: 'Custom (no-code connector)',
+  // Never actually offered here - this section only ever lists ordering/
+  // booking providers (see PosIntegrationSection's `providers` prop).
+  // Printing lives in its own owner-only settings page, not this
+  // super_admin POS picker. Only present so the exhaustive PosProvider
+  // record below still type-checks.
+  printnode: 'PrintNode',
 };
 
 function PosIntegrationSection({ businessId, purpose, providers }: {
@@ -292,6 +298,8 @@ function PosIntegrationSection({ businessId, purpose, providers }: {
       { key: 'bodyTemplate', label: 'Body template ({{table}}, {{note}}, {{total}}, {{items}})' },
       { key: 'responseIdPath', label: 'Response ID path (e.g. data.id)' },
     ],
+    // Never actually offered here - same reason as PROVIDER_LABEL above.
+    printnode: [],
   };
 
   return (
@@ -416,31 +424,102 @@ function ReceiptsSection({ businessId }: { businessId: string }) {
   );
 }
 
+// Standard pricing - the defaults applied automatically unless a specific
+// receipt overrides them. Kept as constants here (not fetched from
+// anywhere) since this is Tavzio's own internal billing tool, not
+// something a business ever sees or configures.
+const DEFAULT_SYSTEM_FEE_AED = 200;
+const DEFAULT_CARD_PRICE_AED = 20;
+
+function formatLongDate(d: Date) {
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+// Builds the professional contract-period sentence from a start date and a
+// term length - never a raw date shown on its own.
+function buildPeriodSentence(startDate: string, termYears: '1' | '2' | '3' | 'custom', customMonths: number) {
+  if (!startDate) return '';
+  const start = new Date(startDate);
+  const end = new Date(start);
+  const isCustom = termYears === 'custom';
+  if (isCustom) {
+    end.setMonth(end.getMonth() + (customMonths || 0));
+  } else {
+    end.setFullYear(end.getFullYear() + Number(termYears));
+  }
+  const termWords = isCustom
+    ? `${customMonths}-month`
+    : `${termYears}-year`;
+  return `This agreement is effective from ${formatLongDate(start)} through ${formatLongDate(end)}, covering a ${termWords} service term.`;
+}
+
 function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onDone: () => void; onReload: () => void }) {
   const [receiptType, setReceiptType] = useState<'one_time' | 'monthly' | 'adjustment'>('one_time');
-  const [periodLabel, setPeriodLabel] = useState('');
+
+  // Contract term - only relevant for a monthly subscription receipt.
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [termYears, setTermYears] = useState<'1' | '2' | '3' | 'custom'>('1');
+  const [customMonths, setCustomMonths] = useState(12);
+
+  // Structured, auto-priced components - the normal way to bill. Both
+  // default on for a fresh monthly receipt, but either can be switched
+  // off independently (e.g. billing a one-time customer for cards only).
+  const [includeSystem, setIncludeSystem] = useState(true);
+  const [systemOverride, setSystemOverride] = useState('');
+  const [includeStands, setIncludeStands] = useState(true);
+  const [standsQty, setStandsQty] = useState(0);
+  const [standsOverride, setStandsOverride] = useState('');
+
+  // Free-form extras - for anything outside the two standard components
+  // (a discount adjustment, a one-off fee, etc).
+  const [extraLines, setExtraLines] = useState<BillingReceiptLineItem[]>([]);
+
   const [notes, setNotes] = useState('');
-  const [lines, setLines] = useState<BillingReceiptLineItem[]>([{ description: '', amount: 0 }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  function updateLine(i: number, field: 'description' | 'amount', value: string) {
-    setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: field === 'amount' ? Number(value) : value } : l)));
+  const systemAmount = systemOverride !== '' ? Number(systemOverride) : DEFAULT_SYSTEM_FEE_AED;
+  const standsAmount = standsOverride !== '' ? Number(standsOverride) : standsQty * DEFAULT_CARD_PRICE_AED;
+
+  function updateExtraLine(i: number, field: 'description' | 'amount', value: string) {
+    setExtraLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: field === 'amount' ? Number(value) : value } : l)));
   }
 
-  const total = lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+  const validExtraLines = extraLines.filter((l) => l.description.trim() && l.amount > 0);
+  const total =
+    (includeSystem ? systemAmount : 0) +
+    (includeStands && standsQty > 0 ? standsAmount : 0) +
+    validExtraLines.reduce((sum, l) => sum + Number(l.amount), 0);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
-    const validLines = lines.filter((l) => l.description.trim() && l.amount > 0);
-    if (validLines.length === 0) {
-      setError('Add at least one line item with a description and amount');
+
+    const lineItems: BillingReceiptLineItem[] = [];
+    if (includeSystem) {
+      lineItems.push({
+        description: 'Tavzio platform subscription — monthly access to the full digital guest engagement system',
+        amount: systemAmount,
+      });
+    }
+    if (includeStands && standsQty > 0) {
+      lineItems.push({
+        description: `Supply and provisioning of ${standsQty} NFC-enabled table stand${standsQty === 1 ? '' : 's'}`,
+        amount: standsAmount,
+      });
+    }
+    lineItems.push(...validExtraLines);
+
+    if (lineItems.length === 0) {
+      setError('Include the system fee, a number of stands, or at least one additional item');
       return;
     }
+
+    const periodLabel = receiptType === 'monthly' ? buildPeriodSentence(startDate, termYears, customMonths) : '';
+
     setSaving(true);
     try {
-      const receipt = await createReceipt(businessId, { receiptType, lineItems: validLines, periodLabel, notes });
+      const receipt = await createReceipt(businessId, { receiptType, lineItems, periodLabel, notes });
       onReload();
       if (receipt.ziinaError) {
         // The receipt itself saved fine (by design, this is best-effort) -
@@ -462,48 +541,116 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-lg border border-ink-line p-4">
-      <div className="flex flex-wrap gap-4">
-        <Field label="Receipt type">
-          <select value={receiptType} onChange={(e) => setReceiptType(e.target.value as typeof receiptType)} className="w-48 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-            <option value="one_time">One-time</option>
-            <option value="monthly">Monthly subscription</option>
-            <option value="adjustment">Adjustment</option>
-          </select>
-        </Field>
-        {receiptType === 'monthly' && (
-          <Field label="Period">
-            <input value={periodLabel} onChange={(e) => setPeriodLabel(e.target.value)} placeholder="e.g. July 2026" className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+      <Field label="Receipt type">
+        <select value={receiptType} onChange={(e) => setReceiptType(e.target.value as typeof receiptType)} className="w-48 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <option value="one_time">One-time</option>
+          <option value="monthly">Monthly subscription</option>
+          <option value="adjustment">Adjustment</option>
+        </select>
+      </Field>
+
+      {receiptType === 'monthly' && (
+        <div className="space-y-3 rounded-lg border border-ink-line p-3">
+          <p className="text-sm text-ivory-dim">Contract term</p>
+          <div className="flex flex-wrap gap-4">
+            <Field label="Start date">
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+            </Field>
+            <Field label="Term length">
+              <select value={termYears} onChange={(e) => setTermYears(e.target.value as typeof termYears)} className="w-36 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+                <option value="1">1 year</option>
+                <option value="2">2 years</option>
+                <option value="3">3 years</option>
+                <option value="custom">Custom</option>
+              </select>
+            </Field>
+            {termYears === 'custom' && (
+              <Field label="Months">
+                <input type="number" min={1} onFocus={(e) => e.target.select()} value={customMonths} onChange={(e) => setCustomMonths(Number(e.target.value))} className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+              </Field>
+            )}
+          </div>
+          <p className="text-sm text-ivory-dim italic">{buildPeriodSentence(startDate, termYears, customMonths) || 'Set a start date to preview the contract sentence.'}</p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <ToggleRow
+          label="Platform subscription"
+          description={`Defaults to AED ${DEFAULT_SYSTEM_FEE_AED}/month unless overridden below`}
+          checked={includeSystem}
+          onChange={setIncludeSystem}
+        />
+        {includeSystem && (
+          <Field label="Override amount (AED, optional)">
+            <input
+              type="number"
+              onFocus={(e) => e.target.select()}
+              value={systemOverride}
+              onChange={(e) => setSystemOverride(e.target.value)}
+              placeholder={String(DEFAULT_SYSTEM_FEE_AED)}
+              className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+            />
           </Field>
+        )}
+
+        <ToggleRow
+          label="NFC table stands"
+          description={`Priced automatically at AED ${DEFAULT_CARD_PRICE_AED}/stand unless overridden below`}
+          checked={includeStands}
+          onChange={setIncludeStands}
+        />
+        {includeStands && (
+          <div className="flex flex-wrap gap-4">
+            <Field label="Number of stands">
+              <input
+                type="number"
+                min={0}
+                onFocus={(e) => e.target.select()}
+                value={standsQty || ''}
+                onChange={(e) => setStandsQty(Number(e.target.value))}
+                className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+              />
+            </Field>
+            <Field label="Override total (AED, optional)">
+              <input
+                type="number"
+                onFocus={(e) => e.target.select()}
+                value={standsOverride}
+                onChange={(e) => setStandsOverride(e.target.value)}
+                placeholder={standsQty > 0 ? String(standsQty * DEFAULT_CARD_PRICE_AED) : ''}
+                className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+              />
+            </Field>
+          </div>
         )}
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm text-ivory-dim">Line items</p>
-        {lines.map((line, i) => (
+        <p className="text-sm text-ivory-dim">Additional items (optional - discounts, one-off fees, etc)</p>
+        {extraLines.map((line, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
               value={line.description}
-              onChange={(e) => updateLine(i, 'description', e.target.value)}
-              placeholder="e.g. 10 NFC cards - setup"
+              onChange={(e) => updateExtraLine(i, 'description', e.target.value)}
+              placeholder="e.g. Loyalty setup discount"
               className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             />
             <input
               type="number"
               onFocus={(e) => e.target.select()}
               value={line.amount || ''}
-              onChange={(e) => updateLine(i, 'amount', e.target.value)}
+              onChange={(e) => updateExtraLine(i, 'amount', e.target.value)}
               placeholder="AED"
               className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             />
-            {lines.length > 1 && (
-              <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
-                Remove
-              </button>
-            )}
+            <button type="button" onClick={() => setExtraLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
+              Remove
+            </button>
           </div>
         ))}
-        <button type="button" onClick={() => setLines((prev) => [...prev, { description: '', amount: 0 }])} className="text-sm text-brass hover:underline">
-          + Add line
+        <button type="button" onClick={() => setExtraLines((prev) => [...prev, { description: '', amount: 0 }])} className="text-sm text-brass hover:underline">
+          + Add item
         </button>
       </div>
 

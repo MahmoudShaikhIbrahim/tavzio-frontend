@@ -91,6 +91,10 @@ export interface BusinessFeatures {
     posIntegration: boolean;
     callWaiter: boolean;
     requestBill: boolean;
+    // Self-service - owner/staff turn this on themselves once a payment
+    // provider is connected (Pay Bill Setup). "Send order" then requires
+    // payment (card or staff-confirmed cash) before it reaches the kitchen.
+    payBeforeOrder: boolean;
   };
   booking: {
     menuView: boolean;
@@ -101,6 +105,21 @@ export interface BusinessFeatures {
   staffAccounts: boolean;
 }
 
+// Business appearance customization - "1 click, 1 color" for
+// Background/Buttons, applied to every customer-facing NFC page
+// (Landing/Menu/Bill/Booking). Null = use Tavzio's own default palette.
+// dashboardBackground/dashboardButton apply the same idea to the
+// owner/staff dashboard - shared business-wide, not a per-person
+// preference (that stays the existing profile theme_preference toggle).
+export interface BusinessTheme {
+  darkMode: boolean;
+  accentColor: string;
+  customerBackground: string | null;
+  customerButton: string | null;
+  dashboardBackground: string | null;
+  dashboardButton: string | null;
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -109,7 +128,7 @@ export interface Business {
   cover_image_url: string;
   description: string;
   links: BusinessLinks;
-  theme: { darkMode: boolean; accentColor: string };
+  theme: BusinessTheme;
   category: string;
   features: BusinessFeatures;
   loyaltyProgram: LoyaltyProgram | null;
@@ -171,7 +190,7 @@ export interface AdminBusiness {
   cover_image_url: string;
   description: string;
   links: BusinessLinks;
-  theme: { darkMode: boolean; accentColor: string };
+  theme: BusinessTheme;
   status: 'active' | 'suspended' | 'pending';
   features: BusinessFeatures;
   ordering_paused: boolean;
@@ -308,7 +327,7 @@ export interface CartLine {
   selectedAddons: MenuItemAddon[]; // priced server-side again on submit, this is just for display + the ids sent
 }
 
-export type OrderStatus = 'pending' | 'ready' | 'completed' | 'cancelled';
+export type OrderStatus = 'awaiting_payment' | 'pending' | 'ready' | 'completed' | 'cancelled';
 export type OrderRequestType = 'order' | 'call_waiter' | 'request_bill';
 
 export interface OrderItemAddonSnapshot {
@@ -382,8 +401,8 @@ export interface BookingRow {
 
 // --- POS / booking-system integration ---
 
-export type PosProvider = 'foodics' | 'square' | 'zenoti' | 'loyverse' | 'fresha' | 'tap' | 'custom';
-export type PosPurpose = 'ordering' | 'booking' | 'payment';
+export type PosProvider = 'foodics' | 'square' | 'zenoti' | 'loyverse' | 'fresha' | 'tap' | 'custom' | 'printnode';
+export type PosPurpose = 'ordering' | 'booking' | 'payment' | 'printing';
 
 export interface PosIntegration {
   id: string;
@@ -488,7 +507,7 @@ export interface Receipt {
 
 // --- Audit log - scoped to exactly 4 action types ---
 
-export type AuditAction = 'void_order' | 'void_item' | 'refund' | 'manual_payment_recorded' | 'payment_integration_updated';
+export type AuditAction = 'void_order' | 'void_item' | 'refund' | 'manual_payment_recorded' | 'payment_integration_updated' | 'receipt_item_removed';
 
 // --- Platform billing receipts - issued by super_admin to a business,
 // distinct from the digital Pay Bill Receipt above (that's a customer's

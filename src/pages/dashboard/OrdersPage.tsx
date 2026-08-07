@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
@@ -31,6 +32,7 @@ const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export default function OrdersPage() {
   const { user } = useSession();
+  const navigate = useNavigate();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [recentOpen, setRecentOpen] = useState(false);
@@ -185,6 +187,14 @@ export default function OrdersPage() {
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
             >
               Record payment
+            </button>
+          )}
+          {!payBillEnabled && (
+            <button
+              onClick={() => navigate('/admin/dashboard/table-receipts')}
+              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
+            >
+              Table Receipts
             </button>
           )}
           <ExportButtons businessId={businessId} kind="orders" />

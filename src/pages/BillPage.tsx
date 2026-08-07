@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, markItemsCashPending } from '../lib/api';
+import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { subscribeToBillItems } from '../lib/supabaseClient';
 import { getSavedPhone } from '../lib/loyaltyStorage';
-import type { BillItem, Receipt } from '../types';
+import type { BillItem, Receipt, Business } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -45,6 +46,7 @@ function BillPageContent({ slug }: { slug: string }) {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [rewardDescription, setRewardDescription] = useState('');
   const [provider, setProvider] = useState('tap');
+  const [business, setBusiness] = useState<Business | null>(null);
 
   const tapEventId = (() => {
     const stored = sessionStorage.getItem(`tavzio_tap_${slug}`);
@@ -73,7 +75,7 @@ function BillPageContent({ slug }: { slug: string }) {
   }, [returningPaymentId]);
 
   useEffect(() => {
-    getBusiness(slug).then((b) => setProvider(b.paymentProvider || 'tap')).catch(() => {});
+    getBusiness(slug).then((b) => { setProvider(b.paymentProvider || 'tap'); setBusiness(b); }).catch(() => {});
   }, [slug]);
 
   function loadBill() {
@@ -324,7 +326,11 @@ function BillPageContent({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-ink pb-40" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className="min-h-screen bg-ink pb-40"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      style={buildBusinessThemeVars(business?.theme?.customerBackground, business?.theme?.customerButton)}
+    >
       <div className="mx-auto max-w-md px-6 pt-14">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('payBill')}</h1>

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, type NotificationCounts } from '../../lib/authApi';
-import type { BusinessFeatures } from '../../types';
+import { buildBusinessThemeVars } from '../../lib/businessTheme';
+import type { BusinessFeatures, BusinessTheme } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
 import { useTheme } from '../../lib/ThemeContext';
 
@@ -41,6 +42,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const isOwner = user?.role === 'business_owner';
   const [features, setFeatures] = useState<BusinessFeatures | null>(null);
+  const [theme, setTheme] = useState<BusinessTheme | null>(null);
   const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, requests: 0, payments: 0 });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -60,7 +62,10 @@ export default function DashboardLayout() {
   // record rather than any preference the owner set.
   useEffect(() => {
     if (user?.business_id) {
-      getBusiness(user.business_id).then((b) => setFeatures(b.features));
+      getBusiness(user.business_id).then((b) => {
+        setFeatures(b.features);
+        setTheme(b.theme);
+      });
     }
   }, [user?.business_id]);
 
@@ -124,7 +129,7 @@ export default function DashboardLayout() {
   const isSettingsActive = visibleSettingsItems.some((t) => location.pathname.includes(t.path)) || location.pathname.includes('/settings');
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="min-h-screen bg-ink" style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}>
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>

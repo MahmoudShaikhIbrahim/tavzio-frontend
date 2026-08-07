@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Business } from '../types';
 import { getBusiness } from '../lib/api';
+import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { LINK_ORDER } from '../lib/linkMeta';
 import LinkButton from '../components/LinkButton';
 import PrimaryActionButtons from '../components/PrimaryActionButtons';
@@ -70,7 +71,11 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
   const enabledLinks = LINK_ORDER.filter((key) => business.links[key]?.enabled);
 
   return (
-    <div className="relative min-h-screen bg-ink pb-16" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className="relative min-h-screen bg-ink pb-16"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      style={buildBusinessThemeVars(business.theme?.customerBackground, business.theme?.customerButton)}
+    >
       {/* Cover */}
       <div className="relative h-48 w-full overflow-hidden bg-ink-soft sm:h-60">
         {business.cover_image_url && (

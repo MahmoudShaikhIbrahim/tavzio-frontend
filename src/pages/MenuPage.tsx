@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getMenu, submitOrder } from '../lib/api';
+import { getMenu, submitOrder, getBusiness, payOrder, createOrderPaySession, confirmOrderPayment, payOrderWithCash } from '../lib/api';
+import { buildBusinessThemeVars } from '../lib/businessTheme';
+import type { Business } from '../types';
 import { useCart } from '../hooks/useCart';
 import type { MenuCategory, MenuItem, MenuItemAddon } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
@@ -44,6 +46,9 @@ function MenuPageContent({ slug }: { slug: string }) {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [orderingPaused, setOrderingPaused] = useState(false);
   const [submissionEnabled, setSubmissionEnabled] = useState(false);
+  const [payBeforeOrderEnabled, setPayBeforeOrderEnabled] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState('tap');
+  const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
@@ -51,7 +56,10 @@ function MenuPageContent({ slug }: { slug: string }) {
   const [orderNote, setOrderNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [cashPendingConfirmed, setCashPendingConfirmed] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [error, setError] = useState('');
+  const [confirmingReturn, setConfirmingReturn] = useState(false);
 
   const cart = useCart();
 
@@ -76,6 +84,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           setItems(res.items);
           setOrderingPaused(res.orderingPaused);
           setSubmissionEnabled(res.submissionEnabled);
+          setPayBeforeOrderEnabled(res.payBeforeOrderEnabled);
 
           // Drop anything now unavailable straight out of the cart -
           // a customer should never be able to submit an order for
@@ -117,8 +126,36 @@ function MenuPageContent({ slug }: { slug: string }) {
     }
   }, [items, searchParams]);
 
-  async function handleSubmitOrder() {
+  useEffect(() => {
+    getBusiness(slug).then((b) => {
+      setPaymentProvider(b.paymentProvider || 'tap');
+      setBusiness(b);
+    }).catch(() => {});
+  }, [slug]);
+
+  // Landing back from a redirect provider's page (Telr/N-Genius/Ziina) -
+  // the backend re-verifies the real outcome with the provider itself,
+  // never trusts that arriving on this URL means anything on its own.
+  useEffect(() => {
+    const paymentId = searchParams.get('orderPaymentId');
+    if (!paymentId) return;
+    setConfirmingReturn(true);
+    confirmOrderPayment(slug, paymentId)
+      .then(() => {
+        setConfirmed(true);
+        cart.clear();
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Payment was not completed - no order was sent to the kitchen'))
+      .finally(() => setConfirmingReturn(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  async function handleSendOrderPressed() {
     if (!tapEventId || cart.lines.length === 0) return;
+    if (payBeforeOrderEnabled) {
+      setShowCheckout(true);
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -127,6 +164,45 @@ function MenuPageContent({ slug }: { slug: string }) {
       cart.clear();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send your order');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePayByCard() {
+    if (!tapEventId) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      if (paymentProvider === 'telr' || paymentProvider === 'ngenius' || paymentProvider === 'ziina') {
+        const session = await createOrderPaySession(slug, tapEventId, orderNote, cart.lines);
+        window.location.href = session.redirectUrl;
+        return;
+      }
+      // Tap in-page flow needs a real card token from Tap's own JS SDK
+      // (Apple/Google Pay tokenization) - same known gap already flagged
+      // on the Pay Bill page for this exact provider; not fabricated here.
+      const tapToken = 'TODO_REPLACE_WITH_REAL_TAP_SDK_TOKEN';
+      await payOrder(slug, tapEventId, orderNote, cart.lines, tapToken);
+      setConfirmed(true);
+      cart.clear();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment failed - no order was sent to the kitchen');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handlePayInCash() {
+    if (!tapEventId) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      await payOrderWithCash(slug, tapEventId, orderNote, cart.lines);
+      setCashPendingConfirmed(true);
+      cart.clear();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start your order');
     } finally {
       setSubmitting(false);
     }
@@ -142,6 +218,14 @@ function MenuPageContent({ slug }: { slug: string }) {
     );
   }
 
+  if (confirmingReturn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-ink">
+        <div className="h-10 w-10 animate-pulse rounded-full border-2 border-brass/40" />
+      </div>
+    );
+  }
+
   if (confirmed) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-ink px-6 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -150,6 +234,24 @@ function MenuPageContent({ slug }: { slug: string }) {
         </div>
         <p className="font-display text-xl text-ivory">{t('orderSent')}</p>
         <p className="text-sm text-ivory-dim">{t('orderSentDesc')}</p>
+        <button
+          onClick={() => navigate(`/${slug}`)}
+          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
+        >
+          {t('backTo', { slug })}
+        </button>
+      </div>
+    );
+  }
+
+  if (cashPendingConfirmed) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-ink px-6 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-brass">
+          <span className="font-display text-2xl text-brass">AED</span>
+        </div>
+        <p className="font-display text-xl text-ivory">Please pay at the cashier</p>
+        <p className="text-sm text-ivory-dim">Your order will be sent to the kitchen as soon as staff confirm your cash payment.</p>
         <button
           onClick={() => navigate(`/${slug}`)}
           className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
@@ -253,7 +355,11 @@ function MenuPageContent({ slug }: { slug: string }) {
   const editingItem = editingLine ? items.find((i) => i.id === editingLine.menuItemId) || null : null;
 
   return (
-    <div className={`min-h-screen bg-ink ${submissionEnabled ? 'pb-32' : 'pb-16'}`} dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className={`min-h-screen bg-ink ${submissionEnabled ? 'pb-32' : 'pb-16'}`}
+      dir={isRtl ? 'rtl' : 'ltr'}
+      style={buildBusinessThemeVars(business?.theme?.customerBackground, business?.theme?.customerButton)}
+    >
       <div className="mx-auto max-w-md px-6 pt-14">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('menu')}</h1>
@@ -362,11 +468,43 @@ function MenuPageContent({ slug }: { slug: string }) {
             />
             {error && <p className="mb-2 text-sm text-danger">{error}</p>}
             <button
-              onClick={handleSubmitOrder}
+              onClick={handleSendOrderPressed}
               disabled={submitting}
               className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
             >
               {submitting ? t('sending') : `${t('sendOrder')} — ${cart.total.toFixed(2)}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showCheckout && (
+        <div className="fixed inset-0 z-20 flex items-end bg-black/60" onClick={() => !submitting && setShowCheckout(false)}>
+          <div className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
+            <p className="font-display text-lg text-ivory">Pay to send your order</p>
+            <p className="mt-1 text-sm text-ivory-dim">This business requires payment before your order reaches the kitchen.</p>
+            <p className="mt-3 text-sm text-brass">Total — {cart.total.toFixed(2)}</p>
+            {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+            <button
+              onClick={handlePayByCard}
+              disabled={submitting}
+              className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
+            >
+              {submitting ? t('sending') : 'Pay by card'}
+            </button>
+            <button
+              onClick={handlePayInCash}
+              disabled={submitting}
+              className="mt-2 w-full rounded-lg border border-brass/40 px-4 py-3 font-medium text-brass hover:bg-brass/10 disabled:opacity-50"
+            >
+              Pay in cash
+            </button>
+            <button
+              onClick={() => setShowCheckout(false)}
+              disabled={submitting}
+              className="mt-2 w-full rounded-lg px-4 py-2 text-sm text-ivory-dim"
+            >
+              Cancel
             </button>
           </div>
         </div>

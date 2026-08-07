@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getServices, submitBooking } from '../lib/api';
-import type { Service } from '../types';
+import { getServices, submitBooking, getBusiness } from '../lib/api';
+import { buildBusinessThemeVars } from '../lib/businessTheme';
+import type { Service, Business } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -23,6 +24,7 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [notFound, setNotFound] = useState(false);
   const [selected, setSelected] = useState<Service | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [business, setBusiness] = useState<Business | null>(null);
 
   const tapEventId = (() => {
     const stored = sessionStorage.getItem(`tavzio_tap_${slug}`);
@@ -34,6 +36,10 @@ function BookingPageContent({ slug }: { slug: string }) {
       .then((res) => setServices(res.services))
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
+  }, [slug]);
+
+  useEffect(() => {
+    getBusiness(slug).then(setBusiness).catch(() => {});
   }, [slug]);
 
   if (loading) return <LoadingShell />;
@@ -86,7 +92,11 @@ function BookingPageContent({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className="min-h-screen bg-ink"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      style={buildBusinessThemeVars(business?.theme?.customerBackground, business?.theme?.customerButton)}
+    >
       <div className="mx-auto max-w-md px-6 pt-14 pb-16">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('bookAppointment')}</h1>

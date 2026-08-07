@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { getBusiness, updateBusinessFeatures } from '../../lib/authApi';
+import { getBusiness, updateBusinessFeatures, getPaymentStatus } from '../../lib/authApi';
 import type { AdminBusiness } from '../../types';
 import { Section, ToggleRow } from '../../components/ui';
 
@@ -8,11 +8,15 @@ export default function FeaturesPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
+  const [paymentConnected, setPaymentConnected] = useState(false);
 
   function reload() {
     if (businessId) getBusiness(businessId).then(setBusiness);
   }
   useEffect(reload, [businessId]);
+  useEffect(() => {
+    if (businessId) getPaymentStatus(businessId).then((s) => setPaymentConnected(!!s?.enabled));
+  }, [businessId]);
 
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
@@ -50,6 +54,17 @@ export default function FeaturesPage() {
             checked={ordering.callWaiter} onChange={(v) => patch({ ordering: { callWaiter: v } })} disabled={!ordering.submission} />
           <ToggleRow label="Request bill" description="Only useful with order submission or POS integration on."
             checked={ordering.requestBill} onChange={(v) => patch({ ordering: { requestBill: v } })} disabled={!ordering.submission} />
+          <ToggleRow
+            label="Pay before order"
+            description={
+              paymentConnected
+                ? 'Customers pay (card or cash) the moment they hit "Send order" - it only reaches the kitchen once payment is confirmed.'
+                : 'Connect a payment provider in Pay Bill Setup first - this needs somewhere to actually charge the card.'
+            }
+            checked={ordering.payBeforeOrder}
+            onChange={(v) => patch({ ordering: { payBeforeOrder: v } })}
+            disabled={!ordering.submission || !paymentConnected}
+          />
         </div>
       </Section>
 

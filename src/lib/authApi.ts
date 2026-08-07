@@ -5,7 +5,7 @@ import type {
   Profile, AdminBusiness, Card, StaffMember,
   AnalyticsSummary, CardBreakdownItem, LoyaltyProgramAdmin, LoyaltyMemberRow, LoyaltyProgramConfig,
   LoyaltyEarnMethod, LoyaltyStructure, RewardType, LoyaltyClaim,
-  MenuCategory, MenuItem, OrderRow, OrderStatus,
+  MenuCategory, MenuItem, OrderRow, OrderStatus, OrderItemRow,
   PosIntegration, PosIntegrationStatus, PosProvider, PosPurpose,
   Service, BookingRow, BookingStatus,
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
@@ -520,6 +520,64 @@ export function upsertPaymentIntegration(businessId: string, enabled: boolean, c
   return authFetch<PosIntegration>(`/api/businesses/${businessId}/payment-integration`, {
     method: 'PUT',
     body: JSON.stringify({ enabled, config }),
+  });
+}
+
+// --- Receipt printer (PrintNode) ---
+
+export function getPrinterIntegration(businessId: string) {
+  return authFetch<PosIntegration | null>(`/api/businesses/${businessId}/printer-integration`);
+}
+
+export function listAvailablePrinters(businessId: string, apiKey: string) {
+  return authFetch<{ printers: { id: number; name: string; description: string; state: string }[] }>(
+    `/api/businesses/${businessId}/printer-integration/printers`,
+    { method: 'POST', body: JSON.stringify({ apiKey }) }
+  );
+}
+
+export function upsertPrinterIntegration(
+  businessId: string,
+  body: { enabled: boolean; apiKey: string; printerId: string; printerName: string }
+) {
+  return authFetch<PosIntegration>(`/api/businesses/${businessId}/printer-integration`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export function getPrinterStatus(businessId: string) {
+  return authFetch<{ enabled: boolean; status: string; printerName: string } | null>(
+    `/api/businesses/${businessId}/printer-integration/status`
+  );
+}
+
+// --- Table Receipts (no Pay Bill needed) ---
+
+export interface TableWithUnpaid {
+  cardId: string;
+  tableLabel: string;
+  total: number;
+  itemCount: number;
+}
+
+export function listTablesWithUnpaid(businessId: string) {
+  return authFetch<TableWithUnpaid[]>(`/api/businesses/${businessId}/tables`);
+}
+
+export function getTableReceipt(businessId: string, cardId: string) {
+  return authFetch<{ tableLabel: string; items: OrderItemRow[]; subtotal: number; net: number; vat: number; total: number }>(
+    `/api/businesses/${businessId}/tables/${cardId}/receipt`
+  );
+}
+
+export function printTableReceipt(businessId: string, cardId: string, removedItemIds: string[]) {
+  return authFetch<{
+    tableLabel: string; items: OrderItemRow[]; subtotal: number; net: number; vat: number;
+    receiptText: string; printed: boolean; printError: string | null;
+  }>(`/api/businesses/${businessId}/tables/${cardId}/receipt/print`, {
+    method: 'POST',
+    body: JSON.stringify({ removedItemIds }),
   });
 }
 
