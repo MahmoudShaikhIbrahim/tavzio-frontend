@@ -15,6 +15,11 @@ import StaffOrderModal from '../../components/StaffOrderModal';
 import ExportButtons from '../../components/ExportButtons';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
+  // listOrders filters awaiting_payment out server-side - this view never
+  // actually renders it (an unpaid pay-before-order order never reaches
+  // the kitchen at all), so this entry only exists to satisfy the
+  // exhaustive OrderStatus type.
+  awaiting_payment: 'Awaiting payment',
   pending: 'New',
   ready: 'Ready',
   completed: 'Completed',
@@ -22,6 +27,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 const STATUS_STYLE: Record<OrderStatus, string> = {
+  awaiting_payment: 'border-ink-line text-ivory-dim',
   pending: 'border-brass text-brass',
   ready: 'border-success/50 text-success',
   completed: 'border-ink-line text-ivory-dim',

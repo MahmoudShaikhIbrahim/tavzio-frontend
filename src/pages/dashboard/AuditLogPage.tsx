@@ -10,6 +10,7 @@ const ACTION_STYLE: Record<AuditAction, string> = {
   refund: 'border-danger/40 text-danger',
   manual_payment_recorded: 'border-success/40 text-success',
   payment_integration_updated: 'border-brass/40 text-brass',
+  receipt_item_removed: 'border-warning/40 text-warning',
 };
 
 // Turns each action's raw details into an actual sentence, instead of a
@@ -28,6 +29,8 @@ function describeAction(entry: AuditLogEntry): { label: string; description: str
       return { label: 'Payment recorded', description: `${d.amount} via ${d.method === 'cash' ? 'cash' : 'card machine'} (${d.itemCount} item${d.itemCount === 1 ? '' : 's'})` };
     case 'payment_integration_updated':
       return { label: 'Payment settings changed', description: `${d.provider} ${d.enabled ? 'enabled' : 'disabled'}` };
+    case 'receipt_item_removed':
+      return { label: 'Removed from bill', description: `"${d.itemName}" (${d.amount} AED) taken off the printed receipt for ${d.tableLabel || 'a table'}` };
     case 'void_order':
       if (d.clearedTable) {
         const count = Array.isArray(d.orderIds) ? d.orderIds.length : 0;
