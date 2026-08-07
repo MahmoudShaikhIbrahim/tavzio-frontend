@@ -25,6 +25,7 @@ import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import BusinessProfilePage from './pages/dashboard/BusinessProfilePage';
 import PayBillSetupPage from './pages/dashboard/PayBillSetupPage';
+import PrinterSetupPage from './pages/dashboard/PrinterSetupPage';
 import LandingButtonsPage from './pages/dashboard/LandingButtonsPage';
 import MenuManagementPage from './pages/dashboard/MenuManagementPage';
 import LoyaltyPage from './pages/dashboard/LoyaltyPage';
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/business-profile" element={<BusinessProfilePage />} />
             <Route path="settings/pay-bill" element={<PayBillSetupPage />} />
+            <Route path="settings/printer" element={<PrinterSetupPage />} />
             <Route path="settings/landing-buttons" element={<LandingButtonsPage />} />
             <Route path="settings/menu" element={<MenuManagementPage />} />
             <Route path="settings/loyalty" element={<LoyaltyPage />} />

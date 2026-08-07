@@ -1,9 +1,10 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent, type CSSProperties } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { getBusiness, updateBusiness } from '../../lib/authApi';
 import { uploadBusinessImage } from '../../lib/supabaseClient';
 import type { AdminBusiness } from '../../types';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { buildBusinessThemeVars } from '../../lib/businessTheme';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
@@ -18,7 +19,12 @@ export default function BusinessProfilePage() {
 
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
-  return <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />;
+  return (
+    <div className="space-y-8">
+      <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />
+      <AppearanceSection business={business} businessId={businessId} onSaved={setBusiness} />
+    </div>
+  );
 }
 
 function ProfileForm({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
@@ -111,6 +117,131 @@ function ImageUploadField({ label, businessId, kind, value, onUploaded }: {
         className={`${inputClass} mt-2`}
       />
     </Field>
+  );
+}
+
+// =========================================================================
+// Appearance — "1 click, 1 color" for Background/Buttons, one pair for
+// the customer-facing pages (Landing/Menu/Bill/Booking), one shared
+// business-wide for the owner/staff dashboard. Just sets two hex values
+// on businesses.theme - buildBusinessThemeVars derives the full palette
+// (including automatic text contrast) from those on the actual pages.
+// =========================================================================
+
+function ColorPairPicker({ title, description, background, button, onChange, previewVars }: {
+  title: string;
+  description: string;
+  background: string | null;
+  button: string | null;
+  onChange: (next: { background: string | null; button: string | null }) => void;
+  previewVars: CSSProperties;
+}) {
+  const DEFAULT_BG = '#141110';
+  const DEFAULT_BUTTON = '#b8925a';
+
+  return (
+    <div className="space-y-3 rounded-xl border border-ink-line p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-base font-medium text-ivory">{title}</p>
+          <p className="text-sm text-ivory-dim">{description}</p>
+        </div>
+        {(background || button) && (
+          <button
+            type="button"
+            onClick={() => onChange({ background: null, button: null })}
+            className="shrink-0 text-sm text-ivory-dim hover:text-ivory"
+          >
+            Use default
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-6">
+        <label className="flex flex-col items-center gap-1.5">
+          <span className="text-sm text-ivory-dim">Background</span>
+          <input
+            type="color"
+            value={background || DEFAULT_BG}
+            onChange={(e) => onChange({ background: e.target.value, button })}
+            className="h-11 w-11 cursor-pointer rounded-full border border-ink-line bg-transparent p-0"
+          />
+        </label>
+        <label className="flex flex-col items-center gap-1.5">
+          <span className="text-sm text-ivory-dim">Buttons</span>
+          <input
+            type="color"
+            value={button || DEFAULT_BUTTON}
+            onChange={(e) => onChange({ background, button: e.target.value })}
+            className="h-11 w-11 cursor-pointer rounded-full border border-ink-line bg-transparent p-0"
+          />
+        </label>
+        <div className="flex h-11 flex-1 min-w-[8rem] items-center justify-center rounded-lg" style={previewVars}>
+          <div className="rounded-lg bg-ink px-4 py-2">
+            <span className="rounded-md bg-brass px-3 py-1.5 text-sm font-medium text-ink">Preview</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppearanceSection({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
+  const [customerBackground, setCustomerBackground] = useState(business.theme.customerBackground);
+  const [customerButton, setCustomerButton] = useState(business.theme.customerButton);
+  const [dashboardBackground, setDashboardBackground] = useState(business.theme.dashboardBackground);
+  const [dashboardButton, setDashboardButton] = useState(business.theme.dashboardButton);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await updateBusiness(businessId, {
+        theme: { customerBackground, customerButton, dashboardBackground, dashboardButton },
+      } as Partial<AdminBusiness>);
+      onSaved(updated);
+      // Dashboard colors are shared business-wide - apply immediately for
+      // everyone on this device rather than waiting for a fresh login.
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save appearance settings');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Section
+      title="Appearance"
+      action={
+        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      }
+    >
+      <p className="text-base text-ivory-dim">
+        One click, one color - matches your own brand across your customer-facing pages and, separately, your team's
+        dashboard. Text color adjusts automatically so it always stays readable.
+      </p>
+      <ColorPairPicker
+        title="Landing page, Menu & Bill"
+        description="Applies everywhere a customer sees after tapping your NFC card."
+        background={customerBackground}
+        button={customerButton}
+        onChange={({ background, button }) => { setCustomerBackground(background); setCustomerButton(button); }}
+        previewVars={buildBusinessThemeVars(customerBackground, customerButton)}
+      />
+      <ColorPairPicker
+        title="Owner/staff dashboard"
+        description="Shared for your whole team - not a personal preference."
+        background={dashboardBackground}
+        button={dashboardButton}
+        onChange={({ background, button }) => { setDashboardBackground(background); setDashboardButton(button); }}
+        previewVars={buildBusinessThemeVars(dashboardBackground, dashboardButton)}
+      />
+      {error && <p className="text-base text-danger">{error}</p>}
+    </Section>
   );
 }
 

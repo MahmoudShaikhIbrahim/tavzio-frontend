@@ -22,6 +22,7 @@ const TABS = [
 const SETTINGS_ITEMS = [
   { path: 'settings/business-profile', label: 'Business Profile', ownerOnly: true, requires: null },
   { path: 'settings/pay-bill', label: 'Pay Bill Setup', ownerOnly: true, requires: null },
+  { path: 'settings/printer', label: 'Receipt Printer', ownerOnly: true, requires: null },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
