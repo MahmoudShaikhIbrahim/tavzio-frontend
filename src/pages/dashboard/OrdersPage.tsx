@@ -329,8 +329,18 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
     if (!cardId) return;
     if (!confirm(`Clear ${table}? This voids everything currently unpaid at this table.`)) return;
     setClearing(true);
+    // Matches the backend's own rule exactly: skip only an order that's
+    // genuinely fully paid already (that belongs to Mark Completed). An
+    // order with nothing left because every item was deleted one-by-one
+    // isn't "paid" - it's just empty, and still needs clearing here too.
     const affectedOrderIds = new Set(
-      orders.filter((o) => o.order_items.some((i) => !i.paid && !i.voided)).map((o) => o.id)
+      orders
+        .filter((o) => {
+          const hasUnpaidUnvoidedItems = o.order_items.some((i) => !i.paid && !i.voided);
+          const hasPaidItems = o.order_items.some((i) => i.paid);
+          return hasUnpaidUnvoidedItems || !hasPaidItems;
+        })
+        .map((o) => o.id)
     );
     onOrdersChange((prev) => prev.filter((o) => !affectedOrderIds.has(o.id)));
     try {
