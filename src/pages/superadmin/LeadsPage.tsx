@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listLeads, markLeadConverted } from '../../lib/authApi';
+import { listLeads } from '../../lib/authApi';
 import type { Lead } from '../../types';
 import { Section } from '../../components/ui';
 

@@ -4,11 +4,11 @@ import {
   listMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
   listMenuItems, createMenuItem, updateMenuItem, deleteMenuItem,
   listAddons, createAddon, deleteAddon, getBusiness, updateBusiness,
-  getRecipe, setRecipe, listIngredients,
+  getRecipe, setRecipe as setRecipeApi, listIngredients,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
 import MenuAiUpload from '../../components/MenuAiUpload';
-import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon, RecipeLine, Ingredient } from '../../types';
+import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon, Ingredient } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 
 export default function MenuManagementPage() {
@@ -347,7 +347,6 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
 }
 
 function RecipeManager({ businessId, menuItemId }: { businessId: string; menuItemId: string }) {
-  const [recipe, setRecipe] = useState<RecipeLine[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [lines, setLines] = useState<{ ingredientId: string; quantity: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,7 +354,6 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
 
   useEffect(() => {
     Promise.all([getRecipe(businessId, menuItemId), listIngredients(businessId)]).then(([r, ing]) => {
-      setRecipe(r);
       setIngredients(ing);
       setLines(r.length > 0 ? r.map((l) => ({ ingredientId: l.ingredient_id, quantity: String(l.quantity) })) : [{ ingredientId: '', quantity: '' }]);
       setLoading(false);
@@ -366,7 +364,7 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
     setSaving(true);
     try {
       const valid = lines.filter((l) => l.ingredientId && Number(l.quantity) > 0);
-      await setRecipe(businessId, menuItemId, valid.map((l) => ({ ingredientId: l.ingredientId, quantity: Number(l.quantity) })));
+      await setRecipeApi(businessId, menuItemId, valid.map((l) => ({ ingredientId: l.ingredientId, quantity: Number(l.quantity) })));
     } finally {
       setSaving(false);
     }
