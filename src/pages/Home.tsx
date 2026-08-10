@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { QrCode, Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
+import { Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
+import { submitLead } from '../lib/api';
 
-const WHATSAPP_NUMBER = '971500000000'; // TODO: replace with the real business WhatsApp number before going live
+const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
 const FEATURES = [
   { icon: Utensils, title: 'Ordering', text: 'Customers browse the menu and order straight from the table, no app required.' },
@@ -18,20 +20,19 @@ const STEPS = [
   { n: '03', title: 'Grow', text: 'Every tap becomes a real customer touchpoint — an order, a review, a returning visit.' },
 ];
 
+const SYSTEM_FEE_AED = 200;
+const CARD_PRICE_AED = 20;
+
 export default function Home() {
   // A new visitor here has no account, no stored preference - this
   // should just match their own device's setting, live, never anything
-  // tied to any logged-in account (seeing someone else's theme choice on
-  // a page you've never logged into would make no sense).
+  // tied to any logged-in account.
   const theme = useLiveSystemTheme();
-  const whatsappHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to learn more about Tavzio for my business.")}`;
+  const [exampleStands, setExampleStands] = useState(10);
 
   return (
     <div data-theme={theme} className="min-h-screen bg-ink">
-      {/* Header - a real Sign In, visible to everyone. There's nothing
-          insecure about that: the login form itself is what checks
-          credentials - someone without real access just gets rejected
-          there, same as any normal website. */}
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-ink-line px-8 py-5">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full border border-brass/60">
@@ -39,37 +40,18 @@ export default function Home() {
           </span>
           <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>
         </div>
-
-        <div className="text-right">
-          <Link
-            to="/admin/login"
-            className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
-          >
-            Sign In
-          </Link>
-          <p className="mt-3 text-[11px] text-ivory-dim/60">
-            New here?{' '}
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Hi, I'd like to sign up for Tavzio.")}`}
-              target="_blank" rel="noreferrer" className="text-brass hover:underline">
-              Contact us on WhatsApp
-            </a>
-          </p>
-        </div>
+        <Link
+          to="/admin/login"
+          className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
+        >
+          Sign In
+        </Link>
       </div>
 
       {/* Hero */}
-      <div className="relative overflow-hidden px-6 pb-20 pt-24 text-center sm:pt-32">
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.07]">
-          <QrCode size={480} strokeWidth={0.5} className="text-brass" />
-        </div>
-
+      <div className="relative overflow-hidden px-6 pb-16 pt-20 text-center sm:pt-28">
         <div className="relative mx-auto max-w-2xl">
-          <span className="relative inline-flex h-20 w-20 items-center justify-center rounded-full border-2 border-brass">
-            <span className="absolute inline-flex h-20 w-20 animate-tap-ripple rounded-full border border-brass" />
-            <span className="font-display text-2xl text-brass">T</span>
-          </span>
-
-          <p className="mt-6 font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</p>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</p>
           <h1 className="mt-2 font-display text-4xl font-medium leading-tight text-ivory sm:text-5xl">
             Tap. Connect. Grow.
           </h1>
@@ -77,16 +59,26 @@ export default function Home() {
             One tap turns a table, a counter, or a door into a menu, a loyalty
             program, a booking page, and a way to pay — all without an app.
           </p>
-
           <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noreferrer"
+            href="#get-started"
             className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90"
           >
-            Get Tavzio for your business
+            Get started
           </a>
-          <p className="mt-3 text-xs text-ivory-dim/70">We'll reach out personally to set everything up with you.</p>
+        </div>
+
+        {/* Real product photos, every angle you actually have */}
+        <div className="mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-4 px-2 sm:grid-cols-2">
+          <img
+            src="/brand/stand-1.jpg"
+            alt="Tavzio NFC stand on a table"
+            className="w-full rounded-xl border border-ink-line object-cover shadow-lg"
+          />
+          <img
+            src="/brand/stand-2.jpg"
+            alt="Tavzio NFC stand, angled view"
+            className="w-full rounded-xl border border-ink-line object-cover shadow-lg"
+          />
         </div>
       </div>
 
@@ -124,24 +116,132 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CTA footer */}
-      <div className="border-t border-ink-line px-6 py-16 text-center">
-        <p className="font-display text-xl text-ivory">Seen this at a table nearby?</p>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-ivory-dim">
-          If you run a restaurant, café, salon, or similar business and want
-          this for your own space, reach out — setup is handled personally,
-          card included.
-        </p>
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-6 inline-flex items-center gap-2 rounded-lg border border-brass/40 px-6 py-3 font-medium text-brass transition-colors hover:bg-brass/10"
-        >
-          Message us on WhatsApp
-        </a>
-        <p className="mt-10 font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio</p>
+      {/* Pricing, with a real worked example */}
+      <div className="border-t border-ink-line px-6 py-20">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Pricing</p>
+          <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
+            One platform fee, plus a small fee per stand. No setup contracts, no hidden costs.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-ink-line bg-ink-soft p-6">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-brass">System</p>
+              <p className="mt-2 font-display text-3xl text-ivory">{SYSTEM_FEE_AED} <span className="text-base text-ivory-dim">AED / month</span></p>
+              <p className="mt-2 text-sm text-ivory-dim">The full platform — menu, ordering, loyalty, bookings, payments, and analytics.</p>
+            </div>
+            <div className="rounded-xl border border-ink-line bg-ink-soft p-6">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-brass">Per stand</p>
+              <p className="mt-2 font-display text-3xl text-ivory">{CARD_PRICE_AED} <span className="text-base text-ivory-dim">AED / month</span></p>
+              <p className="mt-2 text-sm text-ivory-dim">Covers your NFC stands, one per table — add or remove anytime.</p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-brass/30 bg-ink p-6">
+            <div className="flex items-center justify-between">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-brass">Example</p>
+              <label className="flex items-center gap-2 text-sm text-ivory-dim">
+                Stands
+                <input
+                  type="number"
+                  min={1}
+                  value={exampleStands}
+                  onChange={(e) => setExampleStands(Math.max(1, Number(e.target.value)))}
+                  className="w-16 rounded-lg border border-ink-line bg-ink-soft px-2 py-1 text-center text-ivory"
+                />
+              </label>
+            </div>
+            <div className="mt-3 space-y-1 text-sm text-ivory-dim">
+              <div className="flex justify-between"><span>System</span><span>{SYSTEM_FEE_AED} AED</span></div>
+              <div className="flex justify-between"><span>{exampleStands} stand{exampleStands === 1 ? '' : 's'}</span><span>{exampleStands * CARD_PRICE_AED} AED</span></div>
+            </div>
+            <div className="mt-3 flex justify-between border-t border-ink-line pt-3 font-display text-lg text-ivory">
+              <span>Total / month</span>
+              <span className="text-brass">{SYSTEM_FEE_AED + exampleStands * CARD_PRICE_AED} AED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lead capture */}
+      <div id="get-started" className="border-t border-ink-line px-6 py-20">
+        <div className="mx-auto max-w-md">
+          <p className="text-center font-display text-2xl text-ivory">Get started</p>
+          <p className="mt-2 text-center text-sm text-ivory-dim">
+            Tell us a bit about your business — we'll reach out to set everything up personally.
+          </p>
+          <LeadForm />
+        </div>
+      </div>
+
+      <div className="border-t border-ink-line px-6 py-10 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio</p>
       </div>
     </div>
+  );
+}
+
+function LeadForm() {
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [businessType, setBusinessType] = useState('restaurant');
+  const [standsEstimate, setStandsEstimate] = useState(5);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await submitLead({ email, phone, businessType, standsEstimate });
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit - please try again');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="mt-8 rounded-xl border border-brass/30 bg-ink-soft p-6 text-center">
+        <p className="font-display text-lg text-ivory">Thanks — we've got it.</p>
+        <p className="mt-1 text-sm text-ivory-dim">We'll reach out shortly to get you set up.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-8 space-y-3">
+      <input
+        type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+      />
+      <input
+        type="tel" required placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+      />
+      <select
+        value={businessType} onChange={(e) => setBusinessType(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory"
+      >
+        {CATEGORIES.map((c) => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
+      </select>
+      <label className="block text-sm text-ivory-dim">
+        How many stands do you think you'll need?
+        <input
+          type="number" min={1} value={standsEstimate} onChange={(e) => setStandsEstimate(Math.max(1, Number(e.target.value)))}
+          className="mt-1 w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory"
+        />
+      </label>
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <button
+        type="submit" disabled={submitting}
+        className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        {submitting ? 'Sending...' : 'Get started'}
+      </button>
+    </form>
   );
 }

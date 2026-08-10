@@ -231,3 +231,12 @@ export function confirmBillPayment(slug: string, paymentId: string, phone?: stri
     body: JSON.stringify({ paymentId, phone }),
   });
 }
+
+// The marketing homepage's "Get Started" lead capture - no auth, this is
+// the top of the funnel, not customer/business data.
+export function submitLead(payload: { email: string; phone: string; businessType: string; standsEstimate: number; note?: string }) {
+  return request<{ message: string }>('/api/public/leads', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

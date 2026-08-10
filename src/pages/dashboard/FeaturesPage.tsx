@@ -87,6 +87,17 @@ export default function FeaturesPage() {
             checked={business.features.staffAccounts} onChange={(v) => patch({ staffAccounts: v })} />
         </div>
       </Section>
+
+      <Section title="Inventory">
+        <div className="space-y-2">
+          <ToggleRow label="Ingredient-level inventory" description="Track real stock per ingredient via menu-item recipes, not just per-dish counts."
+            checked={business.features.inventory?.enabled || false} onChange={(v) => patch({ inventory: { enabled: v } })} />
+          <ToggleRow label="Block orders on insufficient stock" description="If off, orders are still tracked but never blocked for low stock."
+            checked={business.features.inventory?.blockOrdersOnLowStock ?? true}
+            onChange={(v) => patch({ inventory: { blockOrdersOnLowStock: v } })}
+            disabled={!business.features.inventory?.enabled} />
+        </div>
+      </Section>
     </div>
   );
 }

@@ -103,6 +103,13 @@ export interface BusinessFeatures {
   };
   loyalty: boolean;
   staffAccounts: boolean;
+  // Tier 2 ingredient-level inventory - self-service, off by default.
+  // blockOrdersOnLowStock defaults true: an order that can't actually be
+  // made from current stock gets rejected rather than silently accepted.
+  inventory: {
+    enabled: boolean;
+    blockOrdersOnLowStock: boolean;
+  };
 }
 
 // Business appearance customization - "1 click, 1 color" for
@@ -134,6 +141,7 @@ export interface Business {
   loyaltyProgram: LoyaltyProgram | null;
   paymentEnabled: boolean;
   paymentProvider: string;
+  trn: string;
   customButtons: CustomButton[];
 }
 
@@ -176,6 +184,7 @@ export interface Profile {
   is_active: boolean;
   email?: string;
   theme_preference: 'light' | 'dark' | 'system';
+  must_change_password: boolean;
 }
 
 // The full business record as seen by an authenticated admin - a superset
@@ -195,6 +204,86 @@ export interface AdminBusiness {
   features: BusinessFeatures;
   ordering_paused: boolean;
   notification_settings: NotificationSettings;
+  trn: string;
+  created_at: string;
+}
+
+export interface Contract {
+  id: string;
+  business_id: string;
+  contract_number: string;
+  start_date: string;
+  end_date: string;
+  payment_frequency: 'monthly' | 'quarterly' | 'yearly';
+  stands_count: number;
+  system_fee_aed: number;
+  card_price_aed: number;
+  annual_total_aed: number;
+  status: 'draft' | 'sent' | 'signed' | 'active' | 'terminated' | 'expired';
+  signed_snapshot_text: string | null;
+  signed_by_name: string | null;
+  signed_at: string | null;
+  created_at: string;
+}
+
+export interface Supplier {
+  id: string;
+  business_id: string;
+  name: string;
+  contact_name: string;
+  phone: string;
+  email: string;
+}
+
+export interface Ingredient {
+  id: string;
+  business_id: string;
+  name: string;
+  unit: 'g' | 'kg' | 'ml' | 'l' | 'piece';
+  stock_qty: number;
+  low_stock_threshold: number;
+  cost_per_unit: number;
+  supplier_id: string | null;
+  suppliers?: { name: string } | null;
+}
+
+export interface RecipeLine {
+  id: string;
+  menu_item_id: string;
+  ingredient_id: string;
+  quantity: number;
+  ingredients?: { id: string; name: string; unit: string; stock_qty: number };
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  ingredient_id: string;
+  quantity: number;
+  unit_cost_aed: number;
+  ingredients?: { name: string; unit: string };
+}
+
+export interface PurchaseOrder {
+  id: string;
+  business_id: string;
+  supplier_id: string | null;
+  status: 'pending' | 'received' | 'cancelled';
+  total_cost_aed: number;
+  ordered_at: string;
+  received_at: string | null;
+  suppliers?: { name: string } | null;
+  purchase_order_items: PurchaseOrderItem[];
+}
+
+export interface Lead {
+  id: string;
+  email: string;
+  phone: string;
+  business_type: string;
+  stands_estimate: number;
+  note: string;
+  converted: boolean;
+  converted_business_id: string | null;
   created_at: string;
 }
 

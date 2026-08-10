@@ -8,10 +8,11 @@ import {
   getPaymentStatus,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
   listReceipts, createReceipt, voidReceipt, downloadReceiptPdf,
+  createContract, sendContract, listContracts, previewContract, generateContractReceipt,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { Field, inputClass } from '../../components/ui';
-import type { AdminBusiness, Card, StaffMember, PosIntegration, PosPurpose, PosProvider, CustomButton, BillingReceipt, BillingReceiptLineItem } from '../../types';
+import type { AdminBusiness, Card, StaffMember, PosIntegration, PosPurpose, PosProvider, CustomButton, BillingReceipt, BillingReceiptLineItem, Contract } from '../../types';
 
 export default function BusinessDetail() {
   const { businessId } = useParams<{ businessId: string }>();
@@ -103,6 +104,7 @@ export default function BusinessDetail() {
       <CustomButtonsSection businessId={businessId} />
 
       {/* Billing receipts - issued to this business, one at a time */}
+      <ContractsSection businessId={businessId} />
       <ReceiptsSection businessId={businessId} />
 
       {/* Staff */}
@@ -390,6 +392,159 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
 }
 
 const ICON_OPTIONS = ['Link', 'Star', 'Gift', 'Music', 'ShoppingBag', 'Heart', 'Phone', 'Mail', 'Globe', 'MapPin', 'Camera', 'Ticket'];
+
+function ContractsSection({ businessId }: { businessId: string }) {
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState('');
+
+  function reload() {
+    listContracts(businessId).then(setContracts);
+  }
+  useEffect(reload, [businessId]);
+
+  async function handlePreview(contractId: string) {
+    if (previewingId === contractId) { setPreviewingId(null); return; }
+    const res = await previewContract(businessId, contractId);
+    setPreviewText(res.text);
+    setPreviewingId(contractId);
+  }
+
+  async function handleGenerateReceipt(contractId: string) {
+    try {
+      const receipt = await generateContractReceipt(businessId, contractId);
+      alert(`Receipt ${receipt.receipt_number} generated${receipt.ziinaError ? ` (no payment link: ${receipt.ziinaError})` : ''}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not generate receipt');
+    }
+  }
+
+  async function handleSend(contractId: string) {
+    try {
+      const res = await sendContract(businessId, contractId);
+      alert(res.message);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not send contract');
+    }
+  }
+
+  return (
+    <Section
+      title="Contracts"
+      action={
+        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          + New contract
+        </button>
+      }
+    >
+      <p className="text-base text-ivory-dim">
+        Every contract is a fixed 1-year term - only the payment frequency changes. Send it for the owner to
+        e-sign inside their dashboard; once signed, generate installment receipts against it as payments come due.
+      </p>
+      {showForm && <ContractForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}
+      <div className="space-y-3">
+        {contracts.map((c) => (
+          <div key={c.id} className="rounded-lg border border-ink-line p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-base font-medium text-ivory">{c.contract_number}</p>
+                <p className="text-sm text-ivory-dim">
+                  {c.start_date} → {c.end_date} · {c.payment_frequency} · AED {c.annual_total_aed.toFixed(2)}/yr ·{' '}
+                  <span className={c.status === 'signed' || c.status === 'active' ? 'text-success' : 'text-ivory-dim'}>{c.status}</span>
+                  {c.signed_by_name && ` · signed by ${c.signed_by_name}`}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {c.status === 'draft' && (
+                  <button onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline">
+                    Send to client
+                  </button>
+                )}
+                <button onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline">
+                  {previewingId === c.id ? 'Hide' : 'Preview'}
+                </button>
+                {(c.status === 'signed' || c.status === 'active') && (
+                  <button onClick={() => handleGenerateReceipt(c.id)} className="text-sm text-brass hover:underline">
+                    Generate next receipt
+                  </button>
+                )}
+              </div>
+            </div>
+            {previewingId === c.id && (
+              <pre className="mt-3 max-h-96 overflow-y-auto whitespace-pre-wrap rounded-lg bg-ink-soft p-4 text-sm text-ivory-dim">{previewText}</pre>
+            )}
+          </div>
+        ))}
+        {contracts.length === 0 && <p className="text-base text-ivory-dim">No contracts yet.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function ContractForm({ businessId, onDone, onReload }: { businessId: string; onDone: () => void; onReload: () => void }) {
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paymentFrequency, setPaymentFrequency] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [standsCount, setStandsCount] = useState(0);
+  const [systemFeeOverride, setSystemFeeOverride] = useState('');
+  const [cardPriceOverride, setCardPriceOverride] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      await createContract(businessId, {
+        startDate,
+        paymentFrequency,
+        standsCount,
+        systemFeeOverride: systemFeeOverride ? Number(systemFeeOverride) : undefined,
+        cardPriceOverride: cardPriceOverride ? Number(cardPriceOverride) : undefined,
+      });
+      onReload();
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create contract');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-lg border border-ink-line p-4">
+      <div className="flex flex-wrap gap-4">
+        <Field label="Start date">
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+        </Field>
+        <Field label="Payment frequency">
+          <select value={paymentFrequency} onChange={(e) => setPaymentFrequency(e.target.value as typeof paymentFrequency)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </Field>
+        <Field label="Number of stands">
+          <input type="number" min={0} value={standsCount} onChange={(e) => setStandsCount(Number(e.target.value))} className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+        </Field>
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <Field label="System fee override (AED, optional)">
+          <input value={systemFeeOverride} onChange={(e) => setSystemFeeOverride(e.target.value)} placeholder="200" className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+        </Field>
+        <Field label="Card price override (AED, optional)">
+          <input value={cardPriceOverride} onChange={(e) => setCardPriceOverride(e.target.value)} placeholder="20" className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+        </Field>
+      </div>
+      {error && <p className="text-base text-danger">{error}</p>}
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        {saving ? 'Creating...' : 'Create contract'}
+      </button>
+    </form>
+  );
+}
 
 function ReceiptsSection({ businessId }: { businessId: string }) {
   const [receipts, setReceipts] = useState<BillingReceipt[]>([]);

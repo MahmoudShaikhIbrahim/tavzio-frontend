@@ -10,6 +10,7 @@ import type {
   Service, BookingRow, BookingStatus,
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
+  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -40,6 +41,21 @@ export function updateMyTheme(theme: 'light' | 'dark' | 'system') {
     method: 'PATCH',
     body: JSON.stringify({ theme }),
   });
+}
+
+export function changePassword(currentPassword: string, newPassword: string) {
+  return authFetch<{ message: string }>('/api/auth/change-password', {
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export function listLeads() {
+  return authFetch<Lead[]>('/api/leads');
+}
+
+export function markLeadConverted(leadId: string, businessId?: string) {
+  return authFetch<Lead>(`/api/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify({ businessId }) });
 }
 
 // --- Business onboarding (super_admin) ---
@@ -863,11 +879,89 @@ export function getReceiptBranding() {
   return authFetch<ReceiptBranding>('/api/businesses/receipt-branding');
 }
 
-export function updateReceiptBranding(payload: { stampUrl?: string; signatureUrl?: string; legalName?: string }) {
+export function updateReceiptBranding(payload: { stampUrl?: string; signatureUrl?: string; legalName?: string; issuerTrn?: string }) {
   return authFetch<ReceiptBranding>('/api/businesses/receipt-branding', {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
+}
+
+// --- Contracts ---
+
+export function createContract(businessId: string, payload: {
+  startDate: string; paymentFrequency: 'monthly' | 'quarterly' | 'yearly';
+  standsCount: number; systemFeeOverride?: number; cardPriceOverride?: number;
+}) {
+  return authFetch<Contract>(`/api/businesses/${businessId}/contracts`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function sendContract(businessId: string, contractId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/contracts/${contractId}/send`, { method: 'POST' });
+}
+
+export function listContracts(businessId: string) {
+  return authFetch<Contract[]>(`/api/businesses/${businessId}/contracts`);
+}
+
+export function previewContract(businessId: string, contractId: string) {
+  return authFetch<{ text: string }>(`/api/businesses/${businessId}/contracts/${contractId}/preview`);
+}
+
+export function signContract(businessId: string, contractId: string, fullName: string) {
+  return authFetch<Contract>(`/api/businesses/${businessId}/contracts/${contractId}/sign`, {
+    method: 'POST',
+    body: JSON.stringify({ fullName }),
+  });
+}
+
+export function generateContractReceipt(businessId: string, contractId: string) {
+  return authFetch<BillingReceipt & { ziinaError?: string | null }>(`/api/businesses/${businessId}/contracts/${contractId}/receipts/next`, { method: 'POST' });
+}
+
+// --- Inventory ---
+
+export function listSuppliers(businessId: string) {
+  return authFetch<Supplier[]>(`/api/businesses/${businessId}/inventory/suppliers`);
+}
+
+export function createSupplier(businessId: string, payload: { name: string; contactName?: string; phone?: string; email?: string }) {
+  return authFetch<Supplier>(`/api/businesses/${businessId}/inventory/suppliers`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function listIngredients(businessId: string) {
+  return authFetch<Ingredient[]>(`/api/businesses/${businessId}/inventory/ingredients`);
+}
+
+export function createIngredient(businessId: string, payload: { name: string; unit: string; lowStockThreshold?: number; supplierId?: string | null }) {
+  return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updateIngredient(businessId: string, ingredientId: string, payload: Partial<{ name: string; unit: string; lowStockThreshold: number; supplierId: string | null }>) {
+  return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function adjustStock(businessId: string, ingredientId: string, payload: { changeQty: number; reason?: string; note?: string }) {
+  return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}/adjust`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function getRecipe(businessId: string, menuItemId: string) {
+  return authFetch<RecipeLine[]>(`/api/businesses/${businessId}/inventory/menu-items/${menuItemId}/recipe`);
+}
+
+export function setRecipe(businessId: string, menuItemId: string, ingredients: { ingredientId: string; quantity: number }[]) {
+  return authFetch<RecipeLine[]>(`/api/businesses/${businessId}/inventory/menu-items/${menuItemId}/recipe`, { method: 'PUT', body: JSON.stringify({ ingredients }) });
+}
+
+export function listPurchaseOrders(businessId: string) {
+  return authFetch<PurchaseOrder[]>(`/api/businesses/${businessId}/inventory/purchase-orders`);
+}
+
+export function createPurchaseOrder(businessId: string, payload: { supplierId?: string | null; items: { ingredientId: string; quantity: number; unitCostAed: number }[] }) {
+  return authFetch<PurchaseOrder>(`/api/businesses/${businessId}/inventory/purchase-orders`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function receivePurchaseOrder(businessId: string, poId: string) {
+  return authFetch<PurchaseOrder>(`/api/businesses/${businessId}/inventory/purchase-orders/${poId}/receive`, { method: 'POST' });
 }
 
 // super_admin only - one-time, deliberate action. Overwrites whichever

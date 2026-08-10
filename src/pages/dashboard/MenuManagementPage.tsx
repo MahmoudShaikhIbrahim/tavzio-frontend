@@ -4,10 +4,11 @@ import {
   listMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
   listMenuItems, createMenuItem, updateMenuItem, deleteMenuItem,
   listAddons, createAddon, deleteAddon, getBusiness, updateBusiness,
+  getRecipe, setRecipe, listIngredients,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
 import MenuAiUpload from '../../components/MenuAiUpload';
-import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon } from '../../types';
+import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon, RecipeLine, Ingredient } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 
 export default function MenuManagementPage() {
@@ -296,6 +297,7 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
 }) {
   const [editing, setEditing] = useState(false);
   const [showAddons, setShowAddons] = useState(false);
+  const [showRecipe, setShowRecipe] = useState(false);
 
   if (editing) {
     return <ItemForm businessId={businessId} categories={categories} existing={item} onDone={() => { setEditing(false); onChange(); }} />;
@@ -325,6 +327,7 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
             {item.is_available ? 'Mark unavailable' : 'Mark available'}
           </ActionButton>
           <ActionButton onClick={() => setShowAddons((s) => !s)}>Add-ons</ActionButton>
+          <ActionButton onClick={() => setShowRecipe((s) => !s)}>Recipe</ActionButton>
           <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
           <ActionButton
             danger
@@ -338,6 +341,76 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
         </div>
       </div>
       {showAddons && <AddonManager businessId={businessId} itemId={item.id} />}
+      {showRecipe && <RecipeManager businessId={businessId} menuItemId={item.id} />}
+    </div>
+  );
+}
+
+function RecipeManager({ businessId, menuItemId }: { businessId: string; menuItemId: string }) {
+  const [recipe, setRecipe] = useState<RecipeLine[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [lines, setLines] = useState<{ ingredientId: string; quantity: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([getRecipe(businessId, menuItemId), listIngredients(businessId)]).then(([r, ing]) => {
+      setRecipe(r);
+      setIngredients(ing);
+      setLines(r.length > 0 ? r.map((l) => ({ ingredientId: l.ingredient_id, quantity: String(l.quantity) })) : [{ ingredientId: '', quantity: '' }]);
+      setLoading(false);
+    });
+  }, [businessId, menuItemId]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const valid = lines.filter((l) => l.ingredientId && Number(l.quantity) > 0);
+      await setRecipe(businessId, menuItemId, valid.map((l) => ({ ingredientId: l.ingredientId, quantity: Number(l.quantity) })));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className="border-t border-ink-line p-4"><p className="text-ivory-dim">Loading recipe...</p></div>;
+
+  return (
+    <div className="space-y-3 border-t border-ink-line p-4">
+      <p className="text-sm text-ivory-dim">
+        How much of each ingredient one order of this item consumes - orders automatically deduct these
+        quantities from stock.
+      </p>
+      {ingredients.length === 0 && <p className="text-sm text-ivory-dim">Add ingredients in Inventory first.</p>}
+      {lines.map((line, i) => (
+        <div key={i} className="flex flex-wrap items-center gap-2">
+          <select
+            value={line.ingredientId}
+            onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, ingredientId: e.target.value } : l))}
+            className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+          >
+            <option value="">Select ingredient...</option>
+            {ingredients.map((ing) => <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>)}
+          </select>
+          <input
+            type="number"
+            placeholder="Quantity"
+            value={line.quantity}
+            onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, quantity: e.target.value } : l))}
+            className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+          />
+          <button onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
+            Remove
+          </button>
+        </div>
+      ))}
+      <button onClick={() => setLines((prev) => [...prev, { ingredientId: '', quantity: '' }])} className="text-sm text-brass hover:underline">
+        + Add ingredient
+      </button>
+      <div>
+        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save recipe'}
+        </button>
+      </div>
     </div>
   );
 }

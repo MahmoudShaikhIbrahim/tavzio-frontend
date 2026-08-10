@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { registerBusiness } from '../../lib/authApi';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { registerBusiness, markLeadConverted } from '../../lib/authApi';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
@@ -13,13 +13,21 @@ function randomPassword() {
 }
 
 export default function CreateBusiness() {
+  const [searchParams] = useSearchParams();
+  const leadId = searchParams.get('leadId');
+  const leadPhone = searchParams.get('phone');
+  const leadCategory = searchParams.get('category');
+
   const [ownerName, setOwnerName] = useState('');
-  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState(searchParams.get('email') || '');
+  // Set once at account creation, then immediately forced to change on
+  // first login (must_change_password) - this is deliberately just a
+  // handoff value, never meant to stay in use.
   const [password, setPassword] = useState(randomPassword());
   const [businessName, setBusinessName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
-  const [category, setCategory] = useState('restaurant');
+  const [category, setCategory] = useState(CATEGORIES.includes(leadCategory || '') ? leadCategory! : 'restaurant');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -42,6 +50,9 @@ export default function CreateBusiness() {
         slug,
         category,
       });
+      if (leadId) {
+        await markLeadConverted(leadId, res.business.id).catch(() => {}); // best-effort - never block onboarding on this
+      }
       navigate(`/admin/super/businesses/${res.business.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -53,10 +64,14 @@ export default function CreateBusiness() {
     <div className="max-w-lg">
       <h1 className="font-display text-3xl text-ivory">Onboard a business</h1>
       <p className="mt-1 text-base text-ivory-dim">
-        Creates the owner's account and the business record together. The
-        owner won't use this password day-to-day — they'll get a tap card
-        once you issue one, on the business's page after this.
+        Creates the owner's account and the business record together. This password is just a handoff value -
+        the owner is forced to set their own the moment they first log in.
       </p>
+      {leadPhone && (
+        <p className="mt-2 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-sm text-ivory-dim">
+          From lead signup - phone: <span className="text-ivory">{leadPhone}</span>
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-4">
         <Field label="Owner's full name">

@@ -15,6 +15,7 @@ import RequireRole from './components/RequireRole';
 import SuperAdminLayout from './pages/superadmin/SuperAdminLayout';
 import BusinessesList from './pages/superadmin/BusinessesList';
 import CreateBusiness from './pages/superadmin/CreateBusiness';
+import LeadsPage from './pages/superadmin/LeadsPage';
 import BusinessDetail from './pages/superadmin/BusinessDetail';
 import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
 import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
@@ -41,6 +42,10 @@ import ReceiptsPage from './pages/dashboard/ReceiptsPage';
 import AuditLogPage from './pages/dashboard/AuditLogPage';
 import MessagesPage from './pages/dashboard/MessagesPage';
 import TableReceiptsPage from './pages/dashboard/TableReceiptsPage';
+import InventoryPage from './pages/dashboard/InventoryPage';
+import ContractPage from './pages/dashboard/ContractPage';
+import ChangePasswordPage from './pages/dashboard/ChangePasswordPage';
+import SignContractPage from './pages/SignContractPage';
 
 export default function App() {
   return (
@@ -51,6 +56,9 @@ export default function App() {
 
         {/* This is the URL physically programmed onto NFC chips */}
         <Route path="/t/:cardUid" element={<TapHandler />} />
+
+        {/* Public, no-login contract signing - the "send in a minute" link */}
+        <Route path="/sign/:token" element={<SignContractPage />} />
 
         {/* Real email/password login - the only owner/staff access path
             now (admin cards were removed), always available to super_admin
@@ -65,6 +73,7 @@ export default function App() {
             <Route index element={<Navigate to="businesses" replace />} />
             <Route path="businesses" element={<BusinessesList />} />
             <Route path="businesses/new" element={<CreateBusiness />} />
+            <Route path="leads" element={<LeadsPage />} />
             <Route path="businesses/:businessId" element={<BusinessDetail />} />
             <Route path="messages" element={<MessagesInboxPage />} />
             <Route path="billing-settings" element={<BillingSettingsPage />} />
@@ -96,6 +105,9 @@ export default function App() {
             <Route path="audit-log" element={<AuditLogPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="table-receipts" element={<TableReceiptsPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="settings/contract" element={<ContractPage />} />
+            <Route path="settings/change-password" element={<ChangePasswordPage />} />
           </Route>
         </Route>
 

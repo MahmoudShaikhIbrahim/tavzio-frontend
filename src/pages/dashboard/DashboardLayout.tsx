@@ -6,6 +6,7 @@ import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
 import { useTheme } from '../../lib/ThemeContext';
+import ChangePasswordPage from './ChangePasswordPage';
 
 // Only what's actually checked constantly through a shift stays
 // top-level - everything else, however often it's used, lives in the
@@ -14,6 +15,7 @@ const TABS = [
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
   { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
+  { path: 'inventory', label: 'Inventory', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
 ];
 
 // Everything that used to be its own tab, or lived buried inside the old
@@ -23,6 +25,8 @@ const SETTINGS_ITEMS = [
   { path: 'settings/business-profile', label: 'Business Profile', ownerOnly: true, requires: null },
   { path: 'settings/pay-bill', label: 'Pay Bill Setup', ownerOnly: true, requires: null },
   { path: 'settings/printer', label: 'Receipt Printer', ownerOnly: true, requires: null },
+  { path: 'settings/contract', label: 'Service Contract', ownerOnly: true, requires: null },
+  { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
@@ -117,17 +121,27 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'booking' | 'staffAccounts' | null) {
+  function tabAllowed(requires: 'ordering' | 'booking' | 'staffAccounts' | 'inventory' | null) {
     if (!requires || !features) return !requires;
     if (requires === 'ordering') return features.ordering.menuView || features.ordering.submission;
     if (requires === 'booking') return features.booking.menuView || features.booking.submission;
     if (requires === 'staffAccounts') return features.staffAccounts;
+    if (requires === 'inventory') return features.inventory?.enabled;
     return true;
   }
 
   const visibleTabs = TABS.filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires));
   const visibleSettingsItems = SETTINGS_ITEMS.filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires));
   const isSettingsActive = visibleSettingsItems.some((t) => location.pathname.includes(t.path)) || location.pathname.includes('/settings');
+
+  // Owner accounts start with a password the super admin set directly
+  // and knows - force setting a real one before anything else in the
+  // dashboard is reachable. Staff never hits this (they always set
+  // their own via the invite-email flow), so this only ever applies to
+  // an owner's very first login.
+  if (user?.must_change_password) {
+    return <ChangePasswordPage forced />;
+  }
 
   return (
     <div className="min-h-screen bg-ink" style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}>
