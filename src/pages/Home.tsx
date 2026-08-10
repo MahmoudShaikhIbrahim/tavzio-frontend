@@ -67,17 +67,17 @@ export default function Home() {
           </a>
         </div>
 
-        {/* Real product photos, every angle you actually have */}
-        <div className="mx-auto mt-14 grid max-w-3xl grid-cols-1 gap-4 px-2 sm:grid-cols-2">
+        {/* The actual print-ready card design - clean, premium, no
+            photography needed. A candid lifestyle photo of the stand on a
+            coffee table undercuts the premium feel this brand is going
+            for; the card's own design already carries that on its own. */}
+        <div className="relative mx-auto mt-16 flex max-w-xs justify-center">
+          <div className="pointer-events-none absolute inset-0 scale-125 rounded-full bg-brass/10 blur-3xl" />
           <img
-            src="/brand/stand-1.jpg"
-            alt="Tavzio NFC stand on a table"
-            className="w-full rounded-xl border border-ink-line object-cover shadow-lg"
-          />
-          <img
-            src="/brand/stand-2.jpg"
-            alt="Tavzio NFC stand, angled view"
-            className="w-full rounded-xl border border-ink-line object-cover shadow-lg"
+            src="/brand/card-front.png"
+            alt="Tavzio NFC card"
+            className="relative w-full rounded-2xl shadow-2xl ring-1 ring-brass/20"
+            style={{ transform: 'perspective(900px) rotateY(-8deg) rotateX(3deg)' }}
           />
         </div>
       </div>
