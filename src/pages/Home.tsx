@@ -67,18 +67,26 @@ export default function Home() {
           </a>
         </div>
 
-        {/* The actual print-ready card design - clean, premium, no
-            photography needed. A candid lifestyle photo of the stand on a
-            coffee table undercuts the premium feel this brand is going
-            for; the card's own design already carries that on its own. */}
-        <div className="relative mx-auto mt-16 flex max-w-xs justify-center">
-          <div className="pointer-events-none absolute inset-0 scale-125 rounded-full bg-brass/10 blur-3xl" />
-          <img
-            src="/brand/card-front.png"
-            alt="Tavzio NFC card"
-            className="relative w-full rounded-2xl shadow-2xl ring-1 ring-brass/20"
-            style={{ transform: 'perspective(900px) rotateY(-8deg) rotateX(3deg)' }}
-          />
+        {/* Real product photography, cropped from the premium marble/gold
+            set - this replaces the earlier flat card-design render now
+            that real, editorial-quality photos of the actual product exist. */}
+        <div className="mx-auto mt-14 max-w-2xl overflow-hidden rounded-2xl shadow-2xl ring-1 ring-brass/20">
+          <img src="/brand/stand-front.jpg" alt="Tavzio NFC stand" className="w-full" />
+        </div>
+      </div>
+
+      {/* Your stand, on your tables - the two companion angles from the
+          same shoot, shown together the way the pitch deck already does. */}
+      <div className="border-t border-ink-line px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Your stand, on your tables</p>
+          <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
+            A single card at every table — customers see it the moment they sit down.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+            <img src="/brand/stand-angled.jpg" alt="Tavzio NFC stand, angled view" className="w-full rounded-xl shadow-lg" />
+            <img src="/brand/stand-side.jpg" alt="Tavzio NFC stand, side profile" className="w-full rounded-xl shadow-lg" />
+          </div>
         </div>
       </div>
 
