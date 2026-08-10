@@ -144,19 +144,20 @@ export default function Home() {
                 <input
                   type="number"
                   min={1}
+                  onFocus={(e) => e.target.select()}
                   value={exampleStands}
-                  onChange={(e) => setExampleStands(Math.max(1, Number(e.target.value)))}
+                  onChange={(e) => setExampleStands(Number(e.target.value))}
                   className="w-16 rounded-lg border border-ink-line bg-ink-soft px-2 py-1 text-center text-ivory"
                 />
               </label>
             </div>
             <div className="mt-3 space-y-1 text-sm text-ivory-dim">
               <div className="flex justify-between"><span>System</span><span>{SYSTEM_FEE_AED} AED</span></div>
-              <div className="flex justify-between"><span>{exampleStands} stand{exampleStands === 1 ? '' : 's'}</span><span>{exampleStands * CARD_PRICE_AED} AED</span></div>
+              <div className="flex justify-between"><span>{Math.max(1, exampleStands)} stand{exampleStands === 1 ? '' : 's'}</span><span>{Math.max(1, exampleStands) * CARD_PRICE_AED} AED</span></div>
             </div>
             <div className="mt-3 flex justify-between border-t border-ink-line pt-3 font-display text-lg text-ivory">
               <span>Total / month</span>
-              <span className="text-brass">{SYSTEM_FEE_AED + exampleStands * CARD_PRICE_AED} AED</span>
+              <span className="text-brass">{SYSTEM_FEE_AED + Math.max(1, exampleStands) * CARD_PRICE_AED} AED</span>
             </div>
           </div>
         </div>
@@ -194,7 +195,7 @@ function LeadForm() {
     setError('');
     setSubmitting(true);
     try {
-      await submitLead({ email, phone, businessType, standsEstimate });
+      await submitLead({ email, phone, businessType, standsEstimate: Math.max(1, standsEstimate) });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit - please try again');
@@ -231,7 +232,7 @@ function LeadForm() {
       <label className="block text-sm text-ivory-dim">
         How many stands do you think you'll need?
         <input
-          type="number" min={1} value={standsEstimate} onChange={(e) => setStandsEstimate(Math.max(1, Number(e.target.value)))}
+          type="number" min={1} onFocus={(e) => e.target.select()} value={standsEstimate} onChange={(e) => setStandsEstimate(Number(e.target.value))}
           className="mt-1 w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory"
         />
       </label>
