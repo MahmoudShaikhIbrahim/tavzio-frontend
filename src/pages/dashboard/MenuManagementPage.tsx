@@ -392,6 +392,7 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
           <input
             type="number"
             placeholder="Quantity"
+            onFocus={(e) => e.target.select()}
             value={line.quantity}
             onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, quantity: e.target.value } : l))}
             className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"

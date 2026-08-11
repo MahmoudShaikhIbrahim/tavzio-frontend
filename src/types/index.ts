@@ -287,6 +287,109 @@ export interface Lead {
   created_at: string;
 }
 
+export interface TillSession {
+  id: string;
+  business_id: string;
+  staff_id: string;
+  opening_float_aed: number;
+  status: 'open' | 'closed';
+  opened_at: string;
+  closed_at: string | null;
+  expected_cash_aed: number | null;
+  counted_cash_aed: number | null;
+  variance_aed: number | null;
+  notes: string;
+  profiles?: { name: string };
+}
+
+export interface FloorTable {
+  id: string;
+  uid: string;
+  business_id: string;
+  label: string;
+  status: 'active' | 'inactive' | 'lost' | 'disabled';
+  table_status: 'available' | 'occupied' | 'reserved' | 'cleaning';
+  seat_count: number;
+  merged_with_card_id: string | null;
+  activeOrders: { id: string; card_id: string; total: number; status: string }[];
+}
+
+export interface WaitlistEntry {
+  id: string;
+  business_id: string;
+  guest_name: string;
+  party_size: number;
+  phone: string;
+  status: 'waiting' | 'seated' | 'cancelled';
+  seated_card_id: string | null;
+  created_at: string;
+  seated_at: string | null;
+}
+
+export interface HotelRoom {
+  id: string;
+  business_id: string;
+  room_number: string;
+  room_type: string;
+  floor: string;
+  max_occupancy: number;
+  base_rate_aed: number;
+  status: 'available' | 'occupied' | 'dirty' | 'maintenance' | 'out_of_order';
+}
+
+export interface HotelGuest {
+  id: string;
+  business_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  id_document_type: string;
+  id_document_number: string;
+  nationality: string;
+  notes: string;
+}
+
+export interface HotelReservation {
+  id: string;
+  business_id: string;
+  guest_id: string;
+  room_id: string | null;
+  check_in_date: string;
+  check_out_date: string;
+  adults: number;
+  children: number;
+  status: 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+  source: 'direct' | 'walk_in' | 'ota' | 'phone';
+  rate_aed: number;
+  actual_check_in_at: string | null;
+  actual_check_out_at: string | null;
+  notes: string;
+  hotel_guests?: { name: string; phone: string; email: string };
+  hotel_rooms?: { room_number: string; room_type: string };
+}
+
+export interface HotelFolioCharge {
+  id: string;
+  folio_id: string;
+  description: string;
+  amount_aed: number;
+  charge_type: 'room' | 'fnb' | 'service' | 'other' | 'payment';
+  created_at: string;
+}
+
+export interface HotelFolio {
+  id: string;
+  business_id: string;
+  reservation_id: string;
+  status: 'open' | 'closed';
+  is_primary: boolean;
+  payer_type: 'guest' | 'company';
+  company_name: string;
+  charges: HotelFolioCharge[];
+  balance: number;
+  hotel_reservations?: { check_in_date: string; check_out_date: string; hotel_guests: { name: string }; hotel_rooms: { room_number: string } };
+}
+
 export interface Card {
   id: string;
   uid: string;
@@ -456,6 +559,8 @@ export interface OrderRow {
   placed_by_staff_id: string | null;
   created_at: string;
   order_items: OrderItemRow[];
+  source?: 'customer_tap' | 'staff_pos' | 'delivery';
+  delivery_platform?: string | null;
 }
 
 // --- Booking (parallel to ordering) ---
@@ -631,6 +736,7 @@ export interface ReceiptBranding {
   stamp_url: string;
   signature_url: string;
   legal_name: string;
+  issuer_trn: string;
 }
 
 export interface AuditLogEntry {

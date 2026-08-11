@@ -30,15 +30,16 @@ export default function BusinessProfilePage() {
 function ProfileForm({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
   const [name, setName] = useState(business.name);
   const [description, setDescription] = useState(business.description);
-  const [category, setCategory] = useState(business.category);
+  const category = business.category;
   const [logoUrl, setLogoUrl] = useState(business.logo_url);
   const [coverImageUrl, setCoverImageUrl] = useState(business.cover_image_url);
+  const [trn, setTrn] = useState(business.trn || '');
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const updated = await updateBusiness(businessId, { name, description, category, logoUrl, coverImageUrl } as Partial<AdminBusiness>);
+    const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl, trn } as Partial<AdminBusiness>);
     onSaved(updated);
     setSaving(false);
   }
@@ -50,10 +51,13 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
           <Field label="Name">
             <input value={name} onChange={(e) => setName(e.target.value)} className="w-64 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
           </Field>
-          <Field label="Category">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-48 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass">
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+          <Field label="Business Type">
+            <div className="w-48 rounded-lg border border-ink-line bg-ink-soft/50 px-3.5 py-2.5 text-base text-ivory-dim">
+              {category} <span className="text-xs">(contact Tavzio to change)</span>
+            </div>
+          </Field>
+          <Field label="TRN (optional - shown on your receipts, needed to reclaim VAT)">
+            <input value={trn} onChange={(e) => setTrn(e.target.value)} placeholder="100000000000003" className="w-56 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
           </Field>
         </div>
         <Field label="Description">

@@ -1,0 +1,72 @@
+import { useEffect, useState } from 'react';
+import { useSession } from '../../hooks/useSession';
+import { listExternalHotelSystems, connectExternalHotelSystem, type ExternalHotelSystem } from '../../lib/authApi';
+import { Section } from '../../components/ui';
+
+const ROLE_LABEL: Record<string, string> = { channel_manager: 'Channel Manager', pos: 'Hotel POS', pms: 'Hotel PMS' };
+
+export default function ExternalHotelSystemsPage() {
+  const { user } = useSession();
+  const businessId = user?.business_id;
+  const [systems, setSystems] = useState<ExternalHotelSystem[]>([]);
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [propertyId, setPropertyId] = useState('');
+
+  function reload() {
+    if (businessId) listExternalHotelSystems(businessId).then(setSystems);
+  }
+  useEffect(reload, [businessId]);
+
+  async function handleConnect(provider: string) {
+    if (!businessId) return;
+    await connectExternalHotelSystem(businessId, provider, propertyId);
+    setEditingProvider(null);
+    setPropertyId('');
+    reload();
+  }
+
+  if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
+
+  return (
+    <Section title="External Hotel Systems">
+      <p className="text-base text-ivory-dim">
+        For hotels keeping their existing PMS/POS - Tavzio's NFC guest experience connects alongside it instead of
+        replacing it. Each of these needs a real partner account with the vendor before it can go live; connecting
+        here just records which one this hotel uses and stores your property ID with them.
+      </p>
+      <div className="space-y-3">
+        {systems.map((s) => (
+          <div key={s.provider} className="rounded-lg border border-ink-line p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-base text-ivory">{s.label} <span className="text-xs uppercase text-brass">{ROLE_LABEL[s.role]}</span></p>
+                <p className="text-sm text-ivory-dim">{s.requirement}</p>
+                {s.connected && <p className="mt-1 text-sm text-ivory">Property ID: {s.externalPropertyId || '(not set)'}</p>}
+              </div>
+              <div>
+                {s.connected ? (
+                  <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? 'Live' : 'Awaiting real credentials'}</span>
+                ) : editingProvider === s.provider ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={propertyId}
+                      onChange={(e) => setPropertyId(e.target.value)}
+                      placeholder="Property ID with vendor"
+                      className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
+                    />
+                    <button onClick={() => handleConnect(s.provider)} className="text-sm text-brass hover:underline">Save</button>
+                    <button onClick={() => setEditingProvider(null)} className="text-sm text-ivory-dim hover:underline">Cancel</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setEditingProvider(s.provider)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+                    Connect
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}

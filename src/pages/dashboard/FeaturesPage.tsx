@@ -21,21 +21,18 @@ export default function FeaturesPage() {
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
   function patch(body: Record<string, unknown>) {
-    setBusiness((prev) => {
-      if (!prev) return prev;
-      const nextFeatures = { ...prev.features };
-      for (const [key, value] of Object.entries(body)) {
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          // ordering/booking come in as partial nested objects
-          (nextFeatures as any)[key] = { ...(nextFeatures as any)[key], ...value };
-        } else {
-          // loyalty/staffAccounts are flat booleans
-          (nextFeatures as any)[key] = value;
-        }
-      }
-      return { ...prev, features: nextFeatures };
-    });
-    updateBusinessFeatures(businessId!, body).catch(reload);
+    updateBusinessFeatures(businessId!, body)
+      .then(() => {
+        // The main dashboard nav (which decides whether the Inventory tab
+        // even shows) fetches its own copy of `features` once, when it
+        // first mounts - it has no way to know a toggle changed on this
+        // page. Without a reload here, the toggle looks "on" right here
+        // but the tab it's supposed to reveal stays invisible until a
+        // manual refresh, which is exactly the confusing half-applied
+        // state a toggle should never leave someone in.
+        window.location.reload();
+      })
+      .catch(() => reload());
   }
 
   const { ordering, booking } = business.features;

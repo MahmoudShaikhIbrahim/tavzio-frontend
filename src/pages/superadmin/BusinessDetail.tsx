@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  getBusiness, setBusinessStatus, deleteBusiness, updateBusinessFeatures,
+  getBusiness, setBusinessStatus, deleteBusiness, updateBusiness, updateBusinessFeatures,
   listCards, createCards, updateCard, deleteCard,
   listStaff, inviteStaff, setStaffActive,
   getPosIntegration, upsertPosIntegration,
@@ -58,6 +58,8 @@ export default function BusinessDetail() {
             {business.status}
           </span>
         </div>
+
+        <BusinessTypeEditor business={business} businessId={businessId} onSaved={setBusiness} />
 
         <div className="mt-4 flex gap-2">
           {business.status !== 'active' && (
@@ -393,6 +395,51 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
 
 const ICON_OPTIONS = ['Link', 'Star', 'Gift', 'Music', 'ShoppingBag', 'Heart', 'Phone', 'Mail', 'Globe', 'MapPin', 'Camera', 'Ticket'];
 
+const BUSINESS_TYPES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
+
+// Business Type determines which product architecture a business gets
+// (restaurant/F&B vs the hotel PMS+F&B system) - locked after
+// onboarding everywhere except here, since changing it is a structural
+// operation with real consequences, not a normal profile edit.
+function BusinessTypeEditor({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(business.category);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (value === business.category) { setEditing(false); return; }
+    if (!confirm(`Change Business Type from "${business.category}" to "${value}"? This changes which features and dashboard this business gets.`)) return;
+    setSaving(true);
+    try {
+      const updated = await updateBusiness(businessId, { category: value } as Partial<AdminBusiness>);
+      onSaved(updated);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 flex items-center gap-2 text-sm">
+      <span className="text-ivory-dim">Business Type:</span>
+      {editing ? (
+        <>
+          <select value={value} onChange={(e) => setValue(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-ivory">
+            {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <button onClick={handleSave} disabled={saving} className="text-brass hover:underline">{saving ? 'Saving...' : 'Save'}</button>
+          <button onClick={() => { setValue(business.category); setEditing(false); }} className="text-ivory-dim hover:underline">Cancel</button>
+        </>
+      ) : (
+        <>
+          <span className="capitalize text-ivory">{business.category}</span>
+          <button onClick={() => setEditing(true)} className="text-brass hover:underline">Change</button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ContractsSection({ businessId }: { businessId: string }) {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -527,7 +574,7 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
           </select>
         </Field>
         <Field label="Number of stands">
-          <input type="number" min={0} value={standsCount} onChange={(e) => setStandsCount(Number(e.target.value))} className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+          <input type="number" min={0} onFocus={(e) => e.target.select()} value={standsCount} onChange={(e) => setStandsCount(Number(e.target.value))} className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
         </Field>
       </div>
       <div className="flex flex-wrap gap-4">

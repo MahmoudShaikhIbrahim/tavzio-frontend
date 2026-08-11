@@ -10,7 +10,8 @@ import type {
   Service, BookingRow, BookingStatus,
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
-  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead,
+  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead, TillSession, FloorTable, WaitlistEntry,
+  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelRatePlan, NightAudit,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -56,6 +57,244 @@ export function listLeads() {
 
 export function markLeadConverted(leadId: string, businessId?: string) {
   return authFetch<Lead>(`/api/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify({ businessId }) });
+}
+
+// --- Till sessions ---
+
+export function getMyOpenTill(businessId: string) {
+  return authFetch<TillSession | null>(`/api/businesses/${businessId}/till/mine`);
+}
+
+export function openTill(businessId: string, openingFloatAed: number) {
+  return authFetch<TillSession>(`/api/businesses/${businessId}/till/open`, { method: 'POST', body: JSON.stringify({ openingFloatAed }) });
+}
+
+export function closeTill(businessId: string, tillId: string, countedCashAed: number, notes?: string) {
+  return authFetch<TillSession>(`/api/businesses/${businessId}/till/${tillId}/close`, { method: 'POST', body: JSON.stringify({ countedCashAed, notes }) });
+}
+
+export function listTillSessions(businessId: string) {
+  return authFetch<TillSession[]>(`/api/businesses/${businessId}/till`);
+}
+
+// --- POS terminal orders ---
+
+export function createPosOrder(businessId: string, payload: {
+  tableLabel: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string }[]; note?: string; paymentMethod: 'cash' | 'card' | 'card_online' | 'other'; chargeToFolioId?: string;
+}) {
+  return authFetch<{ order: OrderRow; items: OrderItemRow[]; redirectUrl?: string; transactionId?: string; awaitingPayment?: boolean }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function confirmPosCardPayment(businessId: string, transactionId: string) {
+  return authFetch<{ status: string; order?: OrderRow }>(`/api/businesses/${businessId}/orders/pos/confirm-card-payment`, { method: 'POST', body: JSON.stringify({ transactionId }) });
+}
+
+// --- Table management ---
+
+export function listFloorTables(businessId: string) {
+  return authFetch<FloorTable[]>(`/api/businesses/${businessId}/tables-floor`);
+}
+
+export function updateTableStatus(businessId: string, cardId: string, payload: { tableStatus?: string; seatCount?: number }) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function mergeTables(businessId: string, cardId: string, mergeWithCardId: string) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}/merge`, { method: 'POST', body: JSON.stringify({ mergeWithCardId }) });
+}
+
+export function unmergeTable(businessId: string, cardId: string) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}/unmerge`, { method: 'POST' });
+}
+
+export function listWaitlist(businessId: string) {
+  return authFetch<WaitlistEntry[]>(`/api/businesses/${businessId}/waitlist`);
+}
+
+export function addToWaitlist(businessId: string, payload: { guestName: string; partySize: number; phone?: string }) {
+  return authFetch<WaitlistEntry>(`/api/businesses/${businessId}/waitlist`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function seatWaitlistEntry(businessId: string, entryId: string, cardId: string) {
+  return authFetch<WaitlistEntry>(`/api/businesses/${businessId}/waitlist/${entryId}/seat`, { method: 'POST', body: JSON.stringify({ cardId }) });
+}
+
+export function cancelWaitlistEntry(businessId: string, entryId: string) {
+  return authFetch<WaitlistEntry>(`/api/businesses/${businessId}/waitlist/${entryId}/cancel`, { method: 'POST' });
+}
+
+// --- Delivery platform integration (Deliverect) ---
+
+export interface DeliveryIntegration {
+  business_id: string;
+  provider: string;
+  deliverect_account_id?: string;
+  deliverect_location_id?: string;
+  enabled: boolean;
+}
+
+export function getDeliveryIntegration(businessId: string) {
+  return authFetch<DeliveryIntegration>(`/api/businesses/${businessId}/delivery-integration`);
+}
+
+export function connectDeliveryIntegration(businessId: string) {
+  return authFetch<DeliveryIntegration>(`/api/businesses/${businessId}/delivery-integration`, { method: 'PUT' });
+}
+
+// --- Hotel PMS ---
+
+export function listRooms(businessId: string) {
+  return authFetch<HotelRoom[]>(`/api/businesses/${businessId}/hotel/rooms`);
+}
+export function createRoom(businessId: string, payload: { roomNumber: string; roomType?: string; floor?: string; maxOccupancy?: number; baseRateAed?: number }) {
+  return authFetch<HotelRoom>(`/api/businesses/${businessId}/hotel/rooms`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateRoom(businessId: string, roomId: string, payload: Partial<{ roomNumber: string; roomType: string; floor: string; maxOccupancy: number; baseRateAed: number; status: string }>) {
+  return authFetch<HotelRoom>(`/api/businesses/${businessId}/hotel/rooms/${roomId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function listGuests(businessId: string, search?: string) {
+  return authFetch<HotelGuest[]>(`/api/businesses/${businessId}/hotel/guests${search ? `?search=${encodeURIComponent(search)}` : ''}`);
+}
+export function createGuest(businessId: string, payload: { name: string; email?: string; phone?: string; idDocumentType?: string; idDocumentNumber?: string; nationality?: string; notes?: string }) {
+  return authFetch<HotelGuest>(`/api/businesses/${businessId}/hotel/guests`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function listReservations(businessId: string, status?: string) {
+  return authFetch<HotelReservation[]>(`/api/businesses/${businessId}/hotel/reservations${status ? `?status=${status}` : ''}`);
+}
+export function createReservation(businessId: string, payload: { guestId: string; roomId?: string | null; checkInDate: string; checkOutDate: string; adults?: number; children?: number; source?: string; rateAed?: number }) {
+  return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function checkInReservation(businessId: string, reservationId: string, roomId?: string) {
+  return authFetch<{ reservation: HotelReservation; folio: HotelFolio }>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/checkin`, { method: 'POST', body: JSON.stringify({ roomId }) });
+}
+export function checkOutReservation(businessId: string, reservationId: string) {
+  return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/checkout`, { method: 'POST' });
+}
+export function cancelReservation(businessId: string, reservationId: string) {
+  return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/cancel`, { method: 'POST' });
+}
+
+export function getFolio(businessId: string, folioId: string) {
+  return authFetch<HotelFolio>(`/api/businesses/${businessId}/hotel/folios/${folioId}`);
+}
+export function getFoliosByReservation(businessId: string, reservationId: string) {
+  return authFetch<HotelFolio[]>(`/api/businesses/${businessId}/hotel/folios/by-reservation/${reservationId}`);
+}
+export function addFolioCharge(businessId: string, folioId: string, payload: { description: string; amountAed: number; chargeType?: string }) {
+  return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/charges`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function recordFolioPayment(businessId: string, folioId: string, amountAed: number, description?: string) {
+  return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/payments`, { method: 'POST', body: JSON.stringify({ amountAed, description }) });
+}
+export function recordFolioDeposit(businessId: string, folioId: string, amountAed: number, description?: string) {
+  return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/deposit`, { method: 'POST', body: JSON.stringify({ amountAed, description }) });
+}
+export function recordFolioRefund(businessId: string, folioId: string, amountAed: number, reason: string, description?: string) {
+  return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/refund`, { method: 'POST', body: JSON.stringify({ amountAed, reason, description }) });
+}
+export function recordFolioAdjustment(businessId: string, folioId: string, amountAed: number, description: string, reason: string) {
+  return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/adjustment`, { method: 'POST', body: JSON.stringify({ amountAed, description, reason }) });
+}
+export function splitFolio(businessId: string, folioId: string, chargeIds: string[], payerType?: string, companyName?: string) {
+  return authFetch<HotelFolio>(`/api/businesses/${businessId}/hotel/folios/${folioId}/split`, { method: 'POST', body: JSON.stringify({ chargeIds, payerType, companyName }) });
+}
+export function transferFolioCharge(businessId: string, folioId: string, chargeId: string, toFolioId: string) {
+  return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/transfer-charge`, { method: 'POST', body: JSON.stringify({ chargeId, toFolioId }) });
+}
+
+export interface HotelRatePlan {
+  id: string; business_id: string; name: string; rate_type: string; base_rate_aed: number;
+  is_refundable: boolean; meal_plan: string; valid_from: string | null; valid_to: string | null; active: boolean;
+}
+export function listRatePlans(businessId: string) {
+  return authFetch<HotelRatePlan[]>(`/api/businesses/${businessId}/hotel/rate-plans`);
+}
+export function createRatePlan(businessId: string, payload: { name: string; rateType?: string; baseRateAed: number; isRefundable?: boolean; mealPlan?: string; validFrom?: string; validTo?: string }) {
+  return authFetch<HotelRatePlan>(`/api/businesses/${businessId}/hotel/rate-plans`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export interface NightAudit {
+  id: string; business_id: string; business_date: string; run_at: string;
+  room_revenue_aed: number; fnb_revenue_aed: number; other_revenue_aed: number; total_payments_aed: number;
+  rooms_sold: number; rooms_available: number; occupancy_rate: number; arrivals_count: number; departures_count: number;
+}
+export function getCurrentBusinessDate(businessId: string) {
+  return authFetch<{ businessDate: string }>(`/api/businesses/${businessId}/hotel/business-date`);
+}
+export function runNightAudit(businessId: string) {
+  return authFetch<NightAudit>(`/api/businesses/${businessId}/hotel/night-audit/run`, { method: 'POST' });
+}
+export function listNightAudits(businessId: string) {
+  return authFetch<NightAudit[]>(`/api/businesses/${businessId}/hotel/night-audit`);
+}
+
+export interface HousekeepingTask {
+  id: string; business_id: string; room_id: string; task_type: string; status: 'pending' | 'in_progress' | 'done';
+  assigned_to: string | null; notes: string; created_at: string; hotel_rooms?: { room_number: string }; profiles?: { name: string };
+}
+export function listHousekeepingTasks(businessId: string, status?: string) {
+  return authFetch<HousekeepingTask[]>(`/api/businesses/${businessId}/hotel/housekeeping${status ? `?status=${status}` : ''}`);
+}
+export function createHousekeepingTask(businessId: string, payload: { roomId: string; taskType?: string; assignedTo?: string | null; notes?: string }) {
+  return authFetch<HousekeepingTask>(`/api/businesses/${businessId}/hotel/housekeeping`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateHousekeepingTask(businessId: string, taskId: string, status: string) {
+  return authFetch<HousekeepingTask>(`/api/businesses/${businessId}/hotel/housekeeping/${taskId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+}
+
+export interface MaintenanceTicket {
+  id: string; business_id: string; room_id: string | null; title: string; description: string;
+  status: 'open' | 'in_progress' | 'resolved'; priority: string; assigned_to: string | null; created_at: string;
+  hotel_rooms?: { room_number: string }; profiles?: { name: string };
+}
+export function listMaintenanceTickets(businessId: string, status?: string) {
+  return authFetch<MaintenanceTicket[]>(`/api/businesses/${businessId}/hotel/maintenance${status ? `?status=${status}` : ''}`);
+}
+export function createMaintenanceTicket(businessId: string, payload: { roomId?: string | null; title: string; description?: string; priority?: string }) {
+  return authFetch<MaintenanceTicket>(`/api/businesses/${businessId}/hotel/maintenance`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateMaintenanceTicket(businessId: string, ticketId: string, payload: { status?: string; priority?: string; assignedTo?: string | null }) {
+  return authFetch<MaintenanceTicket>(`/api/businesses/${businessId}/hotel/maintenance/${ticketId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export interface GuestServiceRequest {
+  id: string; business_id: string; room_id: string; request_type: string; note: string;
+  status: 'pending' | 'in_progress' | 'done'; created_at: string; hotel_rooms?: { room_number: string };
+}
+export function listGuestRequests(businessId: string, status?: string) {
+  return authFetch<GuestServiceRequest[]>(`/api/businesses/${businessId}/hotel/guest-requests${status ? `?status=${status}` : ''}`);
+}
+export function updateGuestRequest(businessId: string, requestId: string, status: string) {
+  return authFetch<GuestServiceRequest>(`/api/businesses/${businessId}/hotel/guest-requests/${requestId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+}
+
+export interface ExternalHotelSystem {
+  provider: string; role: string; label: string; requirement: string;
+  connected: boolean; enabled: boolean; externalPropertyId: string;
+}
+export function listExternalHotelSystems(businessId: string) {
+  return authFetch<ExternalHotelSystem[]>(`/api/businesses/${businessId}/external-hotel-systems`);
+}
+export function connectExternalHotelSystem(businessId: string, provider: string, externalPropertyId: string) {
+  return authFetch<ExternalHotelSystem>(`/api/businesses/${businessId}/external-hotel-systems/${provider}`, { method: 'PUT', body: JSON.stringify({ externalPropertyId }) });
+}
+
+export interface PaymentTransaction {
+  id: string; business_id: string; provider: string; transaction_type: 'charge' | 'refund';
+  amount_aed: number; status: 'pending' | 'completed' | 'failed'; provider_ref: string;
+  context_type: 'restaurant_payment' | 'hotel_folio_charge' | 'pos_order'; context_id: string;
+  failure_reason: string; created_at: string; confirmed_at: string | null;
+}
+export interface UnverifiedManualPayment {
+  id: string; folio_id: string; description: string; amount_aed: number; charge_type: string; created_at: string;
+}
+export function getPaymentReconciliation(businessId: string) {
+  return authFetch<{ gatewayTransactions: PaymentTransaction[]; unverifiedManualPayments: UnverifiedManualPayment[] }>(`/api/businesses/${businessId}/payment-reconciliation`);
+}
+export function refundPaymentTransaction(businessId: string, txnId: string, amountAed?: number, reason?: string) {
+  return authFetch<{ status: string }>(`/api/businesses/${businessId}/payment-transactions/${txnId}/refund`, { method: 'POST', body: JSON.stringify({ amountAed, reason }) });
 }
 
 // --- Business onboarding (super_admin) ---

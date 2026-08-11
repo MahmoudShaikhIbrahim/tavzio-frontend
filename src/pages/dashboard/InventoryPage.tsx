@@ -96,7 +96,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
             </select>
           </Field>
           <Field label="Low-stock threshold">
-            <input type="number" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={`${inputClass} w-32`} />
+            <input type="number" onFocus={(e) => e.target.select()} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={`${inputClass} w-32`} />
           </Field>
           <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Save</button>
         </form>
@@ -119,6 +119,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
                   <input
                     type="number"
                     placeholder="+/- qty"
+                    onFocus={(e) => e.target.select()}
                     value={adjustQty}
                     onChange={(e) => setAdjustQty(e.target.value)}
                     className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-base text-ivory"
@@ -247,13 +248,13 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                 {ingredients.map((ing) => <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>)}
               </select>
               <input
-                type="number" placeholder="Qty"
+                type="number" placeholder="Qty" onFocus={(e) => e.target.select()}
                 value={item.quantity}
                 onChange={(e) => setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, quantity: e.target.value } : it))}
                 className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
               />
               <input
-                type="number" placeholder="Cost/unit AED"
+                type="number" placeholder="Cost/unit AED" onFocus={(e) => e.target.select()}
                 value={item.unitCostAed}
                 onChange={(e) => setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, unitCostAed: e.target.value } : it))}
                 className="w-36 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"

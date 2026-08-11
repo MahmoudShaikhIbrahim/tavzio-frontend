@@ -11,7 +11,8 @@ import type { ReceiptBranding } from '../../types';
 export default function BillingSettingsPage() {
   const [branding, setBranding] = useState<ReceiptBranding | null>(null);
   const [legalName, setLegalName] = useState('');
-  const [saving, setSaving] = useState<'stamp' | 'signature' | 'name' | null>(null);
+  const [issuerTrn, setIssuerTrn] = useState('');
+  const [saving, setSaving] = useState<'stamp' | 'signature' | 'name' | 'trn' | null>(null);
   const [registering, setRegistering] = useState(false);
   const [registerResult, setRegisterResult] = useState('');
 
@@ -19,6 +20,7 @@ export default function BillingSettingsPage() {
     getReceiptBranding().then((b) => {
       setBranding(b);
       setLegalName(b.legal_name);
+      setIssuerTrn(b.issuer_trn || '');
     });
   }
   useEffect(reload, []);
@@ -34,6 +36,13 @@ export default function BillingSettingsPage() {
   async function handleSaveName() {
     setSaving('name');
     await updateReceiptBranding({ legalName });
+    setSaving(null);
+    reload();
+  }
+
+  async function handleSaveTrn() {
+    setSaving('trn');
+    await updateReceiptBranding({ issuerTrn });
     setSaving(null);
     reload();
   }
@@ -71,6 +80,15 @@ export default function BillingSettingsPage() {
             <input value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder="Your registered trade name" className={`${inputClass} flex-1`} />
             <button onClick={handleSaveName} disabled={saving === 'name'} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
               {saving === 'name' ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </Field>
+
+        <Field label="Your TRN (required on every receipt to be a valid tax invoice)">
+          <div className="flex gap-2">
+            <input value={issuerTrn} onChange={(e) => setIssuerTrn(e.target.value)} placeholder="100000000000003" className={`${inputClass} flex-1`} />
+            <button onClick={handleSaveTrn} disabled={saving === 'trn'} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+              {saving === 'trn' ? 'Saving...' : 'Save'}
             </button>
           </div>
         </Field>

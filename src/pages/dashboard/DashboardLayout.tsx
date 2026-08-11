@@ -14,8 +14,13 @@ import ChangePasswordPage from './ChangePasswordPage';
 const TABS = [
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
   { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'tables', label: 'Tables', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'front-desk', label: 'Front Desk', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
+  { path: 'housekeeping', label: 'Housekeeping', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
   { path: 'inventory', label: 'Inventory', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
+  { path: 'reconciliation', label: 'Reconciliation', ownerOnly: true, requires: null, badge: null, badge2: null },
 ];
 
 // Everything that used to be its own tab, or lived buried inside the old
@@ -27,6 +32,8 @@ const SETTINGS_ITEMS = [
   { path: 'settings/printer', label: 'Receipt Printer', ownerOnly: true, requires: null },
   { path: 'settings/contract', label: 'Service Contract', ownerOnly: true, requires: null },
   { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
+  { path: 'settings/delivery', label: 'Delivery Platforms', ownerOnly: true, requires: null },
+  { path: 'settings/external-hotel-systems', label: 'External Hotel Systems', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
@@ -48,6 +55,7 @@ export default function DashboardLayout() {
   const isOwner = user?.role === 'business_owner';
   const [features, setFeatures] = useState<BusinessFeatures | null>(null);
   const [theme, setTheme] = useState<BusinessTheme | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
   const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, requests: 0, payments: 0 });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -70,6 +78,7 @@ export default function DashboardLayout() {
       getBusiness(user.business_id).then((b) => {
         setFeatures(b.features);
         setTheme(b.theme);
+        setCategory(b.category);
       });
     }
   }, [user?.business_id]);
@@ -121,12 +130,13 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'booking' | 'staffAccounts' | 'inventory' | null) {
+  function tabAllowed(requires: 'ordering' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | null) {
     if (!requires || !features) return !requires;
     if (requires === 'ordering') return features.ordering.menuView || features.ordering.submission;
     if (requires === 'booking') return features.booking.menuView || features.booking.submission;
     if (requires === 'staffAccounts') return features.staffAccounts;
     if (requires === 'inventory') return features.inventory?.enabled;
+    if (requires === 'hotel') return category === 'hotel';
     return true;
   }
 

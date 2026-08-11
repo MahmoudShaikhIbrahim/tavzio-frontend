@@ -317,6 +317,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                         <input
                           type="number"
                           step="0.01"
+                          onFocus={(e) => e.target.select()}
                           value={item.price}
                           onChange={(e) => updateItem(ci, ii, { price: Number(e.target.value) })}
                           placeholder="Price"

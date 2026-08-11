@@ -43,9 +43,17 @@ import AuditLogPage from './pages/dashboard/AuditLogPage';
 import MessagesPage from './pages/dashboard/MessagesPage';
 import TableReceiptsPage from './pages/dashboard/TableReceiptsPage';
 import InventoryPage from './pages/dashboard/InventoryPage';
+import POSTerminalPage from './pages/dashboard/POSTerminalPage';
+import TableManagementPage from './pages/dashboard/TableManagementPage';
+import DeliveryIntegrationPage from './pages/dashboard/DeliveryIntegrationPage';
+import FrontDeskPage from './pages/dashboard/FrontDeskPage';
+import HousekeepingPage from './pages/dashboard/HousekeepingPage';
+import ExternalHotelSystemsPage from './pages/dashboard/ExternalHotelSystemsPage';
+import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
 import ChangePasswordPage from './pages/dashboard/ChangePasswordPage';
 import SignContractPage from './pages/SignContractPage';
+import HotelGuestPortalPage from './pages/HotelGuestPortalPage';
 
 export default function App() {
   return (
@@ -59,6 +67,7 @@ export default function App() {
 
         {/* Public, no-login contract signing - the "send in a minute" link */}
         <Route path="/sign/:token" element={<SignContractPage />} />
+        <Route path="/:slug/room/:roomId" element={<HotelGuestPortalPage />} />
 
         {/* Real email/password login - the only owner/staff access path
             now (admin cards were removed), always available to super_admin
@@ -106,6 +115,13 @@ export default function App() {
             <Route path="messages" element={<MessagesPage />} />
             <Route path="table-receipts" element={<TableReceiptsPage />} />
             <Route path="inventory" element={<InventoryPage />} />
+            <Route path="pos" element={<POSTerminalPage />} />
+            <Route path="tables" element={<TableManagementPage />} />
+            <Route path="settings/delivery" element={<DeliveryIntegrationPage />} />
+            <Route path="front-desk" element={<FrontDeskPage />} />
+            <Route path="housekeeping" element={<HousekeepingPage />} />
+            <Route path="settings/external-hotel-systems" element={<ExternalHotelSystemsPage />} />
+            <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />
             <Route path="settings/change-password" element={<ChangePasswordPage />} />
           </Route>

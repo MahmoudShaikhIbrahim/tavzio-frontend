@@ -256,7 +256,7 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const updated = await updateBusiness(businessId, { name, description, category, logoUrl, coverImageUrl } as Partial<AdminBusiness>);
+    const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl } as Partial<AdminBusiness>);
     onSaved(updated);
     setSaving(false);
   }
