@@ -25,7 +25,12 @@ export interface QueuedPosOrder {
   businessId: string;
   tableLabel: string;
   items: { menuItemId: string; quantity: number }[];
-  paymentMethod: 'cash' | 'card' | 'other';
+  // card_online is included here only for type compatibility with the
+  // checkout payload shape - it can never actually reach this queue in
+  // practice (handled by an early return before the offline-catch path
+  // in POSTerminalPage), since a real gateway charge has nothing to
+  // retry against once back online.
+  paymentMethod: 'cash' | 'card' | 'card_online' | 'other';
   queuedAt: string;
 }
 

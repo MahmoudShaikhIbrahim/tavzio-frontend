@@ -11,7 +11,7 @@ import type {
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
   Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead, TillSession, FloorTable, WaitlistEntry,
-  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelRatePlan, NightAudit,
+  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';

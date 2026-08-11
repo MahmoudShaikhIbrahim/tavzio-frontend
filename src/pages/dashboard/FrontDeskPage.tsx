@@ -3,7 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import {
   listRooms, createRoom, listGuests, createGuest, listReservations, createReservation,
   checkInReservation, checkOutReservation, cancelReservation,
-  getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, recordFolioAdjustment, splitFolio,
+  getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
 } from '../../lib/authApi';
 import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';

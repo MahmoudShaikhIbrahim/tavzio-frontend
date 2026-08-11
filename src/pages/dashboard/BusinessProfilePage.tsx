@@ -6,7 +6,6 @@ import type { AdminBusiness } from '../../types';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 
-const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
 export default function BusinessProfilePage() {
   const { user } = useSession();
