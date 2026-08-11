@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions,
-  listMenuCategories, listMenuItems, createPosOrder, confirmPosCardPayment,
+  listMenuCategories, listMenuItems, createPosOrder, confirmPosCardPayment, getBusiness, lookupFolioByRoom,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import type { TillSession, MenuCategory, MenuItem } from '../../types';
@@ -133,6 +133,35 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(getQueue().length);
 
+  // Hotel-only: charging to a guest's room instead of collecting payment
+  // at the counter. Restaurants/cafes never see any of this - it stays
+  // strictly behind isHotel.
+  const [isHotel, setIsHotel] = useState(false);
+  const [roomNumber, setRoomNumber] = useState('');
+  const [roomFolio, setRoomFolio] = useState<{ folioId: string; roomNumber: string; guestName: string } | null>(null);
+  const [roomLookupError, setRoomLookupError] = useState('');
+  const [lookingUpRoom, setLookingUpRoom] = useState(false);
+
+  useEffect(() => {
+    getBusiness(businessId).then((b) => setIsHotel(b.category === 'hotel')).catch(() => {});
+  }, [businessId]);
+
+  async function handleRoomLookup() {
+    if (!roomNumber.trim()) return;
+    setLookingUpRoom(true);
+    setRoomLookupError('');
+    setRoomFolio(null);
+    try {
+      const result = await lookupFolioByRoom(businessId, roomNumber.trim());
+      setRoomFolio(result);
+      setTableLabel(`Room ${result.roomNumber}`);
+    } catch (err) {
+      setRoomLookupError(err instanceof Error ? err.message : 'Room not found');
+    } finally {
+      setLookingUpRoom(false);
+    }
+  }
+
   // Menu load with a real offline fallback - if the live fetch fails
   // (no connection), fall back to whatever was cached the last time it
   // succeeded, rather than leaving the terminal with nothing to sell.
@@ -222,6 +251,8 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       setConfirmed({ total: cartTotal, method: paymentMethod });
       setCart([]);
       setTableLabel('Walk-in');
+      setRoomFolio(null);
+      setRoomNumber('');
     } catch {
       // Genuinely offline (or the request failed to even reach the
       // server) - never block the sale over it. Save it locally and
@@ -231,6 +262,34 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       setConfirmed({ total: cartTotal, method: `${paymentMethod} (saved offline - will sync)` });
       setCart([]);
       setTableLabel('Walk-in');
+      setRoomFolio(null);
+      setRoomNumber('');
+    } finally {
+      setCheckingOut(false);
+    }
+  }
+
+  // Charge to Room settles immediately, same as cash/card - it just
+  // posts to the guest's folio instead of the till. Not offline-queued:
+  // a folio charge always needs a live folio to attach to.
+  async function handleChargeToRoom() {
+    if (cart.length === 0 || !roomFolio) return;
+    setCheckingOut(true);
+    setError('');
+    try {
+      await createPosOrder(businessId, {
+        tableLabel,
+        items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })),
+        paymentMethod: 'other',
+        chargeToFolioId: roomFolio.folioId,
+      });
+      setConfirmed({ total: cartTotal, method: `charged to Room ${roomFolio.roomNumber}` });
+      setCart([]);
+      setTableLabel('Walk-in');
+      setRoomFolio(null);
+      setRoomNumber('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not charge to room');
     } finally {
       setCheckingOut(false);
     }
@@ -315,7 +374,43 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           <span className="text-brass">AED {cartTotal.toFixed(2)}</span>
         </div>
         {error && <p className="mt-2 text-base text-danger">{error}</p>}
+
+        {isHotel && (
+          <div className="mt-4 rounded-lg border border-brass/30 bg-ink-soft p-3">
+            <p className="mb-2 text-sm text-ivory">Charge to Room</p>
+            {roomFolio ? (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-ivory">Room {roomFolio.roomNumber}{roomFolio.guestName ? ` · ${roomFolio.guestName}` : ''}</span>
+                <button onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">Change</button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  value={roomNumber}
+                  onChange={(e) => setRoomNumber(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRoomLookup()}
+                  placeholder="Room number"
+                  className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
+                />
+                <button onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+                  {lookingUpRoom ? 'Looking up...' : 'Find'}
+                </button>
+              </div>
+            )}
+            {roomLookupError && <p className="mt-1 text-sm text-danger">{roomLookupError}</p>}
+          </div>
+        )}
+
         <div className="mt-4 space-y-2">
+          {isHotel && (
+            <button
+              onClick={handleChargeToRoom}
+              disabled={checkingOut || cart.length === 0 || !roomFolio}
+              className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            >
+              Charge to Room{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
+            </button>
+          )}
           <button onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
             Charge - Cash
           </button>

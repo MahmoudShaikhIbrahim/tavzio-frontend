@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { getPaymentReconciliation, refundPaymentTransaction, type PaymentTransaction, type UnverifiedManualPayment } from '../../lib/authApi';
+import { getPaymentReconciliation, refundPaymentTransaction, downloadBusinessAuditReport, type PaymentTransaction, type UnverifiedManualPayment } from '../../lib/authApi';
 import { Section } from '../../components/ui';
 
 const STATUS_COLOR: Record<string, string> = { completed: 'text-success', pending: 'text-warning', failed: 'text-danger' };
@@ -11,12 +11,26 @@ export default function PaymentReconciliationPage() {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [unverified, setUnverified] = useState<UnverifiedManualPayment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [auditYear, setAuditYear] = useState(new Date().getFullYear());
+  const [generatingAudit, setGeneratingAudit] = useState(false);
 
   function reload() {
     if (!businessId) return;
     getPaymentReconciliation(businessId).then((r) => { setTransactions(r.gatewayTransactions); setUnverified(r.unverifiedManualPayments); }).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
+
+  async function handleIssueAuditReport() {
+    if (!businessId) return;
+    setGeneratingAudit(true);
+    try {
+      await downloadBusinessAuditReport(businessId, auditYear);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not generate audit report');
+    } finally {
+      setGeneratingAudit(false);
+    }
+  }
 
   async function handleRefund(txnId: string) {
     if (!businessId) return;
@@ -37,7 +51,40 @@ export default function PaymentReconciliationPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl text-ivory">Payment Reconciliation</h1>
+      <div>
+        <h1 className="font-display text-3xl text-ivory">Bank Reconciliation</h1>
+        <p className="mt-1 text-base text-ivory-dim">
+          Matches what your payment gateway actually confirmed against manual folio charges that were marked
+          paid but never linked to a real transaction - use this to catch anything unaccounted for. For a
+          simple list of every payment (with refunds), see the <span className="text-ivory">Payments</span> tab instead.
+        </p>
+      </div>
+
+      <Section title="Audit Report" action={
+        <div className="flex items-center gap-2">
+          <select
+            value={auditYear}
+            onChange={(e) => setAuditYear(Number(e.target.value))}
+            className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+          >
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleIssueAuditReport}
+            disabled={generatingAudit}
+            className="rounded-lg bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          >
+            {generatingAudit ? 'Generating...' : 'Issue Audit Report'}
+          </button>
+        </div>
+      }>
+        <p className="text-base text-ivory-dim">
+          Every signed contract, billing receipt, and completed customer payment for the selected year, compiled
+          into one PDF - hand it straight to your accountant or the FTA, no manual reconciliation needed.
+        </p>
+      </Section>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-ink-line p-4">

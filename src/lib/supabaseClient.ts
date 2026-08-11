@@ -111,6 +111,34 @@ export function subscribeToBillItems(
   };
 }
 
+// Public/anonymous, room-scoped Realtime for the hotel guest portal's
+// "My Requests" tracker - backed by migration 0047's anon SELECT
+// policies (scoped to "this row has a room_id", the exact same trust
+// boundary the guest portal's own REST endpoints already use - knowing
+// the room's URL is what grants access, there's no separate guest
+// login). Fires on both INSERT (a brand-new request/order appears) and
+// UPDATE (staff moves something to in-progress/done), across every
+// table the tracker cares about, so a guest sees the real change the
+// moment staff makes it - no polling delay.
+export function subscribeToRoomUpdates(
+  roomId: string,
+  onChange: () => void
+) {
+  const filter = `room_id=eq.${roomId}`;
+  const tables = ['guest_service_requests', 'housekeeping_tasks', 'maintenance_tickets', 'orders'] as const;
+  const channel = client.channel(`guest-room-${roomId}-${Math.random().toString(36).slice(2)}`);
+  for (const table of tables) {
+    channel
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter }, () => onChange())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table, filter }, () => onChange());
+  }
+  channel.subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 // Uploads a logo or cover image to the `business-assets` bucket, under a
 // fixed path per business+kind (so re-uploading overwrites cleanly rather
 // than accumulating orphaned files), and returns its public URL.

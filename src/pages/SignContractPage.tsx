@@ -82,8 +82,7 @@ export default function SignContractPage() {
     <div className="min-h-screen bg-[#141110] px-5 py-10">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="text-center">
-          <p className="font-serif text-2xl tracking-wide text-[#f4eee3]">TAVZIO</p>
-          <p className="text-sm italic text-[#b8925a]">Tap. Connect. Grow.</p>
+          <img src="/brand/logo-white.png" alt="Tavzio" className="mx-auto h-8 w-auto" />
         </div>
 
         {activated && (
@@ -93,7 +92,17 @@ export default function SignContractPage() {
         )}
 
         <div className="rounded-xl border border-[#3a332c] bg-[#1f1a16] p-5">
-          <p className="text-base text-[#f4eee3]">{contract.contractNumber} - {contract.businessName}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-base text-[#f4eee3]">{contract.contractNumber} - {contract.businessName}</p>
+            <a
+              href={`${BASE}/api/public/contracts/${token}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 rounded-lg border border-[#b8925a]/40 px-3.5 py-1.5 text-sm text-[#b8925a] hover:bg-[#b8925a]/10"
+            >
+              Download PDF
+            </a>
+          </div>
           {contract.isSigned ? (
             <p className="mt-1 text-sm text-green-400">Signed by {contract.signedByName}{contract.signedAt ? ` on ${new Date(contract.signedAt).toLocaleDateString()}` : ''}</p>
           ) : (

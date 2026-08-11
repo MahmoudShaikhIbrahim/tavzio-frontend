@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { listExternalHotelSystems, connectExternalHotelSystem, type ExternalHotelSystem } from '../../lib/authApi';
+import { listExternalHotelSystems, connectExternalHotelSystem, disconnectExternalHotelSystem, type ExternalHotelSystem } from '../../lib/authApi';
 import { Section } from '../../components/ui';
 
 const ROLE_LABEL: Record<string, string> = { channel_manager: 'Channel Manager', pos: 'Hotel POS', pms: 'Hotel PMS' };
@@ -11,18 +11,47 @@ export default function ExternalHotelSystemsPage() {
   const [systems, setSystems] = useState<ExternalHotelSystem[]>([]);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [propertyId, setPropertyId] = useState('');
+  const [error, setError] = useState('');
+  const [busyProvider, setBusyProvider] = useState<string | null>(null);
 
   function reload() {
     if (businessId) listExternalHotelSystems(businessId).then(setSystems);
   }
   useEffect(reload, [businessId]);
 
+  function startEditing(s: ExternalHotelSystem) {
+    setEditingProvider(s.provider);
+    setPropertyId(s.externalPropertyId || '');
+    setError('');
+  }
+
   async function handleConnect(provider: string) {
     if (!businessId) return;
-    await connectExternalHotelSystem(businessId, provider, propertyId);
-    setEditingProvider(null);
-    setPropertyId('');
-    reload();
+    if (!propertyId.trim()) { setError('Enter the property ID with this vendor first.'); return; }
+    setError('');
+    setBusyProvider(provider);
+    try {
+      await connectExternalHotelSystem(businessId, provider, propertyId);
+      setEditingProvider(null);
+      setPropertyId('');
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save');
+    } finally {
+      setBusyProvider(null);
+    }
+  }
+
+  async function handleDisconnect(provider: string) {
+    if (!businessId) return;
+    if (!confirm('Disconnect this integration? You can reconnect any time.')) return;
+    setBusyProvider(provider);
+    try {
+      await disconnectExternalHotelSystem(businessId, provider);
+      reload();
+    } finally {
+      setBusyProvider(null);
+    }
   }
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
@@ -44,21 +73,33 @@ export default function ExternalHotelSystemsPage() {
                 {s.connected && <p className="mt-1 text-sm text-ivory">Property ID: {s.externalPropertyId || '(not set)'}</p>}
               </div>
               <div>
-                {s.connected ? (
-                  <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? 'Live' : 'Awaiting real credentials'}</span>
-                ) : editingProvider === s.provider ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={propertyId}
-                      onChange={(e) => setPropertyId(e.target.value)}
-                      placeholder="Property ID with vendor"
-                      className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
-                    />
-                    <button onClick={() => handleConnect(s.provider)} className="text-sm text-brass hover:underline">Save</button>
-                    <button onClick={() => setEditingProvider(null)} className="text-sm text-ivory-dim hover:underline">Cancel</button>
+                {editingProvider === s.provider ? (
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={propertyId}
+                        onChange={(e) => setPropertyId(e.target.value)}
+                        placeholder="Property ID with vendor"
+                        autoFocus
+                        className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
+                      />
+                      <button onClick={() => handleConnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-brass hover:underline disabled:opacity-50">
+                        {busyProvider === s.provider ? 'Saving...' : 'Save'}
+                      </button>
+                      <button onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline">Cancel</button>
+                    </div>
+                    {error && <p className="text-xs text-danger">{error}</p>}
+                  </div>
+                ) : s.connected ? (
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? 'Live' : 'Awaiting real credentials'}</span>
+                    <button onClick={() => startEditing(s)} className="text-sm text-brass hover:underline">Edit</button>
+                    <button onClick={() => handleDisconnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-danger hover:underline disabled:opacity-50">
+                      {busyProvider === s.provider ? 'Disconnecting...' : 'Disconnect'}
+                    </button>
                   </div>
                 ) : (
-                  <button onClick={() => setEditingProvider(s.provider)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+                  <button onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
                     Connect
                   </button>
                 )}

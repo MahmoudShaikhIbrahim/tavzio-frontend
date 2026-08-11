@@ -185,6 +185,8 @@ export interface Profile {
   email?: string;
   theme_preference: 'light' | 'dark' | 'system';
   must_change_password: boolean;
+  job_role?: string | null;
+  assigned_sections?: string[] | null;
 }
 
 // The full business record as seen by an authenticated admin - a superset
@@ -335,6 +337,7 @@ export interface HotelRoom {
   max_occupancy: number;
   base_rate_aed: number;
   status: 'available' | 'occupied' | 'dirty' | 'maintenance' | 'out_of_order';
+  cards?: { id: string; uid: string; label: string; status: string }[];
 }
 
 export interface HotelGuest {
@@ -390,6 +393,25 @@ export interface HotelFolio {
   hotel_reservations?: { check_in_date: string; check_out_date: string; hotel_guests: { name: string }; hotel_rooms: { room_number: string } };
 }
 
+export interface HotelOutletItem {
+  id: string;
+  menu_item_id: string;
+  price_override_aed: number | null;
+  available: boolean;
+}
+
+export interface HotelOutlet {
+  id: string;
+  business_id: string;
+  name: string;
+  outlet_type: 'restaurant' | 'room_service' | 'bar' | 'pool' | 'breakfast' | 'other';
+  enabled: boolean;
+  location: string;
+  opening_hours: string;
+  sort_order: number;
+  hotel_outlet_items: HotelOutletItem[];
+}
+
 export interface Card {
   id: string;
   uid: string;
@@ -408,6 +430,7 @@ export interface StaffMember {
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
+  assigned_sections: string[] | null;
 }
 
 export interface AnalyticsSummary {

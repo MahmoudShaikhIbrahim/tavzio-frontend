@@ -5,6 +5,7 @@ import { uploadBusinessImage } from '../../lib/supabaseClient';
 import type { AdminBusiness } from '../../types';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
+import ChangePasswordPage from './ChangePasswordPage';
 
 
 export default function BusinessProfilePage() {
@@ -22,6 +23,10 @@ export default function BusinessProfilePage() {
     <div className="space-y-8">
       <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />
       <AppearanceSection business={business} businessId={businessId} onSaved={setBusiness} />
+      {/* Change Password lives here, not as its own settings entry - it's
+          personal account security, not a business configuration, so it
+          belongs alongside the rest of "who am I / how do I sign in" here. */}
+      <ChangePasswordPage />
     </div>
   );
 }

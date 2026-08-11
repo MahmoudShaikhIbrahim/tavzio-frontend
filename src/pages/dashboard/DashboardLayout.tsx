@@ -5,6 +5,7 @@ import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, t
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
+import Logo from '../../components/Logo';
 import { useTheme } from '../../lib/ThemeContext';
 import ChangePasswordPage from './ChangePasswordPage';
 
@@ -15,12 +16,15 @@ const TABS = [
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
   { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
   { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
-  { path: 'tables', label: 'Tables', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  // Floor plan / table layout is a restaurant-only concept - a hotel with
+  // ordering enabled (for its Room Service / outlet POS) still shouldn't
+  // see a "Tables" tab, since it has rooms, not tables.
+  { path: 'tables', label: 'Tables', ownerOnly: false, requires: 'orderingNotHotel' as const, badge: null, badge2: null },
   { path: 'front-desk', label: 'Front Desk', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
   { path: 'housekeeping', label: 'Housekeeping', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
   { path: 'inventory', label: 'Inventory', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
-  { path: 'reconciliation', label: 'Reconciliation', ownerOnly: true, requires: null, badge: null, badge2: null },
+  { path: 'reconciliation', label: 'Bank Reconciliation', ownerOnly: true, requires: null, badge: null, badge2: null },
 ];
 
 // Everything that used to be its own tab, or lived buried inside the old
@@ -28,12 +32,15 @@ const TABS = [
 // by how closely related each thing is, not alphabetically.
 const SETTINGS_ITEMS = [
   { path: 'settings/business-profile', label: 'Business Profile', ownerOnly: true, requires: null },
-  { path: 'settings/pay-bill', label: 'Pay Bill Setup', ownerOnly: true, requires: null },
-  { path: 'settings/printer', label: 'Receipt Printer', ownerOnly: true, requires: null },
-  { path: 'settings/contract', label: 'Service Contract', ownerOnly: true, requires: null },
+  { path: 'settings/credentials', label: 'Credentials & Integrations', ownerOnly: true, requires: null },
+  { path: 'settings/contract', label: 'Contracts & Receipts', ownerOnly: true, requires: null },
+  // Staff-only entry point - owners get this inline inside Business
+  // Profile instead (see that page), and Business Profile itself is
+  // owner-only, so staff still need a direct way to change their own
+  // password. Filtered out for owners below rather than typed as a
+  // field on every item, to keep this array's shape uniform.
   { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
-  { path: 'settings/delivery', label: 'Delivery Platforms', ownerOnly: true, requires: null },
-  { path: 'settings/external-hotel-systems', label: 'External Hotel Systems', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
@@ -45,7 +52,6 @@ const SETTINGS_ITEMS = [
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
   { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
   { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const },
-  { path: 'receipts', label: 'Receipts', ownerOnly: false, requires: null },
   { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
 ];
 
@@ -130,18 +136,34 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | null) {
+  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | null) {
+    if (requires === 'hotel') return category === 'hotel';
+    // Delivery platform integrations (Deliverect etc.) only make sense for
+    // restaurants/cafés dispatching food off-site - a hotel has no
+    // "delivery" concept in Tavzio, so this hides regardless of features.
+    if (requires === 'notHotel') return category !== 'hotel';
+    if (requires === 'orderingNotHotel') {
+      if (category === 'hotel') return false;
+      return !!features && (features.ordering.menuView || features.ordering.submission);
+    }
     if (!requires || !features) return !requires;
     if (requires === 'ordering') return features.ordering.menuView || features.ordering.submission;
     if (requires === 'booking') return features.booking.menuView || features.booking.submission;
     if (requires === 'staffAccounts') return features.staffAccounts;
     if (requires === 'inventory') return features.inventory?.enabled;
-    if (requires === 'hotel') return category === 'hotel';
     return true;
   }
 
-  const visibleTabs = TABS.filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires));
-  const visibleSettingsItems = SETTINGS_ITEMS.filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires));
+  // A staff account with an explicit (non-null) assigned_sections list is
+  // restricted to exactly those tabs, on top of every other gate above -
+  // owners and super_admin are never restricted this way, and a staff
+  // account left at the default (null) sees everything it otherwise
+  // would, exactly as before this existed.
+  const allowedSections = !isOwner && user?.role === 'staff' ? user.assigned_sections : null;
+  const visibleTabs = TABS.filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires) && (!allowedSections || allowedSections.includes(t.path)));
+  const visibleSettingsItems = SETTINGS_ITEMS
+    .filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires))
+    .filter((t) => t.path !== 'settings/change-password' || !isOwner);
   const isSettingsActive = visibleSettingsItems.some((t) => location.pathname.includes(t.path)) || location.pathname.includes('/settings');
 
   // Owner accounts start with a password the super admin set directly
@@ -157,7 +179,7 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-ink" style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}>
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>
+          <Logo className="h-5 w-auto" />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>

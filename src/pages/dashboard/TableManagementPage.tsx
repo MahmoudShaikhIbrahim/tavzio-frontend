@@ -37,33 +37,57 @@ export default function TableManagementPage() {
 
   async function handleStatusChange(cardId: string, tableStatus: string) {
     if (!businessId) return;
-    await updateTableStatus(businessId, cardId, { tableStatus });
-    reload();
+    // Optimistic: the table's border color updates the instant you tap,
+    // instead of waiting on a full re-fetch of every table + the whole
+    // waitlist just to reflect a single status change.
+    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, table_status: tableStatus } : t)));
+    try {
+      await updateTableStatus(businessId, cardId, { tableStatus });
+    } catch {
+      reload();
+    }
   }
 
   async function handleMerge(cardId: string, mergeWithCardId: string) {
     if (!businessId) return;
-    await mergeTables(businessId, cardId, mergeWithCardId);
     setMergingId(null);
-    reload();
+    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, merged_with_card_id: mergeWithCardId, table_status: 'occupied' } : t)));
+    try {
+      await mergeTables(businessId, cardId, mergeWithCardId);
+    } catch {
+      reload();
+    }
   }
 
   async function handleUnmerge(cardId: string) {
     if (!businessId) return;
-    await unmergeTable(businessId, cardId);
-    reload();
+    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, merged_with_card_id: null } : t)));
+    try {
+      await unmergeTable(businessId, cardId);
+    } catch {
+      reload();
+    }
   }
 
   async function handleSeat(entryId: string, cardId: string) {
     if (!businessId) return;
-    await seatWaitlistEntry(businessId, entryId, cardId);
-    reload();
+    setWaitlist((prev) => prev.filter((w) => w.id !== entryId));
+    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, table_status: 'occupied' } : t)));
+    try {
+      await seatWaitlistEntry(businessId, entryId, cardId);
+    } catch {
+      reload();
+    }
   }
 
   async function handleCancelWaitlist(entryId: string) {
     if (!businessId) return;
-    await cancelWaitlistEntry(businessId, entryId);
-    reload();
+    setWaitlist((prev) => prev.filter((w) => w.id !== entryId));
+    try {
+      await cancelWaitlistEntry(businessId, entryId);
+    } catch {
+      reload();
+    }
   }
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;

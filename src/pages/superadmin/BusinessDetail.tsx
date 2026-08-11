@@ -1,31 +1,26 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  getBusiness, setBusinessStatus, deleteBusiness, updateBusiness, updateBusinessFeatures,
+  getBusiness, setBusinessStatus, deleteBusiness, updateBusiness,
   listCards, createCards, updateCard, deleteCard,
-  listStaff, inviteStaff, setStaffActive,
-  getPosIntegration, upsertPosIntegration,
   getPaymentStatus,
-  listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
   listReceipts, createReceipt, voidReceipt, downloadReceiptPdf,
   createContract, sendContract, listContracts, previewContract, generateContractReceipt, resetAccountPassword,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { Field, inputClass } from '../../components/ui';
-import type { AdminBusiness, Card, StaffMember, PosIntegration, PosPurpose, PosProvider, CustomButton, BillingReceipt, BillingReceiptLineItem, Contract } from '../../types';
+import type { AdminBusiness, Card, BillingReceipt, BillingReceiptLineItem, Contract } from '../../types';
 
 export default function BusinessDetail() {
   const { businessId } = useParams<{ businessId: string }>();
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [busy, setBusy] = useState(false);
 
   function reload() {
     if (!businessId) return;
     getBusiness(businessId).then(setBusiness);
     listCards(businessId).then(setCards);
-    listStaff(businessId).then(setStaff);
   }
 
   useEffect(reload, [businessId]);
@@ -87,40 +82,21 @@ export default function BusinessDetail() {
         </div>
       </div>
 
-      {/* Every feature - entitlements you grant, per business. Owner/staff
-          have identical self-service controls in their own dashboard now -
-          this is here for help/override, not the only place it lives. */}
-      <FeaturesSection businessId={businessId} business={business} onChange={reload} />
-
-      {/* POS integration - one section per purpose, only shown once relevant */}
-      {business.features?.ordering?.submission && (
-        <PosIntegrationSection businessId={businessId} purpose="ordering" providers={['foodics', 'square', 'loyverse', 'custom']} />
-      )}
-      {business.features?.booking?.submission && (
-        <PosIntegrationSection businessId={businessId} purpose="booking" providers={['zenoti', 'fresha', 'square', 'custom']} />
-      )}
-
-      {/* Payment (Tap Payments) - owner-only credentials, read-only status here */}
+      {/* Per your simplified structure: only Payments, Contracts, and
+          Table/Room cards live here by default. Feature toggles, POS
+          integration hookup, custom buttons, and staff already have full
+          self-service parity in the owner's own dashboard - this page is
+          for the handful of things that are genuinely super-admin-only. */}
       <PaymentStatusSection businessId={businessId} />
 
-      {/* Custom buttons - full parity with owner/staff */}
-      <CustomButtonsSection businessId={businessId} />
-
-      {/* Billing receipts - issued to this business, one at a time */}
       <ContractsSection businessId={businessId} />
-      <ReceiptsSection businessId={businessId} />
-
-      {/* Staff */}
-      <Section title="Staff">
-        <StaffTable staff={staff} businessId={businessId} onChange={reload} busy={busy} setBusy={setBusy} />
-        <InviteStaffForm businessId={businessId} onDone={reload} />
-      </Section>
 
       {/* Table / customer-facing cards only - old admin/owner login cards
           (from before that feature was removed entirely) are deliberately
           excluded here, since they no longer serve any function and don't
-          belong in a list of physical table cards. */}
-      <Section title={`Table / customer cards (${cards.filter((c) => !c.linked_user_id).length})`}>
+          belong in a list of physical table cards. Hotels see "Rooms"
+          instead, since a hotel guest card maps to a room, not a table. */}
+      <Section title={`${business.category === 'hotel' ? 'Room' : 'Table / customer'} cards (${cards.filter((c) => !c.linked_user_id).length})`}>
         <div className="space-y-4">
           {cards.filter((c) => !c.linked_user_id).map((c) => <CardRow key={c.id} card={c} cards={cards} businessId={businessId} onCardsChange={setCards} onChange={reload} />)}
           {cards.filter((c) => !c.linked_user_id).length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
@@ -179,222 +155,59 @@ function ToggleRow({ label, description, checked, onChange, disabled }: {
   );
 }
 
-function FeaturesSection({ businessId, business, onChange }: {
-  businessId: string; business: AdminBusiness; onChange: () => void;
-}) {
-  const [saving, setSaving] = useState(false);
-  const ordering = business.features?.ordering;
-  const booking = business.features?.booking;
-
-  async function patch(body: Record<string, unknown>) {
-    setSaving(true);
-    await updateBusinessFeatures(businessId, body);
-    setSaving(false);
-    onChange();
-  }
-
-  return (
-    <Section title="Features">
-      <p className="text-base text-ivory-dim">
-        Owner and staff can now toggle all of this themselves too, from
-        their own Settings tab — this is here for help or override, not the
-        only place it lives anymore.
-      </p>
-
-      <div>
-        <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-brass">Ordering</p>
-        <div className="space-y-2">
-          <ToggleRow label="Menu view" description="Customers can browse the menu after tapping."
-            checked={!!ordering?.menuView} onChange={(v) => patch({ ordering: { menuView: v } })} disabled={saving} />
-          <ToggleRow label="Order submission" description="Customers can actually place an order - Tavzio's own order screen always works, no POS needed."
-            checked={!!ordering?.submission} onChange={(v) => patch({ ordering: { submission: v } })} disabled={saving} />
-          <ToggleRow label="POS integration" description="Push orders into a connected POS, on top of Tavzio's own screen."
-            checked={!!ordering?.posIntegration} onChange={(v) => patch({ ordering: { posIntegration: v } })} disabled={saving} />
-          <ToggleRow label="Call waiter" description="Only useful with order submission or POS integration on."
-            checked={!!ordering?.callWaiter} onChange={(v) => patch({ ordering: { callWaiter: v } })} disabled={saving || !ordering?.submission} />
-          <ToggleRow label="Request bill" description="Only useful with order submission or POS integration on."
-            checked={!!ordering?.requestBill} onChange={(v) => patch({ ordering: { requestBill: v } })} disabled={saving || !ordering?.submission} />
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-brass">Booking</p>
-        <div className="space-y-2">
-          <ToggleRow label="Booking page" description="Customers can browse services after tapping."
-            checked={!!booking?.menuView} onChange={(v) => patch({ booking: { menuView: v } })} disabled={saving} />
-          <ToggleRow label="Booking submission" description="Customers can request an appointment - staff confirm/decline."
-            checked={!!booking?.submission} onChange={(v) => patch({ booking: { submission: v } })} disabled={saving} />
-          <ToggleRow label="Booking integration" description="Push bookings into a connected system (Zenoti, etc.)."
-            checked={!!booking?.integration} onChange={(v) => patch({ booking: { integration: v } })} disabled={saving} />
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 font-mono text-[11px] uppercase tracking-wider text-brass">Other</p>
-        <div className="space-y-2">
-          <ToggleRow label="Loyalty program" checked={!!business.features?.loyalty}
-            onChange={(v) => patch({ loyalty: v })} disabled={saving} />
-          <ToggleRow label="Staff accounts" description="Small businesses that never need a second account can leave this off."
-            checked={!!business.features?.staffAccounts} onChange={(v) => patch({ staffAccounts: v })} disabled={saving} />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-const PROVIDER_LABEL: Record<PosProvider, string> = {
-  foodics: 'Foodics',
-  square: 'Square',
-  zenoti: 'Zenoti',
-  loyverse: 'Loyverse',
-  fresha: 'Fresha (no confirmed API - will fail until Fresha grants access)',
-  tap: 'Tap Payments',
-  custom: 'Custom (no-code connector)',
-  // Never actually offered here - this section only ever lists ordering/
-  // booking providers (see PosIntegrationSection's `providers` prop).
-  // Printing lives in its own owner-only settings page, not this
-  // super_admin POS picker. Only present so the exhaustive PosProvider
-  // record below still type-checks.
-  printnode: 'PrintNode',
-};
-
-function PosIntegrationSection({ businessId, purpose, providers }: {
-  businessId: string; purpose: PosPurpose; providers: PosProvider[];
-}) {
-  const [integration, setIntegration] = useState<PosIntegration | null>(null);
-  const [provider, setProvider] = useState<PosProvider>(providers[0]);
-  const [enabled, setEnabled] = useState(false);
-  const [config, setConfig] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    getPosIntegration(businessId, purpose as 'ordering' | 'booking').then((data) => {
-      setIntegration(data);
-      if (data) {
-        setProvider(data.provider);
-        setEnabled(data.enabled);
-        setConfig(data.config || {});
-      }
-      setLoaded(true);
-    });
-  }, [businessId, purpose]);
-
-  async function handleSave() {
-    setSaving(true);
-    const updated = await upsertPosIntegration(businessId, purpose as 'ordering' | 'booking', provider, enabled, config);
-    setIntegration(updated);
-    setSaving(false);
-  }
-
-  if (!loaded) return null;
-
-  const fieldsFor: Record<PosProvider, { key: string; label: string }[]> = {
-    foodics: [{ key: 'accessToken', label: 'Access token' }, { key: 'branchId', label: 'Branch ID' }],
-    square: [{ key: 'accessToken', label: 'Access token' }, { key: 'locationId', label: 'Location ID' }],
-    zenoti: [{ key: 'apiKey', label: 'API key' }, { key: 'centerId', label: 'Center ID' }],
-    loyverse: [{ key: 'accessToken', label: 'Access token' }, { key: 'storeId', label: 'Store ID' }],
-    fresha: [],
-    tap: [{ key: 'secretKey', label: 'Secret key' }],
-    custom: [
-      { key: 'endpoint', label: 'Endpoint URL' },
-      { key: 'authHeaderName', label: 'Auth header name (e.g. Authorization)' },
-      { key: 'authHeaderValue', label: 'Auth header value (e.g. Bearer abc123)' },
-      { key: 'bodyTemplate', label: 'Body template ({{table}}, {{note}}, {{total}}, {{items}})' },
-      { key: 'responseIdPath', label: 'Response ID path (e.g. data.id)' },
-    ],
-    // Never actually offered here - same reason as PROVIDER_LABEL above.
-    printnode: [],
-  };
-
-  return (
-    <Section title={`POS integration — ${purpose}`}>
-      {integration?.status && (
-        <p className="text-base">
-          Status: <span className={integration.status === 'connected' ? 'text-success' : integration.status === 'error' ? 'text-danger' : 'text-ivory-dim'}>
-            {integration.status}
-          </span>
-        </p>
-      )}
-
-      <div className="space-y-3 rounded-lg border border-ink-line p-3">
-        <Field label="Provider">
-          <select value={provider} onChange={(e) => setProvider(e.target.value as PosProvider)} className={inputClass}>
-            {providers.map((p) => <option key={p} value={p}>{PROVIDER_LABEL[p]}</option>)}
-          </select>
-        </Field>
-
-        {provider === 'fresha' ? (
-          <p className="text-base text-ivory-dim">
-            No confirmed public API exists for Fresha - enabling this will fail until
-            Fresha grants private/partner API access. Contact them directly first.
-          </p>
-        ) : (
-          fieldsFor[provider].map((f) =>
-            f.key === 'bodyTemplate' ? (
-              <Field key={f.key} label={f.label}>
-                <textarea
-                  value={config[f.key] || ''}
-                  onChange={(e) => setConfig((c) => ({ ...c, [f.key]: e.target.value }))}
-                  rows={4}
-                  placeholder='{"table": {{table}}, "total": {{total}}, "items": {{items}}}'
-                  className={`${inputClass} font-mono text-base`}
-                />
-              </Field>
-            ) : (
-              <Field key={f.key} label={f.label}>
-                <input
-                  value={config[f.key] || ''}
-                  onChange={(e) => setConfig((c) => ({ ...c, [f.key]: e.target.value }))}
-                  className={inputClass}
-                />
-              </Field>
-            )
-          )
-        )}
-
-        <label className="flex items-center gap-2 text-base text-ivory-dim">
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
-          Enabled
-        </label>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save integration'}
-        </button>
-      </div>
-    </Section>
-  );
-}
-
 // Read-only for super_admin, deliberately - the owner sets up their own Tap
 // Payments credentials from their own Settings; this is just a status
 // check for support purposes, never the secret key itself.
 function PaymentStatusSection({ businessId }: { businessId: string }) {
   const [status, setStatus] = useState<{ enabled: boolean; status: string } | null>(null);
+  const [receipts, setReceipts] = useState<BillingReceipt[]>([]);
+  const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
+  function reload() {
     getPaymentStatus(businessId).then(setStatus);
-  }, [businessId]);
+    listReceipts(businessId).then(setReceipts);
+  }
+  useEffect(reload, [businessId]);
 
   return (
-    <Section title="Payments (Tap Payments)">
-      <p className="text-base text-ivory-dim">
-        Set up by the owner directly, from their own Settings — the secret
-        key is never visible here, only whether it's connected.
-      </p>
-      <p className="text-base">
-        Status: <span className={status?.enabled ? 'text-success' : 'text-ivory-dim'}>
-          {status?.enabled ? `connected (${status.status})` : 'not connected'}
-        </span>
-      </p>
+    <Section
+      title="Payments"
+      action={
+        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          + New receipt
+        </button>
+      }
+    >
+      <div className="rounded-lg border border-ink-line p-4">
+        <p className="text-base text-ivory">Payment gateway</p>
+        <p className="mt-1 text-sm text-ivory-dim">
+          Set up by the owner directly, from their own Settings — the secret
+          key is never visible here, only whether it's connected.
+        </p>
+        <p className="mt-2 text-base">
+          Status: <span className={status?.enabled ? 'text-success' : 'text-ivory-dim'}>
+            {status?.enabled ? `connected (${status.status})` : 'not connected'}
+          </span>
+        </p>
+      </div>
+
+      <div>
+        <p className="mb-2 text-base text-ivory">Billing receipts</p>
+        <p className="mb-3 text-sm text-ivory-dim">
+          Issued directly to this business's own Receipts page the moment
+          you generate one - stamped with whatever stamp and signature is
+          currently active in Billing Settings, frozen onto that receipt
+          permanently.
+        </p>
+        {showForm && <ReceiptForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}
+        <div className="space-y-3">
+          {receipts.map((r) => <ReceiptRow key={r.id} receipt={r} businessId={businessId} onChange={reload} />)}
+          {receipts.length === 0 && <p className="text-base text-ivory-dim">No receipts issued yet.</p>}
+        </div>
+      </div>
     </Section>
   );
 }
-
-const ICON_OPTIONS = ['Link', 'Star', 'Gift', 'Music', 'ShoppingBag', 'Heart', 'Phone', 'Mail', 'Globe', 'MapPin', 'Camera', 'Ticket'];
 
 const BUSINESS_TYPES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
@@ -630,43 +443,6 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
   );
 }
 
-function ReceiptsSection({ businessId }: { businessId: string }) {
-  const [receipts, setReceipts] = useState<BillingReceipt[]>([]);
-  const [showForm, setShowForm] = useState(false);
-
-  function reload() {
-    listReceipts(businessId).then(setReceipts);
-  }
-  useEffect(reload, [businessId]);
-
-  return (
-    <Section
-      title="Billing receipts"
-      action={
-        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
-          + New receipt
-        </button>
-      }
-    >
-      <p className="text-base text-ivory-dim">
-        Issued directly to this business's own Receipts page the moment
-        you generate one - stamped with whatever stamp and signature is
-        currently active in Billing Settings, frozen onto that receipt
-        permanently.
-      </p>
-      {showForm && <ReceiptForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}
-      <div className="space-y-3">
-        {receipts.map((r) => <ReceiptRow key={r.id} receipt={r} businessId={businessId} onChange={reload} />)}
-        {receipts.length === 0 && <p className="text-base text-ivory-dim">No receipts issued yet.</p>}
-      </div>
-    </Section>
-  );
-}
-
-// Standard pricing - the defaults applied automatically unless a specific
-// receipt overrides them. Kept as constants here (not fetched from
-// anywhere) since this is Tavzio's own internal billing tool, not
-// something a business ever sees or configures.
 const DEFAULT_SYSTEM_FEE_AED = 200;
 const DEFAULT_CARD_PRICE_AED = 20;
 
@@ -945,159 +721,6 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
         <ActionButton danger onClick={handleVoid} disabled={busy}>Delete</ActionButton>
       </div>
     </div>
-  );
-}
-
-function CustomButtonsSection({ businessId }: { businessId: string }) {
-  const [buttons, setButtons] = useState<CustomButton[]>([]);
-  const [showForm, setShowForm] = useState(false);
-
-  function reload() {
-    listCustomButtons(businessId).then(setButtons);
-  }
-  useEffect(reload, [businessId]);
-
-  return (
-    <Section
-      title="Custom buttons"
-      action={
-        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
-          + Add button
-        </button>
-      }
-    >
-      <p className="text-base text-ivory-dim">
-        Beyond the fixed 7 links - a brand-new button with its own label,
-        icon, and link. Owner and staff can manage these too.
-      </p>
-      {showForm && <CustomButtonForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
-      <div className="space-y-4">
-        {buttons.map((b) => <CustomButtonRow key={b.id} button={b} buttons={buttons} businessId={businessId} onButtonsChange={setButtons} onChange={reload} />)}
-        {buttons.length === 0 && <p className="text-base text-ivory-dim">No custom buttons yet.</p>}
-      </div>
-    </Section>
-  );
-}
-
-function CustomButtonForm({ businessId, existing, onDone }: { businessId: string; existing?: CustomButton; onDone: () => void }) {
-  const [label, setLabel] = useState(existing?.label || '');
-  const [icon, setIcon] = useState(existing?.icon || 'Link');
-  const [url, setUrl] = useState(existing?.url || '');
-  const [saving, setSaving] = useState(false);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    if (existing) {
-      await updateCustomButton(businessId, existing.id, { label, icon, url });
-    } else {
-      await createCustomButton(businessId, { label, icon, url });
-    }
-    setSaving(false);
-    onDone();
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
-        <Field label="Icon">
-          <select value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
-            {ICON_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
-          </select>
-        </Field>
-      </div>
-      <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
-      <button disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
-        {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
-      </button>
-    </form>
-  );
-}
-
-function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChange }: {
-  button: CustomButton; buttons: CustomButton[]; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
-
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
-      <span className="text-ivory">{button.label} <span className="text-ivory-dim">· {button.icon}</span></span>
-      <div className="flex flex-wrap items-center gap-2">
-        <ActionButton
-          onClick={() => {
-            onButtonsChange(buttons.map((b) => (b.id === button.id ? { ...b, enabled: !b.enabled } : b)));
-            updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
-          }}
-        >
-          {button.enabled ? 'On' : 'Off'}
-        </ActionButton>
-        <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
-        <ActionButton
-          danger
-          onClick={() => {
-            onButtonsChange(buttons.filter((b) => b.id !== button.id));
-            deleteCustomButton(businessId, button.id).catch(onChange);
-          }}
-        >
-          Delete
-        </ActionButton>
-      </div>
-    </div>
-  );
-}
-
-function StaffTable({ staff, businessId, onChange, busy, setBusy }: {
-  staff: StaffMember[]; businessId: string; onChange: () => void; busy: boolean; setBusy: (b: boolean) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      {staff.map((s) => (
-        <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
-          <span className="text-ivory">{s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span></span>
-          <button
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              await setStaffActive(businessId, s.id, !s.is_active);
-              setBusy(false);
-              onChange();
-            }}
-            className="text-base text-ivory-dim hover:text-ivory"
-          >
-            {s.is_active ? 'Deactivate' : 'Reactivate'}
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function InviteStaffForm({ businessId, onDone }: { businessId: string; onDone: () => void }) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    await inviteStaff(businessId, name, email);
-    setName(''); setEmail('');
-    setLoading(false);
-    onDone();
-  }
-
-  return (
-    <form onSubmit={submit} className="flex gap-2">
-      <input placeholder="Name" required value={name} onChange={(e) => setName(e.target.value)}
-        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <input placeholder="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-        className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50">
-        Add staff
-      </button>
-    </form>
   );
 }
 

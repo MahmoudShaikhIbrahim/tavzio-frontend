@@ -64,6 +64,30 @@
     outline: 2px solid theme('colors.brass');
     outline-offset: 3px;
   }
+
+  /* Every button, link, and interactive control gets a smooth, fast
+     transition and a tiny tactile press-down by default - applied once
+     here rather than repeated across ~90 page files. This is what makes
+     the whole system read as responsive and premium rather than
+     snapping instantly between states: color/background/border/opacity
+     changes ease in over 120ms, and any pressable element compresses
+     very slightly on press for physical, "it actually registered my
+     tap" feedback. Disabled controls never get press feedback, and
+     anyone with reduced-motion preferences already has all of this
+     zeroed out by the media query below. */
+  button, a, input[type='checkbox'], input[type='radio'], select, [role='button'] {
+    transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+  }
+  button:not(:disabled):active, a:active, [role='button']:not([aria-disabled='true']):active {
+    transform: scale(0.98);
+  }
+  input, textarea, select {
+    transition-property: border-color, box-shadow;
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

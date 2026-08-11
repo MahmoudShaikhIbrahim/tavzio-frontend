@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
 import { submitLead } from '../lib/api';
+import Logo from '../components/Logo';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
@@ -35,10 +36,7 @@ export default function Home() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-ink-line px-8 py-5">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-brass/60">
-            <span className="font-display text-sm text-brass">T</span>
-          </span>
-          <span className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</span>
+          <Logo className="h-6 w-auto" />
         </div>
         <Link
           to="/admin/login"
@@ -51,10 +49,7 @@ export default function Home() {
       {/* Hero */}
       <div className="relative overflow-hidden px-6 pb-16 pt-20 text-center sm:pt-28">
         <div className="relative mx-auto max-w-2xl">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</p>
-          <h1 className="mt-2 font-display text-4xl font-medium leading-tight text-ivory sm:text-5xl">
-            Tap. Connect. Grow.
-          </h1>
+          <Logo className="mx-auto h-10 w-auto" />
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ivory-dim">
             One tap turns a table, a counter, or a door into a menu, a loyalty
             program, a booking page, and a way to pay — all without an app.

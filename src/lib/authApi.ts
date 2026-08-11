@@ -11,7 +11,7 @@ import type {
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
   Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead, TillSession, FloorTable, WaitlistEntry,
-  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge,
+  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -146,7 +146,7 @@ export function connectDeliveryIntegration(businessId: string) {
 export function listRooms(businessId: string) {
   return authFetch<HotelRoom[]>(`/api/businesses/${businessId}/hotel/rooms`);
 }
-export function createRoom(businessId: string, payload: { roomNumber: string; roomType?: string; floor?: string; maxOccupancy?: number; baseRateAed?: number }) {
+export function createRoom(businessId: string, payload: { roomNumber: string; roomType?: string; floor?: string; maxOccupancy?: number; baseRateAed?: number; cardId?: string }) {
   return authFetch<HotelRoom>(`/api/businesses/${businessId}/hotel/rooms`, { method: 'POST', body: JSON.stringify(payload) });
 }
 export function updateRoom(businessId: string, roomId: string, payload: Partial<{ roomNumber: string; roomType: string; floor: string; maxOccupancy: number; baseRateAed: number; status: string }>) {
@@ -181,6 +181,30 @@ export function getFolio(businessId: string, folioId: string) {
 }
 export function getFoliosByReservation(businessId: string, reservationId: string) {
   return authFetch<HotelFolio[]>(`/api/businesses/${businessId}/hotel/folios/by-reservation/${reservationId}`);
+}
+// Room-number search for the POS "Charge to Room" flow.
+export function lookupFolioByRoom(businessId: string, roomNumber: string) {
+  return authFetch<{ folioId: string; roomNumber: string; guestName: string }>(
+    `/api/businesses/${businessId}/hotel/folios/lookup?roomNumber=${encodeURIComponent(roomNumber)}`
+  );
+}
+
+// --- Hotel outlets (Room Service / Bars / Pool / Breakfast, sharing the existing F&B menu) ---
+
+export function listHotelOutlets(businessId: string) {
+  return authFetch<HotelOutlet[]>(`/api/businesses/${businessId}/hotel/outlets`);
+}
+export function createHotelOutlet(businessId: string, payload: { name: string; outletType: string; location?: string; openingHours?: string; sortOrder?: number }) {
+  return authFetch<HotelOutlet>(`/api/businesses/${businessId}/hotel/outlets`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateHotelOutlet(businessId: string, outletId: string, payload: Partial<{ name: string; enabled: boolean; location: string; openingHours: string; sortOrder: number }>) {
+  return authFetch<HotelOutlet>(`/api/businesses/${businessId}/hotel/outlets/${outletId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteHotelOutlet(businessId: string, outletId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/outlets/${outletId}`, { method: 'DELETE' });
+}
+export function setHotelOutletItems(businessId: string, outletId: string, menuItemIds: string[]) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/outlets/${outletId}/items`, { method: 'PUT', body: JSON.stringify({ menuItemIds }) });
 }
 export function addFolioCharge(businessId: string, folioId: string, payload: { description: string; amountAed: number; chargeType?: string }) {
   return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/charges`, { method: 'POST', body: JSON.stringify(payload) });
@@ -280,6 +304,9 @@ export function listExternalHotelSystems(businessId: string) {
 export function connectExternalHotelSystem(businessId: string, provider: string, externalPropertyId: string) {
   return authFetch<ExternalHotelSystem>(`/api/businesses/${businessId}/external-hotel-systems/${provider}`, { method: 'PUT', body: JSON.stringify({ externalPropertyId }) });
 }
+export function disconnectExternalHotelSystem(businessId: string, provider: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/external-hotel-systems/${provider}`, { method: 'DELETE' });
+}
 
 export interface PaymentTransaction {
   id: string; business_id: string; provider: string; transaction_type: 'charge' | 'refund';
@@ -361,7 +388,7 @@ export function createCards(businessId: string, count: number, label = '') {
   });
 }
 
-export function updateCard(businessId: string, cardId: string, payload: { label?: string; status?: string }) {
+export function updateCard(businessId: string, cardId: string, payload: { label?: string; status?: string; roomId?: string | null }) {
   return authFetch<Card>(`/api/businesses/${businessId}/cards/${cardId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
@@ -389,6 +416,17 @@ export function setStaffActive(businessId: string, userId: string, isActive: boo
   return authFetch<StaffMember>(`/api/businesses/${businessId}/staff/${userId}`, {
     method: 'PATCH',
     body: JSON.stringify({ isActive }),
+  });
+}
+
+// sections: null = unrestricted (sees everything their role/features
+// allow, same as before this feature existed). An array (even empty)
+// restricts the account to exactly those section keys - see
+// DashboardLayout's TABS/SETTINGS_ITEMS `path` values for the valid keys.
+export function setStaffSections(businessId: string, userId: string, sections: string[] | null) {
+  return authFetch<StaffMember>(`/api/businesses/${businessId}/staff/${userId}/sections`, {
+    method: 'PATCH',
+    body: JSON.stringify({ sections }),
   });
 }
 
@@ -1118,6 +1156,68 @@ export async function downloadReceiptPdf(businessId: string, receiptId: string, 
   URL.revokeObjectURL(url);
 }
 
+// Same pattern for a contract - used from the authenticated dashboard.
+export async function downloadContractPdf(businessId: string, contractId: string, contractNumber: string) {
+  const token = getToken();
+  const res = await fetchWithTimeout(
+    `${BASE}/api/businesses/${businessId}/contracts/${contractId}/pdf`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    30000
+  );
+  if (!res.ok) throw new Error('Could not download contract');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${contractNumber}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Business-scoped audit report - every contract, billing receipt, and
+// customer payment for the given year, compiled into one PDF an
+// accountant/auditor can be handed directly.
+export async function downloadBusinessAuditReport(businessId: string, year: number) {
+  const token = getToken();
+  const res = await fetchWithTimeout(
+    `${BASE}/api/businesses/${businessId}/audit-report/pdf?year=${year}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    30000
+  );
+  if (!res.ok) throw new Error('Could not generate audit report');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit_report_${year}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// Platform-wide audit report - super_admin only.
+export async function downloadPlatformAuditReport(year: number) {
+  const token = getToken();
+  const res = await fetchWithTimeout(
+    `${BASE}/api/businesses/audit-report/pdf?year=${year}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    30000
+  );
+  if (!res.ok) throw new Error('Could not generate audit report');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tavzio_platform_audit_${year}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // super_admin only - the currently-active stamp/signature/legal name new
 // receipts will use going forward (past receipts are unaffected).
 export function getReceiptBranding() {
@@ -1183,6 +1283,10 @@ export function createIngredient(businessId: string, payload: { name: string; un
 
 export function updateIngredient(businessId: string, ingredientId: string, payload: Partial<{ name: string; unit: string; lowStockThreshold: number; supplierId: string | null }>) {
   return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteIngredient(businessId: string, ingredientId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}`, { method: 'DELETE' });
 }
 
 export function adjustStock(businessId: string, ingredientId: string, payload: { changeQty: number; reason?: string; note?: string }) {

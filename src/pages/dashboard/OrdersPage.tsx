@@ -11,7 +11,6 @@ import {
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
-import StaffOrderModal from '../../components/StaffOrderModal';
 import ExportButtons from '../../components/ExportButtons';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -44,7 +43,6 @@ export default function OrdersPage() {
   const [recentOpen, setRecentOpen] = useState(false);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
-  const [showStaffOrder, setShowStaffOrder] = useState(false);
   const [payBillEnabled, setPayBillEnabled] = useState(false);
   const [showRecordPayment, setShowRecordPayment] = useState(false);
 
@@ -184,8 +182,13 @@ export default function OrdersPage() {
           {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setShowStaffOrder(true)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
-            + Order for a table
+          {/* Order creation now lives only in POS Terminal (see #8) - this
+              used to open its own duplicate "staff order" form here too,
+              which was exactly the confusing overlap between Orders and
+              POS. This page is now purely the live status/notifications
+              feed; POS is the only place a new order gets created. */}
+          <button onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+            Take an order in POS →
           </button>
           {payBillEnabled && (
             <button
@@ -293,10 +296,6 @@ export default function OrdersPage() {
           </div>
           )}
         </div>
-      )}
-
-      {showStaffOrder && (
-        <StaffOrderModal businessId={businessId} onClose={() => setShowStaffOrder(false)} onPlaced={() => { setShowStaffOrder(false); reload(); }} />
       )}
 
       {showRecordPayment && (

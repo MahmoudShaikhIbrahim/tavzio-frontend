@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { login, getMe } from '../lib/authApi';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
+import Logo from '../components/Logo';
 
 export default function AdminLogin() {
   // Same reasoning as the marketing homepage - nobody's logged in yet
@@ -33,7 +34,7 @@ export default function AdminLogin() {
   return (
     <div data-theme={theme} className="flex min-h-screen items-center justify-center bg-ink px-8">
       <div className="w-full max-w-sm">
-        <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Tavzio</p>
+        <Logo className="mx-auto h-6 w-auto" />
         <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>
         <p className="mt-1 text-center text-sm text-ivory-dim">
           Platform administrators, business owners, and staff all sign in

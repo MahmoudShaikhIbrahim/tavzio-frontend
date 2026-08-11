@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listIngredients, createIngredient, adjustStock,
+  listIngredients, createIngredient, deleteIngredient, adjustStock,
   listSuppliers, createSupplier,
   listPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
 } from '../../lib/authApi';
@@ -79,6 +79,17 @@ function IngredientsTab({ businessId }: { businessId: string }) {
     }
   }
 
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete "${name}"? This can't be undone.`)) return;
+    setError('');
+    try {
+      await deleteIngredient(businessId, id);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete ingredient');
+    }
+  }
+
   return (
     <Section title="Ingredients" action={
       <button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
@@ -103,32 +114,54 @@ function IngredientsTab({ businessId }: { businessId: string }) {
       )}
       {error && <p className="text-base text-danger">{error}</p>}
       {loading && <p className="text-ivory-dim">Loading...</p>}
-      <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {ingredients.map((ing) => {
           const low = ing.stock_qty <= ing.low_stock_threshold;
+          // A visual sense of "how full" this ingredient is, not just a
+          // number - capped at 2x the low-stock threshold so the bar is
+          // meaningful (a threshold of 5 with 200 in stock shouldn't read
+          // as "basically empty" just because 200/huge-number is tiny).
+          const ceiling = Math.max(ing.low_stock_threshold * 2, ing.low_stock_threshold + 1, 1);
+          const fillPct = Math.min(100, Math.round((ing.stock_qty / ceiling) * 100));
           return (
-            <div key={ing.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-line px-4 py-3">
-              <div>
+            <div key={ing.id} className="rounded-xl border border-ink-line bg-ink-soft/40 p-4 transition-colors hover:border-brass/40">
+              <div className="flex items-start justify-between gap-2">
                 <p className="text-base text-ivory">{ing.name}</p>
-                <p className={`text-sm ${low ? 'text-danger' : 'text-ivory-dim'}`}>
-                  {ing.stock_qty} {ing.unit} in stock {low && '· low stock'} · AED {ing.cost_per_unit.toFixed(2)}/{ing.unit}
-                </p>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${low ? 'border-danger/40 text-danger' : 'border-success/40 text-success'}`}>
+                  {low ? 'Low stock' : 'In stock'}
+                </span>
               </div>
+
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ink-line">
+                <div
+                  className={`h-full rounded-full transition-all ${low ? 'bg-danger' : 'bg-brass'}`}
+                  style={{ width: `${fillPct}%` }}
+                />
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-sm text-ivory-dim">
+                <span>{ing.stock_qty} {ing.unit} on hand</span>
+                <span>AED {ing.cost_per_unit.toFixed(2)}/{ing.unit}</span>
+              </div>
+
               {adjustingId === ing.id ? (
-                <div className="flex items-center gap-2">
+                <div className="mt-3 flex items-center gap-2">
                   <input
                     type="number"
                     placeholder="+/- qty"
                     onFocus={(e) => e.target.select()}
                     value={adjustQty}
                     onChange={(e) => setAdjustQty(e.target.value)}
-                    className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-base text-ivory"
+                    className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-base text-ivory"
                   />
                   <button onClick={() => handleAdjust(ing.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Apply</button>
                   <button onClick={() => setAdjustingId(null)} className="text-sm text-ivory-dim">Cancel</button>
                 </div>
               ) : (
-                <button onClick={() => setAdjustingId(ing.id)} className="text-sm text-brass hover:underline">Adjust stock</button>
+                <div className="mt-3 flex items-center gap-4 border-t border-ink-line pt-3">
+                  <button onClick={() => setAdjustingId(ing.id)} className="text-sm text-brass hover:underline">Adjust stock</button>
+                  <button onClick={() => handleDelete(ing.id, ing.name)} className="text-sm text-danger hover:underline">Delete</button>
+                </div>
               )}
             </div>
           );
@@ -166,11 +199,11 @@ function SuppliersTab({ businessId }: { businessId: string }) {
         <Field label="Email"><input value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
         <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
       </form>
-      <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {suppliers.map((s) => (
-          <div key={s.id} className="rounded-lg border border-ink-line px-4 py-3">
+          <div key={s.id} className="rounded-xl border border-ink-line bg-ink-soft/40 px-4 py-3 transition-colors hover:border-brass/40">
             <p className="text-base text-ivory">{s.name}</p>
-            <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ')}</p>
+            <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ') || 'No contact details'}</p>
           </div>
         ))}
         {suppliers.length === 0 && <p className="text-ivory-dim">No suppliers yet.</p>}
@@ -268,18 +301,18 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
           <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Create order</button>
         </form>
       )}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {orders.map((po) => (
-          <div key={po.id} className="rounded-lg border border-ink-line px-4 py-3">
+          <div key={po.id} className="rounded-xl border border-ink-line bg-ink-soft/40 px-4 py-3 transition-colors hover:border-brass/40">
             <div className="flex items-center justify-between">
-              <p className="text-base text-ivory">{po.suppliers?.name || 'No supplier'} · AED {po.total_cost_aed.toFixed(2)}</p>
+              <p className="text-base text-ivory">{po.suppliers?.name || 'No supplier'} · <span className="text-brass">AED {po.total_cost_aed.toFixed(2)}</span></p>
               {po.status === 'pending' ? (
                 <button onClick={() => handleReceive(po.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Mark received</button>
               ) : (
-                <span className="text-sm text-success">Received</span>
+                <span className="rounded-full border border-success/40 px-2 py-0.5 text-xs font-medium text-success">Received</span>
               )}
             </div>
-            <p className="text-sm text-ivory-dim">
+            <p className="mt-1 text-sm text-ivory-dim">
               {po.purchase_order_items.map((it) => `${it.quantity} ${it.ingredients?.unit || ''} ${it.ingredients?.name || ''}`).join(', ')}
             </p>
           </div>

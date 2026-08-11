@@ -4,8 +4,9 @@ import {
   listRooms, createRoom, listGuests, createGuest, listReservations, createReservation,
   checkInReservation, checkOutReservation, cancelReservation,
   getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
+  listCards, updateCard,
 } from '../../lib/authApi';
-import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio } from '../../types';
+import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
 export default function FrontDeskPage() {
@@ -185,7 +186,9 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
         <Field label="Room (optional now)">
           <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
             <option value="">Assign later</option>
-            {rooms.filter((r) => r.status === 'available').map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
+            {rooms.filter((r) => r.status === 'available').map((r) => (
+              <option key={r.id} value={r.id}>{r.room_number}{r.cards?.[0] ? '' : ' (no stand connected)'}</option>
+            ))}
           </select>
         </Field>
       </div>
@@ -199,19 +202,42 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
 
 function RoomsTab({ businessId }: { businessId: string }) {
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
+  const [cards, setCards] = useState<Card[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [roomNumber, setRoomNumber] = useState('');
   const [roomType, setRoomType] = useState('standard');
   const [baseRate, setBaseRate] = useState(0);
+  const [newRoomCardId, setNewRoomCardId] = useState('');
+  const [linkingRoomId, setLinkingRoomId] = useState<string | null>(null);
 
-  function reload() { listRooms(businessId).then(setRooms); }
+  function reload() {
+    listRooms(businessId).then(setRooms);
+    listCards(businessId).then(setCards);
+  }
   useEffect(reload, [businessId]);
+
+  // Unassigned = active, not linked to any room, and not someone's admin
+  // login card - the actual pool of physical stands available to connect.
+  const unassignedCards = cards.filter((c) => c.status === 'active' && !c.linked_user_id && !rooms.some((r) => r.cards?.some((rc) => rc.id === c.id)));
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!roomNumber.trim()) return;
-    await createRoom(businessId, { roomNumber, roomType, baseRateAed: baseRate });
-    setRoomNumber(''); setBaseRate(0); setShowAdd(false);
+    await createRoom(businessId, { roomNumber, roomType, baseRateAed: baseRate, cardId: newRoomCardId || undefined });
+    setRoomNumber(''); setBaseRate(0); setNewRoomCardId(''); setShowAdd(false);
+    reload();
+  }
+
+  async function handleLink(roomId: string, cardId: string) {
+    if (!cardId) return;
+    await updateCard(businessId, cardId, { roomId });
+    setLinkingRoomId(null);
+    reload();
+  }
+
+  async function handleUnlink(cardId: string) {
+    if (!confirm('Disconnect this stand from the room? Tapping it will go back to the normal landing page until reconnected.')) return;
+    await updateCard(businessId, cardId, { roomId: null });
     reload();
   }
 
@@ -227,17 +253,49 @@ function RoomsTab({ businessId }: { businessId: string }) {
           <Field label="Room number"><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
           <Field label="Type"><input value={roomType} onChange={(e) => setRoomType(e.target.value)} className={inputClass} /></Field>
           <Field label="Rate/night (AED)"><input type="number" min={0} onFocus={(e) => e.target.select()} value={baseRate} onChange={(e) => setBaseRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
+          <Field label="NFC stand (optional)">
+            <select value={newRoomCardId} onChange={(e) => setNewRoomCardId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <option value="">Connect later</option>
+              {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
+            </select>
+          </Field>
           <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
         </form>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {rooms.map((r) => (
-          <div key={r.id} className={`rounded-lg border p-3 ${STATUS_COLOR[r.status]}`}>
-            <p className="text-base text-ivory">{r.room_number}</p>
-            <p className="text-sm capitalize">{r.status}</p>
-            <p className="text-xs text-ivory-dim">{r.room_type} · AED {r.base_rate_aed}/night</p>
-          </div>
-        ))}
+        {rooms.map((r) => {
+          const connectedCard = r.cards?.[0];
+          return (
+            <div key={r.id} className={`rounded-lg border p-3 ${STATUS_COLOR[r.status]}`}>
+              <p className="text-base text-ivory">{r.room_number}</p>
+              <p className="text-sm capitalize">{r.status}</p>
+              <p className="text-xs text-ivory-dim">{r.room_type} · AED {r.base_rate_aed}/night</p>
+
+              {connectedCard ? (
+                <div className="mt-2 flex items-center justify-between gap-1 border-t border-current/20 pt-2 text-xs">
+                  <span className="text-ivory-dim">Stand: {connectedCard.label || connectedCard.uid.slice(0, 6)}</span>
+                  <button onClick={() => handleUnlink(connectedCard.id)} className="text-danger hover:underline">Disconnect</button>
+                </div>
+              ) : linkingRoomId === r.id ? (
+                <div className="mt-2 border-t border-current/20 pt-2">
+                  <select
+                    autoFocus
+                    onChange={(e) => handleLink(r.id, e.target.value)}
+                    defaultValue=""
+                    className="w-full rounded border border-ink-line bg-ink px-1.5 py-1 text-xs text-ivory"
+                  >
+                    <option value="" disabled>Select stand...</option>
+                    {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <button onClick={() => setLinkingRoomId(r.id)} className="mt-2 w-full border-t border-current/20 pt-2 text-left text-xs text-brass hover:underline">
+                  + Connect stand
+                </button>
+              )}
+            </div>
+          );
+        })}
         {rooms.length === 0 && <p className="text-ivory-dim">No rooms yet.</p>}
       </div>
     </Section>
@@ -276,6 +334,15 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
   return (
     <div className="space-y-6">
       <button onClick={onClose} className="text-sm text-brass hover:underline">← Back to reservations</button>
+      <div className="rounded-lg border border-brass/30 bg-ink-soft p-4 text-sm text-ivory-dim">
+        <p className="text-ivory">What is a folio?</p>
+        <p className="mt-1">
+          A guest's running bill for their whole stay - every charge (room rate, room service, minibar, spa, etc.)
+          and every payment or deposit lands here as it happens. "Add Charge" logs something new they owe; use
+          Split if part of the bill (e.g. a company-paid portion) needs to be billed separately. It settles
+          automatically at checkout.
+        </p>
+      </div>
       {folios.map((folio) => (
         <FolioCard key={folio.id} businessId={businessId} folio={folio} selectedIds={selectedIds[folio.id] || []} onToggleCharge={(chargeId) => toggleCharge(folio.id, chargeId)} onSplit={() => handleSplit(folio.id)} onReload={reload} />
       ))}

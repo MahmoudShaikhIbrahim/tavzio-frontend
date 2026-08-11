@@ -19,6 +19,7 @@ import LeadsPage from './pages/superadmin/LeadsPage';
 import BusinessDetail from './pages/superadmin/BusinessDetail';
 import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
 import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
+import AuditReportPage from './pages/superadmin/AuditReportPage';
 
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
@@ -27,6 +28,7 @@ import SettingsPage from './pages/dashboard/SettingsPage';
 import BusinessProfilePage from './pages/dashboard/BusinessProfilePage';
 import PayBillSetupPage from './pages/dashboard/PayBillSetupPage';
 import PrinterSetupPage from './pages/dashboard/PrinterSetupPage';
+import CredentialsPage from './pages/dashboard/CredentialsPage';
 import LandingButtonsPage from './pages/dashboard/LandingButtonsPage';
 import MenuManagementPage from './pages/dashboard/MenuManagementPage';
 import LoyaltyPage from './pages/dashboard/LoyaltyPage';
@@ -38,10 +40,9 @@ import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import FeaturesPage from './pages/dashboard/FeaturesPage';
 import PaymentsPage from './pages/dashboard/PaymentsPage';
-import ReceiptsPage from './pages/dashboard/ReceiptsPage';
+import TableReceiptsPage from './pages/dashboard/TableReceiptsPage';
 import AuditLogPage from './pages/dashboard/AuditLogPage';
 import MessagesPage from './pages/dashboard/MessagesPage';
-import TableReceiptsPage from './pages/dashboard/TableReceiptsPage';
 import InventoryPage from './pages/dashboard/InventoryPage';
 import POSTerminalPage from './pages/dashboard/POSTerminalPage';
 import TableManagementPage from './pages/dashboard/TableManagementPage';
@@ -49,6 +50,7 @@ import DeliveryIntegrationPage from './pages/dashboard/DeliveryIntegrationPage';
 import FrontDeskPage from './pages/dashboard/FrontDeskPage';
 import HousekeepingPage from './pages/dashboard/HousekeepingPage';
 import ExternalHotelSystemsPage from './pages/dashboard/ExternalHotelSystemsPage';
+import HotelOutletsPage from './pages/dashboard/HotelOutletsPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
 import ChangePasswordPage from './pages/dashboard/ChangePasswordPage';
@@ -86,6 +88,7 @@ export default function App() {
             <Route path="businesses/:businessId" element={<BusinessDetail />} />
             <Route path="messages" element={<MessagesInboxPage />} />
             <Route path="billing-settings" element={<BillingSettingsPage />} />
+            <Route path="audit-report" element={<AuditReportPage />} />
           </Route>
         </Route>
 
@@ -99,6 +102,7 @@ export default function App() {
             <Route path="settings/business-profile" element={<BusinessProfilePage />} />
             <Route path="settings/pay-bill" element={<PayBillSetupPage />} />
             <Route path="settings/printer" element={<PrinterSetupPage />} />
+            <Route path="settings/credentials" element={<CredentialsPage />} />
             <Route path="settings/landing-buttons" element={<LandingButtonsPage />} />
             <Route path="settings/menu" element={<MenuManagementPage />} />
             <Route path="settings/loyalty" element={<LoyaltyPage />} />
@@ -110,7 +114,6 @@ export default function App() {
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="features" element={<FeaturesPage />} />
             <Route path="payments" element={<PaymentsPage />} />
-            <Route path="receipts" element={<ReceiptsPage />} />
             <Route path="audit-log" element={<AuditLogPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="table-receipts" element={<TableReceiptsPage />} />
@@ -121,6 +124,7 @@ export default function App() {
             <Route path="front-desk" element={<FrontDeskPage />} />
             <Route path="housekeeping" element={<HousekeepingPage />} />
             <Route path="settings/external-hotel-systems" element={<ExternalHotelSystemsPage />} />
+            <Route path="settings/hotel-outlets" element={<HotelOutletsPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />
             <Route path="settings/change-password" element={<ChangePasswordPage />} />

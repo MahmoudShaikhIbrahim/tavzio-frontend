@@ -54,9 +54,13 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
     reload();
   }
 
-  async function handleStatus(taskId: string, status: string) {
-    await updateHousekeepingTask(businessId, taskId, status);
-    reload();
+  async function handleStatus(taskId: string, status: 'pending' | 'in_progress' | 'done') {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
+    try {
+      await updateHousekeepingTask(businessId, taskId, status);
+    } catch {
+      reload();
+    }
   }
 
   return (
@@ -118,9 +122,13 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
     reload();
   }
 
-  async function handleStatus(ticketId: string, status: string) {
-    await updateMaintenanceTicket(businessId, ticketId, { status });
-    reload();
+  async function handleStatus(ticketId: string, status: 'open' | 'in_progress' | 'resolved') {
+    setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status } : t)));
+    try {
+      await updateMaintenanceTicket(businessId, ticketId, { status });
+    } catch {
+      reload();
+    }
   }
 
   const PRIORITY_COLOR: Record<string, string> = { low: 'text-ivory-dim', normal: 'text-ivory', high: 'text-warning', urgent: 'text-danger' };
@@ -165,9 +173,13 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
   function reload() { listGuestRequests(businessId).then(setRequests); }
   useEffect(reload, [businessId]);
 
-  async function handleStatus(requestId: string, status: string) {
-    await updateGuestRequest(businessId, requestId, status);
-    reload();
+  async function handleStatus(requestId: string, status: 'pending' | 'in_progress' | 'done') {
+    setRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status } : r)));
+    try {
+      await updateGuestRequest(businessId, requestId, status);
+    } catch {
+      reload();
+    }
   }
 
   return (
