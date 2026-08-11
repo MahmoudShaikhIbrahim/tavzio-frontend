@@ -392,6 +392,12 @@ export function setStaffActive(businessId: string, userId: string, isActive: boo
   });
 }
 
+export function resetAccountPassword(businessId: string, userId: string) {
+  return authFetch<{ tempPassword: string; name: string }>(`/api/businesses/${businessId}/staff/${userId}/reset-password`, {
+    method: 'POST',
+  });
+}
+
 // super_admin only - matches how physical cards actually get programmed, in person
 export function issueAdminCard(businessId: string, userId: string, label = 'Admin card') {
   return authFetch<Card>(`/api/businesses/${businessId}/staff/${userId}/card`, {

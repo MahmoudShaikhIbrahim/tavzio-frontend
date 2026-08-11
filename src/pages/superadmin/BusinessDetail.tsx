@@ -8,7 +8,7 @@ import {
   getPaymentStatus,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
   listReceipts, createReceipt, voidReceipt, downloadReceiptPdf,
-  createContract, sendContract, listContracts, previewContract, generateContractReceipt,
+  createContract, sendContract, listContracts, previewContract, generateContractReceipt, resetAccountPassword,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { Field, inputClass } from '../../components/ui';
@@ -60,6 +60,7 @@ export default function BusinessDetail() {
         </div>
 
         <BusinessTypeEditor business={business} businessId={businessId} onSaved={setBusiness} />
+        <OwnerPasswordReset business={business} businessId={businessId} />
 
         <div className="mt-4 flex gap-2">
           {business.status !== 'active' && (
@@ -435,6 +436,42 @@ function BusinessTypeEditor({ business, businessId, onSaved }: { business: Admin
           <span className="capitalize text-ivory">{business.category}</span>
           <button onClick={() => setEditing(true)} className="text-brass hover:underline">Change</button>
         </>
+      )}
+    </div>
+  );
+}
+
+// The super admin's fix for "the owner is locked out and can't get
+// back in" - the same problem existed on this side too, since the
+// only password-changing capability that existed before was for a
+// user changing their own password while already logged in.
+function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness; businessId: string }) {
+  const [result, setResult] = useState<{ name: string; tempPassword: string } | null>(null);
+  const [resetting, setResetting] = useState(false);
+
+  async function handleReset() {
+    if (!confirm(`Reset the owner's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`)) return;
+    setResetting(true);
+    try {
+      const res = await resetAccountPassword(businessId, business.owner);
+      setResult(res);
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      {result ? (
+        <div className="rounded-lg border border-brass/40 bg-ink-soft p-3 text-sm">
+          <p className="text-ivory">New temporary password:</p>
+          <p className="mt-1 select-all rounded bg-ink px-2.5 py-1.5 font-mono text-base text-brass">{result.tempPassword}</p>
+          <button onClick={() => setResult(null)} className="mt-1 text-ivory-dim hover:text-ivory">Dismiss</button>
+        </div>
+      ) : (
+        <button onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50">
+          {resetting ? 'Resetting...' : "Reset owner's password"}
+        </button>
       )}
     </div>
   );
