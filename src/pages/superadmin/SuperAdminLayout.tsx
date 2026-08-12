@@ -36,11 +36,11 @@ export default function SuperAdminLayout() {
           the system uses, instead of living up next to the logo. */}
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <Logo className="h-5 w-auto" />
+          <Logo className="h-9 w-auto" />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name} · Super Admin</span>
-            <button onClick={logout} className="hover:text-ivory">Sign out</button>
+            <button type="button" onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5 overflow-x-auto">

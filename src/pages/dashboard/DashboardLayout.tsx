@@ -182,12 +182,12 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-ink" style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}>
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <Logo className="h-5 w-auto" />
+          <Logo className="h-9 w-auto" />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <ClockWidget />
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
-            <button onClick={logout} className="hover:text-ivory">Sign out</button>
+            <button type="button" onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
@@ -216,7 +216,7 @@ export default function DashboardLayout() {
           </div>
 
           <div ref={settingsRef} className="relative shrink-0">
-            <button
+            <button type="button"
               onClick={() => setSettingsOpen((v) => !v)}
               className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-base ${
                 isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'

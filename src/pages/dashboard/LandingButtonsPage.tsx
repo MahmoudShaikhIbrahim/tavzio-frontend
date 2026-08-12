@@ -94,7 +94,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
     <Section
       title="Landing page buttons"
       action={
-        <button
+        <button type="button"
           onClick={handleSave}
           disabled={saving}
           className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
@@ -186,7 +186,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         {showAddForm ? (
           <CustomButtonForm businessId={businessId} onDone={() => { setShowAddForm(false); reloadExtras(); }} />
         ) : (
-          <button
+          <button type="button"
             onClick={() => setShowAddForm(true)}
             className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10"
           >

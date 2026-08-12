@@ -83,23 +83,23 @@ export default function ExternalHotelSystemsPage() {
                         autoFocus
                         className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
                       />
-                      <button onClick={() => handleConnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-brass hover:underline disabled:opacity-50">
+                      <button type="button" onClick={() => handleConnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-brass hover:underline disabled:opacity-50">
                         {busyProvider === s.provider ? 'Saving...' : 'Save'}
                       </button>
-                      <button onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline">Cancel</button>
+                      <button type="button" onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline">Cancel</button>
                     </div>
                     {error && <p className="text-xs text-danger">{error}</p>}
                   </div>
                 ) : s.connected ? (
                   <div className="flex items-center gap-3">
                     <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? 'Live' : 'Awaiting real credentials'}</span>
-                    <button onClick={() => startEditing(s)} className="text-sm text-brass hover:underline">Edit</button>
-                    <button onClick={() => handleDisconnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-danger hover:underline disabled:opacity-50">
+                    <button type="button" onClick={() => startEditing(s)} className="text-sm text-brass hover:underline">Edit</button>
+                    <button type="button" onClick={() => handleDisconnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-danger hover:underline disabled:opacity-50">
                       {busyProvider === s.provider ? 'Disconnecting...' : 'Disconnect'}
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+                  <button type="button" onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
                     Connect
                   </button>
                 )}

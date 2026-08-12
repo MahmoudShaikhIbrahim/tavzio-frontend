@@ -27,7 +27,7 @@ export default function FrontDeskPage() {
       <h1 className="font-display text-3xl text-ivory">Front Desk</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['reservations', 'rooms', 'groups', 'tourism-dirham'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
             {t === 'tourism-dirham' ? 'Tourism Dirham' : t}
           </button>
         ))}
@@ -79,7 +79,7 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
 
   return (
     <Section title="Reservations" action={
-      <button onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New reservation</button>
+      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New reservation</button>
     }>
       {showNew && <NewReservationForm businessId={businessId} rooms={rooms} onDone={() => { setShowNew(false); reload(); }} />}
       {loading && <p className="text-ivory-dim">Loading...</p>}
@@ -101,11 +101,11 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
                 )}
                 {r.status === 'checked_in' && (
                   <>
-                    <button onClick={() => onOpenFolio(r.id)} className="text-sm text-brass hover:underline">View folio</button>
-                    <button onClick={() => handleCheckOut(r.id)} className="text-sm text-brass hover:underline">Check out</button>
+                    <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-brass hover:underline">View folio</button>
+                    <button type="button" onClick={() => handleCheckOut(r.id)} className="text-sm text-brass hover:underline">Check out</button>
                   </>
                 )}
-                {r.status === 'checked_out' && <button onClick={() => onOpenFolio(r.id)} className="text-sm text-ivory-dim hover:underline">View folio</button>}
+                {r.status === 'checked_out' && <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-ivory-dim hover:underline">View folio</button>}
               </div>
             </div>
           </div>
@@ -126,8 +126,8 @@ function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel }: { 
           {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
         </select>
       )}
-      <button onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="text-sm text-brass hover:underline">Check in</button>
-      <button onClick={onCancel} className="text-sm text-danger hover:underline">Cancel</button>
+      <button type="button" onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="text-sm text-brass hover:underline">Check in</button>
+      <button type="button" onClick={onCancel} className="text-sm text-danger hover:underline">Cancel</button>
     </div>
   );
 }
@@ -287,7 +287,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
   };
 
   return (
-    <Section title="Rooms" action={<button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add room</button>}>
+    <Section title="Rooms" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add room</button>}>
       {showAdd && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
           <Field label="Room number"><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
@@ -314,7 +314,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
               {connectedCard ? (
                 <div className="mt-2 flex items-center justify-between gap-1 border-t border-current/20 pt-2 text-xs">
                   <span className="text-ivory-dim">Stand: {connectedCard.label || connectedCard.uid.slice(0, 6)}</span>
-                  <button onClick={() => handleUnlink(connectedCard.id)} className="text-danger hover:underline">Disconnect</button>
+                  <button type="button" onClick={() => handleUnlink(connectedCard.id)} className="text-danger hover:underline">Disconnect</button>
                 </div>
               ) : linkingRoomId === r.id ? (
                 <div className="mt-2 border-t border-current/20 pt-2">
@@ -329,7 +329,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
                   </select>
                 </div>
               ) : (
-                <button onClick={() => setLinkingRoomId(r.id)} className="mt-2 w-full border-t border-current/20 pt-2 text-left text-xs text-brass hover:underline">
+                <button type="button" onClick={() => setLinkingRoomId(r.id)} className="mt-2 w-full border-t border-current/20 pt-2 text-left text-xs text-brass hover:underline">
                   + Connect stand
                 </button>
               )}
@@ -373,7 +373,7 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
 
   return (
     <div className="space-y-6">
-      <button onClick={onClose} className="text-sm text-brass hover:underline">← Back to reservations</button>
+      <button type="button" onClick={onClose} className="text-sm text-brass hover:underline">← Back to reservations</button>
       <div className="rounded-lg border border-brass/30 bg-ink-soft p-4 text-sm text-ivory-dim">
         <p className="text-ivory">What is a folio?</p>
         <p className="mt-1">
@@ -476,7 +476,7 @@ function FolioCard({ businessId, folio, selectedIds, onToggleCharge, onSplit, on
               <button type="submit" className="w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
             </form>
           </div>
-          <button onClick={onSplit} disabled={selectedIds.length === 0} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
+          <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
             Split {selectedIds.length > 0 ? `${selectedIds.length} selected charge(s)` : 'selected charges'} into new folio
           </button>
         </>
@@ -566,7 +566,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
   return (
     <Section
       title="Booking Groups"
-      action={<button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add group</button>}
+      action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add group</button>}
     >
       <p className="text-base text-ivory-dim">
         A wedding party, a corporate block - link several reservations under one group so they can be tracked

@@ -77,19 +77,19 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: C
               autoFocus
               className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-base text-ivory"
             />
-            <button onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
-            <button onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
+            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
+            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
           </>
         ) : (
           <>
             <span className="truncate text-ivory">{card.label || 'Untitled'}</span>
             <span className="shrink-0 font-mono text-base text-ivory-dim">{card.uid}</span>
-            <button onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
+            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
           </>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
           {copied ? 'Copied!' : 'Copy URL'}
         </button>
         <select

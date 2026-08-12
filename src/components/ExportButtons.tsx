@@ -17,7 +17,7 @@ export default function ExportButtons({ businessId, kind }: { businessId: string
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">
         Export ▾
       </button>
       {open && (
@@ -30,8 +30,8 @@ export default function ExportButtons({ businessId, kind }: { businessId: string
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-1/2 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => download('csv')} className="flex-1 rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10">CSV</button>
-              <button onClick={() => download('pdf')} className="flex-1 rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10">PDF</button>
+              <button type="button" onClick={() => download('csv')} className="flex-1 rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10">CSV</button>
+              <button type="button" onClick={() => download('pdf')} className="flex-1 rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10">PDF</button>
             </div>
           </div>
         </>

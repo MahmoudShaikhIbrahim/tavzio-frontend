@@ -109,13 +109,13 @@ function BookingRowItem({ booking, businessId, onBookingsChange, onChange }: {
 
       {booking.status === 'pending' && (
         <div className="mt-2.5 flex gap-2">
-          <button
+          <button type="button"
             onClick={() => setStatus('confirmed')}
             className="flex-1 rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90"
           >
             Confirm
           </button>
-          <button
+          <button type="button"
             onClick={() => setStatus('declined')}
             className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10"
           >
@@ -124,7 +124,7 @@ function BookingRowItem({ booking, businessId, onBookingsChange, onChange }: {
         </div>
       )}
       {booking.status === 'confirmed' && (
-        <button
+        <button type="button"
           onClick={() => setStatus('completed')}
           className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10"
         >

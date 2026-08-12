@@ -303,13 +303,13 @@ function BillPageContent({ slug }: { slug: string }) {
             <div className="flex justify-between text-sm text-ivory"><span>Total</span><span>{receipt.total.toFixed(2)} AED</span></div>
           </div>
 
-          <button
+          <button type="button"
             onClick={() => { setPaid(false); setReceipt(null); setSelected(new Set()); setTipPercent(0); loadBill(); }}
             className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10"
           >
             View live bill
           </button>
-          <button onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft">
+          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft">
             {t('backTo', { slug })}
           </button>
         </div>
@@ -346,7 +346,7 @@ function BillPageContent({ slug }: { slug: string }) {
             </div>
           )}
           {items.map((item) => (
-            <button
+            <button type="button"
               key={item.id}
               onClick={() => toggleItem(item.id)}
               className={`flex w-full items-center justify-between rounded-xl border px-5 py-5 text-start transition-colors ${
@@ -371,7 +371,7 @@ function BillPageContent({ slug }: { slug: string }) {
 
         {paidItems.length > 0 && (
           <div className="mt-4">
-            <button
+            <button type="button"
               onClick={() => setPaidSectionOpen((v) => !v)}
               className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-sm text-ivory-dim hover:bg-ink-soft"
             >
@@ -401,7 +401,7 @@ function BillPageContent({ slug }: { slug: string }) {
           <p className="mb-2 text-sm text-ivory-dim">{t('addTip')}</p>
           <div className="flex gap-2">
             {TIP_OPTIONS.map((pct) => (
-              <button
+              <button type="button"
                 key={pct}
                 onClick={() => setTipPercent(pct)}
                 className={`flex-1 rounded-lg border px-3 py-2 text-sm ${
@@ -437,7 +437,7 @@ function BillPageContent({ slug }: { slug: string }) {
           )}
           {error && <p className="mb-2 text-sm text-danger">{error}</p>}
           {cashMarkedMessage && <p className="mb-2 text-sm text-warning">{cashMarkedMessage}</p>}
-          <button
+          <button type="button"
             onClick={handlePay}
             disabled={paying}
             className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
@@ -445,7 +445,7 @@ function BillPageContent({ slug }: { slug: string }) {
             {paying ? t('processing') : t('payAmount', { amount: total.toFixed(2) })}
           </button>
           {payingSpecificItems && (
-            <button
+            <button type="button"
               onClick={handleMarkCash}
               disabled={markingCash || paying}
               className="mt-2 w-full rounded-lg border border-warning/40 px-4 py-2.5 text-sm text-warning hover:bg-warning/10 disabled:opacity-50"

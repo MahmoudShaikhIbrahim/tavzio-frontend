@@ -109,7 +109,7 @@ function QuickRequestButton({ slug, tapEventId, requestType, icon: Icon, labelKe
   }
 
   return (
-    <button onClick={handleClick} disabled={state === 'sending'} className={buttonClass}>
+    <button type="button" onClick={handleClick} disabled={state === 'sending'} className={buttonClass}>
       <span className={iconWrapClass}><Icon size={17} strokeWidth={1.75} /></span>
       <span className="font-body text-[15px] font-medium">
         {state === 'sending' ? t('sending') : state === 'error' ? `${label} — ${t('tapAgainToTry')}` : label}

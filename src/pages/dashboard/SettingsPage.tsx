@@ -357,7 +357,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
     <Section
       title="Landing page buttons"
       action={
-        <button
+        <button type="button"
           onClick={handleSave}
           disabled={saving}
           className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
@@ -449,7 +449,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         {showAddForm ? (
           <CustomButtonForm businessId={businessId} onDone={() => { setShowAddForm(false); reloadExtras(); }} />
         ) : (
-          <button
+          <button type="button"
             onClick={() => setShowAddForm(true)}
             className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10"
           >
@@ -471,7 +471,7 @@ const PROVIDERS = [
 function PaymentProviderSetup({ businessId }: { businessId: string }) {
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
   const [enabled, setEnabled] = useState(false);
-  const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius' | 'ziina'>('tap');
+  const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius' | 'ziina' | ''>('');
   // Tap
   const [secretKey, setSecretKey] = useState('');
   // Telr
@@ -492,7 +492,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
       setIntegration(data);
       if (data) {
         setEnabled(data.enabled);
-        setProvider((data.config?.provider as 'tap' | 'telr' | 'ngenius' | 'ziina') || 'tap');
+        setProvider((data.config?.provider as 'tap' | 'telr' | 'ngenius' | 'ziina') || '');
         setSecretKey(data.config?.secretKey || '');
         setStoreId(data.config?.storeId || '');
         setAuthKey(data.config?.authKey || '');
@@ -506,6 +506,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
   }, [businessId]);
 
   async function handleSave() {
+    if (!provider) { setSaveError('Choose a payment provider first'); return; }
     setSaving(true);
     setSaveError('');
     try {
@@ -544,9 +545,10 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
         <Field label="Payment provider">
           <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina')}
+            onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina' | '')}
             className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
           >
+            <option value="">Choose a provider...</option>
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
         </Field>
@@ -616,7 +618,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
             Enabled — let customers pay via Pay Bill
           </label>
-          <button
+          <button type="button"
             onClick={handleSave}
             disabled={saving}
             className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"

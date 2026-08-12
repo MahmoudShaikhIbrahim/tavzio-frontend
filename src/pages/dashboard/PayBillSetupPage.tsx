@@ -23,7 +23,7 @@ export default function PayBillSetupPage() {
 function PaymentProviderSetup({ businessId }: { businessId: string }) {
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
   const [enabled, setEnabled] = useState(false);
-  const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius' | 'ziina'>('tap');
+  const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius' | 'ziina' | ''>('');
   // Tap
   const [secretKey, setSecretKey] = useState('');
   // Telr
@@ -44,7 +44,12 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
       setIntegration(data);
       if (data) {
         setEnabled(data.enabled);
-        setProvider((data.config?.provider as 'tap' | 'telr' | 'ngenius' | 'ziina') || 'tap');
+        // No fallback to 'tap' here - if this business has never actually
+        // saved a provider, leave the selection genuinely blank rather
+        // than silently pre-selecting one as if it had been chosen. That
+        // was the exact bug: an unconfigured account's dashboard, PDFs,
+        // and reports all showing "Tap Payments" as if it were in use.
+        setProvider((data.config?.provider as 'tap' | 'telr' | 'ngenius' | 'ziina') || '');
         setSecretKey(data.config?.secretKey || '');
         setStoreId(data.config?.storeId || '');
         setAuthKey(data.config?.authKey || '');
@@ -58,6 +63,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
   }, [businessId]);
 
   async function handleSave() {
+    if (!provider) { setSaveError('Choose a payment provider first'); return; }
     setSaving(true);
     setSaveError('');
     try {
@@ -96,9 +102,10 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
         <Field label="Payment provider">
           <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina')}
+            onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina' | '')}
             className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
           >
+            <option value="">Choose a provider...</option>
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
         </Field>
@@ -168,7 +175,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
             Enabled — let customers pay via Pay Bill
           </label>
-          <button
+          <button type="button"
             onClick={handleSave}
             disabled={saving}
             className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"

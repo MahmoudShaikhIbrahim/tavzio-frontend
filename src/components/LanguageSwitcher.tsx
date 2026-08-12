@@ -9,7 +9,7 @@ export default function LanguageSwitcher() {
 
   return (
     <div className="relative">
-      <button
+      <button type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 rounded-lg border border-ink-line bg-ink-soft px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory"
       >
@@ -23,7 +23,7 @@ export default function LanguageSwitcher() {
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute end-0 z-20 mt-1.5 w-40 overflow-hidden rounded-lg border border-ink-line bg-ink-soft shadow-xl">
             {LANGUAGES.map((l) => (
-              <button
+              <button type="button"
                 key={l.code}
                 onClick={() => { setLanguage(l.code); setOpen(false); }}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink ${

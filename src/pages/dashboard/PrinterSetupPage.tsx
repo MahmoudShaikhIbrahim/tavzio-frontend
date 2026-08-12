@@ -126,7 +126,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
         </label>
 
         {saveError && <p className="text-base text-danger">{saveError}</p>}
-        <button
+        <button type="button"
           onClick={handleSave}
           disabled={saving || (enabled && !printerId)}
           className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"

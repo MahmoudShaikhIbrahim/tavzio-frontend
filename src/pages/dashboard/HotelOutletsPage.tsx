@@ -70,7 +70,7 @@ export default function HotelOutletsPage() {
       </div>
 
       <Section title="Outlets" action={
-        <button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
           + Add outlet
         </button>
       }>
@@ -97,13 +97,13 @@ export default function HotelOutletsPage() {
                   <p className="text-sm text-ivory-dim">{[o.location, o.opening_hours].filter(Boolean).join(' · ')} · {o.hotel_outlet_items?.length || 0} item(s)</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => handleToggle(o)} className={`text-sm ${o.enabled ? 'text-success' : 'text-ivory-dim'} hover:underline`}>
+                  <button type="button" onClick={() => handleToggle(o)} className={`text-sm ${o.enabled ? 'text-success' : 'text-ivory-dim'} hover:underline`}>
                     {o.enabled ? 'Enabled' : 'Disabled'}
                   </button>
-                  <button onClick={() => setEditingItemsFor(editingItemsFor === o.id ? null : o.id)} className="text-sm text-brass hover:underline">
+                  <button type="button" onClick={() => setEditingItemsFor(editingItemsFor === o.id ? null : o.id)} className="text-sm text-brass hover:underline">
                     {editingItemsFor === o.id ? 'Close' : 'Edit items'}
                   </button>
-                  <button onClick={() => handleDelete(o)} className="text-sm text-danger hover:underline">Delete</button>
+                  <button type="button" onClick={() => handleDelete(o)} className="text-sm text-danger hover:underline">Delete</button>
                 </div>
               </div>
               {editingItemsFor === o.id && (
@@ -155,7 +155,7 @@ function OutletItemPicker({ businessId, outlet, menuItems, onSaved }: {
         ))}
         {menuItems.length === 0 && <p className="text-sm text-ivory-dim">No menu items yet - add some under Menu Management first.</p>}
       </div>
-      <button onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
         {saving ? 'Saving...' : 'Save items'}
       </button>
     </div>

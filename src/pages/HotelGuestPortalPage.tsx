@@ -148,7 +148,7 @@ export default function HotelGuestPortalPage() {
         )}
 
         {view !== 'home' && (
-          <button onClick={() => { setView('home'); setActiveOutlet(null); setActiveRequestKey(null); }} className="text-sm text-brass hover:underline">
+          <button type="button" onClick={() => { setView('home'); setActiveOutlet(null); setActiveRequestKey(null); }} className="text-sm text-brass hover:underline">
             ← Back
           </button>
         )}
@@ -213,13 +213,13 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
 }) {
   return (
     <div className="space-y-5">
-      <button onClick={() => onNav('myRequests')} className="flex w-full items-center justify-between rounded-xl border border-brass/30 bg-ink-soft px-4 py-3 text-left">
+      <button type="button" onClick={() => onNav('myRequests')} className="flex w-full items-center justify-between rounded-xl border border-brass/30 bg-ink-soft px-4 py-3 text-left">
         <span className="text-base text-ivory">My Requests</span>
         {requestsCount > 0 && <span className="rounded-full bg-brass px-2 py-0.5 text-xs font-medium text-ink">{requestsCount} active</span>}
       </button>
 
       {data.folioBalance !== null && (
-        <button onClick={() => onNav('myBill')} className="w-full rounded-xl border border-brass/30 bg-ink-soft p-4 text-center">
+        <button type="button" onClick={() => onNav('myBill')} className="w-full rounded-xl border border-brass/30 bg-ink-soft p-4 text-center">
           <p className="text-xs uppercase tracking-wide text-brass">My Bill</p>
           <p className="mt-1 font-display text-2xl text-ivory">AED {data.folioBalance.toFixed(2)}</p>
           <p className="mt-1 text-sm text-ivory-dim">Tap to view details and pay</p>
@@ -230,7 +230,7 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
         <div className="space-y-2">
           <p className="text-sm uppercase tracking-wide text-brass">Order</p>
           {outlets.map((o) => (
-            <button key={o.id} onClick={() => onSelectOutlet(o)} className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left hover:border-brass">
+            <button type="button" key={o.id} onClick={() => onSelectOutlet(o)} className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left hover:border-brass">
               <span className="text-ivory">{outletIcon(o.outletType)} {o.name}</span>
               <span className="text-xs text-ivory-dim">{o.openingHours}</span>
             </button>
@@ -241,14 +241,14 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
       <div className="space-y-2">
         <p className="text-sm uppercase tracking-wide text-brass">Services</p>
         {Object.entries(REQUEST_CATEGORIES).map(([key, cfg]) => (
-          <button key={key} onClick={() => onRequestCategory(key)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+          <button type="button" key={key} onClick={() => onRequestCategory(key)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
             {cfg.label}
           </button>
         ))}
-        <button onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+        <button type="button" onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
           Reception
         </button>
-        <button onClick={() => onNav('feedback')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+        <button type="button" onClick={() => onNav('feedback')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
           Feedback
         </button>
       </div>
@@ -308,7 +308,7 @@ function OutletOrderView({ slug, roomId, outlet, onDone }: { slug: string; roomI
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">{success}</p>
-        <button onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
       </div>
     );
   }
@@ -328,9 +328,9 @@ function OutletOrderView({ slug, roomId, outlet, onDone }: { slug: string; roomI
               <p className="text-sm text-brass">AED {item.price.toFixed(2)}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button onClick={() => changeQty(item.id, -1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">-</button>
+              <button type="button" onClick={() => changeQty(item.id, -1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">-</button>
               <span className="w-5 text-center text-ivory">{cart[item.id] || 0}</span>
-              <button onClick={() => changeQty(item.id, 1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">+</button>
+              <button type="button" onClick={() => changeQty(item.id, 1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">+</button>
             </div>
           </div>
         ))}
@@ -343,7 +343,7 @@ function OutletOrderView({ slug, roomId, outlet, onDone }: { slug: string; roomI
             <span className="text-brass">AED {total.toFixed(2)}</span>
           </div>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
-          <button onClick={handleSubmit} disabled={submitting} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
+          <button type="button" onClick={handleSubmit} disabled={submitting} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
             {submitting ? 'Sending...' : 'Charge to Room'}
           </button>
         </div>
@@ -369,7 +369,7 @@ function MyBillView({ data, paying, onPay }: { data: PortalData; paying: boolean
         <p className="text-xs uppercase tracking-wide text-brass">Current balance</p>
         <p className="mt-1 font-display text-2xl text-ivory">AED {(data.folioBalance ?? 0).toFixed(2)}</p>
         {(data.folioBalance ?? 0) > 0 && (
-          <button onClick={onPay} disabled={paying} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
+          <button type="button" onClick={onPay} disabled={paying} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
             {paying ? 'Starting payment...' : 'Pay by card'}
           </button>
         )}
@@ -430,7 +430,7 @@ function RequestFormView({ slug, roomId, requestKey, onDone }: { slug: string; r
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">Request sent - our team has been notified.</p>
-        <button onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
       </div>
     );
   }
@@ -446,9 +446,9 @@ function RequestFormView({ slug, roomId, requestKey, onDone }: { slug: string; r
       {requestKey === 'towels' && (
         <div className="flex items-center gap-3">
           <span className="text-sm text-ivory-dim">How many?</span>
-          <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">-</button>
+          <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">-</button>
           <span className="w-5 text-center text-ivory">{quantity}</span>
-          <button onClick={() => setQuantity((q) => q + 1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">+</button>
+          <button type="button" onClick={() => setQuantity((q) => q + 1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">+</button>
         </div>
       )}
       <input
@@ -458,7 +458,7 @@ function RequestFormView({ slug, roomId, requestKey, onDone }: { slug: string; r
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
-      <button onClick={handleSubmit} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
+      <button type="button" onClick={handleSubmit} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
         {submitting ? 'Sending...' : 'Send Request'}
       </button>
     </div>
@@ -489,7 +489,7 @@ function ReceptionView({ slug, roomId, onDone }: { slug: string; roomId: string;
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">Message sent - reception will respond shortly.</p>
-        <button onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
       </div>
     );
   }
@@ -505,7 +505,7 @@ function ReceptionView({ slug, roomId, onDone }: { slug: string; roomId: string;
         placeholder="Type your message..."
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
-      <button onClick={handleSend} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
+      <button type="button" onClick={handleSend} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
         {submitting ? 'Sending...' : 'Send'}
       </button>
     </div>
@@ -537,7 +537,7 @@ function FeedbackView({ slug, roomId, onDone }: { slug: string; roomId: string; 
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">Thank you for your feedback.</p>
-        <button onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
       </div>
     );
   }
@@ -547,7 +547,7 @@ function FeedbackView({ slug, roomId, onDone }: { slug: string; roomId: string; 
       <p className="font-display text-xl text-ivory">How was your stay?</p>
       <div className="flex justify-center gap-1 text-3xl">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} onClick={() => setRating(n)} className={n <= rating ? 'text-brass' : 'text-ivory-dim/40'}>★</button>
+          <button type="button" key={n} onClick={() => setRating(n)} className={n <= rating ? 'text-brass' : 'text-ivory-dim/40'}>★</button>
         ))}
       </div>
       <textarea
@@ -561,7 +561,7 @@ function FeedbackView({ slug, roomId, onDone }: { slug: string; roomId: string; 
         <input type="checkbox" checked={contactMe} onChange={(e) => setContactMe(e.target.checked)} className="accent-brass" />
         I'd like someone from the hotel to contact me
       </label>
-      <button onClick={handleSubmit} disabled={submitting || rating === 0} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
+      <button type="button" onClick={handleSubmit} disabled={submitting || rating === 0} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
         {submitting ? 'Sending...' : 'Submit Feedback'}
       </button>
     </div>

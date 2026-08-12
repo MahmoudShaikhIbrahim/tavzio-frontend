@@ -110,7 +110,7 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
           {payment.refunded ? (
             <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">Refunded {payment.refund_amount}</span>
           ) : !isManual ? (
-            <button onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">Refund</button>
+            <button type="button" onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">Refund</button>
           ) : null}
         </div>
       </div>
@@ -135,7 +135,7 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
             />
           </div>
           {error && <p className="text-base text-danger">{error}</p>}
-          <button
+          <button type="button"
             onClick={handleRefund}
             disabled={submitting}
             className="w-full rounded-lg bg-danger/10 border border-danger/40 px-3 py-1.5 text-base text-danger disabled:opacity-50"

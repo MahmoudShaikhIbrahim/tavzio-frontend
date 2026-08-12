@@ -22,7 +22,7 @@ export default function InventoryPage() {
       <h1 className="font-display text-3xl text-ivory">Inventory</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['ingredients', 'suppliers', 'purchase-orders'] as const).map((t) => (
-          <button
+          <button type="button"
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-base ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}
@@ -92,7 +92,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title="Ingredients" action={
-      <button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
         + Add ingredient
       </button>
     }>
@@ -154,13 +154,13 @@ function IngredientsTab({ businessId }: { businessId: string }) {
                     onChange={(e) => setAdjustQty(e.target.value)}
                     className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-base text-ivory"
                   />
-                  <button onClick={() => handleAdjust(ing.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Apply</button>
-                  <button onClick={() => setAdjustingId(null)} className="text-sm text-ivory-dim">Cancel</button>
+                  <button type="button" onClick={() => handleAdjust(ing.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Apply</button>
+                  <button type="button" onClick={() => setAdjustingId(null)} className="text-sm text-ivory-dim">Cancel</button>
                 </div>
               ) : (
                 <div className="mt-3 flex items-center gap-4 border-t border-ink-line pt-3">
-                  <button onClick={() => setAdjustingId(ing.id)} className="text-sm text-brass hover:underline">Adjust stock</button>
-                  <button onClick={() => handleDelete(ing.id, ing.name)} className="text-sm text-danger hover:underline">Delete</button>
+                  <button type="button" onClick={() => setAdjustingId(ing.id)} className="text-sm text-brass hover:underline">Adjust stock</button>
+                  <button type="button" onClick={() => handleDelete(ing.id, ing.name)} className="text-sm text-danger hover:underline">Delete</button>
                 </div>
               )}
             </div>
@@ -258,7 +258,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title="Purchase Orders" action={
-      <button onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
         + New purchase order
       </button>
     }>
@@ -307,7 +307,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
             <div className="flex items-center justify-between">
               <p className="text-base text-ivory">{po.suppliers?.name || 'No supplier'} · <span className="text-brass">AED {po.total_cost_aed.toFixed(2)}</span></p>
               {po.status === 'pending' ? (
-                <button onClick={() => handleReceive(po.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Mark received</button>
+                <button type="button" onClick={() => handleReceive(po.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Mark received</button>
               ) : (
                 <span className="rounded-full border border-success/40 px-2 py-0.5 text-xs font-medium text-success">Received</span>
               )}

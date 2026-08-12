@@ -121,7 +121,7 @@ function Section({ title, children, action }: { title: string; children: ReactNo
 
 function ActionButton({ children, onClick, disabled, danger }: { children: ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean }) {
   return (
-    <button
+    <button type="button"
       onClick={onClick}
       disabled={disabled}
       className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
@@ -142,7 +142,7 @@ function ToggleRow({ label, description, checked, onChange, disabled }: {
         <p className="text-base text-ivory">{label}</p>
         {description && <p className="text-base text-ivory-dim">{description}</p>}
       </div>
-      <button
+      <button type="button"
         onClick={() => onChange(!checked)}
         disabled={disabled}
         className={`shrink-0 rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
@@ -173,7 +173,7 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
     <Section
       title="Payments"
       action={
-        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
           + New receipt
         </button>
       }
@@ -241,13 +241,13 @@ function BusinessTypeEditor({ business, businessId, onSaved }: { business: Admin
           <select value={value} onChange={(e) => setValue(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-ivory">
             {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
-          <button onClick={handleSave} disabled={saving} className="text-brass hover:underline">{saving ? 'Saving...' : 'Save'}</button>
-          <button onClick={() => { setValue(business.category); setEditing(false); }} className="text-ivory-dim hover:underline">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="text-brass hover:underline">{saving ? 'Saving...' : 'Save'}</button>
+          <button type="button" onClick={() => { setValue(business.category); setEditing(false); }} className="text-ivory-dim hover:underline">Cancel</button>
         </>
       ) : (
         <>
           <span className="capitalize text-ivory">{business.category}</span>
-          <button onClick={() => setEditing(true)} className="text-brass hover:underline">Change</button>
+          <button type="button" onClick={() => setEditing(true)} className="text-brass hover:underline">Change</button>
         </>
       )}
     </div>
@@ -279,10 +279,10 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
         <div className="rounded-lg border border-brass/40 bg-ink-soft p-3 text-sm">
           <p className="text-ivory">New temporary password:</p>
           <p className="mt-1 select-all rounded bg-ink px-2.5 py-1.5 font-mono text-base text-brass">{result.tempPassword}</p>
-          <button onClick={() => setResult(null)} className="mt-1 text-ivory-dim hover:text-ivory">Dismiss</button>
+          <button type="button" onClick={() => setResult(null)} className="mt-1 text-ivory-dim hover:text-ivory">Dismiss</button>
         </div>
       ) : (
-        <button onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50">
+        <button type="button" onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50">
           {resetting ? 'Resetting...' : "Reset owner's password"}
         </button>
       )}
@@ -331,7 +331,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
     <Section
       title="Contracts"
       action={
-        <button onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
           + New contract
         </button>
       }
@@ -355,15 +355,15 @@ function ContractsSection({ businessId }: { businessId: string }) {
               </div>
               <div className="flex gap-2">
                 {c.status === 'draft' && (
-                  <button onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline">
+                  <button type="button" onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline">
                     Send to client
                   </button>
                 )}
-                <button onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline">
+                <button type="button" onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline">
                   {previewingId === c.id ? 'Hide' : 'Preview'}
                 </button>
                 {(c.status === 'signed' || c.status === 'active') && (
-                  <button onClick={() => handleGenerateReceipt(c.id)} className="text-sm text-brass hover:underline">
+                  <button type="button" onClick={() => handleGenerateReceipt(c.id)} className="text-sm text-brass hover:underline">
                     Generate next receipt
                   </button>
                 )}
@@ -712,7 +712,7 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
         )}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button
+        <button type="button"
           onClick={() => downloadReceiptPdf(businessId, receipt.id, receipt.receipt_number)}
           className="rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10"
         >
@@ -778,19 +778,19 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
           <>
             <input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus
               className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-base text-ivory" />
-            <button onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
-            <button onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
+            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
+            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
           </>
         ) : (
           <>
             <span className="truncate text-ivory">{card.label || 'Untitled'}</span>
             <span className="shrink-0 font-mono text-base text-ivory-dim">{card.uid}</span>
-            <button onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
+            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
           </>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
           {copied ? 'Copied!' : 'Copy URL'}
         </button>
         <select
@@ -807,7 +807,7 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
           <option value="lost">lost</option>
           <option value="disabled">disabled</option>
         </select>
-        <button
+        <button type="button"
           onClick={() => {
             if (confirm(`Permanently delete this card? If the physical chip still exists, it will stop working entirely - only do this for a genuinely broken or lost card.`)) {
               onCardsChange(cards.filter((c) => c.id !== card.id));

@@ -50,7 +50,7 @@ export default function StaffPage() {
             Send this to them directly (not visible again after you leave this page). They'll be required to set
             their own new password the moment they log in with it.
           </p>
-          <button onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory">Dismiss</button>
+          <button type="button" onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory">Dismiss</button>
         </div>
       )}
 
@@ -74,12 +74,12 @@ export default function StaffPage() {
                 </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <button onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory">
                   Reset password
                 </button>
                 {s.role === 'staff' && (
                   <>
-                    <button
+                    <button type="button"
                       onClick={() => {
                         setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, is_active: !m.is_active } : m)));
                         setStaffActive(businessId, s.id, !s.is_active).catch(reload);
@@ -88,7 +88,7 @@ export default function StaffPage() {
                     >
                       {s.is_active ? 'Deactivate' : 'Reactivate'}
                     </button>
-                    <button
+                    <button type="button"
                       onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}
                       className="text-sm text-brass hover:underline"
                     >
@@ -241,11 +241,11 @@ function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
           {saving ? 'Saving...' : 'Save'}
         </button>
         {staffMember.assigned_sections !== null && (
-          <button onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
+          <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
             Remove restriction (sees everything)
           </button>
         )}

@@ -49,7 +49,7 @@ export default function LeadsPage() {
             {lead.converted ? (
               <span className="text-sm text-success">Converted</span>
             ) : (
-              <button onClick={() => handleConvert(lead)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+              <button type="button" onClick={() => handleConvert(lead)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
                 Convert to client
               </button>
             )}

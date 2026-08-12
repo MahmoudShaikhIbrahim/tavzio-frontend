@@ -45,7 +45,7 @@ export default function MenuManagementPage() {
               kitchen's closed or too busy, without touching each item individually.
             </p>
           </div>
-          <button
+          <button type="button"
             onClick={togglePauseAll}
             className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
           >
@@ -101,7 +101,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
           <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
-              <button
+              <button type="button"
                 onClick={() => moveCategory(i, -1)}
                 disabled={i === 0}
                 className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
@@ -109,7 +109,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
               >
                 ↑
               </button>
-              <button
+              <button type="button"
                 onClick={() => moveCategory(i, 1)}
                 disabled={i === categories.length - 1}
                 className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
@@ -117,7 +117,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
               >
                 ↓
               </button>
-              <button
+              <button type="button"
                 onClick={() => {
                   onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
                   updateMenuCategory(businessId, c.id, { paused: !c.paused }).catch(onChange);
@@ -157,7 +157,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
     <Section
       title="Items"
       action={
-        <button
+        <button type="button"
           onClick={() => setShowForm((s) => !s)}
           className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >
@@ -397,16 +397,16 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
             onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, quantity: e.target.value } : l))}
             className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
           />
-          <button onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
+          <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
             Remove
           </button>
         </div>
       ))}
-      <button onClick={() => setLines((prev) => [...prev, { ingredientId: '', quantity: '' }])} className="text-sm text-brass hover:underline">
+      <button type="button" onClick={() => setLines((prev) => [...prev, { ingredientId: '', quantity: '' }])} className="text-sm text-brass hover:underline">
         + Add ingredient
       </button>
       <div>
-        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
           {saving ? 'Saving...' : 'Save recipe'}
         </button>
       </div>

@@ -34,7 +34,7 @@ export default function AdminLogin() {
   return (
     <div data-theme={theme} className="flex min-h-screen items-center justify-center bg-ink px-8">
       <div className="w-full max-w-sm">
-        <Logo className="mx-auto h-6 w-auto" />
+        <Logo className="mx-auto h-12 w-auto" />
         <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>
         <p className="mt-1 text-center text-sm text-ivory-dim">
           Platform administrators, business owners, and staff all sign in

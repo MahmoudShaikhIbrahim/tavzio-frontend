@@ -84,7 +84,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
 
       <div className="flex items-center justify-between">
         <span className="text-base text-ivory-dim">Sound</span>
-        <button
+        <button type="button"
           onClick={() => patch({ enabled: !setting.enabled })}
           disabled={saving}
           className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
@@ -108,7 +108,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
               {setting.customUrl && <option value="custom">Custom upload</option>}
             </select>
             {setting.sound !== 'custom' && (
-              <button
+              <button type="button"
                 onClick={() => playPresetSound(setting.sound)}
                 className="shrink-0 rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
               >
@@ -118,7 +118,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
+            <button type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={saving}
               className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
@@ -127,7 +127,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
             </button>
             <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleUpload} className="hidden" />
             {setting.customUrl && (
-              <button
+              <button type="button"
                 onClick={() => patch({ sound: 'default', customUrl: '' })}
                 className="text-base text-danger hover:underline"
               >

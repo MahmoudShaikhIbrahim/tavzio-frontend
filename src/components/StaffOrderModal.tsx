@@ -70,14 +70,14 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">
             {selectedCardId ? (
-              <button onClick={() => setSelectedCardId('')} className="flex items-center gap-1.5 hover:text-brass">
+              <button type="button" onClick={() => setSelectedCardId('')} className="flex items-center gap-1.5 hover:text-brass">
                 <span className="text-base">←</span> {selectedCard?.label || selectedCard?.uid}
               </button>
             ) : (
               'Order for a table'
             )}
           </h2>
-          <button onClick={onClose} className="text-ivory-dim hover:text-ivory">✕</button>
+          <button type="button" onClick={onClose} className="text-ivory-dim hover:text-ivory">✕</button>
         </div>
 
         {/* Step 1: pick a table - shown first and on its own, so staff
@@ -87,7 +87,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
           <div className="mt-4 space-y-1.5">
             {cards.length === 0 && <p className="text-base text-ivory-dim">Loading tables...</p>}
             {cards.map((c) => (
-              <button
+              <button type="button"
                 key={c.id}
                 onClick={() => setSelectedCardId(c.id)}
                 className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left text-base text-ivory hover:border-brass/40"
@@ -113,7 +113,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
                   <p className="font-mono text-[11px] uppercase tracking-wider text-brass">{cat.name}</p>
                   <div className="mt-1.5 space-y-1.5">
                     {catItems.map((item) => (
-                      <button
+                      <button type="button"
                         key={item.id}
                         onClick={() => openItem(item)}
                         className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-3 py-2 text-left text-base"
@@ -135,7 +135,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
             so adding an item never feels like it left to a different page. */}
         {activeItem && (
           <div className="mt-4">
-            <button onClick={() => setActiveItem(null)} className="mb-3 text-base text-brass hover:underline">← Back to menu</button>
+            <button type="button" onClick={() => setActiveItem(null)} className="mb-3 text-base text-brass hover:underline">← Back to menu</button>
             <div className="flex items-center gap-3">
               {activeItem.image_url && <img src={activeItem.image_url} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />}
               <p className="font-display text-xl text-ivory">{activeItem.name}</p>
@@ -155,7 +155,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
             {cart.lines.map((l, i) => (
               <div key={i} className="flex items-center justify-between text-ivory-dim">
                 <span>{l.quantity}× {l.name}{l.note ? ` (${l.note})` : ''}</span>
-                <button onClick={() => cart.removeLine(i)} className="text-danger">✕</button>
+                <button type="button" onClick={() => cart.removeLine(i)} className="text-danger">✕</button>
               </div>
             ))}
             <p className="pt-1 text-ivory">Total: {cart.total.toFixed(2)}</p>
@@ -173,7 +173,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
 
             {error && <p className="mt-2 text-base text-danger">{error}</p>}
 
-            <button
+            <button type="button"
               onClick={handleSubmit}
               disabled={submitting || cart.lines.length === 0}
               className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
@@ -218,9 +218,9 @@ function ItemPicker({ addons, onAdd }: {
         </div>
       )}
       <div className="mt-4 flex items-center gap-3">
-        <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-9 w-9 rounded-full border border-ink-line text-ivory">−</button>
+        <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-9 w-9 rounded-full border border-ink-line text-ivory">−</button>
         <span className="w-6 text-center text-ivory">{quantity}</span>
-        <button onClick={() => setQuantity((q) => q + 1)} className="h-9 w-9 rounded-full border border-ink-line text-ivory">+</button>
+        <button type="button" onClick={() => setQuantity((q) => q + 1)} className="h-9 w-9 rounded-full border border-ink-line text-ivory">+</button>
       </div>
       <input
         placeholder="Note"
@@ -228,7 +228,7 @@ function ItemPicker({ addons, onAdd }: {
         onChange={(e) => setNote(e.target.value)}
         className="mt-3 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
       />
-      <button
+      <button type="button"
         onClick={() => onAdd(quantity, note, addons.filter((a) => selectedIds.has(a.id)))}
         className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink"
       >

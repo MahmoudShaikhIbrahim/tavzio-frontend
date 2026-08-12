@@ -71,7 +71,7 @@ export default function PaymentReconciliationPage() {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <button
+          <button type="button"
             onClick={handleIssueAuditReport}
             disabled={generatingAudit}
             className="rounded-lg bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
@@ -126,7 +126,7 @@ export default function PaymentReconciliationPage() {
                 {t.failure_reason && <p className="text-sm text-danger">{t.failure_reason}</p>}
               </div>
               {t.status === 'completed' && t.transaction_type === 'charge' && (
-                <button onClick={() => handleRefund(t.id)} className="text-sm text-danger hover:underline">Refund</button>
+                <button type="button" onClick={() => handleRefund(t.id)} className="text-sm text-danger hover:underline">Refund</button>
               )}
             </div>
           ))}

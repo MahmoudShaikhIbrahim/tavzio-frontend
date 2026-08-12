@@ -20,7 +20,7 @@ export default function MessagesInboxPage() {
           <h1 className="font-display text-xl text-ivory">Messages</h1>
         </div>
         {threads.map((t) => (
-          <button
+          <button type="button"
             key={t.businessId}
             onClick={() => { setSelectedBusinessId(t.businessId); }}
             className={`flex w-full items-center justify-between border-b border-ink-line px-3.5 py-3 text-left ${

@@ -48,7 +48,7 @@ export default function CredentialsPage() {
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button
+    <button type="button"
       onClick={onClick}
       className={`border-b-2 px-3 py-2.5 text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'}`}
     >

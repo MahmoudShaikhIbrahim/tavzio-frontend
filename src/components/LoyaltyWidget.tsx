@@ -161,7 +161,7 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
             <div className="space-y-2 rounded-lg border border-brass bg-brass/10 px-3.5 py-2.5 text-sm text-brass-bright">
               <p>{t('rewardUnlocked')} — {reward?.description || t('yourReward')}</p>
               {tapEventId && (
-                <button
+                <button type="button"
                   onClick={handleClaim}
                   disabled={claiming}
                   className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink disabled:opacity-50"

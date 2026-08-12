@@ -69,7 +69,7 @@ function BookingPageContent({ slug }: { slug: string }) {
         </div>
         <p className="font-display text-xl text-ivory">{t('requestSent')}</p>
         <p className="text-sm text-ivory-dim">{t('requestSentDesc')}</p>
-        <button
+        <button type="button"
           onClick={() => navigate(`/${slug}`)}
           className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
         >
@@ -104,7 +104,7 @@ function BookingPageContent({ slug }: { slug: string }) {
         </div>
         <div className="mt-6 space-y-3">
           {services.map((service) => (
-            <button
+            <button type="button"
               key={service.id}
               onClick={() => setSelected(service)}
               className="flex w-full items-center justify-between rounded-xl border border-ink-line bg-ink-soft px-5 py-5 text-start"
@@ -155,7 +155,7 @@ function BookingForm({ slug, service, tapEventId, onBack, onConfirmed }: {
     <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="mx-auto max-w-md px-6 pt-14 pb-16">
         <div className="flex items-center justify-between">
-          <button onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
           <LanguageSwitcher />
         </div>
         <h1 className="mt-3 font-display text-2xl text-ivory">{service.name}</h1>

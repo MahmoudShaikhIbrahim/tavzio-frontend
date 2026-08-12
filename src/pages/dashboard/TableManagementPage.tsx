@@ -116,7 +116,7 @@ export default function TableManagementPage() {
 
                 <div className="mt-3 flex flex-wrap gap-1">
                   {(['available', 'occupied', 'reserved', 'cleaning'] as const).map((s) => (
-                    <button
+                    <button type="button"
                       key={s}
                       onClick={() => handleStatusChange(table.id, s)}
                       className={`rounded px-2 py-0.5 text-xs ${table.table_status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
@@ -139,7 +139,7 @@ export default function TableManagementPage() {
                       ))}
                     </select>
                   ) : (
-                    <button onClick={() => setMergingId(table.id)} className="text-xs text-brass hover:underline">Merge table</button>
+                    <button type="button" onClick={() => setMergingId(table.id)} className="text-xs text-brass hover:underline">Merge table</button>
                   )}
                 </div>
               </div>
@@ -149,14 +149,14 @@ export default function TableManagementPage() {
             <div key={table.id} className="rounded-xl border border-ink-line p-4 opacity-60">
               <p className="text-base text-ivory">{table.label}</p>
               <p className="text-sm text-ivory-dim">merged into another table</p>
-              <button onClick={() => handleUnmerge(table.id)} className="mt-2 text-xs text-brass hover:underline">Unmerge</button>
+              <button type="button" onClick={() => handleUnmerge(table.id)} className="mt-2 text-xs text-brass hover:underline">Unmerge</button>
             </div>
           ))}
         </div>
       </Section>
 
       <Section title="Waitlist" action={
-        <button onClick={() => setShowAddWaitlist((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowAddWaitlist((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
           + Add to waitlist
         </button>
       }>
@@ -179,7 +179,7 @@ export default function TableManagementPage() {
                   <option value="">Seat at...</option>
                   {availableTables.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
-                <button onClick={() => handleCancelWaitlist(entry.id)} className="text-sm text-danger hover:underline">Cancel</button>
+                <button type="button" onClick={() => handleCancelWaitlist(entry.id)} className="text-sm text-danger hover:underline">Cancel</button>
               </div>
             </div>
           ))}

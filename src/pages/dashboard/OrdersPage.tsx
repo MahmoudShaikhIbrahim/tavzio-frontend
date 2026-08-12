@@ -187,11 +187,11 @@ export default function OrdersPage() {
               which was exactly the confusing overlap between Orders and
               POS. This page is now purely the live status/notifications
               feed; POS is the only place a new order gets created. */}
-          <button onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
             Take an order in POS →
           </button>
           {payBillEnabled && (
-            <button
+            <button type="button"
               onClick={() => setShowRecordPayment(true)}
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
             >
@@ -199,7 +199,7 @@ export default function OrdersPage() {
             </button>
           )}
           {!payBillEnabled && (
-            <button
+            <button type="button"
               onClick={() => navigate('/admin/dashboard/table-receipts')}
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
             >
@@ -217,7 +217,7 @@ export default function OrdersPage() {
               <p className="text-base font-medium text-success">
                 Ready — <span className="text-ivory">{o.table_label || 'No table'}</span>
               </p>
-              <button onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-2 text-base text-success hover:bg-success/10">
+              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-2 text-base text-success hover:bg-success/10">
                 Dismiss
               </button>
             </div>
@@ -227,7 +227,7 @@ export default function OrdersPage() {
               <p className="text-base font-medium text-brass">
                 {r.request_type === 'call_waiter' ? 'Call Waiter' : 'Request Bill'} — <span className="text-ivory">{r.table_label || 'No table'}</span>
               </p>
-              <button onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10">
+              <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10">
                 Dismiss
               </button>
             </div>
@@ -246,7 +246,7 @@ export default function OrdersPage() {
               <p className="text-base font-medium text-brass">
                 Loyalty reward — <span className="text-ivory">{c.table_label || 'No table'}</span>
               </p>
-              <button
+              <button type="button"
                 onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
                 className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10"
               >
@@ -269,7 +269,7 @@ export default function OrdersPage() {
 
       {past.length > 0 && (
         <div>
-          <button
+          <button type="button"
             onClick={() => setRecentOpen((v) => !v)}
             className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim hover:text-ivory"
           >
@@ -401,7 +401,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
         {cardId && (
           <div className="flex shrink-0 gap-2">
             {!payBillEnabled && (
-              <button
+              <button type="button"
                 onClick={handleMarkCompleted}
                 disabled={completing}
                 className="rounded-lg border border-brass/40 px-3 py-1.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
@@ -409,7 +409,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 {completing ? 'Completing...' : 'Mark completed'}
               </button>
             )}
-            <button
+            <button type="button"
               onClick={handleClearTable}
               disabled={clearing}
               className="rounded-lg border border-danger/40 px-2.5 py-1 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
@@ -428,7 +428,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               return (
                 <div key={course} className="flex items-center justify-between text-sm">
                   <span className="text-ivory-dim">{course} held ({count})</span>
-                  <button
+                  <button type="button"
                     onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
                     disabled={firing === course}
                     className="rounded-lg bg-brass px-3 py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
@@ -453,7 +453,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
               {item.note && <span className="block italic">— {item.note}</span>}
             </div>
-            <button
+            <button type="button"
               onClick={() => {
                 onOrdersChange((prev) =>
                   prev.map((o) =>
@@ -553,14 +553,14 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-ink-line bg-ink p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">Record payment</h2>
-          <button onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">Close</button>
+          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">Close</button>
         </div>
 
         {!selectedTable ? (
           <div className="space-y-2">
             {Object.keys(tableGroups).length === 0 && <p className="text-base text-ivory-dim">No unpaid items right now.</p>}
             {Object.keys(tableGroups).map((table) => (
-              <button
+              <button type="button"
                 key={table}
                 onClick={() => setSelectedTable(table)}
                 className="block w-full rounded-lg border border-ink-line px-4 py-3 text-start text-base text-ivory hover:border-brass/40"
@@ -571,10 +571,10 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
           </div>
         ) : (
           <div className="space-y-4">
-            <button onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">← Back to tables</button>
+            <button type="button" onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">← Back to tables</button>
             <div className="flex items-center justify-between">
               <p className="text-sm text-ivory-dim">{selected.size} of {itemToOrder.size} selected</p>
-              <button
+              <button type="button"
                 onClick={() => setSelected(selected.size === itemToOrder.size ? new Set() : new Set(itemToOrder.keys()))}
                 className="text-sm text-brass hover:underline"
               >
@@ -593,7 +593,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
             </div>
             <div className="flex gap-2">
               {(['card_machine', 'cash'] as const).map((m) => (
-                <button
+                <button type="button"
                   key={m}
                   onClick={() => setMethod(m)}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm ${method === m ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
@@ -603,7 +603,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
               ))}
             </div>
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button
+            <button type="button"
               onClick={handleConfirm}
               disabled={recording}
               className="w-full rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"

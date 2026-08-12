@@ -21,7 +21,7 @@ export default function HousekeepingPage() {
       <h1 className="font-display text-3xl text-ivory">Housekeeping & Maintenance</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['housekeeping', 'maintenance', 'requests'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
             {t === 'requests' ? 'Guest Requests' : t}
           </button>
         ))}
@@ -64,7 +64,7 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="Housekeeping Tasks" action={<button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New task</button>}>
+    <Section title="Housekeeping Tasks" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New task</button>}>
       {showAdd && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
           <Field label="Room">
@@ -93,8 +93,8 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
             </div>
             {t.status !== 'done' && (
               <div className="flex gap-2">
-                {t.status === 'pending' && <button onClick={() => handleStatus(t.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
-                <button onClick={() => handleStatus(t.id, 'done')} className="text-sm text-success hover:underline">Mark done</button>
+                {t.status === 'pending' && <button type="button" onClick={() => handleStatus(t.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
+                <button type="button" onClick={() => handleStatus(t.id, 'done')} className="text-sm text-success hover:underline">Mark done</button>
               </div>
             )}
           </div>
@@ -134,7 +134,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
   const PRIORITY_COLOR: Record<string, string> = { low: 'text-ivory-dim', normal: 'text-ivory', high: 'text-warning', urgent: 'text-danger' };
 
   return (
-    <Section title="Maintenance Tickets" action={<button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New ticket</button>}>
+    <Section title="Maintenance Tickets" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New ticket</button>}>
       {showAdd && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
           <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} required className={inputClass} /></Field>
@@ -155,8 +155,8 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
             </div>
             {t.status !== 'resolved' && (
               <div className="flex gap-2">
-                {t.status === 'open' && <button onClick={() => handleStatus(t.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
-                <button onClick={() => handleStatus(t.id, 'resolved')} className="text-sm text-success hover:underline">Resolve</button>
+                {t.status === 'open' && <button type="button" onClick={() => handleStatus(t.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
+                <button type="button" onClick={() => handleStatus(t.id, 'resolved')} className="text-sm text-success hover:underline">Resolve</button>
               </div>
             )}
           </div>
@@ -194,8 +194,8 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
             </div>
             {r.status !== 'done' && (
               <div className="flex gap-2">
-                {r.status === 'pending' && <button onClick={() => handleStatus(r.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
-                <button onClick={() => handleStatus(r.id, 'done')} className="text-sm text-success hover:underline">Mark done</button>
+                {r.status === 'pending' && <button type="button" onClick={() => handleStatus(r.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
+                <button type="button" onClick={() => handleStatus(r.id, 'done')} className="text-sm text-success hover:underline">Mark done</button>
               </div>
             )}
           </div>

@@ -40,7 +40,7 @@ export default function TableReceiptsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ivory">Table Receipts</h1>
-        <button onClick={() => navigate('/admin/dashboard/orders')} className="text-sm text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={() => navigate('/admin/dashboard/orders')} className="text-sm text-ivory-dim hover:text-ivory">
           Back to Orders
         </button>
       </div>
@@ -54,7 +54,7 @@ export default function TableReceiptsPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tables.map((t) => (
-          <button
+          <button type="button"
             key={t.cardId}
             onClick={() => setSelectedCardId(t.cardId)}
             className="rounded-xl border border-ink-line p-5 text-start hover:border-brass/40"
@@ -127,7 +127,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
   if (printedResult) {
     return (
       <div className="space-y-4">
-        <button onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
+        <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
         <Section title={`Receipt for ${tableLabel || 'this table'}`}>
           {printedResult.printed ? (
             <p className="text-base text-success">Sent to the printer.</p>
@@ -137,7 +137,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
               dialog instead.
             </p>
           )}
-          <button onClick={onPrinted} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={onPrinted} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
             Done
           </button>
         </Section>
@@ -147,7 +147,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
+      <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
       <Section title={`Receipt for ${tableLabel || 'this table'}`}>
         <p className="text-base text-ivory-dim">
           Uncheck anything that shouldn't be on the printed receipt. This only changes what prints - it never removes
@@ -177,7 +177,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
           <div className="flex justify-between font-medium text-ivory"><span>Total</span><span className="text-brass">AED {subtotal.toFixed(2)}</span></div>
         </div>
         {error && <p className="text-base text-danger">{error}</p>}
-        <button
+        <button type="button"
           onClick={handlePrint}
           disabled={printing || finalItems.length === 0}
           className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"

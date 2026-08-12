@@ -16,7 +16,7 @@ export default function ThemeToggle({ onChange }: { onChange?: (mode: ThemeMode)
   }
 
   return (
-    <button
+    <button type="button"
       onClick={cycle}
       title={`Theme: ${LABELS[mode]} — click to change`}
       className="group flex items-center gap-2 rounded-full border border-brass/40 bg-ink-soft px-3.5 py-2

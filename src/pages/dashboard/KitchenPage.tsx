@@ -138,7 +138,7 @@ export default function KitchenPage() {
                 <p className="mt-2 text-sm text-brass/70">Waiting to fire: {heldCourses.join(', ')}</p>
               )}
               {order.note && <p className="mt-2 text-sm italic text-brass">Note: {order.note}</p>}
-              <button
+              <button type="button"
                 onClick={() => handleMarkReady(order.id)}
                 className="mt-4 w-full rounded-lg bg-brass px-3 py-2.5 text-base font-medium text-ink hover:opacity-90"
               >

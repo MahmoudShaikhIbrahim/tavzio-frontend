@@ -43,7 +43,7 @@ export default function DeliveryIntegrationPage() {
             Once you have a Deliverect account, click below to generate this business's connection ID - you'll enter
             that as the "External Location ID" when setting up this location in Deliverect's dashboard.
           </p>
-          <button onClick={handleConnect} disabled={connecting} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={handleConnect} disabled={connecting} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
             {connecting ? 'Generating...' : 'Generate connection ID'}
           </button>
         </div>

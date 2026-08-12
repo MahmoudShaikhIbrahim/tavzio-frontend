@@ -70,7 +70,7 @@ export function ToggleRow({ label, description, checked, onChange, disabled }: {
         <p className="text-base text-ivory">{label}</p>
         {description && <p className="text-sm text-ivory-dim">{description}</p>}
       </div>
-      <button
+      <button type="button"
         onClick={() => onChange(!checked)}
         disabled={disabled}
         className={`shrink-0 rounded-lg border px-3.5 py-2 text-base disabled:opacity-50 ${

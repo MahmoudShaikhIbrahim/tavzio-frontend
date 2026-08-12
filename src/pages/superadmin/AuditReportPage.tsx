@@ -41,7 +41,7 @@ export default function AuditReportPage() {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <button
+          <button type="button"
             onClick={handleIssue}
             disabled={generating}
             className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"

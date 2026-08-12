@@ -22,7 +22,7 @@ export default function ServicesManagementPage() {
     <Section
       title="Services"
       action={
-        <button
+        <button type="button"
           onClick={() => setShowForm((s) => !s)}
           className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >

@@ -24,7 +24,7 @@ export default function ContractPage() {
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button
+    <button type="button"
       onClick={onClick}
       className={`border-b-2 px-3 py-2.5 text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'}`}
     >
@@ -97,7 +97,7 @@ function ContractTab() {
     <Section
       title="Service Contract"
       action={
-        <button onClick={handleDownload} disabled={downloading} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+        <button type="button" onClick={handleDownload} disabled={downloading} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
           {downloading ? 'Downloading...' : 'Download PDF'}
         </button>
       }
@@ -131,7 +131,7 @@ function ContractTab() {
             I have read and agree to the terms above.
           </label>
           {error && <p className="text-base text-danger">{error}</p>}
-          <button
+          <button type="button"
             onClick={handleSign}
             disabled={signing}
             className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
@@ -200,7 +200,7 @@ function ReceiptsTab() {
                   Pay now
                 </a>
               )}
-              <button
+              <button type="button"
                 onClick={() => handleDownload(r)}
                 disabled={downloadingId === r.id}
                 className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"

@@ -82,7 +82,7 @@ export default function SignContractPage() {
     <div className="min-h-screen bg-[#141110] px-5 py-10">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="text-center">
-          <img src="/brand/logo-white.png" alt="Tavzio" className="mx-auto h-8 w-auto" />
+          <img src="/brand/logo-white.png" alt="Tavzio" className="mx-auto h-12 w-auto" style={{ filter: 'drop-shadow(0 0 14px rgba(184,146,90,0.28))' }} />
         </div>
 
         {activated && (
@@ -132,7 +132,7 @@ export default function SignContractPage() {
               I have read and agree to the terms above.
             </label>
             {error && <p className="text-base text-red-400">{error}</p>}
-            <button
+            <button type="button"
               onClick={handleSign}
               disabled={signing}
               className="w-full rounded-lg bg-[#b8925a] px-4 py-2.5 text-base font-medium text-[#141110] hover:opacity-90 disabled:opacity-50"

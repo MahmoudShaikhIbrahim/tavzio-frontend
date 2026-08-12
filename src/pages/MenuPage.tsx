@@ -234,7 +234,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         </div>
         <p className="font-display text-xl text-ivory">{t('orderSent')}</p>
         <p className="text-sm text-ivory-dim">{t('orderSentDesc')}</p>
-        <button
+        <button type="button"
           onClick={() => navigate(`/${slug}`)}
           className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
         >
@@ -252,7 +252,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         </div>
         <p className="font-display text-xl text-ivory">Please pay at the cashier</p>
         <p className="text-sm text-ivory-dim">Your order will be sent to the kitchen as soon as staff confirm your cash payment.</p>
-        <button
+        <button type="button"
           onClick={() => navigate(`/${slug}`)}
           className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
         >
@@ -291,7 +291,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       // without the card feeling cramped; tapping still opens the full
       // item detail with the description intact.
       return (
-        <button
+        <button type="button"
           key={`${item.id}-${item.category_id}`}
           onClick={() => submissionEnabled && orderable && setActiveItem(item)}
           disabled={submissionEnabled && !orderable}
@@ -331,7 +331,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       );
     }
     return (
-      <button
+      <button type="button"
         key={`${item.id}-${item.category_id}`}
         onClick={() => orderable && setActiveItem(item)}
         disabled={!orderable}
@@ -364,7 +364,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('menu')}</h1>
           <div className="flex items-center gap-2">
-            <button
+            <button type="button"
               onClick={toggleLayout}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:text-ivory"
               title={layoutMode === 'rows' ? 'Switch to grid view' : 'Switch to list view'}
@@ -384,7 +384,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           <div className="mt-4 -mx-6 flex gap-2 overflow-x-auto px-6 pb-1" style={{ scrollbarWidth: 'none' }}>
             {categories.map((cat) => (
               items.some((i) => i.category_id === cat.id) && (
-                <button
+                <button type="button"
                   key={cat.id}
                   onClick={() => scrollToCategory(cat.id)}
                   className="shrink-0 rounded-full border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass"
@@ -450,13 +450,13 @@ function MenuPageContent({ slug }: { slug: string }) {
             <div className="mb-2 max-h-40 space-y-1.5 overflow-y-auto text-sm">
               {cart.lines.map((l, i) => (
                 <div key={i} className="flex items-start justify-between text-ivory-dim">
-                  <button onClick={() => setEditingLineIndex(i)} className="flex-1 text-start hover:text-ivory">
+                  <button type="button" onClick={() => setEditingLineIndex(i)} className="flex-1 text-start hover:text-ivory">
                     <span>{l.quantity}× {l.name}{l.note ? ` (${l.note})` : ''}</span>
                     {l.selectedAddons.length > 0 && (
                       <span className="block text-xs text-brass/70">+ {l.selectedAddons.map((a) => a.name).join(', ')}</span>
                     )}
                   </button>
-                  <button onClick={() => cart.removeLine(i)} className="ms-2 shrink-0 text-danger">✕</button>
+                  <button type="button" onClick={() => cart.removeLine(i)} className="ms-2 shrink-0 text-danger">✕</button>
                 </div>
               ))}
             </div>
@@ -467,7 +467,7 @@ function MenuPageContent({ slug }: { slug: string }) {
               className="mb-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
             />
             {error && <p className="mb-2 text-sm text-danger">{error}</p>}
-            <button
+            <button type="button"
               onClick={handleSendOrderPressed}
               disabled={submitting}
               className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
@@ -485,21 +485,21 @@ function MenuPageContent({ slug }: { slug: string }) {
             <p className="mt-1 text-sm text-ivory-dim">This business requires payment before your order reaches the kitchen.</p>
             <p className="mt-3 text-sm text-brass">Total — {cart.total.toFixed(2)}</p>
             {error && <p className="mt-2 text-sm text-danger">{error}</p>}
-            <button
+            <button type="button"
               onClick={handlePayByCard}
               disabled={submitting}
               className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
             >
               {submitting ? t('sending') : 'Pay by card'}
             </button>
-            <button
+            <button type="button"
               onClick={handlePayInCash}
               disabled={submitting}
               className="mt-2 w-full rounded-lg border border-brass/40 px-4 py-3 font-medium text-brass hover:bg-brass/10 disabled:opacity-50"
             >
               Pay in cash
             </button>
-            <button
+            <button type="button"
               onClick={() => setShowCheckout(false)}
               disabled={submitting}
               className="mt-2 w-full rounded-lg px-4 py-2 text-sm text-ivory-dim"
@@ -571,9 +571,9 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
         )}
 
         <div className="mt-4 flex items-center gap-3">
-          <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-9 w-9 rounded-full border border-ink-line text-ivory">−</button>
+          <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-9 w-9 rounded-full border border-ink-line text-ivory">−</button>
           <span className="w-6 text-center text-ivory">{quantity}</span>
-          <button onClick={() => setQuantity((q) => q + 1)} className="h-9 w-9 rounded-full border border-ink-line text-ivory">+</button>
+          <button type="button" onClick={() => setQuantity((q) => q + 1)} className="h-9 w-9 rounded-full border border-ink-line text-ivory">+</button>
         </div>
 
         <input
@@ -583,7 +583,7 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
           className="mt-4 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
 
-        <button
+        <button type="button"
           onClick={() => onSave(quantity, note, selectedAddons)}
           className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink"
         >

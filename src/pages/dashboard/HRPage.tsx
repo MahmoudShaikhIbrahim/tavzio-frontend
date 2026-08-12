@@ -69,7 +69,7 @@ export default function HRPage() {
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button
+    <button type="button"
       onClick={onClick}
       className={`border-b-2 px-3 py-2.5 text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'}`}
     >
@@ -165,8 +165,8 @@ function DocumentsTab({ businessId }: { businessId: string }) {
                 )}
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <button onClick={() => handleView(d)} className="text-brass hover:underline">View</button>
-                <button onClick={() => handleDelete(d)} className="text-danger hover:underline">Delete</button>
+                <button type="button" onClick={() => handleView(d)} className="text-brass hover:underline">View</button>
+                <button type="button" onClick={() => handleDelete(d)} className="text-danger hover:underline">Delete</button>
               </div>
             </div>
           );
@@ -219,8 +219,8 @@ function CommissionTab({ businessId }: { businessId: string }) {
                         <option value="fixed_per_order">AED per order</option>
                       </select>
                       <input type="number" min={0} value={rateValue} onFocus={(e) => e.target.select()} onChange={(e) => setRateValue(Number(e.target.value))} className="w-20 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
-                      <button onClick={() => handleSave(s.id)} className="text-sm text-brass hover:underline">Save</button>
-                      <button onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">Cancel</button>
+                      <button type="button" onClick={() => handleSave(s.id)} className="text-sm text-brass hover:underline">Save</button>
+                      <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">Cancel</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 text-sm">
@@ -229,8 +229,8 @@ function CommissionTab({ businessId }: { businessId: string }) {
                       ) : (
                         <span className="text-ivory-dim">No commission set</span>
                       )}
-                      <button onClick={() => { setEditingId(s.id); setRateType('percentage'); setRateValue(0); }} className="text-brass hover:underline">Edit</button>
-                      {reportRow?.commissionType && <button onClick={() => handleClear(s.id)} className="text-danger hover:underline">Clear</button>}
+                      <button type="button" onClick={() => { setEditingId(s.id); setRateType('percentage'); setRateValue(0); }} className="text-brass hover:underline">Edit</button>
+                      {reportRow?.commissionType && <button type="button" onClick={() => handleClear(s.id)} className="text-danger hover:underline">Clear</button>}
                     </div>
                   )}
                 </div>
@@ -307,7 +307,7 @@ function TipsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="Tip Pooling" action={<button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Distribute tips</button>}>
+    <Section title="Tip Pooling" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Distribute tips</button>}>
       {showAdd && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-ink-line p-4">
           <div className="flex flex-wrap items-end gap-3">

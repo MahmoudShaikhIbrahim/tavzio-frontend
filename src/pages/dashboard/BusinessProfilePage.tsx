@@ -237,7 +237,7 @@ function AppearanceSection({ business, businessId, onSaved }: { business: AdminB
     <Section
       title="Appearance"
       action={
-        <button onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
           {saving ? 'Saving...' : 'Save'}
         </button>
       }

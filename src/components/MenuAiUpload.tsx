@@ -278,7 +278,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                   placeholder="Category name"
                   className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base font-medium text-ivory"
                 />
-                <button onClick={() => removeCategory(ci)} className="shrink-0 text-sm text-danger">Remove</button>
+                <button type="button" onClick={() => removeCategory(ci)} className="shrink-0 text-sm text-danger">Remove</button>
               </div>
 
               <div className="mt-3 space-y-3">
@@ -337,14 +337,14 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory"
                       />
                     </div>
-                    <button onClick={() => removeItem(ci, ii)} className="shrink-0 text-xs text-danger">Remove</button>
+                    <button type="button" onClick={() => removeItem(ci, ii)} className="shrink-0 text-xs text-danger">Remove</button>
                   </div>
                 ))}
-                <button onClick={() => addItem(ci)} className="text-sm text-brass hover:underline">+ Add item</button>
+                <button type="button" onClick={() => addItem(ci)} className="text-sm text-brass hover:underline">+ Add item</button>
               </div>
             </div>
           ))}
-          <button onClick={addCategory} className="text-sm text-brass hover:underline">+ Add category</button>
+          <button type="button" onClick={addCategory} className="text-sm text-brass hover:underline">+ Add category</button>
         </div>
 
         {error && <p className="text-sm text-danger">{error}</p>}
@@ -379,7 +379,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
           {files.map((f, i) => (
             <div key={i} className="flex items-center justify-between rounded-lg border border-ink-line bg-ink-soft px-4 py-2 text-sm">
               <span className="text-ivory">{f.name}</span>
-              <button onClick={() => removeFile(i)} className="text-danger">Remove</button>
+              <button type="button" onClick={() => removeFile(i)} className="text-danger">Remove</button>
             </div>
           ))}
         </div>

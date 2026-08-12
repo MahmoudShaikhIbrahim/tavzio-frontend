@@ -35,7 +35,7 @@ export default function ClockWidget() {
   if (!loaded || !businessId) return null;
 
   return (
-    <button
+    <button type="button"
       onClick={handleToggle}
       disabled={busy}
       className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm disabled:opacity-50 ${

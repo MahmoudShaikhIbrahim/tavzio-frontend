@@ -93,7 +93,7 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
           />
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
-        <button onClick={handleOpen} disabled={saving} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleOpen} disabled={saving} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
           {saving ? 'Opening...' : 'Open till & start selling'}
         </button>
       </Section>
@@ -324,7 +324,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       <div className="mx-auto max-w-sm space-y-4 text-center">
         <p className="font-display text-2xl text-ivory">Order sent to kitchen</p>
         <p className="text-ivory-dim">AED {confirmed.total.toFixed(2)} · paid by {confirmed.method}</p>
-        <button onClick={() => setConfirmed(null)} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setConfirmed(null)} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">
           New order
         </button>
       </div>
@@ -340,7 +340,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">POS Terminal</h1>
-          <button onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">Close till</button>
+          <button type="button" onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">Close till</button>
         </div>
         {(isOffline || queuedCount > 0) && (
           <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${isOffline ? 'border-danger/40 text-danger' : 'border-warning/40 text-warning'}`}>
@@ -351,7 +351,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         )}
         <div className="flex gap-2 overflow-x-auto border-b border-ink-line pb-2">
           {categories.map((c) => (
-            <button
+            <button type="button"
               key={c.id}
               onClick={() => setActiveCategory(c.id)}
               className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm ${activeCategory === c.id ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
@@ -362,7 +362,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {visibleItems.map((item) => (
-            <button
+            <button type="button"
               key={item.id}
               onClick={() => addToCart(item)}
               className="overflow-hidden rounded-lg border border-ink-line text-left hover:border-brass"
@@ -399,9 +399,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               <div className="flex items-center justify-between gap-2 text-base">
                 <span className="text-ivory">{line.name}</span>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => changeQty(line.menuItemId, -1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">-</button>
+                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">-</button>
                   <span className="w-5 text-center text-ivory">{line.quantity}</span>
-                  <button onClick={() => changeQty(line.menuItemId, 1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">+</button>
+                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">+</button>
                   <span className="w-16 text-right text-brass">{(line.price * line.quantity).toFixed(2)}</span>
                 </div>
               </div>
@@ -482,7 +482,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             {roomFolio ? (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-ivory">Room {roomFolio.roomNumber}{roomFolio.guestName ? ` · ${roomFolio.guestName}` : ''}</span>
-                <button onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">Change</button>
+                <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">Change</button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -493,7 +493,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
                   placeholder="Room number"
                   className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
                 />
-                <button onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+                <button type="button" onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
                   {lookingUpRoom ? 'Looking up...' : 'Find'}
                 </button>
               </div>
@@ -504,7 +504,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
 
         <div className="mt-4 space-y-2">
           {isHotel && (
-            <button
+            <button type="button"
               onClick={handleChargeToRoom}
               disabled={checkingOut || cart.length === 0 || !roomFolio}
               className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
@@ -512,13 +512,13 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               Charge to Room{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
-          <button onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
             Charge - Cash
           </button>
-          <button onClick={() => handleCharge('card')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
+          <button type="button" onClick={() => handleCharge('card')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
             Charge - Card (external machine)
           </button>
-          <button onClick={() => handleCharge('card_online')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
+          <button type="button" onClick={() => handleCharge('card_online')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
             Charge - Card online (real gateway)
           </button>
         </div>
@@ -559,7 +559,7 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
             Variance: {variance >= 0 ? '+' : ''}{variance.toFixed(2)} AED
           </p>
         </div>
-        <button onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">Done</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">Done</button>
       </div>
     );
   }
@@ -576,10 +576,10 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
         <div className="flex gap-2">
-          <button onClick={handleClose} disabled={saving} className="flex-1 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={handleClose} disabled={saving} className="flex-1 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
             {saving ? 'Closing...' : 'Close till'}
           </button>
-          <button onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim">Cancel</button>
+          <button type="button" onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim">Cancel</button>
         </div>
       </Section>
     </div>
