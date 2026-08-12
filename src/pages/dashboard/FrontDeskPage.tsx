@@ -5,9 +5,9 @@ import {
   checkInReservation, checkOutReservation, cancelReservation,
   getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
   listCards, updateCard, getTourismDirhamReport, type TourismDirhamCharge,
-  listBookingGroups, createBookingGroup, type HotelBookingGroup,
+  listBookingGroups, createBookingGroup,
 } from '../../lib/authApi';
-import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card } from '../../types';
+import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card, HotelBookingGroup } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
 export default function FrontDeskPage() {
