@@ -135,7 +135,6 @@ export default function HotelGuestPortalPage() {
   if (!data) return <div className="flex min-h-screen items-center justify-center bg-ink px-6 text-center text-ivory-dim">This room isn't available right now.</div>;
 
   const themeVars = buildBusinessThemeVars(data.business.theme?.customerBackground, data.business.theme?.customerButton);
-  const roomServiceOutlets = outlets.filter((o) => o.outletType !== 'restaurant');
 
   return (
     <div style={themeVars} className="min-h-screen bg-ink px-5 py-8">

@@ -11,7 +11,7 @@ import type {
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
   Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead, TillSession, FloorTable, WaitlistEntry,
-  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet,
+  HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet, HotelBookingGroup,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -80,7 +80,8 @@ export function listTillSessions(businessId: string) {
 // --- POS terminal orders ---
 
 export function createPosOrder(businessId: string, payload: {
-  tableLabel: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string }[]; note?: string; paymentMethod: 'cash' | 'card' | 'card_online' | 'other'; chargeToFolioId?: string;
+  tableLabel: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; paymentMethod: 'cash' | 'card' | 'card_online' | 'other'; chargeToFolioId?: string;
+  discountType?: 'percentage' | 'fixed'; discountValue?: number; discountReason?: string;
 }) {
   return authFetch<{ order: OrderRow; items: OrderItemRow[]; redirectUrl?: string; transactionId?: string; awaitingPayment?: boolean }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });
 }
@@ -89,13 +90,17 @@ export function confirmPosCardPayment(businessId: string, transactionId: string)
   return authFetch<{ status: string; order?: OrderRow }>(`/api/businesses/${businessId}/orders/pos/confirm-card-payment`, { method: 'POST', body: JSON.stringify({ transactionId }) });
 }
 
+export function fireCourse(businessId: string, orderId: string, course: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/orders/${orderId}/fire-course`, { method: 'POST', body: JSON.stringify({ course }) });
+}
+
 // --- Table management ---
 
 export function listFloorTables(businessId: string) {
   return authFetch<FloorTable[]>(`/api/businesses/${businessId}/tables-floor`);
 }
 
-export function updateTableStatus(businessId: string, cardId: string, payload: { tableStatus?: string; seatCount?: number }) {
+export function updateTableStatus(businessId: string, cardId: string, payload: { tableStatus?: 'available' | 'occupied' | 'reserved' | 'cleaning'; seatCount?: number }) {
   return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}`, { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
@@ -159,11 +164,14 @@ export function listGuests(businessId: string, search?: string) {
 export function createGuest(businessId: string, payload: { name: string; email?: string; phone?: string; idDocumentType?: string; idDocumentNumber?: string; nationality?: string; notes?: string }) {
   return authFetch<HotelGuest>(`/api/businesses/${businessId}/hotel/guests`, { method: 'POST', body: JSON.stringify(payload) });
 }
+export function updateGuest(businessId: string, guestId: string, payload: Partial<{ name: string; email: string; phone: string; idDocumentType: string; idDocumentNumber: string; nationality: string; notes: string }>) {
+  return authFetch<HotelGuest>(`/api/businesses/${businessId}/hotel/guests/${guestId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
 
 export function listReservations(businessId: string, status?: string) {
   return authFetch<HotelReservation[]>(`/api/businesses/${businessId}/hotel/reservations${status ? `?status=${status}` : ''}`);
 }
-export function createReservation(businessId: string, payload: { guestId: string; roomId?: string | null; checkInDate: string; checkOutDate: string; adults?: number; children?: number; source?: string; rateAed?: number }) {
+export function createReservation(businessId: string, payload: { guestId: string; roomId?: string | null; checkInDate: string; checkOutDate: string; adults?: number; children?: number; source?: string; rateAed?: number; bookingGroupId?: string | null }) {
   return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations`, { method: 'POST', body: JSON.stringify(payload) });
 }
 export function checkInReservation(businessId: string, reservationId: string, roomId?: string) {
@@ -171,6 +179,21 @@ export function checkInReservation(businessId: string, reservationId: string, ro
 }
 export function checkOutReservation(businessId: string, reservationId: string) {
   return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/checkout`, { method: 'POST' });
+}
+
+// --- Hotel booking groups (block/group bookings - a wedding, a corporate block) ---
+
+export function listBookingGroups(businessId: string) {
+  return authFetch<HotelBookingGroup[]>(`/api/businesses/${businessId}/hotel/booking-groups`);
+}
+export function createBookingGroup(businessId: string, payload: { groupName: string; contactName?: string; contactPhone?: string; contactEmail?: string; notes?: string }) {
+  return authFetch<HotelBookingGroup>(`/api/businesses/${businessId}/hotel/booking-groups`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateBookingGroup(businessId: string, groupId: string, payload: Partial<{ groupName: string; contactName: string; contactPhone: string; contactEmail: string; notes: string }>) {
+  return authFetch<HotelBookingGroup>(`/api/businesses/${businessId}/hotel/booking-groups/${groupId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteBookingGroup(businessId: string, groupId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/booking-groups/${groupId}`, { method: 'DELETE' });
 }
 export function cancelReservation(businessId: string, reservationId: string) {
   return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/cancel`, { method: 'POST' });
@@ -186,6 +209,19 @@ export function getFoliosByReservation(businessId: string, reservationId: string
 export function lookupFolioByRoom(businessId: string, roomNumber: string) {
   return authFetch<{ folioId: string; roomNumber: string; guestName: string }>(
     `/api/businesses/${businessId}/hotel/folios/lookup?roomNumber=${encodeURIComponent(roomNumber)}`
+  );
+}
+export interface TourismDirhamCharge {
+  id: string; description: string; amount_aed: number; created_at: string;
+  hotel_folios?: { hotel_reservations?: { hotel_rooms?: { room_number: string }; hotel_guests?: { name: string } } };
+}
+export function getTourismDirhamReport(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<{ charges: TourismDirhamCharge[]; total: number; count: number }>(
+    `/api/businesses/${businessId}/hotel/tourism-dirham-report${qs ? `?${qs}` : ''}`
   );
 }
 
@@ -410,6 +446,77 @@ export function inviteStaff(businessId: string, name: string, email: string) {
     method: 'POST',
     body: JSON.stringify({ name, email }),
   });
+}
+
+// getMyOpenShift returns null (a bare 204/empty-body-shaped response) when
+// nothing's open - authFetch<StaffShift | null> models that honestly
+// rather than pretending there's always a shift object.
+export interface StaffShift {
+  id: string; business_id: string; staff_id: string; clock_in_at: string; clock_out_at: string | null;
+  hours?: number | null; profiles?: { name: string };
+}
+export function getMyOpenShift(businessId: string) {
+  return authFetch<StaffShift | null>(`/api/businesses/${businessId}/staff-shifts/mine`);
+}
+export function clockIn(businessId: string) {
+  return authFetch<StaffShift>(`/api/businesses/${businessId}/staff-shifts/clock-in`, { method: 'POST' });
+}
+export function clockOut(businessId: string) {
+  return authFetch<StaffShift>(`/api/businesses/${businessId}/staff-shifts/clock-out`, { method: 'POST' });
+}
+export function listStaffShifts(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<StaffShift[]>(`/api/businesses/${businessId}/staff-shifts${qs ? `?${qs}` : ''}`);
+}
+
+// --- HR module (owner-only: staff documents, commission, tip pooling) ---
+
+export interface StaffDocument {
+  id: string; business_id: string; staff_id: string; doc_type: string; file_url: string;
+  label: string; expiry_date: string | null; created_at: string; profiles?: { name: string };
+}
+export function listStaffDocuments(businessId: string) {
+  return authFetch<StaffDocument[]>(`/api/businesses/${businessId}/hr/documents`);
+}
+export function uploadStaffDocument(businessId: string, payload: { staffId: string; docType: string; fileUrl: string; label?: string; expiryDate?: string | null }) {
+  return authFetch<StaffDocument>(`/api/businesses/${businessId}/hr/documents`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function deleteStaffDocument(businessId: string, documentId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hr/documents/${documentId}`, { method: 'DELETE' });
+}
+
+export function setStaffCommission(businessId: string, staffId: string, payload: { commissionType: 'percentage' | 'fixed_per_order' | null; commissionRate?: number }) {
+  return authFetch<{ id: string; name: string; commission_type: string | null; commission_rate: number | null }>(
+    `/api/businesses/${businessId}/hr/commission/${staffId}`, { method: 'PATCH', body: JSON.stringify(payload) }
+  );
+}
+export interface CommissionReportRow {
+  staffId: string; name: string; commissionType: string; commissionRate: number; orderCount: number; salesTotal: number; commission: number;
+}
+export function getCommissionReport(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<{ from: string; to: string; report: CommissionReportRow[]; totalCommission: number }>(
+    `/api/businesses/${businessId}/hr/commission-report${qs ? `?${qs}` : ''}`
+  );
+}
+
+export interface TipDistribution {
+  id: string; business_id: string; period_start: string; period_end: string; total_amount_aed: number; method: 'even' | 'by_hours'; created_at: string;
+  tip_distribution_shares?: { id: string; staff_id: string; amount_aed: number; profiles?: { name: string } }[];
+}
+export function listTipDistributions(businessId: string) {
+  return authFetch<TipDistribution[]>(`/api/businesses/${businessId}/hr/tip-distributions`);
+}
+export function createTipDistribution(businessId: string, payload: { periodStart: string; periodEnd: string; totalAmountAed: number; method: 'even' | 'by_hours'; staffIds: string[] }) {
+  return authFetch<{ distribution: TipDistribution; shares: { staffId: string; amount: number }[] }>(
+    `/api/businesses/${businessId}/hr/tip-distributions`, { method: 'POST', body: JSON.stringify(payload) }
+  );
 }
 
 export function setStaffActive(businessId: string, userId: string, isActive: boolean) {

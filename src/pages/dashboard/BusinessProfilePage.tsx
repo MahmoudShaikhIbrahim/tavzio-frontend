@@ -38,12 +38,13 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
   const [logoUrl, setLogoUrl] = useState(business.logo_url);
   const [coverImageUrl, setCoverImageUrl] = useState(business.cover_image_url);
   const [trn, setTrn] = useState(business.trn || '');
+  const [tourismDirhamRateAed, setTourismDirhamRateAed] = useState(business.tourism_dirham_rate_aed || 0);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl, trn } as Partial<AdminBusiness>);
+    const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl, trn, tourismDirhamRateAed } as Partial<AdminBusiness>);
     onSaved(updated);
     setSaving(false);
   }
@@ -63,6 +64,19 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
           <Field label="TRN (optional - shown on your receipts, needed to reclaim VAT)">
             <input value={trn} onChange={(e) => setTrn(e.target.value)} placeholder="100000000000003" className="w-56 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
           </Field>
+          {category === 'hotel' && (
+            <Field label="Tourism Dirham fee, per room per night (AED)">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                onFocus={(e) => e.target.select()}
+                value={tourismDirhamRateAed}
+                onChange={(e) => setTourismDirhamRateAed(Number(e.target.value))}
+                className="w-56 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
+              />
+            </Field>
+          )}
         </div>
         <Field label="Description">
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} className={`${inputClass} max-w-2xl`} />

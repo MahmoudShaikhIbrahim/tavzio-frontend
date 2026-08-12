@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { listStaff, inviteStaff, setStaffActive, setStaffSections, resetAccountPassword } from '../../lib/authApi';
+import { listStaff, inviteStaff, setStaffActive, setStaffSections, resetAccountPassword, listStaffShifts, type StaffShift } from '../../lib/authApi';
 import type { StaffMember } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -122,7 +122,74 @@ export default function StaffPage() {
           <div className="self-end"><PrimaryButton disabled={saving}>{saving ? 'Adding...' : 'Add staff'}</PrimaryButton></div>
         </form>
       </Section>
+
+      <ShiftReportSection businessId={businessId} />
     </div>
+  );
+}
+
+// Hours worked, per staff member, over a chosen range - clock-in/out is
+// only useful to an owner if it turns into an actual report they can
+// read at a glance and hand to payroll.
+function ShiftReportSection({ businessId }: { businessId?: string }) {
+  const [shifts, setShifts] = useState<StaffShift[]>([]);
+  const [from, setFrom] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0, 10);
+  });
+  const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10));
+
+  function reload() {
+    if (!businessId) return;
+    listStaffShifts(businessId, { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` }).then(setShifts);
+  }
+  useEffect(reload, [businessId, from, to]);
+
+  if (!businessId) return null;
+
+  const totalsByStaff = shifts.reduce<Record<string, { name: string; hours: number }>>((acc, s) => {
+    const name = s.profiles?.name || 'Unknown';
+    if (!acc[s.staff_id]) acc[s.staff_id] = { name, hours: 0 };
+    acc[s.staff_id].hours += s.hours || 0;
+    return acc;
+  }, {});
+
+  return (
+    <Section
+      title="Time Clock"
+      action={
+        <div className="flex items-center gap-2">
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+          <span className="text-sm text-ivory-dim">to</span>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+        </div>
+      }
+    >
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Object.values(totalsByStaff).map((t) => (
+          <div key={t.name} className="rounded-lg border border-ink-line px-4 py-3">
+            <p className="text-base text-ivory">{t.name}</p>
+            <p className="text-sm text-brass">{t.hours.toFixed(1)} hrs</p>
+          </div>
+        ))}
+        {Object.keys(totalsByStaff).length === 0 && <p className="text-ivory-dim">No shifts in this range.</p>}
+      </div>
+
+      <div className="space-y-2">
+        {shifts.map((s) => (
+          <div key={s.id} className="flex items-center justify-between text-sm text-ivory-dim">
+            <span>{s.profiles?.name || 'Unknown'}</span>
+            <span>
+              {new Date(s.clock_in_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
+              {' → '}
+              {s.clock_out_at ? new Date(s.clock_out_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : 'still clocked in'}
+            </span>
+            <span className="text-ivory">{s.hours != null ? `${s.hours.toFixed(2)} hrs` : '—'}</span>
+          </div>
+        ))}
+      </div>
+    </Section>
   );
 }
 

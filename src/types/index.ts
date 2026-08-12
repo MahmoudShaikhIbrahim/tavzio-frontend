@@ -110,6 +110,14 @@ export interface BusinessFeatures {
     enabled: boolean;
     blockOrdersOnLowStock: boolean;
   };
+  // Owner-only HR module, off by default - each sub-module independent
+  // so a business can turn on just documents, or just commission, etc.
+  hr?: {
+    enabled: boolean;
+    documents: boolean;
+    commission: boolean;
+    tips: boolean;
+  };
 }
 
 // Business appearance customization - "1 click, 1 color" for
@@ -207,6 +215,7 @@ export interface AdminBusiness {
   ordering_paused: boolean;
   notification_settings: NotificationSettings;
   trn: string;
+  tourism_dirham_rate_aed: number;
   created_at: string;
 }
 
@@ -367,8 +376,10 @@ export interface HotelReservation {
   actual_check_in_at: string | null;
   actual_check_out_at: string | null;
   notes: string;
+  booking_group_id: string | null;
   hotel_guests?: { name: string; phone: string; email: string };
   hotel_rooms?: { room_number: string; room_type: string };
+  hotel_booking_groups?: { id: string; group_name: string } | null;
 }
 
 export interface HotelFolioCharge {
@@ -391,6 +402,18 @@ export interface HotelFolio {
   charges: HotelFolioCharge[];
   balance: number;
   hotel_reservations?: { check_in_date: string; check_out_date: string; hotel_guests: { name: string }; hotel_rooms: { room_number: string } };
+}
+
+export interface HotelBookingGroup {
+  id: string;
+  business_id: string;
+  group_name: string;
+  contact_name: string;
+  contact_phone: string;
+  contact_email: string;
+  notes: string;
+  created_at: string;
+  hotel_reservations?: { id: string; status: string; check_in_date: string; check_out_date: string; hotel_rooms?: { room_number: string }; hotel_guests?: { name: string } }[];
 }
 
 export interface HotelOutletItem {
@@ -561,6 +584,9 @@ export interface OrderItemRow {
   voided: boolean;
   addons: OrderItemAddonSnapshot[];
   addon_total: number;
+  course: string;
+  course_status: 'held' | 'fired';
+  fired_at: string | null;
 }
 
 export interface OrderRow {

@@ -14,6 +14,7 @@ interface CartLine {
   name: string;
   price: number;
   quantity: number;
+  course: string;
 }
 
 export default function POSTerminalPage() {
@@ -208,22 +209,52 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     setCart((prev) => {
       const existing = prev.find((l) => l.menuItemId === item.id);
       if (existing) return prev.map((l) => (l.menuItemId === item.id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...prev, { menuItemId: item.id, name: item.name, price: item.price, quantity: 1 }];
+      return [...prev, { menuItemId: item.id, name: item.name, price: item.price, quantity: 1, course: '' }];
     });
+  }
+
+  function setLineCourse(menuItemId: string, course: string) {
+    setCart((prev) => prev.map((l) => (l.menuItemId === menuItemId ? { ...l, course } : l)));
   }
 
   function changeQty(menuItemId: string, delta: number) {
     setCart((prev) => prev.map((l) => (l.menuItemId === menuItemId ? { ...l, quantity: Math.max(0, l.quantity + delta) } : l)).filter((l) => l.quantity > 0));
   }
 
-  const cartTotal = cart.reduce((sum, l) => sum + l.price * l.quantity, 0);
+  const [discountType, setDiscountType] = useState<'' | 'percentage' | 'fixed'>('');
+  const [discountValue, setDiscountValue] = useState(0);
+  const [discountReason, setDiscountReason] = useState('');
+
+  const cartSubtotal = cart.reduce((sum, l) => sum + l.price * l.quantity, 0);
+  const discountAmount = discountType === 'percentage'
+    ? Math.round(cartSubtotal * (Math.min(100, Math.max(0, discountValue)) / 100) * 100) / 100
+    : discountType === 'fixed'
+      ? Math.min(cartSubtotal, Math.max(0, discountValue))
+      : 0;
+  const cartTotal = Math.max(0, cartSubtotal - discountAmount);
   const visibleItems = items.filter((i) => i.category_id === activeCategory);
+
+  function resetCartState() {
+    setCart([]);
+    setTableLabel('Walk-in');
+    setRoomFolio(null);
+    setRoomNumber('');
+    setDiscountType('');
+    setDiscountValue(0);
+    setDiscountReason('');
+  }
 
   async function handleCharge(paymentMethod: 'cash' | 'card' | 'card_online' | 'other') {
     if (cart.length === 0) return;
+    if (discountType && !discountReason.trim()) { setError('Enter a reason for the discount/comp'); return; }
     setCheckingOut(true);
     setError('');
-    const payload = { tableLabel, items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })), paymentMethod };
+    const payload = {
+      tableLabel,
+      items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
+      paymentMethod,
+      ...(discountType ? { discountType, discountValue, discountReason } : {}),
+    };
 
     // card_online is a real gateway charge - it can't be queued offline
     // (there's no gateway to reach), and it redirects to a hosted
@@ -249,10 +280,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       if (!navigator.onLine) throw new Error('offline');
       await createPosOrder(businessId, payload);
       setConfirmed({ total: cartTotal, method: paymentMethod });
-      setCart([]);
-      setTableLabel('Walk-in');
-      setRoomFolio(null);
-      setRoomNumber('');
+      resetCartState();
     } catch {
       // Genuinely offline (or the request failed to even reach the
       // server) - never block the sale over it. Save it locally and
@@ -260,10 +288,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       queueOrder({ businessId, ...payload });
       setQueuedCount(getQueue().length);
       setConfirmed({ total: cartTotal, method: `${paymentMethod} (saved offline - will sync)` });
-      setCart([]);
-      setTableLabel('Walk-in');
-      setRoomFolio(null);
-      setRoomNumber('');
+      resetCartState();
     } finally {
       setCheckingOut(false);
     }
@@ -274,20 +299,19 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   // a folio charge always needs a live folio to attach to.
   async function handleChargeToRoom() {
     if (cart.length === 0 || !roomFolio) return;
+    if (discountType && !discountReason.trim()) { setError('Enter a reason for the discount/comp'); return; }
     setCheckingOut(true);
     setError('');
     try {
       await createPosOrder(businessId, {
         tableLabel,
-        items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })),
+        items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
         paymentMethod: 'other',
         chargeToFolioId: roomFolio.folioId,
+        ...(discountType ? { discountType, discountValue, discountReason } : {}),
       });
       setConfirmed({ total: cartTotal, method: `charged to Room ${roomFolio.roomNumber}` });
-      setCart([]);
-      setTableLabel('Walk-in');
-      setRoomFolio(null);
-      setRoomNumber('');
+      resetCartState();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not charge to room');
     } finally {
@@ -341,10 +365,24 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             <button
               key={item.id}
               onClick={() => addToCart(item)}
-              className="rounded-lg border border-ink-line p-3 text-left hover:border-brass"
+              className="overflow-hidden rounded-lg border border-ink-line text-left hover:border-brass"
             >
-              <p className="text-base text-ivory">{item.name}</p>
-              <p className="text-sm text-brass">AED {item.price.toFixed(2)}</p>
+              {/* Photo recognition matters at the counter - a busy
+                  cashier reads a picture far faster than a name, which is
+                  exactly what a plain text tile made slower. Falls back
+                  to a plain tile only if this item genuinely has no
+                  photo uploaded yet. */}
+              {item.image_url ? (
+                <img src={item.image_url} alt={item.name} className="h-20 w-full object-cover sm:h-24" loading="lazy" />
+              ) : (
+                <div className="flex h-20 w-full items-center justify-center bg-ink-soft text-ivory-dim/40 sm:h-24">
+                  <span className="text-2xl">🍽</span>
+                </div>
+              )}
+              <div className="p-2.5">
+                <p className="text-sm text-ivory line-clamp-1">{item.name}</p>
+                <p className="text-sm text-brass">AED {item.price.toFixed(2)}</p>
+              </div>
             </button>
           ))}
           {visibleItems.length === 0 && <p className="text-ivory-dim">No items in this category.</p>}
@@ -355,23 +393,86 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         <Field label="Table / order label">
           <input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} className={inputClass} placeholder="Walk-in, Phone #3, Table 5..." />
         </Field>
-        <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">
+        <div className="mt-4 max-h-96 space-y-1.5 overflow-y-auto">
           {cart.map((line) => (
-            <div key={line.menuItemId} className="flex items-center justify-between gap-2 text-base">
-              <span className="text-ivory">{line.name}</span>
-              <div className="flex items-center gap-2">
-                <button onClick={() => changeQty(line.menuItemId, -1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">-</button>
-                <span className="w-5 text-center text-ivory">{line.quantity}</span>
-                <button onClick={() => changeQty(line.menuItemId, 1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">+</button>
-                <span className="w-16 text-right text-brass">{(line.price * line.quantity).toFixed(2)}</span>
+            <div key={line.menuItemId} className="space-y-1 border-b border-ink-line/50 pb-1.5">
+              <div className="flex items-center justify-between gap-2 text-base">
+                <span className="text-ivory">{line.name}</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => changeQty(line.menuItemId, -1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">-</button>
+                  <span className="w-5 text-center text-ivory">{line.quantity}</span>
+                  <button onClick={() => changeQty(line.menuItemId, 1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">+</button>
+                  <span className="w-16 text-right text-brass">{(line.price * line.quantity).toFixed(2)}</span>
+                </div>
               </div>
+              {/* Optional - leaving this on "Fire now" (the default) fires
+                  the item immediately, same as before this existed. Only
+                  matters for full-service tables holding mains back until
+                  starters are cleared. */}
+              <select
+                value={line.course}
+                onChange={(e) => setLineCourse(line.menuItemId, e.target.value)}
+                className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory-dim"
+              >
+                <option value="">Fire now</option>
+                <option value="Starter">Hold: Starter</option>
+                <option value="Main">Hold: Main</option>
+                <option value="Dessert">Hold: Dessert</option>
+              </select>
             </div>
           ))}
           {cart.length === 0 && <p className="text-ivory-dim">Cart is empty.</p>}
         </div>
-        <div className="mt-4 flex justify-between border-t border-ink-line pt-3 text-lg">
-          <span className="text-ivory">Total</span>
-          <span className="text-brass">AED {cartTotal.toFixed(2)}</span>
+        <div className="mt-4 space-y-2 rounded-lg border border-ink-line p-3">
+          <div className="flex items-center gap-2">
+            <select
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as '' | 'percentage' | 'fixed')}
+              className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+            >
+              <option value="">No discount</option>
+              <option value="percentage">% off</option>
+              <option value="fixed">AED off</option>
+            </select>
+            {discountType && (
+              <input
+                type="number"
+                min={0}
+                max={discountType === 'percentage' ? 100 : undefined}
+                value={discountValue}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setDiscountValue(Number(e.target.value))}
+                className="w-20 rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+              />
+            )}
+          </div>
+          {discountType && (
+            <input
+              value={discountReason}
+              onChange={(e) => setDiscountReason(e.target.value)}
+              placeholder="Reason (required - e.g. regular customer, kitchen delay)"
+              className="w-full rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory placeholder:text-ivory-dim/60"
+            />
+          )}
+        </div>
+
+        <div className="mt-3 space-y-1 border-t border-ink-line pt-3">
+          {discountAmount > 0 && (
+            <>
+              <div className="flex justify-between text-sm text-ivory-dim">
+                <span>Subtotal</span>
+                <span>AED {cartSubtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-danger">
+                <span>Discount</span>
+                <span>−AED {discountAmount.toFixed(2)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between text-lg">
+            <span className="text-ivory">Total</span>
+            <span className="text-brass">AED {cartTotal.toFixed(2)}</span>
+          </div>
         </div>
         {error && <p className="mt-2 text-base text-danger">{error}</p>}
 

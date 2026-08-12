@@ -51,6 +51,7 @@ import FrontDeskPage from './pages/dashboard/FrontDeskPage';
 import HousekeepingPage from './pages/dashboard/HousekeepingPage';
 import ExternalHotelSystemsPage from './pages/dashboard/ExternalHotelSystemsPage';
 import HotelOutletsPage from './pages/dashboard/HotelOutletsPage';
+import HRPage from './pages/dashboard/HRPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
 import ChangePasswordPage from './pages/dashboard/ChangePasswordPage';
@@ -125,6 +126,7 @@ export default function App() {
             <Route path="housekeeping" element={<HousekeepingPage />} />
             <Route path="settings/external-hotel-systems" element={<ExternalHotelSystemsPage />} />
             <Route path="settings/hotel-outlets" element={<HotelOutletsPage />} />
+            <Route path="settings/hr" element={<HRPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />
             <Route path="settings/change-password" element={<ChangePasswordPage />} />

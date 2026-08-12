@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
-  voidOrderItem, clearTable, recordManualPayment,
+  voidOrderItem, clearTable, recordManualPayment, fireCourse,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
   getPaymentIntegration,
   type RequestRow, type CashPendingItem,
@@ -324,6 +324,31 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   const notes = orders.filter((o) => o.note).map((o) => o.note as string);
   const syncIssue = orders.find((o) => o.pos_sync_status === 'failed');
 
+  // Held courses across every order at this table - grouped by course
+  // name since "fire the mains" should release every held main at the
+  // table in one tap, not once per separate order.
+  const heldByCourse = new Map<string, { orderId: string; count: number }[]>();
+  for (const order of orders) {
+    for (const item of order.order_items) {
+      if (item.voided || item.course_status !== 'held' || !item.course) continue;
+      const list = heldByCourse.get(item.course) || [];
+      const existing = list.find((e) => e.orderId === order.id);
+      if (existing) existing.count += 1;
+      else list.push({ orderId: order.id, count: 1 });
+      heldByCourse.set(item.course, list);
+    }
+  }
+  const [firing, setFiring] = useState<string | null>(null);
+  async function handleFireCourse(course: string, orderIds: string[]) {
+    setFiring(course);
+    try {
+      await Promise.all(orderIds.map((id) => fireCourse(businessId, id, course)));
+      onChange();
+    } finally {
+      setFiring(null);
+    }
+  }
+
   async function handleClearTable() {
     if (!cardId) return;
     if (!confirm(`Clear ${table}? This voids everything currently unpaid at this table.`)) return;
@@ -396,10 +421,32 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
       </div>
 
       <div className="space-y-3 text-lg">
+        {heldByCourse.size > 0 && (
+          <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink-soft p-2.5">
+            {[...heldByCourse.entries()].map(([course, entries]) => {
+              const count = entries.reduce((s, e) => s + e.count, 0);
+              return (
+                <div key={course} className="flex items-center justify-between text-sm">
+                  <span className="text-ivory-dim">{course} held ({count})</span>
+                  <button
+                    onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
+                    disabled={firing === course}
+                    className="rounded-lg bg-brass px-3 py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                  >
+                    {firing === course ? 'Firing...' : `Fire ${course}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {allItems.map(({ item, order }) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
             <div>
               <span className="text-ivory">{item.quantity}×</span> {item.item_name}
+              {item.course_status === 'held' && (
+                <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Held: {item.course}</span>
+              )}
               {item.cash_pending && (
                 <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">Cash pending</span>
               )}

@@ -4,7 +4,8 @@ import {
   listRooms, createRoom, listGuests, createGuest, listReservations, createReservation,
   checkInReservation, checkOutReservation, cancelReservation,
   getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
-  listCards, updateCard,
+  listCards, updateCard, getTourismDirhamReport, type TourismDirhamCharge,
+  listBookingGroups, createBookingGroup, type HotelBookingGroup,
 } from '../../lib/authApi';
 import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
@@ -12,7 +13,7 @@ import { Section, Field, inputClass } from '../../components/ui';
 export default function FrontDeskPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
-  const [tab, setTab] = useState<'reservations' | 'rooms'>('reservations');
+  const [tab, setTab] = useState<'reservations' | 'rooms' | 'groups' | 'tourism-dirham'>('reservations');
   const [openFolioForReservation, setOpenFolioForReservation] = useState<string | null>(null);
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
@@ -25,14 +26,16 @@ export default function FrontDeskPage() {
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">Front Desk</h1>
       <div className="flex gap-2 border-b border-ink-line">
-        {(['reservations', 'rooms'] as const).map((t) => (
+        {(['reservations', 'rooms', 'groups', 'tourism-dirham'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t}
+            {t === 'tourism-dirham' ? 'Tourism Dirham' : t}
           </button>
         ))}
       </div>
       {tab === 'reservations' && <ReservationsTab businessId={businessId} onOpenFolio={setOpenFolioForReservation} />}
       {tab === 'rooms' && <RoomsTab businessId={businessId} />}
+      {tab === 'groups' && <BookingGroupsTab businessId={businessId} />}
+      {tab === 'tourism-dirham' && <TourismDirhamTab businessId={businessId} />}
     </div>
   );
 }
@@ -132,8 +135,13 @@ function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel }: { 
 function NewReservationForm({ businessId, rooms, onDone }: { businessId: string; rooms: HotelRoom[]; onDone: () => void }) {
   const [guests, setGuests] = useState<HotelGuest[]>([]);
   const [guestId, setGuestId] = useState('');
+  const [groups, setGroups] = useState<HotelBookingGroup[]>([]);
+  const [bookingGroupId, setBookingGroupId] = useState('');
   const [newGuestName, setNewGuestName] = useState('');
   const [newGuestPhone, setNewGuestPhone] = useState('');
+  const [newGuestIdType, setNewGuestIdType] = useState('');
+  const [newGuestIdNumber, setNewGuestIdNumber] = useState('');
+  const [newGuestNationality, setNewGuestNationality] = useState('');
   const [roomId, setRoomId] = useState('');
   const [checkInDate, setCheckInDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [checkOutDate, setCheckOutDate] = useState(() => new Date(Date.now() + 86400000).toISOString().slice(0, 10));
@@ -142,6 +150,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
   const [error, setError] = useState('');
 
   useEffect(() => { listGuests(businessId).then(setGuests); }, [businessId]);
+  useEffect(() => { listBookingGroups(businessId).then(setGroups); }, [businessId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -150,11 +159,17 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
     try {
       let finalGuestId = guestId;
       if (!finalGuestId && newGuestName.trim()) {
-        const guest = await createGuest(businessId, { name: newGuestName.trim(), phone: newGuestPhone });
+        const guest = await createGuest(businessId, {
+          name: newGuestName.trim(),
+          phone: newGuestPhone,
+          idDocumentType: newGuestIdType || undefined,
+          idDocumentNumber: newGuestIdNumber || undefined,
+          nationality: newGuestNationality || undefined,
+        });
         finalGuestId = guest.id;
       }
       if (!finalGuestId) { setError('Select or add a guest'); setSaving(false); return; }
-      await createReservation(businessId, { guestId: finalGuestId, roomId: roomId || null, checkInDate, checkOutDate, adults });
+      await createReservation(businessId, { guestId: finalGuestId, roomId: roomId || null, checkInDate, checkOutDate, adults, bookingGroupId: bookingGroupId || null });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create reservation');
@@ -176,6 +191,23 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
           <>
             <Field label="New guest name"><input value={newGuestName} onChange={(e) => setNewGuestName(e.target.value)} className={inputClass} /></Field>
             <Field label="Phone"><input value={newGuestPhone} onChange={(e) => setNewGuestPhone(e.target.value)} className={inputClass} /></Field>
+            {/* Optional at booking time - a fast walk-in check-in
+                shouldn't be blocked on passport details, but they're here
+                for hotels that do want to capture them up front. */}
+            <Field label="ID type">
+              <select value={newGuestIdType} onChange={(e) => setNewGuestIdType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+                <option value="">Not captured</option>
+                <option value="passport">Passport</option>
+                <option value="emirates_id">Emirates ID</option>
+                <option value="national_id">National ID</option>
+              </select>
+            </Field>
+            {newGuestIdType && (
+              <>
+                <Field label="ID number"><input value={newGuestIdNumber} onChange={(e) => setNewGuestIdNumber(e.target.value)} className={inputClass} /></Field>
+                <Field label="Nationality"><input value={newGuestNationality} onChange={(e) => setNewGuestNationality(e.target.value)} className={inputClass} /></Field>
+              </>
+            )}
           </>
         )}
       </div>
@@ -191,6 +223,14 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
             ))}
           </select>
         </Field>
+        {groups.length > 0 && (
+          <Field label="Booking group (optional)">
+            <select value={bookingGroupId} onChange={(e) => setBookingGroupId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <option value="">Not part of a group</option>
+              {groups.map((g) => <option key={g.id} value={g.id}>{g.group_name}</option>)}
+            </select>
+          </Field>
+        )}
       </div>
       {error && <p className="text-base text-danger">{error}</p>}
       <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
@@ -441,6 +481,134 @@ function FolioCard({ businessId, folio, selectedIds, onToggleCharge, onSplit, on
           </button>
         </>
       )}
+    </Section>
+  );
+}
+
+function TourismDirhamTab({ businessId }: { businessId: string }) {
+  const [from, setFrom] = useState(() => {
+    const d = new Date();
+    d.setDate(1); // first of this month - the natural default range for a DTCM-style report
+    return d.toISOString().slice(0, 10);
+  });
+  const [to, setTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [charges, setCharges] = useState<TourismDirhamCharge[]>([]);
+  const [total, setTotal] = useState(0);
+
+  function reload() {
+    getTourismDirhamReport(businessId, { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` }).then((r) => {
+      setCharges(r.charges);
+      setTotal(r.total);
+    });
+  }
+  useEffect(reload, [businessId, from, to]);
+
+  return (
+    <Section
+      title="Tourism Dirham"
+      action={
+        <div className="flex items-center gap-2">
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+          <span className="text-sm text-ivory-dim">to</span>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+        </div>
+      }
+    >
+      <p className="text-base text-ivory-dim">
+        Every Tourism Dirham fee charged at check-in, for DTCM reporting - collected automatically per room-night
+        once a rate is set in Business Profile. Set to AED 0 there if this doesn't apply to you.
+      </p>
+      <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+        <p className="text-xs uppercase tracking-wide text-brass">Total collected</p>
+        <p className="mt-1 font-display text-2xl text-ivory">AED {total.toFixed(2)} <span className="text-base text-ivory-dim">({charges.length} charges)</span></p>
+      </div>
+      <div className="space-y-2">
+        {charges.map((c) => (
+          <div key={c.id} className="flex items-center justify-between text-sm text-ivory-dim">
+            <span>
+              {c.hotel_folios?.hotel_reservations?.hotel_rooms?.room_number ? `Room ${c.hotel_folios.hotel_reservations.hotel_rooms.room_number}` : c.description}
+              {c.hotel_folios?.hotel_reservations?.hotel_guests?.name ? ` · ${c.hotel_folios.hotel_reservations.hotel_guests.name}` : ''}
+            </span>
+            <span>{new Date(c.created_at).toLocaleDateString('en-GB')}</span>
+            <span className="text-ivory">AED {Number(c.amount_aed).toFixed(2)}</span>
+          </div>
+        ))}
+        {charges.length === 0 && <p className="text-ivory-dim">No Tourism Dirham charges in this range.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function BookingGroupsTab({ businessId }: { businessId: string }) {
+  const [groups, setGroups] = useState<HotelBookingGroup[]>([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  function reload() { listBookingGroups(businessId).then(setGroups); }
+  useEffect(reload, [businessId]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!groupName.trim()) return;
+    setSaving(true);
+    try {
+      await createBookingGroup(businessId, { groupName: groupName.trim(), contactName, contactPhone });
+      setGroupName(''); setContactName(''); setContactPhone(''); setShowAdd(false);
+      reload();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Section
+      title="Booking Groups"
+      action={<button onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add group</button>}
+    >
+      <p className="text-base text-ivory-dim">
+        A wedding party, a corporate block - link several reservations under one group so they can be tracked
+        together. Create the group here, then pick it from "Booking group" when creating each reservation.
+      </p>
+      {showAdd && (
+        <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+          <Field label="Group name"><input value={groupName} onChange={(e) => setGroupName(e.target.value)} required placeholder="Al Mansoori Wedding" className={inputClass} /></Field>
+          <Field label="Contact name"><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
+          <Field label="Contact phone"><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
+          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            {saving ? 'Adding...' : 'Add'}
+          </button>
+        </form>
+      )}
+      <div className="space-y-3">
+        {groups.map((g) => {
+          const reservations = g.hotel_reservations || [];
+          return (
+            <div key={g.id} className="rounded-lg border border-ink-line p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-base text-ivory">{g.group_name}</p>
+                <p className="text-sm text-ivory-dim">{reservations.length} room{reservations.length === 1 ? '' : 's'}</p>
+              </div>
+              {(g.contact_name || g.contact_phone) && (
+                <p className="text-sm text-ivory-dim">{[g.contact_name, g.contact_phone].filter(Boolean).join(' · ')}</p>
+              )}
+              {reservations.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-ink-line pt-2 text-sm">
+                  {reservations.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between text-ivory-dim">
+                      <span>{r.hotel_guests?.name || 'Unassigned'} {r.hotel_rooms?.room_number ? `· Room ${r.hotel_rooms.room_number}` : ''}</span>
+                      <span className="capitalize">{r.status.replace('_', ' ')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {groups.length === 0 && <p className="text-ivory-dim">No booking groups yet.</p>}
+      </div>
     </Section>
   );
 }

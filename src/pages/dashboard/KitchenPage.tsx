@@ -5,6 +5,33 @@ import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, NotificationSettings } from '../../types';
 
+// Standard KDS behavior, not a Tavzio invention: a ticket's age is the
+// single most important thing a kitchen needs at a glance during a rush
+// - it's how every commercial kitchen display (Toast, Square, Lightspeed)
+// signals "this one's falling behind" without anyone having to check a
+// clock. Thresholds are deliberately generous defaults for a sit-down
+// kitchen, not fast-food; a business needing tighter timing can ask to
+// make these configurable later.
+const AMBER_AFTER_MINUTES = 8;
+const RED_AFTER_MINUTES = 15;
+
+function useTicker() {
+  // Re-renders every ticket's elapsed time once a minute - not on every
+  // render, so this never competes with the real-time order updates for
+  // CPU/battery on a screen that's meant to just sit in the kitchen all day.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 15000);
+    return () => clearInterval(interval);
+  }, []);
+}
+
+function TicketAge({ createdAt }: { createdAt: string }) {
+  const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+  const color = minutes >= RED_AFTER_MINUTES ? 'text-danger' : minutes >= AMBER_AFTER_MINUTES ? 'text-warning' : 'text-ivory-dim';
+  return <span className={`font-mono text-sm ${color}`}>{minutes < 1 ? 'just now' : `${minutes} min`}</span>;
+}
+
 // Kitchen is deliberately the simplest page in the whole dashboard: one
 // job, no distractions. Every order stays genuinely separate here (no
 // grouping, no merging) so kitchen staff always know exactly what's new
@@ -17,9 +44,16 @@ export default function KitchenPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
+  useTicker();
 
   function reload() {
-    if (businessId) listOrders(businessId, 'pending').then(setOrders);
+    // Oldest ticket first, always - the one that's been waiting longest
+    // is the one that needs eyes on it first, same reason the age badge
+    // exists at all. Sorted client-side so this holds regardless of
+    // whatever order the API happens to return.
+    if (businessId) listOrders(businessId, 'pending').then((rows) => {
+      setOrders([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+    });
   }
 
   useEffect(reload, [businessId]);
@@ -60,6 +94,8 @@ export default function KitchenPage() {
 
   if (!businessId) return null;
 
+  const kitchenOrders = orders.filter((order) => order.order_items.some((i) => !i.voided && i.course_status !== 'held'));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -67,34 +103,50 @@ export default function KitchenPage() {
         {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
       </div>
 
-      {orders.length === 0 && (
+      {kitchenOrders.length === 0 && (
         <p className="text-base text-ivory-dim">No pending orders right now.</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {orders.map((order) => (
-          <div key={order.id} className="rounded-xl border border-ink-line bg-ink-soft p-4">
-            <p className="font-display text-xl text-ivory">{order.table_label || 'No table'}</p>
-            <div className="mt-3 space-y-2 text-lg">
-              {order.order_items.filter((i) => !i.voided).map((item) => (
-                <div key={item.id} className="text-ivory-dim">
-                  <span className="text-ivory">{item.quantity}×</span> {item.item_name}
-                  {item.addons.length > 0 && (
-                    <span className="block text-sm text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
-                  )}
-                  {item.note && <span className="block text-sm italic">— {item.note}</span>}
-                </div>
-              ))}
+        {kitchenOrders
+          .map((order) => {
+          const minutes = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
+          const borderColor = minutes >= RED_AFTER_MINUTES ? 'border-danger' : minutes >= AMBER_AFTER_MINUTES ? 'border-warning' : 'border-ink-line';
+          const firedItems = order.order_items.filter((i) => !i.voided && i.course_status !== 'held');
+          // Not shown in detail (a held course's items are deliberately
+          // not visible yet) - just a heads-up that more is coming, and
+          // for which course, so the kitchen can pace itself.
+          const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
+          return (
+            <div key={order.id} className={`rounded-xl border-2 bg-ink-soft p-4 transition-colors ${borderColor}`}>
+              <div className="flex items-center justify-between">
+                <p className="font-display text-xl text-ivory">{order.table_label || 'No table'}</p>
+                <TicketAge createdAt={order.created_at} />
+              </div>
+              <div className="mt-3 space-y-2 text-lg">
+                {firedItems.map((item) => (
+                  <div key={item.id} className="text-ivory-dim">
+                    <span className="text-ivory">{item.quantity}×</span> {item.item_name}
+                    {item.addons.length > 0 && (
+                      <span className="block text-sm text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
+                    )}
+                    {item.note && <span className="block text-sm italic">— {item.note}</span>}
+                  </div>
+                ))}
+              </div>
+              {heldCourses.length > 0 && (
+                <p className="mt-2 text-sm text-brass/70">Waiting to fire: {heldCourses.join(', ')}</p>
+              )}
+              {order.note && <p className="mt-2 text-sm italic text-brass">Note: {order.note}</p>}
+              <button
+                onClick={() => handleMarkReady(order.id)}
+                className="mt-4 w-full rounded-lg bg-brass px-3 py-2.5 text-base font-medium text-ink hover:opacity-90"
+              >
+                Mark ready
+              </button>
             </div>
-            {order.note && <p className="mt-2 text-sm italic text-brass">Note: {order.note}</p>}
-            <button
-              onClick={() => handleMarkReady(order.id)}
-              className="mt-4 w-full rounded-lg bg-brass px-3 py-2.5 text-base font-medium text-ink hover:opacity-90"
-            >
-              Mark ready
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

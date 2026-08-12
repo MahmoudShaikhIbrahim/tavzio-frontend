@@ -6,6 +6,7 @@ import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
 import Logo from '../../components/Logo';
+import ClockWidget from '../../components/ClockWidget';
 import { useTheme } from '../../lib/ThemeContext';
 import ChangePasswordPage from './ChangePasswordPage';
 
@@ -41,6 +42,7 @@ const SETTINGS_ITEMS = [
   // field on every item, to keep this array's shape uniform.
   { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
   { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/hr', label: 'HR', ownerOnly: true, requires: 'hr' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
@@ -136,7 +138,7 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | null) {
+  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | null) {
     if (requires === 'hotel') return category === 'hotel';
     // Delivery platform integrations (Deliverect etc.) only make sense for
     // restaurants/cafés dispatching food off-site - a hotel has no
@@ -151,6 +153,7 @@ export default function DashboardLayout() {
     if (requires === 'booking') return features.booking.menuView || features.booking.submission;
     if (requires === 'staffAccounts') return features.staffAccounts;
     if (requires === 'inventory') return features.inventory?.enabled;
+    if (requires === 'hr') return !!features.hr?.enabled;
     return true;
   }
 
@@ -181,6 +184,7 @@ export default function DashboardLayout() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <Logo className="h-5 w-auto" />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
+            <ClockWidget />
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
             <button onClick={logout} className="hover:text-ivory">Sign out</button>

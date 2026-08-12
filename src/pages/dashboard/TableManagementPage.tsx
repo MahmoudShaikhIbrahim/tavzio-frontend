@@ -35,7 +35,7 @@ export default function TableManagementPage() {
       .finally(() => setLoading(false));
   }, [businessId]);
 
-  async function handleStatusChange(cardId: string, tableStatus: string) {
+  async function handleStatusChange(cardId: string, tableStatus: FloorTable['table_status']) {
     if (!businessId) return;
     // Optimistic: the table's border color updates the instant you tap,
     // instead of waiting on a full re-fetch of every table + the whole

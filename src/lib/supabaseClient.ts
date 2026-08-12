@@ -178,3 +178,25 @@ export async function uploadBusinessFile(businessId: string, file: File, subPath
   const { data } = client.storage.from('business-assets').getPublicUrl(path);
   return `${data.publicUrl}?t=${Date.now()}`;
 }
+
+// Staff documents (ID/passport/visa/labor card/contracts) go in the
+// PRIVATE staff-documents bucket, never business-assets - these are
+// sensitive and must never be reachable by a bare public URL. This
+// returns the storage PATH, not a URL; getStaffDocumentUrl below turns
+// that path into a short-lived signed link only at the moment someone
+// with owner access actually wants to view it.
+export async function uploadStaffDocumentFile(businessId: string, staffId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() || 'bin';
+  const path = `${businessId}/${staffId}/${Date.now()}.${ext}`;
+  const { error } = await client.storage.from('staff-documents').upload(path, file, { cacheControl: '3600' });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+// 10-minute signed URL - long enough to open/download, short enough that
+// a copied link isn't a standing leak of someone's passport.
+export async function getStaffDocumentUrl(path: string): Promise<string> {
+  const { data, error } = await client.storage.from('staff-documents').createSignedUrl(path, 600);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
+}

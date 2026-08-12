@@ -95,6 +95,26 @@ export default function FeaturesPage() {
             disabled={!business.features.inventory?.enabled} />
         </div>
       </Section>
+
+      <Section title="HR">
+        <p className="mb-3 text-sm text-ivory-dim">
+          Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
+          Each piece below is independent; turn on only what your business actually uses.
+        </p>
+        <div className="space-y-2">
+          <ToggleRow label="Enable HR" description="Master switch - turns on the HR section in your dashboard. Off by default."
+            checked={business.features.hr?.enabled || false} onChange={(v) => patch({ hr: { enabled: v } })} />
+          <ToggleRow label="Staff documents" description="Store each staff member's ID, visa, labor card, or signed contract."
+            checked={business.features.hr?.documents || false} onChange={(v) => patch({ hr: { documents: v } })}
+            disabled={!business.features.hr?.enabled} />
+          <ToggleRow label="Commission tracking" description="Set a commission rate per staff member and see it calculated from their actual sales."
+            checked={business.features.hr?.commission || false} onChange={(v) => patch({ hr: { commission: v } })}
+            disabled={!business.features.hr?.enabled} />
+          <ToggleRow label="Tip pooling" description="Split collected tips across staff, evenly or by hours worked."
+            checked={business.features.hr?.tips || false} onChange={(v) => patch({ hr: { tips: v } })}
+            disabled={!business.features.hr?.enabled} />
+        </div>
+      </Section>
     </div>
   );
 }
