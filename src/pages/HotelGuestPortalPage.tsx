@@ -19,6 +19,7 @@ interface PortalData {
   guest: { name: string; checkInDate: string; checkOutDate: string } | null;
   folioId: string | null;
   folioBalance: number | null;
+  vatBreakdown: { subtotalExVat: number; vatAmount: number; vatRate: number; totalIncVat: number } | null;
   charges: FolioCharge[];
 }
 
@@ -365,6 +366,18 @@ function MyBillView({ data, paying, onPay }: { data: PortalData; paying: boolean
         ))}
         {data.charges.length === 0 && <p className="text-sm text-ivory-dim">No charges yet.</p>}
       </div>
+      {data.vatBreakdown && (
+        <div className="space-y-1 rounded-lg border border-ink-line p-4 text-sm">
+          <div className="flex justify-between text-ivory-dim">
+            <span>Subtotal (excl. VAT)</span>
+            <span>AED {data.vatBreakdown.subtotalExVat.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-ivory-dim">
+            <span>VAT (5%)</span>
+            <span>AED {data.vatBreakdown.vatAmount.toFixed(2)}</span>
+          </div>
+        </div>
+      )}
       <div className="rounded-xl border border-brass/30 bg-ink-soft p-4 text-center">
         <p className="text-xs uppercase tracking-wide text-brass">Current balance</p>
         <p className="mt-1 font-display text-2xl text-ivory">AED {(data.folioBalance ?? 0).toFixed(2)}</p>

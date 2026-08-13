@@ -5,6 +5,7 @@ import PayBillSetupPage from './PayBillSetupPage';
 import PrinterSetupPage from './PrinterSetupPage';
 import DeliveryIntegrationPage from './DeliveryIntegrationPage';
 import ExternalHotelSystemsPage from './ExternalHotelSystemsPage';
+import AccountingSyncPage from './AccountingSyncPage';
 
 // Everything that needs a credential/API key/account connection, for any
 // business type, lives on this one page in premium-separated tabs -
@@ -13,7 +14,7 @@ import ExternalHotelSystemsPage from './ExternalHotelSystemsPage';
 // component that used to stand alone, so nothing about how any one
 // integration works has changed, only where it lives.
 export default function CredentialsPage() {
-  const [tab, setTab] = useState<'payments' | 'printer' | 'delivery' | 'hotel-systems'>('payments');
+  const [tab, setTab] = useState<'payments' | 'printer' | 'delivery' | 'hotel-systems' | 'accounting'>('payments');
   const isHotel = useIsHotel();
 
   const tabs: { key: typeof tab; label: string }[] = [
@@ -21,6 +22,7 @@ export default function CredentialsPage() {
     { key: 'printer', label: 'Receipt Printer' },
     ...(isHotel ? [] : [{ key: 'delivery' as const, label: 'Delivery Platforms' }]),
     ...(isHotel ? [{ key: 'hotel-systems' as const, label: 'External Hotel Systems' }] : []),
+    { key: 'accounting', label: 'Accounting Sync' },
   ];
 
   return (
@@ -41,6 +43,7 @@ export default function CredentialsPage() {
         {tab === 'printer' && <PrinterSetupPage />}
         {tab === 'delivery' && !isHotel && <DeliveryIntegrationPage />}
         {tab === 'hotel-systems' && isHotel && <ExternalHotelSystemsPage />}
+        {tab === 'accounting' && <AccountingSyncPage />}
       </div>
     </div>
   );

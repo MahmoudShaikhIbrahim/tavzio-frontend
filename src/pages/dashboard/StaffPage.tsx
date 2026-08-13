@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { listStaff, inviteStaff, setStaffActive, setStaffSections, resetAccountPassword, listStaffShifts, type StaffShift } from '../../lib/authApi';
-import type { StaffMember } from '../../types';
+import { listStaff, inviteStaff, setStaffActive, setStaffSections, setStaffOutlets, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
+import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 
@@ -14,12 +14,26 @@ export default function StaffPage() {
   const [saving, setSaving] = useState(false);
   const [resetResult, setResetResult] = useState<{ name: string; tempPassword: string } | null>(null);
   const [editingSectionsFor, setEditingSectionsFor] = useState<string | null>(null);
+  const [editingOutletsFor, setEditingOutletsFor] = useState<string | null>(null);
+  const [isHotel, setIsHotel] = useState(false);
+  const [outlets, setOutlets] = useState<HotelOutlet[]>([]);
 
   function reload() {
     if (businessId) listStaff(businessId).then(setStaff);
   }
 
   useEffect(reload, [businessId]);
+
+  // Outlet assignment is hotel-only (confirmed: restaurants may get this
+  // later, not yet) - the outlet list only ever gets fetched when it
+  // could actually be used.
+  useEffect(() => {
+    if (!businessId) return;
+    getBusiness(businessId).then((b) => {
+      setIsHotel(b.category === 'hotel');
+      if (b.category === 'hotel') listHotelOutlets(businessId).then(setOutlets);
+    }).catch(() => {});
+  }, [businessId]);
 
   if (!businessId) return null;
 
@@ -60,7 +74,7 @@ export default function StaffPage() {
             <div key={s.id} className="rounded-lg border border-ink-line px-5 py-4 text-base">
               <div className="flex items-center justify-between">
                 <span className="text-ivory">
-                  {s.name} <span className="text-ivory-dim">· {s.role.replace('_', ' ')}</span>
+                  {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? 'Admin' : s.role.replace('_', ' ')}</span>
                   {!s.is_active && <span className="ml-2 text-base text-danger">deactivated</span>}
                 </span>
               </div>
@@ -71,6 +85,15 @@ export default function StaffPage() {
                     : s.assigned_sections.length === 0
                       ? 'No sections assigned yet'
                       : s.assigned_sections.map((key) => SECTION_OPTIONS.find((o) => o.key === key)?.label || key).join(', ')}
+                </p>
+              )}
+              {isHotel && s.role === 'staff' && (
+                <p className="text-sm text-ivory-dim">
+                  Outlets: {s.assigned_outlet_ids === null
+                    ? 'Any outlet'
+                    : s.assigned_outlet_ids.length === 0
+                      ? 'None assigned yet'
+                      : s.assigned_outlet_ids.map((id) => outlets.find((o) => o.id === id)?.name || id).join(', ')}
                 </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -94,6 +117,14 @@ export default function StaffPage() {
                     >
                       {editingSectionsFor === s.id ? 'Close' : 'Assign sections'}
                     </button>
+                    {isHotel && (
+                      <button type="button"
+                        onClick={() => setEditingOutletsFor(editingOutletsFor === s.id ? null : s.id)}
+                        className="text-sm text-brass hover:underline"
+                      >
+                        {editingOutletsFor === s.id ? 'Close' : 'Assign outlets'}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -104,6 +135,17 @@ export default function StaffPage() {
                   onSaved={(updated) => {
                     setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, assigned_sections: updated.assigned_sections } : m)));
                     setEditingSectionsFor(null);
+                  }}
+                />
+              )}
+              {editingOutletsFor === s.id && (
+                <OutletAssignmentForm
+                  businessId={businessId}
+                  staffMember={s}
+                  outlets={outlets}
+                  onSaved={(updated) => {
+                    setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, assigned_outlet_ids: updated.assigned_outlet_ids } : m)));
+                    setEditingOutletsFor(null);
                   }}
                 />
               )}
@@ -247,6 +289,73 @@ function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
         {staffMember.assigned_sections !== null && (
           <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
             Remove restriction (sees everything)
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Same "null = unrestricted" convention as SectionAssignmentForm above -
+// opening this for the first time starts every outlet checked, so
+// closing without changing anything leaves the account exactly as
+// unrestricted as it was. An empty (non-null) selection is deliberately
+// allowed and shown distinctly ("None assigned yet") - a real, correct
+// state for a brand-new hire not yet cleared for any outlet, not a bug.
+function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
+  businessId: string; staffMember: StaffMember; outlets: HotelOutlet[]; onSaved: (updated: StaffMember) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>(
+    staffMember.assigned_outlet_ids ?? outlets.map((o) => o.id)
+  );
+  const [saving, setSaving] = useState(false);
+
+  function toggle(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((k) => k !== id) : [...prev, id]));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const updated = await setStaffOutlets(businessId, staffMember.id, selected);
+      onSaved(updated);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClearRestriction() {
+    setSaving(true);
+    try {
+      const updated = await setStaffOutlets(businessId, staffMember.id, null);
+      onSaved(updated);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
+      <p className="text-sm text-ivory-dim">
+        Only checked outlets can be selected when this account opens a till - e.g. a beach attendant checked only
+        for "Pool Bar" can never open the Lobby's till.
+      </p>
+      <div className="grid grid-cols-2 gap-1.5">
+        {outlets.map((o) => (
+          <label key={o.id} className="flex items-center gap-2 text-sm text-ivory">
+            <input type="checkbox" checked={selected.includes(o.id)} onChange={() => toggle(o.id)} className="accent-brass" />
+            {o.name}
+          </label>
+        ))}
+        {outlets.length === 0 && <p className="text-sm text-ivory-dim">No outlets set up yet - add some under F&B Outlets & Services first.</p>}
+      </div>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        {staffMember.assigned_outlet_ids !== null && (
+          <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
+            Remove restriction (any outlet)
           </button>
         )}
       </div>

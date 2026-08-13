@@ -7,6 +7,7 @@ import type { BusinessFeatures, BusinessTheme } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
 import Logo from '../../components/Logo';
 import ClockWidget from '../../components/ClockWidget';
+import AccountSwitcher from '../../components/AccountSwitcher';
 import { useTheme } from '../../lib/ThemeContext';
 import ChangePasswordPage from './ChangePasswordPage';
 
@@ -185,8 +186,9 @@ export default function DashboardLayout() {
           <Logo className="h-9 w-auto" />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <ClockWidget />
+            <AccountSwitcher />
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
-            <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
+            <span>{user?.name} · {isOwner ? 'Admin' : 'Staff'}</span>
             <button type="button" onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>

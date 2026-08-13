@@ -65,8 +65,8 @@ export function getMyOpenTill(businessId: string) {
   return authFetch<TillSession | null>(`/api/businesses/${businessId}/till/mine`);
 }
 
-export function openTill(businessId: string, openingFloatAed: number) {
-  return authFetch<TillSession>(`/api/businesses/${businessId}/till/open`, { method: 'POST', body: JSON.stringify({ openingFloatAed }) });
+export function openTill(businessId: string, openingFloatAed: number, outletId?: string) {
+  return authFetch<TillSession>(`/api/businesses/${businessId}/till/open`, { method: 'POST', body: JSON.stringify({ openingFloatAed, outletId }) });
 }
 
 export function closeTill(businessId: string, tillId: string, countedCashAed: number, notes?: string) {
@@ -537,6 +537,13 @@ export function setStaffSections(businessId: string, userId: string, sections: s
   });
 }
 
+export function setStaffOutlets(businessId: string, userId: string, outletIds: string[] | null) {
+  return authFetch<StaffMember>(`/api/businesses/${businessId}/staff/${userId}/outlets`, {
+    method: 'PATCH',
+    body: JSON.stringify({ outletIds }),
+  });
+}
+
 export function resetAccountPassword(businessId: string, userId: string) {
   return authFetch<{ tempPassword: string; name: string }>(`/api/businesses/${businessId}/staff/${userId}/reset-password`, {
     method: 'POST',
@@ -560,6 +567,128 @@ export function getAnalyticsSummary(businessId: string, from?: string, to?: stri
 
 export function getCardBreakdown(businessId: string) {
   return authFetch<CardBreakdownItem[]>(`/api/businesses/${businessId}/analytics/cards`);
+}
+
+export interface SalesByChannel {
+  from: string; to: string; grandTotal: number;
+  channels: { source: string; label: string; orderCount: number; total: number; percentage: number }[];
+}
+export function getSalesByChannel(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<SalesByChannel>(`/api/businesses/${businessId}/analytics/sales-by-channel${qs ? `?${qs}` : ''}`);
+}
+
+// --- Linked accounts (login-switch convenience) ---
+
+export interface LinkedAccount {
+  linkId: string;
+  linkedSince: string;
+  account: { id: string; name: string; role: string; business_id: string | null; organization_id: string | null; businesses?: { name: string } };
+}
+export function listLinkedAccounts() {
+  return authFetch<LinkedAccount[]>('/api/auth/linked-accounts');
+}
+export function switchAccount(targetProfileId: string) {
+  return authFetch<{ accessToken: string; refreshToken: string }>('/api/auth/switch-account', {
+    method: 'POST', body: JSON.stringify({ targetProfileId }),
+  });
+}
+
+// --- Organizations (multi-outlet/franchise) ---
+
+export interface Organization {
+  id: string;
+  name: string;
+  created_at: string;
+  businesses?: { id: string; name: string; category: string; status: string }[];
+}
+export function listOrganizations() {
+  return authFetch<Organization[]>('/api/organizations');
+}
+export function createOrganization(name: string) {
+  return authFetch<Organization>('/api/organizations', { method: 'POST', body: JSON.stringify({ name }) });
+}
+export function setBusinessOrganization(businessId: string, organizationId: string | null) {
+  return authFetch<{ id: string }>(`/api/organizations/businesses/${businessId}/organization`, {
+    method: 'PATCH', body: JSON.stringify({ organizationId }),
+  });
+}
+export function inviteOrgOwner(organizationId: string, name: string, email: string) {
+  return authFetch<{ id: string; name: string; email: string }>(`/api/organizations/${organizationId}/owner`, {
+    method: 'POST', body: JSON.stringify({ name, email }),
+  });
+}
+
+export interface OrgMenuItem {
+  id: string; organization_id: string; category_id: string | null;
+  name: string; description: string; price: number; image_url: string;
+}
+export interface OrgMenuCategory {
+  id: string; organization_id: string; name: string; sort_order: number;
+  organization_menu_items: OrgMenuItem[];
+}
+function orgQuery(asSuperAdminForOrgId?: string) {
+  return asSuperAdminForOrgId ? `?organizationId=${asSuperAdminForOrgId}` : '';
+}
+export function getMyOrganization(asSuperAdminForOrgId?: string) {
+  return authFetch<Organization>(`/api/organizations/mine${orgQuery(asSuperAdminForOrgId)}`);
+}
+export function listOrgMenuCategories(asSuperAdminForOrgId?: string) {
+  return authFetch<OrgMenuCategory[]>(`/api/organizations/menu/categories${orgQuery(asSuperAdminForOrgId)}`);
+}
+export function createOrgMenuCategory(name: string, asSuperAdminForOrgId?: string) {
+  return authFetch<OrgMenuCategory>(`/api/organizations/menu/categories${orgQuery(asSuperAdminForOrgId)}`, {
+    method: 'POST', body: JSON.stringify({ name, organizationId: asSuperAdminForOrgId }),
+  });
+}
+export function createOrgMenuItem(payload: { categoryId?: string; name: string; description?: string; price: number; imageUrl?: string }, asSuperAdminForOrgId?: string) {
+  return authFetch<OrgMenuItem>(`/api/organizations/menu/items${orgQuery(asSuperAdminForOrgId)}`, {
+    method: 'POST', body: JSON.stringify({ ...payload, organizationId: asSuperAdminForOrgId }),
+  });
+}
+export function updateOrgMenuItem(itemId: string, payload: Partial<{ name: string; description: string; price: number; imageUrl: string; categoryId: string | null }>, asSuperAdminForOrgId?: string) {
+  return authFetch<OrgMenuItem>(`/api/organizations/menu/items/${itemId}${orgQuery(asSuperAdminForOrgId)}`, {
+    method: 'PATCH', body: JSON.stringify({ ...payload, organizationId: asSuperAdminForOrgId }),
+  });
+}
+export function deleteOrgMenuItem(itemId: string, asSuperAdminForOrgId?: string) {
+  return authFetch<{ message: string }>(`/api/organizations/menu/items/${itemId}${orgQuery(asSuperAdminForOrgId)}`, {
+    method: 'DELETE', body: JSON.stringify({ organizationId: asSuperAdminForOrgId }),
+  });
+}
+export function publishOrgMenu(locationBusinessIds: string[], asSuperAdminForOrgId?: string) {
+  return authFetch<{ message: string; created: number; updated: number; locations: number }>(`/api/organizations/menu/publish${orgQuery(asSuperAdminForOrgId)}`, {
+    method: 'POST', body: JSON.stringify({ locationBusinessIds, organizationId: asSuperAdminForOrgId }),
+  });
+}
+export interface OrgReportRow { businessId: string; name: string; orderCount: number; total: number }
+export function getOrgReport(range?: { from?: string; to?: string }, asSuperAdminForOrgId?: string) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  if (asSuperAdminForOrgId) params.set('organizationId', asSuperAdminForOrgId);
+  const qs = params.toString();
+  return authFetch<{ from: string; to: string; locations: OrgReportRow[]; grandTotal: number }>(`/api/organizations/report${qs ? `?${qs}` : ''}`);
+}
+
+// --- Zoho Books accounting sync ---
+
+export function getZohoBooksConnectUrl(businessId: string) {
+  return authFetch<{ url: string }>(`/api/businesses/${businessId}/zoho-books/connect`);
+}
+export function getZohoBooksStatus(businessId: string) {
+  return authFetch<{ connected: boolean; connectedAt: string | null }>(`/api/businesses/${businessId}/zoho-books/status`);
+}
+export function disconnectZohoBooks(businessId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/zoho-books`, { method: 'DELETE' });
+}
+export function syncZohoBooksReceipts(businessId: string) {
+  return authFetch<{ message: string; synced: number; total: number; errors: { receiptNumber: string; error: string }[] }>(
+    `/api/businesses/${businessId}/zoho-books/sync`, { method: 'POST' }
+  );
 }
 
 // --- Loyalty (owner/staff side) ---

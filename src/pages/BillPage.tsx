@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, markItemsCashPending } from '../lib/api';
+import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, cancelBillPaySession, markItemsCashPending } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { subscribeToBillItems } from '../lib/supabaseClient';
 import { getSavedPhone } from '../lib/loyaltyStorage';
@@ -53,12 +53,44 @@ function BillPageContent({ slug }: { slug: string }) {
     return stored ? Number(stored) : null;
   })();
 
+  // Set the moment a redirect payment is started (see handlePay below),
+  // cleared the moment it's resolved one way or another. If it's still
+  // here on a fresh page load, the customer left mid-payment (browser
+  // back button, closed the tab, changed their mind) without ever
+  // reaching the gateway's own return - that's exactly the case with no
+  // other way to know the attempt was abandoned.
+  const [pendingCancelPaymentId, setPendingCancelPaymentId] = useState<string | null>(
+    () => sessionStorage.getItem(`tavzio_pending_payment_${slug}`)
+  );
+  const [cancellingPending, setCancellingPending] = useState(false);
+
+  async function handleCancelPendingPayment() {
+    if (!pendingCancelPaymentId) return;
+    setCancellingPending(true);
+    try {
+      await cancelBillPaySession(slug, pendingCancelPaymentId);
+    } catch {
+      // Already resolved server-side (paid, or expired) - either way,
+      // nothing left for the customer to cancel, so just clear it here too.
+    } finally {
+      sessionStorage.removeItem(`tavzio_pending_payment_${slug}`);
+      setPendingCancelPaymentId(null);
+      setCancellingPending(false);
+      loadBill();
+    }
+  }
+
   // Landing back from a redirect provider's page (Telr / N-Genius): the
   // URL carries the paymentId, and the ONLY thing that decides success is
   // the backend's verification against the provider's own status API.
   const returningPaymentId = searchParams.get('paymentId');
   useEffect(() => {
     if (!returningPaymentId) return;
+    // The gateway itself has now resolved this one way or another -
+    // it's no longer an abandoned attempt, whatever confirmBillPayment
+    // below finds out.
+    sessionStorage.removeItem(`tavzio_pending_payment_${slug}`);
+    setPendingCancelPaymentId(null);
     setLoading(true);
     const savedPhone = getSavedPhone(slug) || undefined;
     confirmBillPayment(slug, returningPaymentId, savedPhone)
@@ -197,6 +229,11 @@ function BillPageContent({ slug }: { slug: string }) {
       // touches Tavzio, and no client-side SDK is needed at all.
       if (provider === 'telr' || provider === 'ngenius' || provider === 'ziina') {
         const session = await createBillPaySession(slug, tapEventId, itemIds, tip, savedPhone);
+        // Saved before navigating away - this is what lets the page
+        // recognize, if the customer comes back via their browser's own
+        // back button instead of the gateway's own return, that there's
+        // a still-reserved attempt they might want to give up on.
+        sessionStorage.setItem(`tavzio_pending_payment_${slug}`, session.paymentId);
         window.location.href = session.redirectUrl;
         return; // navigating away - the return URL brings them back here
       }
@@ -337,6 +374,21 @@ function BillPageContent({ slug }: { slug: string }) {
           <LanguageSwitcher />
         </div>
         <p className="mt-1 text-sm text-ivory-dim">{t('payBillInstructions')}</p>
+
+        {pendingCancelPaymentId && !returningPaymentId && (
+          <div className="mt-4 rounded-xl border border-warning/40 bg-ink-soft px-4 py-3">
+            <p className="text-sm text-ivory">You started a payment that wasn't finished.</p>
+            <p className="mt-0.5 text-xs text-ivory-dim">Those items are held for you for a few minutes - cancel to make them available again, or continue if you're still paying.</p>
+            <button
+              type="button"
+              onClick={handleCancelPendingPayment}
+              disabled={cancellingPending}
+              className="mt-2 rounded-lg border border-warning/60 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50"
+            >
+              {cancellingPending ? 'Cancelling...' : 'Cancel that attempt'}
+            </button>
+          </div>
+        )}
 
         <div className="mt-5 space-y-3">
           {items.length === 0 && (

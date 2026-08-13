@@ -4,6 +4,7 @@ import { useSession } from '../../hooks/useSession';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions,
   listMenuCategories, listMenuItems, createPosOrder, confirmPosCardPayment, getBusiness, lookupFolioByRoom,
+  listHotelOutlets,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import type { TillSession, MenuCategory, MenuItem } from '../../types';
@@ -61,16 +62,27 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [history, setHistory] = useState<TillSession[]>([]);
+  const [isHotel, setIsHotel] = useState(false);
+  const [outlets, setOutlets] = useState<{ id: string; name: string }[]>([]);
+  const [outletId, setOutletId] = useState('');
 
   useEffect(() => {
     listTillSessions(businessId).then((sessions) => setHistory(sessions.slice(0, 5)));
+    getBusiness(businessId).then((b) => setIsHotel(b.category === 'hotel')).catch(() => {});
   }, [businessId]);
 
+  // Only ever fetched for a hotel - a restaurant has no outlets concept
+  // (confirmed: hotel-only for now, restaurants may get this later).
+  useEffect(() => {
+    if (isHotel) listHotelOutlets(businessId).then((data) => setOutlets(data.filter((o) => o.enabled).map((o) => ({ id: o.id, name: o.name }))));
+  }, [isHotel, businessId]);
+
   async function handleOpen() {
+    if (isHotel && !outletId) { setError('Select which outlet you\'re opening this till for'); return; }
     setSaving(true);
     setError('');
     try {
-      await openTill(businessId, openingFloat);
+      await openTill(businessId, openingFloat, isHotel ? outletId : undefined);
       onOpened();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not open till');
@@ -85,6 +97,14 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
         <p className="text-base text-ivory-dim">
           Count the cash currently in the drawer before you start your shift - this is your starting float.
         </p>
+        {isHotel && (
+          <Field label="Outlet - this till stays locked to it for the whole session">
+            <select value={outletId} onChange={(e) => setOutletId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory">
+              <option value="">Select an outlet...</option>
+              {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+          </Field>
+        )}
         <Field label="Opening float (AED)">
           <input
             type="number" min={0} onFocus={(e) => e.target.select()}
@@ -142,10 +162,26 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [roomFolio, setRoomFolio] = useState<{ folioId: string; roomNumber: string; guestName: string } | null>(null);
   const [roomLookupError, setRoomLookupError] = useState('');
   const [lookingUpRoom, setLookingUpRoom] = useState(false);
+  // The till this session is locked to already fixed which outlet is
+  // being operated (enforced server-side at open-till time) - this just
+  // narrows the item grid to match, so a Beach till never shows the
+  // Restaurant's whole menu.
+  const [outletItemIds, setOutletItemIds] = useState<Set<string> | null>(null);
 
   useEffect(() => {
     getBusiness(businessId).then((b) => setIsHotel(b.category === 'hotel')).catch(() => {});
   }, [businessId]);
+
+  useEffect(() => {
+    if (till.outlet_id) {
+      listHotelOutlets(businessId).then((outlets) => {
+        const mine = outlets.find((o) => o.id === till.outlet_id);
+        setOutletItemIds(mine ? new Set(mine.hotel_outlet_items.map((i) => i.menu_item_id)) : new Set());
+      });
+    } else {
+      setOutletItemIds(null);
+    }
+  }, [businessId, till.outlet_id]);
 
   async function handleRoomLookup() {
     if (!roomNumber.trim()) return;
@@ -232,7 +268,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       ? Math.min(cartSubtotal, Math.max(0, discountValue))
       : 0;
   const cartTotal = Math.max(0, cartSubtotal - discountAmount);
-  const visibleItems = items.filter((i) => i.category_id === activeCategory);
+  const visibleItems = items.filter((i) => i.category_id === activeCategory && (!outletItemIds || outletItemIds.has(i.id)));
 
   function resetCartState() {
     setCart([]);
@@ -324,6 +360,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       <div className="mx-auto max-w-sm space-y-4 text-center">
         <p className="font-display text-2xl text-ivory">Order sent to kitchen</p>
         <p className="text-ivory-dim">AED {confirmed.total.toFixed(2)} · paid by {confirmed.method}</p>
+        <p className="text-sm text-ivory-dim">
+          Incl. VAT (5%): AED {(confirmed.total - confirmed.total / 1.05).toFixed(2)}
+        </p>
         <button type="button" onClick={() => setConfirmed(null)} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">
           New order
         </button>

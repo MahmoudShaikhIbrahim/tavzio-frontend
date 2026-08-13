@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 
 interface Props {
-  allow: Array<'super_admin' | 'business_owner' | 'staff'>;
+  allow: Array<'super_admin' | 'org_owner' | 'business_owner' | 'staff'>;
 }
 
 export default function RequireRole({ allow }: Props) {
@@ -21,7 +21,7 @@ export default function RequireRole({ allow }: Props) {
   if (!allow.includes(user.role)) {
     // Logged in, just not allowed here - send them to where they DO belong
     // rather than a dead end.
-    const home = user.role === 'super_admin' ? '/admin/super/businesses' : '/admin/dashboard';
+    const home = user.role === 'super_admin' ? '/admin/super/businesses' : user.role === 'org_owner' ? '/admin/org' : '/admin/dashboard';
     return <Navigate to={home} replace />;
   }
 

@@ -181,7 +181,7 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
       <div className="rounded-lg border border-ink-line p-4">
         <p className="text-base text-ivory">Payment gateway</p>
         <p className="mt-1 text-sm text-ivory-dim">
-          Set up by the owner directly, from their own Settings — the secret
+          Set up by the admin directly, from their own Settings — the secret
           key is never visible here, only whether it's connected.
         </p>
         <p className="mt-2 text-base">
@@ -263,7 +263,7 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
   const [resetting, setResetting] = useState(false);
 
   async function handleReset() {
-    if (!confirm(`Reset the owner's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`)) return;
+    if (!confirm(`Reset the admin's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`)) return;
     setResetting(true);
     try {
       const res = await resetAccountPassword(businessId, business.owner);
@@ -283,7 +283,7 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
         </div>
       ) : (
         <button type="button" onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50">
-          {resetting ? 'Resetting...' : "Reset owner's password"}
+          {resetting ? 'Resetting...' : "Reset admin's password"}
         </button>
       )}
     </div>
@@ -337,7 +337,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
       }
     >
       <p className="text-base text-ivory-dim">
-        Every contract is a fixed 1-year term - only the payment frequency changes. Send it for the owner to
+        Every contract is a fixed 1-year term - only the payment frequency changes. Send it for the admin to
         e-sign inside their dashboard; once signed, generate installment receipts against it as payments come due.
       </p>
       {showForm && <ContractForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}
@@ -597,7 +597,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
           onChange={setIncludeSystem}
         />
         {includeSystem && (
-          <Field label="Override amount (AED, optional)">
+          <Field label="Override amount (AED excl. VAT, optional)">
             <input
               type="number"
               onFocus={(e) => e.target.select()}
@@ -627,7 +627,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
                 className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
               />
             </Field>
-            <Field label="Override total (AED, optional)">
+            <Field label="Override total (AED excl. VAT, optional)">
               <input
                 type="number"
                 onFocus={(e) => e.target.select()}
@@ -642,7 +642,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm text-ivory-dim">Additional items (optional - discounts, one-off fees, etc)</p>
+        <p className="text-sm text-ivory-dim">Additional items (optional - discounts, one-off fees, etc). Amounts excl. VAT - 5% is added automatically.</p>
         {extraLines.map((line, i) => (
           <div key={i} className="flex items-center gap-2">
             <input
@@ -656,7 +656,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
               onFocus={(e) => e.target.select()}
               value={line.amount || ''}
               onChange={(e) => updateExtraLine(i, 'amount', e.target.value)}
-              placeholder="AED"
+              placeholder="AED excl. VAT"
               className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             />
             <button type="button" onClick={() => setExtraLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
@@ -674,7 +674,11 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
       </Field>
 
       <div className="flex items-center justify-between border-t border-ink-line pt-3">
-        <p className="text-base text-ivory">Total: <span className="font-medium text-brass">AED {total.toFixed(2)}</span></p>
+        <div className="text-base text-ivory">
+          <p>Subtotal (excl. VAT): <span className="text-ivory-dim">AED {total.toFixed(2)}</span></p>
+          <p>VAT (5%): <span className="text-ivory-dim">AED {(total * 0.05).toFixed(2)}</span></p>
+          <p>Total to charge: <span className="font-medium text-brass">AED {(total * 1.05).toFixed(2)}</span></p>
+        </div>
         <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
           {saving ? 'Generating...' : 'Generate & send'}
         </button>

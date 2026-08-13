@@ -98,7 +98,7 @@ export default function FeaturesPage() {
 
       <Section title="HR">
         <p className="mb-3 text-sm text-ivory-dim">
-          Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
+          Admin-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
           Each piece below is independent; turn on only what your business actually uses.
         </p>
         <div className="space-y-2">

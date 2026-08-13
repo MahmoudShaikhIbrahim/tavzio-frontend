@@ -64,8 +64,8 @@ export default function CreateBusiness() {
     <div className="max-w-lg">
       <h1 className="font-display text-3xl text-ivory">Onboard a business</h1>
       <p className="mt-1 text-base text-ivory-dim">
-        Creates the owner's account and the business record together. This password is just a handoff value -
-        the owner is forced to set their own the moment they first log in.
+        Creates the admin's account and the business record together. This password is just a handoff value -
+        the admin is forced to set their own the moment they first log in.
       </p>
       {leadPhone && (
         <p className="mt-2 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-sm text-ivory-dim">
@@ -74,10 +74,10 @@ export default function CreateBusiness() {
       )}
 
       <form onSubmit={handleSubmit} className="mt-6 max-w-xl space-y-4">
-        <Field label="Owner's full name">
+        <Field label="Admin's full name">
           <input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputClass} />
         </Field>
-        <Field label="Owner's email">
+        <Field label="Admin's email">
           <input type="email" required value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} className={inputClass} />
         </Field>
         <Field label="Temporary password">

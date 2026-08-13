@@ -232,6 +232,16 @@ export function confirmBillPayment(slug: string, paymentId: string, phone?: stri
   });
 }
 
+// Explicitly gives up a payment attempt - releases the item reservation
+// immediately instead of making the customer, or anyone else waiting on
+// the same items, sit out the full 5-minute window.
+export function cancelBillPaySession(slug: string, paymentId: string) {
+  return request<{ status: string }>(`/api/public/business/${slug}/bill/cancel`, {
+    method: 'POST',
+    body: JSON.stringify({ paymentId }),
+  });
+}
+
 // The marketing homepage's "Get Started" lead capture - no auth, this is
 // the top of the funnel, not customer/business data.
 export function submitLead(payload: { email: string; phone: string; businessType: string; standsEstimate: number; note?: string }) {

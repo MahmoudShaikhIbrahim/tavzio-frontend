@@ -47,7 +47,7 @@ export default function HRPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl text-ivory">HR</h1>
-        <p className="mt-1 text-base text-ivory-dim">Owner-only - staff accounts never see this section.</p>
+        <p className="mt-1 text-base text-ivory-dim">Admin-only - staff accounts never see this section.</p>
       </div>
       {availableTabs.length === 0 ? (
         <p className="text-ivory-dim">No HR modules are turned on yet - enable one under Features.</p>

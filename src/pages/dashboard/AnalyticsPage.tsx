@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+  PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { getAnalyticsSummary, getCardBreakdown } from '../../lib/authApi';
+import { getAnalyticsSummary, getCardBreakdown, getSalesByChannel, type SalesByChannel } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { useSession } from '../../hooks/useSession';
 import type { AnalyticsSummary, CardBreakdownItem } from '../../types';
 import { Section } from '../../components/ui';
 
+// Brass-led palette matching the rest of the dashboard, not recharts'
+// default rainbow set - a pie chart is still part of the same premium
+// theme as everything else, not a generic library default.
+const CHANNEL_COLORS = ['#b8925a', '#6b8f8c', '#a3654f', '#7d7a9e', '#8a9a5b'];
+
 export default function AnalyticsPage() {
   const { user } = useSession();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [cardBreakdown, setCardBreakdown] = useState<CardBreakdownItem[]>([]);
+  const [salesByChannel, setSalesByChannel] = useState<SalesByChannel | null>(null);
   const [liveTapCount, setLiveTapCount] = useState(0);
   const [liveFeed, setLiveFeed] = useState<string[]>([]);
 
@@ -21,6 +28,7 @@ export default function AnalyticsPage() {
     if (!businessId) return;
     getAnalyticsSummary(businessId).then(setSummary);
     getCardBreakdown(businessId).then(setCardBreakdown);
+    getSalesByChannel(businessId).then(setSalesByChannel);
   }
 
   useEffect(reload, [businessId]);
@@ -101,6 +109,49 @@ export default function AnalyticsPage() {
           ))}
           {cardBreakdown.length === 0 && <p className="text-base text-ivory-dim">No card activity yet.</p>}
         </div>
+      </Section>
+
+      <Section title="Sales by Channel">
+        {salesByChannel && salesByChannel.channels.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={salesByChannel.channels}
+                    dataKey="total"
+                    nameKey="label"
+                    innerRadius={55}
+                    outerRadius={90}
+                    paddingAngle={2}
+                  >
+                    {salesByChannel.channels.map((_, i) => (
+                      <Cell key={i} fill={CHANNEL_COLORS[i % CHANNEL_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => `AED ${value.toFixed(2)}`} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-2 self-center">
+              {salesByChannel.channels.map((c, i) => (
+                <div key={c.source} className="flex items-center justify-between text-base">
+                  <span className="flex items-center gap-2 text-ivory-dim">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHANNEL_COLORS[i % CHANNEL_COLORS.length] }} />
+                    {c.label}
+                  </span>
+                  <span className="text-ivory">AED {c.total.toFixed(2)} <span className="text-sm text-ivory-dim">({c.percentage}%)</span></span>
+                </div>
+              ))}
+              <div className="mt-2 border-t border-ink-line pt-2 text-base">
+                <span className="text-ivory">Total: AED {salesByChannel.grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-base text-ivory-dim">No sales in the last 30 days yet.</p>
+        )}
       </Section>
     </div>
   );

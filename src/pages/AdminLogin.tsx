@@ -24,7 +24,7 @@ export default function AdminLogin() {
     try {
       await login(email, password);
       const me = await getMe();
-      navigate(me.role === 'super_admin' ? '/admin/super/businesses' : '/admin/dashboard');
+      navigate(me.role === 'super_admin' ? '/admin/super/businesses' : me.role === 'org_owner' ? '/admin/org' : '/admin/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
       setLoading(false);
@@ -37,7 +37,7 @@ export default function AdminLogin() {
         <Logo className="mx-auto h-12 w-auto" />
         <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>
         <p className="mt-1 text-center text-sm text-ivory-dim">
-          Platform administrators, business owners, and staff all sign in
+          Platform administrators, business admins, and staff all sign in
           here with their email and password.
         </p>
 

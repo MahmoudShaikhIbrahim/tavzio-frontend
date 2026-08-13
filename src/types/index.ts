@@ -187,7 +187,7 @@ export interface LoyaltyClaim {
 export interface Profile {
   id: string;
   name: string;
-  role: 'super_admin' | 'business_owner' | 'staff';
+  role: 'super_admin' | 'org_owner' | 'business_owner' | 'staff';
   business_id: string | null;
   is_active: boolean;
   email?: string;
@@ -310,6 +310,7 @@ export interface TillSession {
   counted_cash_aed: number | null;
   variance_aed: number | null;
   notes: string;
+  outlet_id: string | null;
   profiles?: { name: string };
 }
 
@@ -454,6 +455,7 @@ export interface StaffMember {
   last_login_at: string | null;
   created_at: string;
   assigned_sections: string[] | null;
+  assigned_outlet_ids: string[] | null;
 }
 
 export interface AnalyticsSummary {

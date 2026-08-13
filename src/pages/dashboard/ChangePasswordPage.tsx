@@ -24,7 +24,12 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
       await changePassword(currentPassword, newPassword);
       if (forced) {
         setDone(true);
-        setTimeout(() => navigate('/admin/dashboard/orders'), 1200);
+        // Where "continue" actually goes depends on the account's own
+        // role - hardcoding this to the business dashboard would bounce
+        // a newly-onboarded org_owner (or super_admin) straight back out
+        // via RequireRole the instant they land.
+        const home = user?.role === 'super_admin' ? '/admin/super/businesses' : user?.role === 'org_owner' ? '/admin/org' : '/admin/dashboard/orders';
+        setTimeout(() => navigate(home), 1200);
       } else {
         setDone(true);
       }

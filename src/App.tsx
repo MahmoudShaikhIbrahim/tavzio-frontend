@@ -20,6 +20,10 @@ import BusinessDetail from './pages/superadmin/BusinessDetail';
 import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
 import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
 import AuditReportPage from './pages/superadmin/AuditReportPage';
+import OrganizationsPage from './pages/superadmin/OrganizationsPage';
+import OrgOwnerLayout from './pages/orgowner/OrgOwnerLayout';
+import OrgOverviewPage from './pages/orgowner/OrgOverviewPage';
+import OrgMenuPage from './pages/orgowner/OrgMenuPage';
 
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
@@ -90,6 +94,16 @@ export default function App() {
             <Route path="messages" element={<MessagesInboxPage />} />
             <Route path="billing-settings" element={<BillingSettingsPage />} />
             <Route path="audit-report" element={<AuditReportPage />} />
+            <Route path="organizations" element={<OrganizationsPage />} />
+          </Route>
+        </Route>
+
+        {/* Org owner - franchise/multi-outlet accounts, no single business_id */}
+        <Route element={<RequireRole allow={['org_owner']} />}>
+          <Route path="/admin/org" element={<OrgOwnerLayout />}>
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<OrgOverviewPage />} />
+            <Route path="menu" element={<OrgMenuPage />} />
           </Route>
         </Route>
 
