@@ -16,14 +16,14 @@ import ChangePasswordPage from './ChangePasswordPage';
 // Settings dropdown below instead of competing for space in this bar.
 const TABS = [
   { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
-  { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: 'kitchen' as const, badge2: null },
   { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
   // Floor plan / table layout is a restaurant-only concept - a hotel with
   // ordering enabled (for its Room Service / outlet POS) still shouldn't
   // see a "Tables" tab, since it has rooms, not tables.
   { path: 'tables', label: 'Tables', ownerOnly: false, requires: 'orderingNotHotel' as const, badge: null, badge2: null },
-  { path: 'front-desk', label: 'Front Desk', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
-  { path: 'housekeeping', label: 'Housekeeping', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
+  { path: 'front-desk', label: 'Front Desk', ownerOnly: false, requires: 'hotel' as const, badge: 'front-desk' as const, badge2: null },
+  { path: 'housekeeping', label: 'Housekeeping', ownerOnly: false, requires: 'hotel' as const, badge: 'housekeeping' as const, badge2: null },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
   { path: 'inventory', label: 'Inventory', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
   { path: 'reconciliation', label: 'Bank Reconciliation', ownerOnly: true, requires: null, badge: null, badge2: null },
@@ -68,7 +68,7 @@ export default function DashboardLayout() {
   const [features, setFeatures] = useState<BusinessFeatures | null>(null);
   const [theme, setTheme] = useState<BusinessTheme | null>(null);
   const [category, setCategory] = useState<string | null>(null);
-  const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, requests: 0, payments: 0 });
+  const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, requests: 0, payments: 0, kitchen: 0, housekeeping: 0, 'front-desk': 0 });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const { setMode } = useTheme();
@@ -115,7 +115,7 @@ export default function DashboardLayout() {
     const bizId = user?.business_id;
     if (!bizId) return;
     const tab = TABS.find((t) => (t.badge || t.badge2) && location.pathname.includes(t.path));
-    const sections = [tab?.badge, tab?.badge2].filter((s): s is 'orders' | 'requests' | 'payments' => !!s);
+    const sections = [tab?.badge, tab?.badge2].filter((s): s is keyof NotificationCounts => !!s);
     Promise.all(sections.map((s) => markSectionViewed(bizId, s)))
       .catch(() => {})
       .finally(() => {

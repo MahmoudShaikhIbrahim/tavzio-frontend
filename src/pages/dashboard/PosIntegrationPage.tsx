@@ -28,15 +28,26 @@ export default function PosIntegrationPage() {
 
   function reload() {
     if (!businessId) return;
-    getPosIntegration(businessId, 'ordering').then((data) => {
-      if (data) {
-        setProvider(data.provider);
-        setEnabled(data.enabled);
-        setConfig(data.config || {});
-      }
-      setLoaded(true);
-    });
-    getPosIntegrationStatus(businessId, 'ordering').then((s) => setStatus(s ? { status: s.status, lastSyncedAt: s.last_synced_at } : null));
+    getPosIntegration(businessId, 'ordering')
+      .then((data) => {
+        if (data) {
+          setProvider(data.provider);
+          setEnabled(data.enabled);
+          setConfig(data.config || {});
+        }
+        setLoaded(true);
+      })
+      .catch((err) => {
+        // Without this, a failed request left the page stuck on
+        // "Loading..." forever with no way to tell what went wrong -
+        // exactly what was happening when the encryption key was
+        // missing and decrypting an existing config threw.
+        setError(err instanceof Error ? err.message : 'Could not load this integration');
+        setLoaded(true);
+      });
+    getPosIntegrationStatus(businessId, 'ordering')
+      .then((s) => setStatus(s ? { status: s.status, lastSyncedAt: s.last_synced_at } : null))
+      .catch(() => {});
   }
   useEffect(reload, [businessId]);
 

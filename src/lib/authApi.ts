@@ -1217,13 +1217,16 @@ export interface NotificationCounts {
   orders: number;
   requests: number;
   payments: number;
+  kitchen: number;
+  housekeeping: number;
+  'front-desk': number;
 }
 
 export function getNotificationCounts(businessId: string) {
   return authFetch<NotificationCounts>(`/api/businesses/${businessId}/notifications/counts`);
 }
 
-export function markSectionViewed(businessId: string, section: 'orders' | 'requests' | 'payments') {
+export function markSectionViewed(businessId: string, section: keyof NotificationCounts) {
   return authFetch<{ section: string; viewedAt: string }>(`/api/businesses/${businessId}/notifications/${section}/mark-viewed`, {
     method: 'POST',
   });
