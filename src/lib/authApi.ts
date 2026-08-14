@@ -271,7 +271,7 @@ export interface HotelRatePlan {
 export function listRatePlans(businessId: string) {
   return authFetch<HotelRatePlan[]>(`/api/businesses/${businessId}/hotel/rate-plans`);
 }
-export function createRatePlan(businessId: string, payload: { name: string; rateType?: string; baseRateAed: number; isRefundable?: boolean; mealPlan?: string; validFrom?: string; validTo?: string }) {
+export function createRatePlan(businessId: string, payload: { name: string; rateType?: string; baseRateAed: number; isRefundable?: boolean; mealPlan?: string; validFrom?: string | null; validTo?: string | null }) {
   return authFetch<HotelRatePlan>(`/api/businesses/${businessId}/hotel/rate-plans`, { method: 'POST', body: JSON.stringify(payload) });
 }
 export function updateRatePlan(businessId: string, ratePlanId: string, payload: Partial<{ name: string; rateType: string; baseRateAed: number; isRefundable: boolean; mealPlan: string; validFrom: string | null; validTo: string | null; active: boolean }>) {
