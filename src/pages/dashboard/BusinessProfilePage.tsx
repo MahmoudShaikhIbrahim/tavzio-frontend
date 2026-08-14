@@ -255,7 +255,7 @@ function AppearanceSection({ business, businessId, onSaved }: { business: AdminB
         previewVars={buildBusinessThemeVars(customerBackground, customerButton)}
       />
       <ColorPairPicker
-        title="Admin/staff dashboard"
+        title="Owner/staff dashboard"
         description="Shared for your whole team - not a personal preference."
         background={dashboardBackground}
         button={dashboardButton}

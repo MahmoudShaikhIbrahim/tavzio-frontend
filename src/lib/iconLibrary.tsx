@@ -13,6 +13,7 @@ import {
 import {
   FaGlobe, FaMapMarkerAlt, FaStar, FaPhone, FaEnvelope, FaMusic, FaGift,
   FaHeart, FaTicketAlt, FaCamera, FaShoppingBag, FaLink, FaLinkedin,
+  FaBell, FaReceipt, FaBroom,
 } from 'react-icons/fa';
 
 export interface IconOption {
@@ -48,6 +49,9 @@ export const ICON_LIBRARY: IconOption[] = [
   { key: 'ticket', label: 'Ticket', Icon: FaTicketAlt },
   { key: 'camera', label: 'Camera', Icon: FaCamera },
   { key: 'shoppingBag', label: 'Shopping Bag', Icon: FaShoppingBag },
+  { key: 'bell', label: 'Bell / Call', Icon: FaBell },
+  { key: 'receipt', label: 'Receipt / Bill', Icon: FaReceipt },
+  { key: 'broom', label: 'Housekeeping', Icon: FaBroom },
   { key: 'link', label: 'Generic Link', Icon: FaLink },
 ];
 

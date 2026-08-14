@@ -40,6 +40,10 @@ export default function FeaturesPage() {
   return (
     <div className="space-y-10">
       <Section title="Ordering">
+        <p className="mb-3 text-sm text-ivory-dim">
+          Call a Waiter, Request the Bill, and any other guest-notification button now live under
+          Landing Page Buttons, alongside your other buttons - not here anymore.
+        </p>
         <div className="space-y-2">
           <ToggleRow label="Menu view" description="Customers can browse the menu after tapping."
             checked={ordering.menuView} onChange={(v) => patch({ ordering: { menuView: v } })} />
@@ -47,10 +51,6 @@ export default function FeaturesPage() {
             checked={ordering.submission} onChange={(v) => patch({ ordering: { submission: v } })} />
           <ToggleRow label="POS integration" description="Push orders into a connected POS, on top of Tavzio's own screen. Set up by the platform operator."
             checked={ordering.posIntegration} onChange={(v) => patch({ ordering: { posIntegration: v } })} />
-          <ToggleRow label="Call waiter" description="Only useful with order submission or POS integration on."
-            checked={ordering.callWaiter} onChange={(v) => patch({ ordering: { callWaiter: v } })} disabled={!ordering.submission} />
-          <ToggleRow label="Request bill" description="Only useful with order submission or POS integration on."
-            checked={ordering.requestBill} onChange={(v) => patch({ ordering: { requestBill: v } })} disabled={!ordering.submission} />
           <ToggleRow
             label="Pay before order"
             description={
@@ -98,7 +98,7 @@ export default function FeaturesPage() {
 
       <Section title="HR">
         <p className="mb-3 text-sm text-ivory-dim">
-          Admin-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
+          Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
           Each piece below is independent; turn on only what your business actually uses.
         </p>
         <div className="space-y-2">

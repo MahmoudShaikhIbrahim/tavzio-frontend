@@ -690,6 +690,10 @@ export interface CustomButton {
   url: string;
   enabled: boolean;
   sort_order: number;
+  button_type: 'link' | 'notification' | 'group';
+  notification_destination: 'general' | 'housekeeping_task' | 'maintenance_ticket';
+  target_section: string | null;
+  parent_button_id: string | null;
 }
 
 // --- Pay Bill / split payments ---

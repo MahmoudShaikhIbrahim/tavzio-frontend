@@ -274,6 +274,9 @@ export function listRatePlans(businessId: string) {
 export function createRatePlan(businessId: string, payload: { name: string; rateType?: string; baseRateAed: number; isRefundable?: boolean; mealPlan?: string; validFrom?: string; validTo?: string }) {
   return authFetch<HotelRatePlan>(`/api/businesses/${businessId}/hotel/rate-plans`, { method: 'POST', body: JSON.stringify(payload) });
 }
+export function updateRatePlan(businessId: string, ratePlanId: string, payload: Partial<{ name: string; rateType: string; baseRateAed: number; isRefundable: boolean; mealPlan: string; validFrom: string | null; validTo: string | null; active: boolean }>) {
+  return authFetch<HotelRatePlan>(`/api/businesses/${businessId}/hotel/rate-plans/${ratePlanId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
 
 export interface NightAudit {
   id: string; business_id: string; business_date: string; run_at: string;
@@ -1139,6 +1142,10 @@ export interface CustomButtonPayload {
   url?: string;
   enabled?: boolean;
   sortOrder?: number;
+  buttonType?: 'link' | 'notification' | 'group';
+  notificationDestination?: 'general' | 'housekeeping_task' | 'maintenance_ticket';
+  targetSection?: string | null;
+  parentButtonId?: string | null;
 }
 
 export function createCustomButton(businessId: string, payload: CustomButtonPayload) {

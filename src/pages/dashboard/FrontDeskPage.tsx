@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listRooms, createRoom, listGuests, createGuest, listReservations, createReservation,
+  listRooms, createRoom, updateRoom, listGuests, createGuest, listReservations, createReservation,
   checkInReservation, checkOutReservation, cancelReservation,
   getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
+  recordFolioAdjustment, transferFolioCharge,
   listCards, updateCard, getTourismDirhamReport, type TourismDirhamCharge,
-  listBookingGroups, createBookingGroup,
+  listBookingGroups, createBookingGroup, updateBookingGroup, deleteBookingGroup,
 } from '../../lib/authApi';
 import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card, HotelBookingGroup } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
@@ -249,6 +250,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
   const [baseRate, setBaseRate] = useState(0);
   const [newRoomCardId, setNewRoomCardId] = useState('');
   const [linkingRoomId, setLinkingRoomId] = useState<string | null>(null);
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
 
   function reload() {
     listRooms(businessId).then(setRooms);
@@ -305,9 +307,15 @@ function RoomsTab({ businessId }: { businessId: string }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {rooms.map((r) => {
           const connectedCard = r.cards?.[0];
+          if (editingRoomId === r.id) {
+            return <RoomEditForm key={r.id} businessId={businessId} room={r} onDone={() => { setEditingRoomId(null); reload(); }} onCancel={() => setEditingRoomId(null)} />;
+          }
           return (
             <div key={r.id} className={`rounded-lg border p-3 ${STATUS_COLOR[r.status]}`}>
-              <p className="text-base text-ivory">{r.room_number}</p>
+              <div className="flex items-start justify-between gap-1">
+                <p className="text-base text-ivory">{r.room_number}</p>
+                <button type="button" onClick={() => setEditingRoomId(r.id)} className="text-xs text-brass hover:underline">Edit</button>
+              </div>
               <p className="text-sm capitalize">{r.status}</p>
               <p className="text-xs text-ivory-dim">{r.room_type} · AED {r.base_rate_aed}/night</p>
 
@@ -341,6 +349,52 @@ function RoomsTab({ businessId }: { businessId: string }) {
     </Section>
   );
 }
+
+function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: string; room: HotelRoom; onDone: () => void; onCancel: () => void }) {
+  const [roomNumber, setRoomNumber] = useState(room.room_number);
+  const [roomType, setRoomType] = useState(room.room_type);
+  const [baseRate, setBaseRate] = useState(room.base_rate_aed);
+  const [status, setStatus] = useState(room.status);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    setSaving(true);
+    setError('');
+    try {
+      await updateRoom(businessId, room.id, { roomNumber, roomType, baseRateAed: baseRate, status });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this room');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-brass/40 bg-ink-soft p-3">
+      <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="Room number" className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+      <input value={roomType} onChange={(e) => setRoomType(e.target.value)} placeholder="Type" className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+      <input type="number" min={0} value={baseRate} onFocus={(e) => e.target.select()} onChange={(e) => setBaseRate(Number(e.target.value))} placeholder="Rate/night" className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+      <select value={status} onChange={(e) => setStatus(e.target.value as HotelRoom['status'])} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory">
+        <option value="available">Available</option>
+        <option value="occupied">Occupied</option>
+        <option value="dirty">Dirty</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="out_of_order">Out of order</option>
+      </select>
+      {error && <p className="text-xs text-danger">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" onClick={handleSave} disabled={saving} className="flex-1 rounded bg-brass px-2 py-1.5 text-xs font-medium text-ink disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        <button type="button" onClick={onCancel} className="flex-1 rounded border border-ink-line px-2 py-1.5 text-xs text-ivory-dim">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 
 function FolioView({ businessId, reservationId, onClose }: { businessId: string; reservationId: string; onClose: () => void }) {
@@ -384,14 +438,14 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
         </p>
       </div>
       {folios.map((folio) => (
-        <FolioCard key={folio.id} businessId={businessId} folio={folio} selectedIds={selectedIds[folio.id] || []} onToggleCharge={(chargeId) => toggleCharge(folio.id, chargeId)} onSplit={() => handleSplit(folio.id)} onReload={reload} />
+        <FolioCard key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)} selectedIds={selectedIds[folio.id] || []} onToggleCharge={(chargeId) => toggleCharge(folio.id, chargeId)} onSplit={() => handleSplit(folio.id)} onReload={reload} />
       ))}
     </div>
   );
 }
 
-function FolioCard({ businessId, folio, selectedIds, onToggleCharge, onSplit, onReload }: {
-  businessId: string; folio: HotelFolio; selectedIds: string[]; onToggleCharge: (chargeId: string) => void; onSplit: () => void; onReload: () => void;
+function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge, onSplit, onReload }: {
+  businessId: string; folio: HotelFolio; otherFolios: HotelFolio[]; selectedIds: string[]; onToggleCharge: (chargeId: string) => void; onSplit: () => void; onReload: () => void;
 }) {
   const [chargeDesc, setChargeDesc] = useState('');
   const [chargeAmount, setChargeAmount] = useState(0);
@@ -399,6 +453,10 @@ function FolioCard({ businessId, folio, selectedIds, onToggleCharge, onSplit, on
   const [depositAmount, setDepositAmount] = useState(0);
   const [refundAmount, setRefundAmount] = useState(0);
   const [refundReason, setRefundReason] = useState('');
+  const [adjustAmount, setAdjustAmount] = useState(0);
+  const [adjustDesc, setAdjustDesc] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [transferringChargeId, setTransferringChargeId] = useState<string | null>(null);
 
   async function handleAddCharge(e: React.FormEvent) {
     e.preventDefault();
@@ -432,17 +490,55 @@ function FolioCard({ businessId, folio, selectedIds, onToggleCharge, onSplit, on
     onReload();
   }
 
+  async function handleAdjustment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!adjustAmount || !adjustDesc.trim() || !adjustReason.trim()) { alert('Description and reason are both required for an adjustment'); return; }
+    await recordFolioAdjustment(businessId, folio.id, adjustAmount, adjustDesc, adjustReason);
+    setAdjustAmount(0); setAdjustDesc(''); setAdjustReason('');
+    onReload();
+  }
+
+  async function handleTransfer(chargeId: string, toFolioId: string) {
+    if (!toFolioId) return;
+    await transferFolioCharge(businessId, folio.id, chargeId, toFolioId);
+    setTransferringChargeId(null);
+    onReload();
+  }
+
   return (
     <Section title={`${folio.is_primary ? 'Primary folio' : 'Split folio'} - ${folio.payer_type === 'company' ? `Company: ${folio.company_name}` : 'Guest'}${folio.status === 'closed' ? ' (closed)' : ''}`}>
       <div className="space-y-2">
         {folio.charges.map((c) => (
-          <label key={c.id} className="flex items-center justify-between gap-2 text-base">
-            <span className="flex items-center gap-2 text-ivory-dim">
-              {folio.status === 'open' && <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => onToggleCharge(c.id)} className="accent-brass" />}
-              {c.description} <span className="text-xs uppercase text-ivory-dim/60">({c.charge_type})</span>
-            </span>
-            <span className={c.amount_aed < 0 ? 'text-success' : 'text-ivory'}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
-          </label>
+          <div key={c.id}>
+            <label className="flex items-center justify-between gap-2 text-base">
+              <span className="flex items-center gap-2 text-ivory-dim">
+                {folio.status === 'open' && <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => onToggleCharge(c.id)} className="accent-brass" />}
+                {c.description} <span className="text-xs uppercase text-ivory-dim/60">({c.charge_type})</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className={c.amount_aed < 0 ? 'text-success' : 'text-ivory'}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
+                {folio.status === 'open' && otherFolios.length > 0 && (
+                  <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="text-xs text-brass hover:underline">
+                    Transfer
+                  </button>
+                )}
+              </span>
+            </label>
+            {transferringChargeId === c.id && (
+              <div className="ml-6 mt-1 flex items-center gap-2">
+                <select
+                  onChange={(e) => handleTransfer(c.id, e.target.value)}
+                  defaultValue=""
+                  className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory"
+                >
+                  <option value="" disabled>Move to which folio...</option>
+                  {otherFolios.map((f) => (
+                    <option key={f.id} value={f.id}>{f.is_primary ? 'Primary folio' : f.payer_type === 'company' ? `Company: ${f.company_name}` : 'Guest folio'}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         ))}
       </div>
       <div className="flex justify-between border-t border-ink-line pt-3 text-lg">
@@ -474,6 +570,13 @@ function FolioCard({ businessId, folio, selectedIds, onToggleCharge, onSplit, on
               <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
               <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
               <button type="submit" className="w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
+            </form>
+            <form onSubmit={handleAdjustment} className="space-y-2 rounded-lg border border-ink-line p-3">
+              <p className="text-sm text-ivory-dim">Manual adjustment (+/-)</p>
+              <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder="Amount AED - negative to credit" className={inputClass} />
+              <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder="Description (required)" className={inputClass} />
+              <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
+              <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Apply adjustment</button>
             </form>
           </div>
           <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
@@ -546,6 +649,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   function reload() { listBookingGroups(businessId).then(setGroups); }
   useEffect(reload, [businessId]);
@@ -561,6 +665,12 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleDelete(g: HotelBookingGroup) {
+    if (!confirm(`Delete "${g.group_name}"? Its reservations stay as they are, just no longer grouped together.`)) return;
+    await deleteBookingGroup(businessId, g.id);
+    reload();
   }
 
   return (
@@ -584,12 +694,19 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
       )}
       <div className="space-y-3">
         {groups.map((g) => {
+          if (editingId === g.id) {
+            return <BookingGroupEditForm key={g.id} businessId={businessId} group={g} onDone={() => { setEditingId(null); reload(); }} onCancel={() => setEditingId(null)} />;
+          }
           const reservations = g.hotel_reservations || [];
           return (
             <div key={g.id} className="rounded-lg border border-ink-line p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-base text-ivory">{g.group_name}</p>
-                <p className="text-sm text-ivory-dim">{reservations.length} room{reservations.length === 1 ? '' : 's'}</p>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-ivory-dim">{reservations.length} room{reservations.length === 1 ? '' : 's'}</span>
+                  <button type="button" onClick={() => setEditingId(g.id)} className="text-brass hover:underline">Edit</button>
+                  <button type="button" onClick={() => handleDelete(g)} className="text-danger hover:underline">Delete</button>
+                </div>
               </div>
               {(g.contact_name || g.contact_phone) && (
                 <p className="text-sm text-ivory-dim">{[g.contact_name, g.contact_phone].filter(Boolean).join(' · ')}</p>
@@ -610,5 +727,44 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
         {groups.length === 0 && <p className="text-ivory-dim">No booking groups yet.</p>}
       </div>
     </Section>
+  );
+}
+
+function BookingGroupEditForm({ businessId, group, onDone, onCancel }: {
+  businessId: string; group: HotelBookingGroup; onDone: () => void; onCancel: () => void;
+}) {
+  const [groupName, setGroupName] = useState(group.group_name);
+  const [contactName, setContactName] = useState(group.contact_name || '');
+  const [contactPhone, setContactPhone] = useState(group.contact_phone || '');
+  const [contactEmail, setContactEmail] = useState(group.contact_email || '');
+  const [notes, setNotes] = useState(group.notes || '');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateBookingGroup(businessId, group.id, { groupName, contactName, contactPhone, contactEmail, notes });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border border-brass/40 bg-ink-soft p-4">
+      <Field label="Group name"><input value={groupName} onChange={(e) => setGroupName(e.target.value)} className={inputClass} /></Field>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label="Contact name"><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
+        <Field label="Contact phone"><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
+        <Field label="Contact email"><input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className={inputClass} /></Field>
+      </div>
+      <Field label="Notes"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} /></Field>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save changes'}
+        </button>
+        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">Cancel</button>
+      </div>
+    </div>
   );
 }

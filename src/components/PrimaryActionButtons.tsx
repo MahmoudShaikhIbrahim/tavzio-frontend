@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UtensilsCrossed, CalendarCheck, BellRing, Receipt, CreditCard } from 'lucide-react';
-import type { Business } from '../types';
-import { submitQuickRequest } from '../lib/api';
+import { UtensilsCrossed, CalendarCheck, CreditCard, ChevronRight, ArrowLeft } from 'lucide-react';
+import type { Business, CustomButton } from '../types';
+import { submitCustomButtonRequest } from '../lib/api';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import { getIcon, getIconColor } from '../lib/iconLibrary';
 
@@ -21,6 +21,24 @@ const iconWrapClass = 'flex h-9 w-9 shrink-0 items-center justify-center rounded
 export default function PrimaryActionButtons({ business, tapEventId }: Props) {
   const { ordering, booking } = business.features;
   const { t } = useLanguage();
+  // A group button (e.g. "Services") replaces this whole list with its
+  // own children when tapped - null means showing the normal top-level
+  // list, an id means showing that group's contents instead.
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+
+  if (openGroupId) {
+    const group = business.customButtons.find((b) => b.id === openGroupId);
+    const children = business.customButtons.filter((b) => b.parent_button_id === openGroupId && b.enabled);
+    return (
+      <div className="space-y-2.5">
+        <button type="button" onClick={() => setOpenGroupId(null)} className="flex items-center gap-2 text-sm text-ivory-dim hover:text-ivory">
+          <ArrowLeft size={15} /> {group?.label || 'Back'}
+        </button>
+        {children.map((btn) => <CustomButtonItem key={btn.id} btn={btn} slug={business.slug} tapEventId={tapEventId} onOpenGroup={setOpenGroupId} />)}
+        {children.length === 0 && <p className="text-sm text-ivory-dim">Nothing here yet.</p>}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2.5">
@@ -45,45 +63,73 @@ export default function PrimaryActionButtons({ business, tapEventId }: Props) {
         </Link>
       )}
 
-      {ordering.callWaiter && (
-        <QuickRequestButton slug={business.slug} tapEventId={tapEventId} requestType="call_waiter" icon={BellRing} labelKey="callWaiter" />
-      )}
-
-      {ordering.requestBill && (
-        <QuickRequestButton slug={business.slug} tapEventId={tapEventId} requestType="request_bill" icon={Receipt} labelKey="requestBill" />
-      )}
-
-      {business.customButtons.map((btn) => {
-        const Icon = getIcon(btn.icon);
-        const brandColor = getIconColor(btn.icon);
-        return (
-          <a key={btn.id} href={btn.url} target="_blank" rel="noreferrer" className={buttonClass}>
-            {btn.image_url ? (
-              <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
-                <img src={btn.image_url} alt="" className="h-full w-full object-cover" />
-              </span>
-            ) : (
-              <span className={iconWrapClass} style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
-                <Icon size={15} />
-              </span>
-            )}
-            {/* Custom button labels are owner-typed content, same reasoning
-                as menu items - never auto-translated. */}
-            <span className="font-body text-[15px] font-medium">{btn.label}</span>
-          </a>
-        );
-      })}
+      {/* Call a Waiter / Request the Bill / Housekeeping / Maintenance /
+          any other owner-defined notification button, plus link buttons
+          and group ("Services") buttons - all one system, managed from
+          Landing Page Buttons. Only top-level buttons (no parent) ever
+          render here directly; a group's own children only appear once
+          that group is opened. */}
+      {business.customButtons.filter((btn) => !btn.parent_button_id).map((btn) => (
+        <CustomButtonItem key={btn.id} btn={btn} slug={business.slug} tapEventId={tapEventId} onOpenGroup={setOpenGroupId} />
+      ))}
     </div>
   );
 }
 
-function QuickRequestButton({ slug, tapEventId, requestType, icon: Icon, labelKey }: {
-  slug: string; tapEventId: number | null; requestType: 'call_waiter' | 'request_bill'; icon: typeof BellRing;
-  labelKey: 'callWaiter' | 'requestBill';
+function CustomButtonItem({ btn, slug, tapEventId, onOpenGroup }: {
+  btn: CustomButton; slug: string; tapEventId: number | null; onOpenGroup: (id: string) => void;
+}) {
+  if (btn.button_type === 'group') {
+    const Icon = getIcon(btn.icon);
+    const brandColor = getIconColor(btn.icon);
+    return (
+      <button type="button" onClick={() => onOpenGroup(btn.id)} className={buttonClass}>
+        {btn.image_url ? (
+          <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
+            <img src={btn.image_url} alt="" className="h-full w-full object-cover" />
+          </span>
+        ) : (
+          <span className={iconWrapClass} style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
+            <Icon size={15} />
+          </span>
+        )}
+        <span className="font-body text-[15px] font-medium">{btn.label}</span>
+        <ChevronRight size={16} className="ml-auto shrink-0 text-ivory-dim" />
+      </button>
+    );
+  }
+
+  if (btn.button_type === 'notification') {
+    return <QuickRequestButton slug={slug} tapEventId={tapEventId} button={btn} />;
+  }
+
+  const Icon = getIcon(btn.icon);
+  const brandColor = getIconColor(btn.icon);
+  return (
+    <a href={btn.url} target="_blank" rel="noreferrer" className={buttonClass}>
+      {btn.image_url ? (
+        <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
+          <img src={btn.image_url} alt="" className="h-full w-full object-cover" />
+        </span>
+      ) : (
+        <span className={iconWrapClass} style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
+          <Icon size={15} />
+        </span>
+      )}
+      {/* Custom button labels are owner-typed content, same reasoning
+          as menu items - never auto-translated. */}
+      <span className="font-body text-[15px] font-medium">{btn.label}</span>
+    </a>
+  );
+}
+
+function QuickRequestButton({ slug, tapEventId, button }: {
+  slug: string; tapEventId: number | null; button: { id: string; label: string; icon: string; image_url: string | null };
 }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const { t } = useLanguage();
-  const label = t(labelKey);
+  const Icon = getIcon(button.icon);
+  const brandColor = getIconColor(button.icon);
 
   async function handleClick() {
     if (!tapEventId) {
@@ -92,17 +138,27 @@ function QuickRequestButton({ slug, tapEventId, requestType, icon: Icon, labelKe
     }
     setState('sending');
     try {
-      await submitQuickRequest(slug, tapEventId, requestType);
+      await submitCustomButtonRequest(slug, button.id, tapEventId);
       setState('sent');
     } catch {
       setState('error');
     }
   }
 
+  const iconEl = button.image_url ? (
+    <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
+      <img src={button.image_url} alt="" className="h-full w-full object-cover" />
+    </span>
+  ) : (
+    <span className={iconWrapClass} style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
+      <Icon size={17} strokeWidth={1.75} />
+    </span>
+  );
+
   if (state === 'sent') {
     return (
       <div className={`${buttonClass} cursor-default`}>
-        <span className={iconWrapClass}><Icon size={17} strokeWidth={1.75} /></span>
+        {iconEl}
         <span className="font-body text-[15px] font-medium text-brass">{t('staffNotified')}</span>
       </div>
     );
@@ -110,9 +166,9 @@ function QuickRequestButton({ slug, tapEventId, requestType, icon: Icon, labelKe
 
   return (
     <button type="button" onClick={handleClick} disabled={state === 'sending'} className={buttonClass}>
-      <span className={iconWrapClass}><Icon size={17} strokeWidth={1.75} /></span>
+      {iconEl}
       <span className="font-body text-[15px] font-medium">
-        {state === 'sending' ? t('sending') : state === 'error' ? `${label} — ${t('tapAgainToTry')}` : label}
+        {state === 'sending' ? t('sending') : state === 'error' ? `${button.label} — ${t('tapAgainToTry')}` : button.label}
       </span>
     </button>
   );

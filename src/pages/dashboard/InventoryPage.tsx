@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listIngredients, createIngredient, deleteIngredient, adjustStock,
+  listIngredients, createIngredient, updateIngredient, deleteIngredient, adjustStock,
   listSuppliers, createSupplier,
   listPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
 } from '../../lib/authApi';
@@ -47,6 +47,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
   const [threshold, setThreshold] = useState(0);
   const [adjustingId, setAdjustingId] = useState<string | null>(null);
   const [adjustQty, setAdjustQty] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   function reload() {
@@ -123,6 +124,9 @@ function IngredientsTab({ businessId }: { businessId: string }) {
           // as "basically empty" just because 200/huge-number is tiny).
           const ceiling = Math.max(ing.low_stock_threshold * 2, ing.low_stock_threshold + 1, 1);
           const fillPct = Math.min(100, Math.round((ing.stock_qty / ceiling) * 100));
+          if (editingId === ing.id) {
+            return <IngredientEditForm key={ing.id} businessId={businessId} ingredient={ing} onDone={() => { setEditingId(null); reload(); }} onCancel={() => setEditingId(null)} />;
+          }
           return (
             <div key={ing.id} className="rounded-xl border border-ink-line bg-ink-soft/40 p-4 transition-colors hover:border-brass/40">
               <div className="flex items-start justify-between gap-2">
@@ -160,6 +164,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
               ) : (
                 <div className="mt-3 flex items-center gap-4 border-t border-ink-line pt-3">
                   <button type="button" onClick={() => setAdjustingId(ing.id)} className="text-sm text-brass hover:underline">Adjust stock</button>
+                  <button type="button" onClick={() => setEditingId(ing.id)} className="text-sm text-brass hover:underline">Edit</button>
                   <button type="button" onClick={() => handleDelete(ing.id, ing.name)} className="text-sm text-danger hover:underline">Delete</button>
                 </div>
               )}
@@ -171,6 +176,57 @@ function IngredientsTab({ businessId }: { businessId: string }) {
     </Section>
   );
 }
+
+function IngredientEditForm({ businessId, ingredient, onDone, onCancel }: {
+  businessId: string; ingredient: Ingredient; onDone: () => void; onCancel: () => void;
+}) {
+  const [name, setName] = useState(ingredient.name);
+  const [unit, setUnit] = useState(ingredient.unit);
+  const [threshold, setThreshold] = useState(ingredient.low_stock_threshold);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    setSaving(true);
+    setError('');
+    try {
+      await updateIngredient(businessId, ingredient.id, { name, unit, lowStockThreshold: threshold });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this ingredient');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border border-brass/40 bg-ink-soft p-4">
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory" />
+      <div className="flex gap-2">
+        <select value={unit} onChange={(e) => setUnit(e.target.value as Ingredient['unit'])} className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory">
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="l">l</option>
+          <option value="piece">piece</option>
+        </select>
+        <input
+          type="number" min={0} value={threshold} onFocus={(e) => e.target.select()}
+          onChange={(e) => setThreshold(Number(e.target.value))}
+          placeholder="Low stock at"
+          className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
+        />
+      </div>
+      {error && <p className="text-xs text-danger">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 
 function SuppliersTab({ businessId }: { businessId: string }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);

@@ -55,6 +55,9 @@ import FrontDeskPage from './pages/dashboard/FrontDeskPage';
 import HousekeepingPage from './pages/dashboard/HousekeepingPage';
 import ExternalHotelSystemsPage from './pages/dashboard/ExternalHotelSystemsPage';
 import HotelOutletsPage from './pages/dashboard/HotelOutletsPage';
+import RatePlansPage from './pages/dashboard/RatePlansPage';
+import NightAuditPage from './pages/dashboard/NightAuditPage';
+import PosIntegrationPage from './pages/dashboard/PosIntegrationPage';
 import HRPage from './pages/dashboard/HRPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
@@ -140,6 +143,9 @@ export default function App() {
             <Route path="housekeeping" element={<HousekeepingPage />} />
             <Route path="settings/external-hotel-systems" element={<ExternalHotelSystemsPage />} />
             <Route path="settings/hotel-outlets" element={<HotelOutletsPage />} />
+            <Route path="settings/rate-plans" element={<RatePlansPage />} />
+            <Route path="settings/night-audit" element={<NightAuditPage />} />
+            <Route path="settings/pos-integration" element={<PosIntegrationPage />} />
             <Route path="settings/hr" element={<HRPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />

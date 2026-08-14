@@ -5,7 +5,7 @@ import {
   listCards, createCards, updateCard, deleteCard,
   getPaymentStatus,
   listReceipts, createReceipt, voidReceipt, downloadReceiptPdf,
-  createContract, sendContract, listContracts, previewContract, generateContractReceipt, resetAccountPassword,
+  createContract, sendContract, listContracts, previewContract, generateContractReceipt, resetAccountPassword, issueAdminCard,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { Field, inputClass } from '../../components/ui';
@@ -56,6 +56,7 @@ export default function BusinessDetail() {
 
         <BusinessTypeEditor business={business} businessId={businessId} onSaved={setBusiness} />
         <OwnerPasswordReset business={business} businessId={businessId} />
+        <AdminCardIssue business={business} businessId={businessId} />
 
         <div className="mt-4 flex gap-2">
           {business.status !== 'active' && (
@@ -181,7 +182,7 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
       <div className="rounded-lg border border-ink-line p-4">
         <p className="text-base text-ivory">Payment gateway</p>
         <p className="mt-1 text-sm text-ivory-dim">
-          Set up by the admin directly, from their own Settings — the secret
+          Set up by the owner directly, from their own Settings — the secret
           key is never visible here, only whether it's connected.
         </p>
         <p className="mt-2 text-base">
@@ -263,7 +264,7 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
   const [resetting, setResetting] = useState(false);
 
   async function handleReset() {
-    if (!confirm(`Reset the admin's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`)) return;
+    if (!confirm(`Reset the owner's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`)) return;
     setResetting(true);
     try {
       const res = await resetAccountPassword(businessId, business.owner);
@@ -283,7 +284,39 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
         </div>
       ) : (
         <button type="button" onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50">
-          {resetting ? 'Resetting...' : "Reset admin's password"}
+          {resetting ? 'Resetting...' : "Reset owner's password"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function AdminCardIssue({ business, businessId }: { business: AdminBusiness; businessId: string }) {
+  const [issued, setIssued] = useState<Card | null>(null);
+  const [issuing, setIssuing] = useState(false);
+
+  async function handleIssue() {
+    if (!confirm(`Issue a fresh admin login card for ${business.name}'s admin account? Any old admin card stops working immediately, and they'll be signed out everywhere.`)) return;
+    setIssuing(true);
+    try {
+      const card = await issueAdminCard(businessId, business.owner);
+      setIssued(card);
+    } finally {
+      setIssuing(false);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      {issued ? (
+        <div className="rounded-lg border border-brass/40 bg-ink-soft p-3 text-sm">
+          <p className="text-ivory">New admin card issued - write this UID to the physical NFC card:</p>
+          <p className="mt-1 select-all rounded bg-ink px-2.5 py-1.5 font-mono text-base text-brass">{issued.uid}</p>
+          <button type="button" onClick={() => setIssued(null)} className="mt-1 text-ivory-dim hover:text-ivory">Dismiss</button>
+        </div>
+      ) : (
+        <button type="button" onClick={handleIssue} disabled={issuing} className="text-sm text-brass hover:underline disabled:opacity-50">
+          {issuing ? 'Issuing...' : 'Reissue admin login card'}
         </button>
       )}
     </div>
@@ -337,7 +370,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
       }
     >
       <p className="text-base text-ivory-dim">
-        Every contract is a fixed 1-year term - only the payment frequency changes. Send it for the admin to
+        Every contract is a fixed 1-year term - only the payment frequency changes. Send it for the owner to
         e-sign inside their dashboard; once signed, generate installment receipts against it as payments come due.
       </p>
       {showForm && <ContractForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}

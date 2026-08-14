@@ -43,6 +43,9 @@ const SETTINGS_ITEMS = [
   // field on every item, to keep this array's shape uniform.
   { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
   { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/rate-plans', label: 'Rate Plans', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/night-audit', label: 'Night Audit', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/pos-integration', label: 'POS Integration', ownerOnly: true, requires: 'ordering' as const },
   { path: 'settings/hr', label: 'HR', ownerOnly: true, requires: 'hr' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
@@ -188,7 +191,7 @@ export default function DashboardLayout() {
             <ClockWidget />
             <AccountSwitcher />
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
-            <span>{user?.name} · {isOwner ? 'Admin' : 'Staff'}</span>
+            <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
             <button type="button" onClick={logout} className="hover:text-ivory">Sign out</button>
           </div>
         </div>

@@ -3,7 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import {
   listMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
   listMenuItems, createMenuItem, updateMenuItem, deleteMenuItem,
-  listAddons, createAddon, deleteAddon, getBusiness, updateBusiness,
+  listAddons, createAddon, updateAddon, deleteAddon, getBusiness, updateBusiness,
   getRecipe, setRecipe as setRecipeApi, listIngredients,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
@@ -418,6 +418,9 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
   const [addons, setAddons] = useState<MenuItemAddon[]>([]);
   const [name, setName] = useState('');
   const [price, setPrice] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPrice, setEditPrice] = useState(0);
 
   function reload() {
     listAddons(businessId, itemId).then(setAddons);
@@ -432,21 +435,45 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
     reload();
   }
 
+  function startEdit(a: MenuItemAddon) {
+    setEditingId(a.id);
+    setEditName(a.name);
+    setEditPrice(a.price);
+  }
+
+  async function handleSaveEdit(addonId: string) {
+    if (!editName.trim()) return;
+    await updateAddon(businessId, itemId, addonId, { name: editName.trim(), price: editPrice });
+    setEditingId(null);
+    reload();
+  }
+
   return (
     <div className="space-y-2 border-t border-ink-line p-3">
       {addons.map((a) => (
-        <div key={a.id} className="flex items-center justify-between text-base">
-          <span className="text-ivory-dim">{a.name} — +{a.price.toFixed(2)}</span>
-          <ActionButton
-            danger
-            onClick={() => {
-              setAddons((prev) => prev.filter((addon) => addon.id !== a.id));
-              deleteAddon(businessId, itemId, a.id).catch(reload);
-            }}
-          >
-            Remove
-          </ActionButton>
-        </div>
+        editingId === a.id ? (
+          <div key={a.id} className="flex items-center gap-2">
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} className={`${inputClass} flex-1`} />
+            <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={editPrice} onChange={(e) => setEditPrice(Number(e.target.value))} className={`${inputClass} w-24`} />
+            <ActionButton onClick={() => handleSaveEdit(a.id)}>Save</ActionButton>
+            <ActionButton onClick={() => setEditingId(null)}>Cancel</ActionButton>
+          </div>
+        ) : (
+          <div key={a.id} className="flex items-center justify-between text-base">
+            <button type="button" onClick={() => startEdit(a)} className="text-ivory-dim hover:text-ivory hover:underline">
+              {a.name} — +{a.price.toFixed(2)}
+            </button>
+            <ActionButton
+              danger
+              onClick={() => {
+                setAddons((prev) => prev.filter((addon) => addon.id !== a.id));
+                deleteAddon(businessId, itemId, a.id).catch(reload);
+              }}
+            >
+              Remove
+            </ActionButton>
+          </div>
+        )
       ))}
       {addons.length === 0 && <p className="text-base text-ivory-dim">No add-ons yet.</p>}
       <form onSubmit={handleAdd} className="flex gap-2 pt-1">

@@ -74,7 +74,7 @@ export default function StaffPage() {
             <div key={s.id} className="rounded-lg border border-ink-line px-5 py-4 text-base">
               <div className="flex items-center justify-between">
                 <span className="text-ivory">
-                  {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? 'Admin' : s.role.replace('_', ' ')}</span>
+                  {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? 'Owner' : s.role.replace('_', ' ')}</span>
                   {!s.is_active && <span className="ml-2 text-base text-danger">deactivated</span>}
                 </span>
               </div>

@@ -54,7 +54,7 @@ export default function AccountSwitcher() {
             >
               <span className="block">{link.account.name}</span>
               <span className="block text-xs text-ivory-dim">
-                {link.account.businesses?.name || (link.account.role === 'org_owner' ? 'Organization' : link.account.role === 'business_owner' ? 'Admin' : link.account.role)}
+                {link.account.businesses?.name || (link.account.role === 'org_owner' ? 'Organization' : link.account.role === 'business_owner' ? 'Owner' : link.account.role)}
               </span>
             </button>
           ))}

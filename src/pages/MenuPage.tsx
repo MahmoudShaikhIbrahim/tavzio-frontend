@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getMenu, submitOrder, getBusiness, payOrder, createOrderPaySession, confirmOrderPayment, payOrderWithCash } from '../lib/api';
+import { getMenu, submitOrder, getBusiness, payOrder, createOrderPaySession, confirmOrderPayment, cancelOrderPayment, payOrderWithCash } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import type { Business } from '../types';
 import { useCart } from '../hooks/useCart';
@@ -139,6 +139,9 @@ function MenuPageContent({ slug }: { slug: string }) {
   useEffect(() => {
     const paymentId = searchParams.get('orderPaymentId');
     if (!paymentId) return;
+    // Resolved one way or another now - no longer an abandoned attempt.
+    sessionStorage.removeItem(`tavzio_pending_order_payment_${slug}`);
+    setPendingCancel(null);
     setConfirmingReturn(true);
     confirmOrderPayment(slug, paymentId)
       .then(() => {
@@ -149,6 +152,30 @@ function MenuPageContent({ slug }: { slug: string }) {
       .finally(() => setConfirmingReturn(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  // Set the moment a redirect payment starts (see handlePayByCard below),
+  // cleared once resolved. Still here on a fresh load means the customer
+  // left mid-payment without completing anything - same recovery as the
+  // Pay Bill flow, so an abandoned order doesn't sit stuck.
+  const [pendingCancel, setPendingCancel] = useState<{ orderId: string; tapEventId: number } | null>(() => {
+    const stored = sessionStorage.getItem(`tavzio_pending_order_payment_${slug}`);
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [cancellingPending, setCancellingPending] = useState(false);
+
+  async function handleCancelPendingOrder() {
+    if (!pendingCancel) return;
+    setCancellingPending(true);
+    try {
+      await cancelOrderPayment(slug, pendingCancel.orderId, pendingCancel.tapEventId);
+    } catch {
+      // Already resolved server-side - nothing left to cancel either way.
+    } finally {
+      sessionStorage.removeItem(`tavzio_pending_order_payment_${slug}`);
+      setPendingCancel(null);
+      setCancellingPending(false);
+    }
+  }
 
   async function handleSendOrderPressed() {
     if (!tapEventId || cart.lines.length === 0) return;
@@ -176,6 +203,7 @@ function MenuPageContent({ slug }: { slug: string }) {
     try {
       if (paymentProvider === 'telr' || paymentProvider === 'ngenius' || paymentProvider === 'ziina') {
         const session = await createOrderPaySession(slug, tapEventId, orderNote, cart.lines);
+        sessionStorage.setItem(`tavzio_pending_order_payment_${slug}`, JSON.stringify({ orderId: session.orderId, tapEventId }));
         window.location.href = session.redirectUrl;
         return;
       }
@@ -379,6 +407,21 @@ function MenuPageContent({ slug }: { slug: string }) {
             <LanguageSwitcher />
           </div>
         </div>
+
+        {pendingCancel && !searchParams.get('orderPaymentId') && (
+          <div className="mt-4 rounded-xl border border-warning/40 bg-ink-soft px-4 py-3">
+            <p className="text-sm text-ivory">You started a payment that wasn't finished.</p>
+            <p className="mt-0.5 text-xs text-ivory-dim">That order is on hold - cancel it to start fresh, or continue if you're still paying.</p>
+            <button
+              type="button"
+              onClick={handleCancelPendingOrder}
+              disabled={cancellingPending}
+              className="mt-2 rounded-lg border border-warning/60 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50"
+            >
+              {cancellingPending ? 'Cancelling...' : 'Cancel that order'}
+            </button>
+          </div>
+        )}
 
         {categories.length > 1 && (
           <div className="mt-4 -mx-6 flex gap-2 overflow-x-auto px-6 pb-1" style={{ scrollbarWidth: 'none' }}>

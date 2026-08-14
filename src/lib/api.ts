@@ -158,12 +158,6 @@ export function submitOrder(
 
 // Call Waiter / Request Bill - no items, just a flagged quick request that
 // shows up on the same live Orders screen.
-export function submitQuickRequest(slug: string, tapEventId: number, requestType: 'call_waiter' | 'request_bill') {
-  return request<{ order: OrderRow }>(`/api/public/business/${slug}/orders`, {
-    method: 'POST',
-    body: JSON.stringify({ tapEventId, requestType, note: '', items: [] }),
-  });
-}
 
 export function getServices(slug: string) {
   return request<{ services: Service[] }>(`/api/public/business/${slug}/services`);
@@ -239,6 +233,16 @@ export function cancelBillPaySession(slug: string, paymentId: string) {
   return request<{ status: string }>(`/api/public/business/${slug}/bill/cancel`, {
     method: 'POST',
     body: JSON.stringify({ paymentId }),
+  });
+}
+
+// Submits a notification-type custom button request (Call a Waiter,
+// Request the Bill, Housekeeping, or any owner-defined one) - lands in
+// the same staff-facing Requests list as everything else.
+export function submitCustomButtonRequest(slug: string, buttonId: string, tapEventId: number) {
+  return request<{ order: OrderRow }>(`/api/public/business/${slug}/custom-buttons/${buttonId}/request`, {
+    method: 'POST',
+    body: JSON.stringify({ tapEventId }),
   });
 }
 

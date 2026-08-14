@@ -8,6 +8,7 @@ import { uploadBusinessFile } from '../../lib/supabaseClient';
 import type { AdminBusiness, BusinessLinks, CustomButton } from '../../types';
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
 import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
+import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, ActionButton } from '../../components/ui';
 
 export default function LandingButtonsPage() {
@@ -181,10 +182,12 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
 
       <div className="mt-2 border-t border-ink-line pt-4">
         <div className="space-y-4">
-          {extraButtons.map((b) => <CustomButtonRow key={b.id} button={b} buttons={extraButtons} businessId={businessId} onButtonsChange={setExtraButtons} onChange={reloadExtras} />)}
+          {extraButtons.filter((b) => !b.parent_button_id).map((b) => (
+            <CustomButtonRow key={b.id} button={b} buttons={extraButtons} business={business} businessId={businessId} onButtonsChange={setExtraButtons} onChange={reloadExtras} />
+          ))}
         </div>
         {showAddForm ? (
-          <CustomButtonForm businessId={businessId} onDone={() => { setShowAddForm(false); reloadExtras(); }} />
+          <CustomButtonForm business={business} businessId={businessId} onDone={() => { setShowAddForm(false); reloadExtras(); }} />
         ) : (
           <button type="button"
             onClick={() => setShowAddForm(true)}
@@ -200,14 +203,24 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
 
 
 
-function CustomButtonForm({ businessId, existing, onDone }: { businessId: string; existing?: CustomButton; onDone: () => void }) {
+function CustomButtonForm({ business, businessId, existing, forcedParentId, onDone }: {
+  business: AdminBusiness; businessId: string; existing?: CustomButton; forcedParentId?: string; onDone: () => void;
+}) {
   const [label, setLabel] = useState(existing?.label || '');
   const [icon, setIcon] = useState(existing?.icon || 'link');
   const [imageUrl, setImageUrl] = useState<string | null>(existing?.image_url || null);
   const [url, setUrl] = useState(existing?.url || '');
+  // Forced into a group's child list has no reason to itself be another
+  // group - keeps nesting to exactly one level deep, which is what
+  // "Services -> individual service" actually needs.
+  const [buttonType, setButtonType] = useState<'link' | 'notification' | 'group'>(existing?.button_type || (forcedParentId ? 'notification' : 'link'));
+  const [notificationDestination, setNotificationDestination] = useState<'general' | 'housekeeping_task' | 'maintenance_ticket'>(existing?.notification_destination || 'general');
+  const [targetSection, setTargetSection] = useState(existing?.target_section || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+
+  const isHotel = business.category === 'hotel';
 
   async function handleImageUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -233,10 +246,16 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
     setSaving(true);
     setError('');
     try {
+      const payload = {
+        label, icon, imageUrl, url, buttonType,
+        notificationDestination: buttonType === 'notification' ? notificationDestination : undefined,
+        targetSection: buttonType === 'notification' && notificationDestination === 'general' ? (targetSection || null) : null,
+        parentButtonId: forcedParentId ?? (existing?.parent_button_id ?? null),
+      };
       if (existing) {
-        await updateCustomButton(businessId, existing.id, { label, icon, imageUrl, url });
+        await updateCustomButton(businessId, existing.id, payload);
       } else {
-        await createCustomButton(businessId, { label, icon, imageUrl, url });
+        await createCustomButton(businessId, payload);
       }
       onDone();
     } catch (err) {
@@ -248,6 +267,54 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
 
   return (
     <form onSubmit={handleSubmit} className="mb-4 space-y-4 rounded-xl border border-ink-line p-5">
+      {!forcedParentId && (
+        <Field label="What does this button do?">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setButtonType('link')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'link' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+              Opens a link
+            </button>
+            <button type="button" onClick={() => setButtonType('notification')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'notification' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+              Notifies staff
+            </button>
+            <button type="button" onClick={() => setButtonType('group')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'group' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+              A list of services
+            </button>
+          </div>
+          <p className="mt-1.5 text-sm text-ivory-dim">
+            {buttonType === 'link'
+              ? 'Opens a website, WhatsApp chat, or anything else with a URL.'
+              : buttonType === 'group'
+                ? 'Shows a list of individual services when tapped - e.g. "Services" opening onto Housekeeping, Maintenance, Room Service.'
+                : "Sends a request straight to a specific department's screen - no URL needed."}
+          </p>
+        </Field>
+      )}
+
+      {buttonType === 'notification' && (
+        <Field label="Where should this request go?">
+          <select value={notificationDestination} onChange={(e) => setNotificationDestination(e.target.value as typeof notificationDestination)} className={inputClass}>
+            <option value="general">Front Desk / Requests list</option>
+            {isHotel && <option value="housekeeping_task">Housekeeping</option>}
+            {isHotel && <option value="maintenance_ticket">Maintenance</option>}
+          </select>
+          {notificationDestination === 'general' && (
+            <>
+              <p className="mt-2 text-sm text-ivory-dim">Which section should see it? Leave blank to notify everyone with Requests access.</p>
+              <select value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className={`${inputClass} mt-1`}>
+                <option value="">Everyone with Requests access</option>
+                {SECTION_OPTIONS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </>
+          )}
+          {notificationDestination === 'housekeeping_task' && (
+            <p className="mt-2 text-sm text-ivory-dim">Lands directly on the Housekeeping screen as a real task, for the room the guest tapped from.</p>
+          )}
+          {notificationDestination === 'maintenance_ticket' && (
+            <p className="mt-2 text-sm text-ivory-dim">Lands directly as a maintenance ticket - room if tapped in-room, otherwise a common-area issue.</p>
+          )}
+        </Field>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
         <Field label="Icon (used unless you upload your own image below)">
@@ -268,7 +335,9 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
         </div>
         {uploading && <p className="mt-1 text-sm text-ivory-dim">Uploading...</p>}
       </Field>
-      <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
+      {buttonType === 'link' && (
+        <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
+      )}
       <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
         {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
       </button>
@@ -278,50 +347,78 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
 }
 
 
-function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChange }: {
-  button: CustomButton; buttons: CustomButton[]; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
+function CustomButtonRow({ button, buttons, business, businessId, onButtonsChange, onChange }: {
+  button: CustomButton; buttons: CustomButton[]; business: AdminBusiness; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
+  const [addingChild, setAddingChild] = useState(false);
+  if (editing) return <CustomButtonForm business={business} businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
   const Icon = getIcon(button.icon);
   const brandColor = getIconColor(button.icon);
+  const children = buttons.filter((b) => b.parent_button_id === button.id);
+  const badgeLabel = button.button_type === 'group'
+    ? 'Group'
+    : button.button_type === 'notification'
+      ? button.notification_destination === 'housekeeping_task' ? 'Housekeeping' : button.notification_destination === 'maintenance_ticket' ? 'Maintenance' : 'Notifies staff'
+      : 'Link';
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
-      <span className="flex items-center gap-2 text-ivory">
-        {button.image_url ? (
-          <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />
-        ) : (
-          <span
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
-            style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
+    <div className="rounded-lg border border-ink-line px-5 py-4">
+      <div className="flex flex-col gap-3 text-base sm:flex-row sm:items-center sm:justify-between">
+        <span className="flex items-center gap-2 text-ivory">
+          {button.image_url ? (
+            <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />
+          ) : (
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
+              style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
+            >
+              <Icon size={13} />
+            </span>
+          )}
+          {button.label}
+          <span className="rounded-full border border-ink-line px-2 py-0.5 text-xs text-ivory-dim">{badgeLabel}</span>
+          {button.notification_destination === 'general' && button.target_section && (
+            <span className="rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{button.target_section}</span>
+          )}
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <ActionButton
+            onClick={() => {
+              onButtonsChange(buttons.map((b) => (b.id === button.id ? { ...b, enabled: !b.enabled } : b)));
+              updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
+            }}
           >
-            <Icon size={13} />
-          </span>
-        )}
-        {button.label}
-      </span>
-      <div className="flex flex-wrap items-center gap-2">
-        <ActionButton
-          onClick={() => {
-            onButtonsChange(buttons.map((b) => (b.id === button.id ? { ...b, enabled: !b.enabled } : b)));
-            updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
-          }}
-        >
-          {button.enabled ? 'On' : 'Off'}
-        </ActionButton>
-        <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
-        <ActionButton
-          danger
-          onClick={() => {
-            onButtonsChange(buttons.filter((b) => b.id !== button.id));
-            deleteCustomButton(businessId, button.id).catch(onChange);
-          }}
-        >
-          Delete
-        </ActionButton>
+            {button.enabled ? 'On' : 'Off'}
+          </ActionButton>
+          <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
+          <ActionButton
+            danger
+            onClick={() => {
+              onButtonsChange(buttons.filter((b) => b.id !== button.id));
+              deleteCustomButton(businessId, button.id).catch(onChange);
+            }}
+          >
+            Delete
+          </ActionButton>
+        </div>
       </div>
+
+      {button.button_type === 'group' && (
+        <div className="mt-3 space-y-2 border-t border-ink-line pt-3">
+          {children.map((child) => (
+            <CustomButtonRow key={child.id} button={child} buttons={buttons} business={business} businessId={businessId} onButtonsChange={onButtonsChange} onChange={onChange} />
+          ))}
+          {addingChild ? (
+            <CustomButtonForm business={business} businessId={businessId} forcedParentId={button.id} onDone={() => { setAddingChild(false); onChange(); }} />
+          ) : (
+            <button type="button" onClick={() => setAddingChild(true)} className="text-sm text-brass hover:underline">
+              + Add a service inside "{button.label}"
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
