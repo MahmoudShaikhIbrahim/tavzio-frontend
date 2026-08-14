@@ -85,7 +85,7 @@ export default function DashboardLayout() {
   // Every one of these gates is a super_admin-granted entitlement, not
   // something a business turns on itself - so this reads the business
   // record rather than any preference the owner set.
-  useEffect(() => {
+  function refetchFeatures() {
     if (user?.business_id) {
       getBusiness(user.business_id).then((b) => {
         setFeatures(b.features);
@@ -93,6 +93,9 @@ export default function DashboardLayout() {
         setCategory(b.category);
       });
     }
+  }
+  useEffect(() => {
+    refetchFeatures();
   }, [user?.business_id]);
 
   // Polling rather than realtime here deliberately - this is a red dot
@@ -257,7 +260,7 @@ export default function DashboardLayout() {
         </nav>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
-        <Outlet />
+        <Outlet context={{ refetchFeatures }} />
       </main>
     </div>
   );

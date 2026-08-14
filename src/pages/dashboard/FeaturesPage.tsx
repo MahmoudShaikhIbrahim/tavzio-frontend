@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { getBusiness, updateBusinessFeatures, getPaymentStatus } from '../../lib/authApi';
 import type { AdminBusiness } from '../../types';
@@ -9,6 +10,12 @@ export default function FeaturesPage() {
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [paymentConnected, setPaymentConnected] = useState(false);
+  // The real fix for the nav-visibility problem the old reload was
+  // covering for: DashboardLayout now exposes a way to refresh its own
+  // copy of features directly, through the same Outlet context every
+  // nested dashboard page already renders inside. No full page reload
+  // needed - the nav just refetches itself the moment a toggle saves.
+  const { refetchFeatures } = useOutletContext<{ refetchFeatures: () => void }>();
 
   function reload() {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -23,14 +30,8 @@ export default function FeaturesPage() {
   function patch(body: Record<string, unknown>) {
     updateBusinessFeatures(businessId!, body)
       .then(() => {
-        // The main dashboard nav (which decides whether the Inventory tab
-        // even shows) fetches its own copy of `features` once, when it
-        // first mounts - it has no way to know a toggle changed on this
-        // page. Without a reload here, the toggle looks "on" right here
-        // but the tab it's supposed to reveal stays invisible until a
-        // manual refresh, which is exactly the confusing half-applied
-        // state a toggle should never leave someone in.
-        window.location.reload();
+        reload();
+        refetchFeatures();
       })
       .catch(() => reload());
   }
