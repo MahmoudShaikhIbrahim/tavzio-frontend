@@ -15,7 +15,8 @@ import ChangePasswordPage from './ChangePasswordPage';
 // top-level - everything else, however often it's used, lives in the
 // Settings dropdown below instead of competing for space in this bar.
 const TABS = [
-  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
+  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: null },
+  { path: 'requests', label: 'Requests', ownerOnly: false, requires: 'ordering' as const, badge: 'requests' as const, badge2: null },
   { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: 'kitchen' as const, badge2: null },
   { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
   // Floor plan / table layout is a restaurant-only concept - a hotel with

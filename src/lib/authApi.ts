@@ -1238,7 +1238,9 @@ export function markSectionViewed(businessId: string, section: keyof Notificatio
 export interface RequestRow {
   id: string;
   table_label: string;
-  request_type: 'call_waiter' | 'request_bill';
+  request_type: 'call_waiter' | 'request_bill' | 'custom';
+  custom_request_label: string | null;
+  target_section: string | null;
   status: string;
   created_at: string;
 }

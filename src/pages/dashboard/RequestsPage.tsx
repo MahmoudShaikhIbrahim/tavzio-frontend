@@ -17,6 +17,12 @@ import type { NotificationSettings } from '../../types';
 const REQUEST_STYLE = {
   call_waiter: { border: 'border-info/50', bg: 'bg-info/10', text: 'text-info', label: 'Call waiter' },
   request_bill: { border: 'border-success/50', bg: 'bg-success/10', text: 'text-success', label: 'Request bill' },
+  // Falls back to this for any custom notification button - REQUEST_STYLE
+  // used to be a hard lookup keyed only by the two original built-in
+  // types, so a 'custom' request had no entry at all and would throw
+  // trying to read .border off undefined, crashing this whole page the
+  // instant one custom-button request arrived.
+  custom: { border: 'border-brass/50', bg: 'bg-brass/10', text: 'text-brass', label: 'Request' },
 } as const;
 
 export default function RequestsPage() {
@@ -105,10 +111,11 @@ export default function RequestsPage() {
         <div className="space-y-3">
           {requests.map((r) => {
             const style = REQUEST_STYLE[r.request_type];
+            const label = r.request_type === 'custom' ? (r.custom_request_label || style.label) : style.label;
             return (
               <div key={r.id} className={`flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
                 <span className={`text-xl font-medium ${style.text}`}>
-                  {style.label} — <span className="text-ivory">{r.table_label || 'No table'}</span>
+                  {label} — <span className="text-ivory">{r.table_label || 'No table'}</span>
                 </span>
                 <button type="button"
                   onClick={() => dismissRequest(businessId, r.id).then(reloadRequests)}

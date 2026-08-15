@@ -225,7 +225,7 @@ export default function OrdersPage() {
           {requests.map((r) => (
             <div key={r.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
               <p className="text-base font-medium text-brass">
-                {r.request_type === 'call_waiter' ? 'Call Waiter' : 'Request Bill'} — <span className="text-ivory">{r.table_label || 'No table'}</span>
+                {r.request_type === 'call_waiter' ? 'Call Waiter' : r.request_type === 'request_bill' ? 'Request Bill' : r.custom_request_label || 'Request'} — <span className="text-ivory">{r.table_label || 'No table'}</span>
               </p>
               <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10">
                 Dismiss

@@ -39,6 +39,7 @@ import LoyaltyPage from './pages/dashboard/LoyaltyPage';
 import CardsPage from './pages/dashboard/CardsPage';
 import NotificationsPage from './pages/dashboard/NotificationsPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
+import RequestsPage from './pages/dashboard/RequestsPage';
 import KitchenPage from './pages/dashboard/KitchenPage';
 import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
@@ -127,6 +128,7 @@ export default function App() {
             <Route path="settings/cards" element={<CardsPage />} />
             <Route path="settings/notifications" element={<NotificationsPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="requests" element={<RequestsPage />} />
             <Route path="kitchen" element={<KitchenPage />} />
             <Route path="services" element={<ServicesManagementPage />} />
             <Route path="bookings" element={<BookingsPage />} />
