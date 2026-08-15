@@ -291,16 +291,28 @@ function RoomsTab({ businessId }: { businessId: string }) {
   return (
     <Section title="Rooms" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add room</button>}>
       {showAdd && (
-        <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
-          <Field label="Room number"><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
-          <Field label="Type"><input value={roomType} onChange={(e) => setRoomType(e.target.value)} className={inputClass} /></Field>
-          <Field label="Rate/night (AED)"><input type="number" min={0} onFocus={(e) => e.target.select()} value={baseRate} onChange={(e) => setBaseRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
-          <Field label="NFC stand (optional)">
-            <select value={newRoomCardId} onChange={(e) => setNewRoomCardId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-              <option value="">Connect later</option>
-              {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
-            </select>
-          </Field>
+        <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Room number"><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
+            <Field label="Type"><input value={roomType} onChange={(e) => setRoomType(e.target.value)} className={inputClass} /></Field>
+            <Field label="Rate/night (AED)"><input type="number" min={0} onFocus={(e) => e.target.select()} value={baseRate} onChange={(e) => setBaseRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
+          </div>
+          {/* Deliberately its own visually distinct row, not the 4th
+              field quietly tucked at the end of a flat form - this is
+              what actually makes orders, bills, and requests from this
+              room's stand work at all, not a cosmetic extra. */}
+          <div className="rounded-lg border border-brass/40 bg-ink-soft p-3">
+            <Field label="Connect this room's NFC stand now">
+              <select value={newRoomCardId} onChange={(e) => setNewRoomCardId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+                <option value="">I'll connect it later from this list</option>
+                {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
+              </select>
+            </Field>
+            <p className="mt-1.5 text-sm text-ivory-dim">
+              A room with no stand connected can't receive orders, bills, or requests until one is - you can
+              always connect it later from the room card below, but doing it now saves a step.
+            </p>
+          </div>
           <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
         </form>
       )}
