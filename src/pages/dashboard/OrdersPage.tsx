@@ -172,6 +172,16 @@ export default function OrdersPage() {
     return acc;
   }, {});
 
+  // A group whose every item across every one of its orders has been
+  // individually voided has nothing left to act on - the order's own
+  // status never changes just because its items were deleted one by
+  // one, so without this it would sit here forever as an empty "All
+  // items deleted" card cluttering the page.
+  for (const table of Object.keys(tableGroups)) {
+    const anyItemLeft = tableGroups[table].some((o) => o.order_items.some((i) => !i.voided));
+    if (!anyItemLeft) delete tableGroups[table];
+  }
+
   const hasAttentionItems = requests.length > 0 || claims.length > 0 || cashPending.length > 0 || readyUnacked.length > 0;
 
   return (

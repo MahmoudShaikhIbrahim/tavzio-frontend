@@ -400,6 +400,9 @@ function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: stri
 function FolioView({ businessId, reservationId, onClose }: { businessId: string; reservationId: string; onClose: () => void }) {
   const [folios, setFolios] = useState<HotelFolio[]>([]);
   const [selectedIds, setSelectedIds] = useState<Record<string, string[]>>({});
+  // Which folio's split confirmation is currently open, if any - a
+  // real, cancelable step now, not an immediate-commit prompt().
+  const [splittingFolioId, setSplittingFolioId] = useState<string | null>(null);
 
   function reload() {
     getFoliosByReservation(businessId, reservationId).then(setFolios).catch(() => setFolios([]));
@@ -414,12 +417,16 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
     });
   }
 
-  async function handleSplit(folioId: string) {
+  function startSplit(folioId: string) {
+    if ((selectedIds[folioId] || []).length === 0) { alert('Select at least one charge to split off'); return; }
+    setSplittingFolioId(folioId);
+  }
+
+  async function confirmSplit(folioId: string, companyName: string) {
     const chargeIds = selectedIds[folioId] || [];
-    if (chargeIds.length === 0) { alert('Select at least one charge to split off'); return; }
-    const companyName = prompt('Company name (leave blank if guest-paid split):') || '';
-    await splitFolio(businessId, folioId, chargeIds, companyName ? 'company' : 'guest', companyName);
+    await splitFolio(businessId, folioId, chargeIds, companyName.trim() ? 'company' : 'guest', companyName.trim());
     setSelectedIds((prev) => ({ ...prev, [folioId]: [] }));
+    setSplittingFolioId(null);
     reload();
   }
 
@@ -438,15 +445,24 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
         </p>
       </div>
       {folios.map((folio) => (
-        <FolioCard key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)} selectedIds={selectedIds[folio.id] || []} onToggleCharge={(chargeId) => toggleCharge(folio.id, chargeId)} onSplit={() => handleSplit(folio.id)} onReload={reload} />
+        <FolioCard
+          key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)}
+          selectedIds={selectedIds[folio.id] || []} onToggleCharge={(chargeId) => toggleCharge(folio.id, chargeId)}
+          onSplit={() => startSplit(folio.id)} onReload={reload}
+          splitConfirmOpen={splittingFolioId === folio.id}
+          onConfirmSplit={(companyName) => confirmSplit(folio.id, companyName)}
+          onCancelSplit={() => setSplittingFolioId(null)}
+        />
       ))}
     </div>
   );
 }
 
-function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge, onSplit, onReload }: {
+function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge, onSplit, onReload, splitConfirmOpen, onConfirmSplit, onCancelSplit }: {
   businessId: string; folio: HotelFolio; otherFolios: HotelFolio[]; selectedIds: string[]; onToggleCharge: (chargeId: string) => void; onSplit: () => void; onReload: () => void;
+  splitConfirmOpen: boolean; onConfirmSplit: (companyName: string) => void; onCancelSplit: () => void;
 }) {
+  const [splitCompanyName, setSplitCompanyName] = useState('');
   const [chargeDesc, setChargeDesc] = useState('');
   const [chargeAmount, setChargeAmount] = useState(0);
   const [paymentAmount, setPaymentAmount] = useState(0);
@@ -507,6 +523,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
 
   return (
     <Section title={`${folio.is_primary ? 'Primary folio' : 'Split folio'} - ${folio.payer_type === 'company' ? `Company: ${folio.company_name}` : 'Guest'}${folio.status === 'closed' ? ' (closed)' : ''}`}>
+      <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Charges &amp; payments</p>
       <div className="space-y-2">
         {folio.charges.map((c) => (
           <div key={c.id}>
@@ -540,6 +557,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
             )}
           </div>
         ))}
+        {folio.charges.length === 0 && <p className="text-sm italic text-ivory-dim">No charges yet.</p>}
       </div>
       <div className="flex justify-between border-t border-ink-line pt-3 text-lg">
         <span className="text-ivory">Balance</span>
@@ -548,6 +566,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
 
       {folio.status === 'open' && (
         <>
+          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Actions</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <form onSubmit={handleAddCharge} className="space-y-2 rounded-lg border border-ink-line p-3">
               <p className="text-sm text-ivory-dim">Add charge</p>
@@ -582,6 +601,28 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
           <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
             Split {selectedIds.length > 0 ? `${selectedIds.length} selected charge(s)` : 'selected charges'} into new folio
           </button>
+          {splitConfirmOpen && (
+            <div className="space-y-2 rounded-lg border border-brass/40 bg-ink-soft p-3">
+              <p className="text-sm text-ivory">
+                Moving {selectedIds.length} charge{selectedIds.length === 1 ? '' : 's'} (AED{' '}
+                {folio.charges.filter((c) => selectedIds.includes(c.id)).reduce((sum, c) => sum + c.amount_aed, 0).toFixed(2)}) into a new, separate folio.
+              </p>
+              <input
+                value={splitCompanyName}
+                onChange={(e) => setSplitCompanyName(e.target.value)}
+                placeholder="Company name (leave blank if this is guest-paid)"
+                className={inputClass}
+              />
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { onConfirmSplit(splitCompanyName); setSplitCompanyName(''); }} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">
+                  Confirm split
+                </button>
+                <button type="button" onClick={() => { onCancelSplit(); setSplitCompanyName(''); }} className="text-sm text-ivory-dim">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </Section>
