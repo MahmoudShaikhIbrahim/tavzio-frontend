@@ -9,6 +9,7 @@ import Logo from '../../components/Logo';
 import ClockWidget from '../../components/ClockWidget';
 import AccountSwitcher from '../../components/AccountSwitcher';
 import { useTheme } from '../../lib/ThemeContext';
+import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import ChangePasswordPage from './ChangePasswordPage';
 
 // Only what's actually checked constantly through a shift stays
@@ -45,6 +46,7 @@ const SETTINGS_ITEMS = [
   // field on every item, to keep this array's shape uniform.
   { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
   { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/guest-services', label: 'Guest Portal Services', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/rate-plans', label: 'Rate Plans', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/night-audit', label: 'Night Audit', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/pos-integration', label: 'POS Integration', ownerOnly: true, requires: 'ordering' as const },
@@ -132,7 +134,32 @@ export default function DashboardLayout() {
       if (user?.business_id) getNotificationCounts(user.business_id).then(setCounts).catch(() => {});
     }
     const interval = setInterval(refresh, 15000);
-    return () => clearInterval(interval);
+
+    // Real-time: every table that feeds a badge count triggers an
+    // immediate refresh the moment something changes, rather than
+    // waiting up to 15 seconds for the next poll - the poll stays too,
+    // as a safety net if a websocket event is ever missed, but it's no
+    // longer the only thing keeping these numbers current.
+    const bizId = user.business_id;
+    const unsubscribers = [
+      subscribeToBusinessTable(bizId, 'orders', refresh),
+      // order_items has no business_id column of its own - filtering by
+      // one (like every other subscription here does) would just never
+      // match anything. This uses the RLS-backed, unfiltered version
+      // instead, same as the "staff order marked cash-pending" alert
+      // elsewhere already does.
+      subscribeToOrderItemsForBusiness(refresh),
+      subscribeToBusinessTable(bizId, 'loyalty_reward_claims', refresh),
+      subscribeToBusinessTable(bizId, 'payments', refresh),
+      subscribeToBusinessTable(bizId, 'housekeeping_tasks', refresh),
+      subscribeToBusinessTable(bizId, 'maintenance_tickets', refresh),
+      subscribeToBusinessTable(bizId, 'guest_service_requests', refresh),
+    ];
+
+    return () => {
+      clearInterval(interval);
+      unsubscribers.forEach((unsub) => unsub());
+    };
   }, [user?.business_id]);
 
   // Closes the dropdown on an outside click, same expectation any real

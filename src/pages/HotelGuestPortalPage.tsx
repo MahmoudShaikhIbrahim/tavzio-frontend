@@ -13,6 +13,13 @@ interface FolioCharge {
   created_at: string;
 }
 
+interface GuestServiceOption {
+  id: string;
+  routingType: string;
+  label: string;
+  options: string[];
+}
+
 interface PortalData {
   business: { name: string; slug: string; logoUrl: string; links: Record<string, string>; theme: { customerBackground?: string; customerButton?: string } };
   room: { id: string; roomNumber: string; roomType: string };
@@ -21,6 +28,7 @@ interface PortalData {
   folioBalance: number | null;
   vatBreakdown: { subtotalExVat: number; vatAmount: number; vatRate: number; totalIncVat: number } | null;
   charges: FolioCharge[];
+  guestServices: GuestServiceOption[];
 }
 
 interface OutletItem {
@@ -51,16 +59,6 @@ interface TrackedRequest {
 
 type View = 'home' | 'roomService' | 'outlet' | 'myBill' | 'myRequests' | 'request' | 'reception' | 'feedback';
 
-const REQUEST_CATEGORIES: Record<string, { label: string; options?: string[] }> = {
-  towels: { label: 'Extra towels' },
-  turndown: { label: 'Turndown service' },
-  housekeeping: { label: 'Housekeeping' },
-  maintenance: { label: 'Report an issue', options: ['Air Conditioning', 'Lights', 'Bathroom', 'Door', 'TV', 'Electricity', 'Plumbing', 'Other'] },
-  laundry: { label: 'Laundry pickup', options: ['Express', 'Same Day', 'Standard'] },
-  transportation: { label: 'Transportation', options: ['Taxi', 'Airport Transfer', 'Hotel Car'] },
-  pool: { label: 'Pool service', options: ['Request Towel', 'Sunbed Assistance', 'Other'] },
-};
-
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Submitted', open: 'Submitted', in_progress: 'In progress',
   done: 'Completed', resolved: 'Completed',
@@ -74,7 +72,7 @@ export default function HotelGuestPortalPage() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('home');
   const [activeOutlet, setActiveOutlet] = useState<Outlet | null>(null);
-  const [activeRequestKey, setActiveRequestKey] = useState<string | null>(null);
+  const [activeRequestService, setActiveRequestService] = useState<GuestServiceOption | null>(null);
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState<'success' | 'failed' | null>(null);
 
@@ -162,7 +160,7 @@ export default function HotelGuestPortalPage() {
             requestsCount={requests.filter((r) => r.status !== 'done' && r.status !== 'resolved').length}
             onSelectOutlet={(o) => { setActiveOutlet(o); setView('outlet'); }}
             onNav={setView}
-            onRequestCategory={(key) => { setActiveRequestKey(key); setView('request'); }}
+            onRequestCategory={(s) => { setActiveRequestService(s); setView('request'); }}
           />
         )}
 
@@ -174,11 +172,11 @@ export default function HotelGuestPortalPage() {
 
         {view === 'myRequests' && <MyRequestsView requests={requests} />}
 
-        {view === 'request' && activeRequestKey && (
+        {view === 'request' && activeRequestService && (
           <RequestFormView
             slug={slug!}
             roomId={roomId!}
-            requestKey={activeRequestKey}
+            service={activeRequestService}
             onDone={() => setView('home')}
           />
         )}
@@ -211,7 +209,7 @@ function Header({ data }: { data: PortalData }) {
 
 function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onRequestCategory }: {
   data: PortalData; outlets: Outlet[]; requestsCount: number;
-  onSelectOutlet: (o: Outlet) => void; onNav: (v: View) => void; onRequestCategory: (key: string) => void;
+  onSelectOutlet: (o: Outlet) => void; onNav: (v: View) => void; onRequestCategory: (service: GuestServiceOption) => void;
 }) {
   return (
     <div className="space-y-5">
@@ -242,9 +240,9 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
 
       <div className="space-y-2">
         <p className="text-sm uppercase tracking-wide text-brass">Services</p>
-        {Object.entries(REQUEST_CATEGORIES).map(([key, cfg]) => (
-          <button type="button" key={key} onClick={() => onRequestCategory(key)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
-            {cfg.label}
+        {data.guestServices.map((s) => (
+          <button type="button" key={s.id} onClick={() => onRequestCategory(s)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+            {s.label}
           </button>
         ))}
         <button type="button" onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
@@ -412,9 +410,8 @@ function MyRequestsView({ requests }: { requests: TrackedRequest[] }) {
   );
 }
 
-function RequestFormView({ slug, roomId, requestKey, onDone }: { slug: string; roomId: string; requestKey: string; onDone: () => void }) {
-  const cfg = REQUEST_CATEGORIES[requestKey];
-  const [option, setOption] = useState(cfg?.options?.[0] || '');
+function RequestFormView({ slug, roomId, service, onDone }: { slug: string; roomId: string; service: GuestServiceOption; onDone: () => void }) {
+  const [option, setOption] = useState(service.options?.[0] || '');
   const [note, setNote] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -429,9 +426,9 @@ function RequestFormView({ slug, roomId, requestKey, onDone }: { slug: string; r
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requestType: requestKey,
+          requestType: service.routingType,
           note: [option, note].filter(Boolean).join(' - '),
-          quantity: requestKey === 'towels' ? quantity : undefined,
+          quantity: service.routingType === 'towels' ? quantity : undefined,
         }),
       });
       if (!res.ok) { const r = await res.json(); setError(r.message || 'Could not send request'); setSubmitting(false); return; }
@@ -454,13 +451,13 @@ function RequestFormView({ slug, roomId, requestKey, onDone }: { slug: string; r
 
   return (
     <div className="space-y-3 rounded-lg border border-ink-line p-4">
-      <p className="font-display text-xl text-ivory">{cfg?.label || 'Request'}</p>
-      {cfg?.options && (
+      <p className="font-display text-xl text-ivory">{service.label}</p>
+      {service.options.length > 0 && (
         <select value={option} onChange={(e) => setOption(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory">
-          {cfg.options.map((o) => <option key={o} value={o}>{o}</option>)}
+          {service.options.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       )}
-      {requestKey === 'towels' && (
+      {service.routingType === 'towels' && (
         <div className="flex items-center gap-3">
           <span className="text-sm text-ivory-dim">How many?</span>
           <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">-</button>

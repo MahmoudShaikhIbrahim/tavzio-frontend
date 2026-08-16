@@ -357,6 +357,23 @@ export function deleteHotelOutlet(businessId: string, outletId: string) {
 export function setHotelOutletItems(businessId: string, outletId: string, menuItemIds: string[]) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/outlets/${outletId}/items`, { method: 'PUT', body: JSON.stringify({ menuItemIds }) });
 }
+
+export interface HotelGuestServiceRow {
+  id: string; business_id: string; routing_type: string; label: string; options: string[]; enabled: boolean; sort_order: number;
+}
+export const GUEST_SERVICE_ROUTING_TYPES = ['towels', 'turndown', 'housekeeping', 'maintenance', 'taxi', 'laundry', 'pool', 'transportation', 'other'] as const;
+export function listGuestServices(businessId: string) {
+  return authFetch<HotelGuestServiceRow[]>(`/api/businesses/${businessId}/hotel/guest-services`);
+}
+export function createGuestService(businessId: string, payload: { routingType: string; label: string; options?: string[]; sortOrder?: number }) {
+  return authFetch<HotelGuestServiceRow>(`/api/businesses/${businessId}/hotel/guest-services`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateGuestService(businessId: string, serviceId: string, payload: Partial<{ label: string; options: string[]; enabled: boolean; sortOrder: number; routingType: string }>) {
+  return authFetch<HotelGuestServiceRow>(`/api/businesses/${businessId}/hotel/guest-services/${serviceId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteGuestService(businessId: string, serviceId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/guest-services/${serviceId}`, { method: 'DELETE' });
+}
 export function addFolioCharge(businessId: string, folioId: string, payload: { description: string; amountAed: number; chargeType?: string }) {
   return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/charges`, { method: 'POST', body: JSON.stringify(payload) });
 }

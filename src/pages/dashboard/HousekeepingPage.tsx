@@ -6,6 +6,7 @@ import {
   listGuestRequests, updateGuestRequest,
   type HousekeepingTask, type MaintenanceTicket, type GuestServiceRequest, type HousekeepingPerformance, type MaintenancePerformance,
 } from '../../lib/authApi';
+import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import type { HotelRoom } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
@@ -56,6 +57,14 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
     getHousekeepingPerformance(businessId, 7).then(setPerformance);
   }
   useEffect(reload, [businessId]);
+
+  // Real-time: a new task or a status/room change appears the instant it
+  // happens - no more waiting for a manual refresh or a section revisit.
+  useEffect(() => {
+    const unsubTasks = subscribeToBusinessTable(businessId, 'housekeeping_tasks', reload);
+    return unsubTasks;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -184,6 +193,12 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
   }
   useEffect(reload, [businessId]);
 
+  useEffect(() => {
+    const unsubTickets = subscribeToBusinessTable(businessId, 'maintenance_tickets', reload);
+    return unsubTickets;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
@@ -296,6 +311,12 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
 
   function reload() { listGuestRequests(businessId).then(setRequests); }
   useEffect(reload, [businessId]);
+
+  useEffect(() => {
+    const unsubRequests = subscribeToBusinessTable(businessId, 'guest_service_requests', reload);
+    return unsubRequests;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
 
   async function handleStatus(requestId: string, status: 'pending' | 'in_progress' | 'done') {
     setRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status } : r)));

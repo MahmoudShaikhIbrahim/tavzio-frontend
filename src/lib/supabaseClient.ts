@@ -11,12 +11,23 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 let client: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-// Call once you have the logged-in user's access token (from tap-login or
-// password login). Rebuilds the client with that token attached to every
-// REST request (Storage included), and authorizes the Realtime websocket
-// the same way - so both are scoped by RLS exactly like any authenticated
-// backend call, not just anonymous/public access.
+// The actual fix for a real, serious bug: every one of the ~40 dashboard
+// pages calls useSession() independently, and each one used to call this
+// function fresh on every mount - meaning every single navigation between
+// dashboard sections created a BRAND NEW Supabase client (a brand new
+// GoTrueClient with its own background token-refresh timer), never
+// tearing down the previous one. That's what "Multiple GoTrueClient
+// instances detected" actually meant, and why heavy navigation eventually
+// exhausted the backend's rate limit and locked the account out entirely.
+// Idempotent now - re-authorizing with the SAME token (the normal case:
+// one login, many page visits) is a no-op, so exactly one client and one
+// refresh timer exist for the whole session, no matter how much the user
+// navigates.
+let authorizedToken: string | null = null;
+
 export function authorizeSupabase(accessToken: string) {
+  if (accessToken === authorizedToken) return client;
+  authorizedToken = accessToken;
   client = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
@@ -32,7 +43,7 @@ export function getSupabase() {
 // for each. Returns an unsubscribe function - always call it on unmount.
 export function subscribeToBusinessTable(
   businessId: string,
-  table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims',
+  table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims' | 'housekeeping_tasks' | 'maintenance_tickets' | 'guest_service_requests',
   onChange: (row: Record<string, unknown>) => void
 ) {
   // Deliberately a unique name per call, not just business+table - a

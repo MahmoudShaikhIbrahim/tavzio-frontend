@@ -3,6 +3,8 @@ import { useSession } from '../../hooks/useSession';
 import {
   getBusiness, updateBusiness,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
+  listGuestServices, createGuestService, updateGuestService, deleteGuestService,
+  GUEST_SERVICE_ROUTING_TYPES, type HotelGuestServiceRow,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
 import type { AdminBusiness, BusinessLinks, CustomButton } from '../../types';
@@ -15,6 +17,7 @@ export default function LandingButtonsPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
+  const [tab, setTab] = useState<'landing' | 'guest-portal'>('landing');
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -22,7 +25,168 @@ export default function LandingButtonsPage() {
 
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
-  return <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />;
+  const isHotel = business.category === 'hotel';
+
+  if (!isHotel) {
+    return <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-2 border-b border-ink-line">
+        {(['landing', 'guest-portal'] as const).map((t) => (
+          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t === 'landing' ? 'Landing Page' : 'Guest Portal Services'}
+          </button>
+        ))}
+      </div>
+      {tab === 'landing' && <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />}
+      {tab === 'guest-portal' && <GuestPortalServicesSection businessId={businessId} />}
+    </div>
+  );
+}
+
+const ROUTING_TYPE_LABELS: Record<string, string> = {
+  towels: 'Towels (housekeeping task)',
+  turndown: 'Turndown (housekeeping task)',
+  housekeeping: 'General housekeeping task',
+  maintenance: 'Maintenance ticket',
+  taxi: 'Guest request (taxi)',
+  laundry: 'Guest request (laundry)',
+  pool: 'Guest request (pool)',
+  transportation: 'Guest request (transportation)',
+  other: 'Guest request (general)',
+};
+
+// Every button a guest sees in the in-room portal's "Services" list -
+// same customization Naser asked for on the customer-facing landing
+// page buttons, applied to the other customer interface (the in-room
+// NFC portal) that has its own separate button set.
+function GuestPortalServicesSection({ businessId }: { businessId: string }) {
+  const [services, setServices] = useState<HotelGuestServiceRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  function reload() {
+    setLoading(true);
+    listGuestServices(businessId).then(setServices).finally(() => setLoading(false));
+  }
+  useEffect(reload, [businessId]);
+
+  async function handleReorder(id: string, direction: -1 | 1) {
+    const sorted = [...services].sort((a, b) => a.sort_order - b.sort_order);
+    const idx = sorted.findIndex((s) => s.id === id);
+    const swapWith = sorted[idx + direction];
+    if (!swapWith) return;
+    await Promise.all([
+      updateGuestService(businessId, sorted[idx].id, { sortOrder: swapWith.sort_order }),
+      updateGuestService(businessId, swapWith.id, { sortOrder: sorted[idx].sort_order }),
+    ]);
+    reload();
+  }
+
+  async function handleDelete(id: string, label: string) {
+    if (!confirm(`Remove "${label}" from the guest portal?`)) return;
+    await deleteGuestService(businessId, id);
+    reload();
+  }
+
+  const sorted = [...services].sort((a, b) => a.sort_order - b.sort_order);
+
+  return (
+    <Section title="Guest Portal Services" action={
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add service</button>
+    }>
+      <p className="text-sm text-ivory-dim">
+        These are the buttons a guest sees under "Services" in the in-room NFC portal (Extra towels, Housekeeping, and so on) -
+        rename, reorder, disable, or add your own. Each one routes to a specific place internally (housekeeping, maintenance,
+        or a general staff request), which you pick when adding it.
+      </p>
+      {showAdd && <GuestServiceForm businessId={businessId} onDone={() => { setShowAdd(false); reload(); }} />}
+      {loading && <p className="text-ivory-dim">Loading...</p>}
+      <div className="space-y-2">
+        {sorted.map((s, i) => (
+          editingId === s.id ? (
+            <GuestServiceForm key={s.id} businessId={businessId} existing={s} onDone={() => { setEditingId(null); reload(); }} onCancel={() => setEditingId(null)} />
+          ) : (
+            <div key={s.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${s.enabled ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
+              <div>
+                <p className="text-base text-ivory">{s.label}</p>
+                <p className="text-sm text-ivory-dim">
+                  {ROUTING_TYPE_LABELS[s.routing_type] || s.routing_type}
+                  {s.options.length > 0 && ` · options: ${s.options.join(', ')}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <button type="button" onClick={() => handleReorder(s.id, -1)} disabled={i === 0} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↑</button>
+                <button type="button" onClick={() => handleReorder(s.id, 1)} disabled={i === sorted.length - 1} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↓</button>
+                <button type="button" onClick={() => updateGuestService(businessId, s.id, { enabled: !s.enabled }).then(reload)} className="text-ivory-dim hover:text-ivory">
+                  {s.enabled ? 'Disable' : 'Enable'}
+                </button>
+                <button type="button" onClick={() => setEditingId(s.id)} className="text-brass hover:underline">Edit</button>
+                <button type="button" onClick={() => handleDelete(s.id, s.label)} className="text-danger hover:underline">Delete</button>
+              </div>
+            </div>
+          )
+        ))}
+        {!loading && services.length === 0 && <p className="text-ivory-dim">No services yet.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function GuestServiceForm({ businessId, existing, onDone, onCancel }: {
+  businessId: string; existing?: HotelGuestServiceRow; onDone: () => void; onCancel?: () => void;
+}) {
+  const [label, setLabel] = useState(existing?.label || '');
+  const [routingType, setRoutingType] = useState(existing?.routing_type || 'other');
+  const [optionsText, setOptionsText] = useState((existing?.options || []).join(', '));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!label.trim()) return;
+    setSaving(true);
+    setError('');
+    const options = optionsText.split(',').map((o) => o.trim()).filter(Boolean);
+    try {
+      if (existing) {
+        await updateGuestService(businessId, existing.id, { label: label.trim(), routingType, options });
+      } else {
+        await createGuestService(businessId, { label: label.trim(), routingType, options });
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this service');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mb-3 max-w-xl space-y-3 rounded-lg border border-brass/40 bg-ink-soft p-4">
+      <Field label="Label (what the guest sees)">
+        <input required value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Spa Booking" className={inputClass} />
+      </Field>
+      <Field label="Routes to">
+        <select value={routingType} onChange={(e) => setRoutingType(e.target.value)} className={inputClass}>
+          {GUEST_SERVICE_ROUTING_TYPES.map((t) => <option key={t} value={t}>{ROUTING_TYPE_LABELS[t] || t}</option>)}
+        </select>
+      </Field>
+      <Field label="Sub-options (comma-separated, optional)">
+        <input value={optionsText} onChange={(e) => setOptionsText(e.target.value)} placeholder="e.g. Massage, Facial, Manicure" className={inputClass} />
+      </Field>
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <div className="flex items-center gap-3">
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : existing ? 'Save changes' : 'Add service'}
+        </button>
+        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">Cancel</button>}
+      </div>
+    </form>
+  );
 }
 
 function LandingPageButtonsSection({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {

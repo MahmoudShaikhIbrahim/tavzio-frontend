@@ -557,15 +557,6 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
   return (
     <div className="space-y-6">
       <button type="button" onClick={onClose} className="text-sm text-brass hover:underline">← Back to reservations</button>
-      <div className="rounded-lg border border-brass/30 bg-ink-soft p-4 text-sm text-ivory-dim">
-        <p className="text-ivory">What is a folio?</p>
-        <p className="mt-1">
-          A guest's running bill for their whole stay - every charge (room rate, room service, minibar, spa, etc.)
-          and every payment or deposit lands here as it happens. "Add Charge" logs something new they owe; use
-          Split if part of the bill (e.g. a company-paid portion) needs to be billed separately. It settles
-          automatically at checkout.
-        </p>
-      </div>
       {folios.map((folio) => (
         <FolioCard
           key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)}

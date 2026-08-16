@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { changePassword, updateMyLanguage } from '../../lib/authApi';
 import { useSession } from '../../hooks/useSession';
@@ -17,6 +17,8 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
   const [language, setLanguage] = useState<string>(user?.preferred_language || 'en');
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [languageSaved, setLanguageSaved] = useState(false);
+  const [languageError, setLanguageError] = useState('');
+  const languageAttemptRef = useRef(0);
 
   // The session's own account loads asynchronously - this picks up the
   // account's real saved preference the moment it arrives, same pattern
@@ -26,18 +28,33 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
   }, [user?.preferred_language]);
 
   async function handleLanguageChange(code: string) {
+    // A real bug this fixes: clicking through several language buttons in
+    // quick succession (very easy to do testing all 9) used to leave
+    // every click's own 2-second "hide the confirmation" timer running
+    // independently - an OLDER click's timer firing after a NEWER click
+    // had already shown its own "Saved." would clear that newer
+    // confirmation early, making a language look like it silently never
+    // saved even though it genuinely did. Tagging each attempt with its
+    // own id and only acting on the most recent one fixes that for good.
+    languageAttemptRef.current += 1;
+    const thisAttempt = languageAttemptRef.current;
+
     setLanguage(code);
     setSavingLanguage(true);
     setLanguageSaved(false);
+    setLanguageError('');
     try {
       await updateMyLanguage(code);
+      if (thisAttempt !== languageAttemptRef.current) return; // a newer click already superseded this one
       setLanguageSaved(true);
-      setTimeout(() => setLanguageSaved(false), 2000);
-    } catch {
-      // Not critical enough to block the page over - the selector still
-      // reflects the choice locally even if the save silently failed.
+      setTimeout(() => {
+        if (thisAttempt === languageAttemptRef.current) setLanguageSaved(false);
+      }, 2000);
+    } catch (err) {
+      if (thisAttempt !== languageAttemptRef.current) return;
+      setLanguageError(err instanceof Error ? err.message : 'Could not save - please try again');
     } finally {
-      setSavingLanguage(false);
+      if (thisAttempt === languageAttemptRef.current) setSavingLanguage(false);
     }
   }
 
@@ -91,6 +108,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
             ))}
           </div>
           {languageSaved && <p className="text-sm text-success">Saved.</p>}
+          {languageError && <p className="text-sm text-danger">{languageError}</p>}
         </Section>
       )}
       <Section title={forced ? 'Set your own password' : 'Change password'}>
