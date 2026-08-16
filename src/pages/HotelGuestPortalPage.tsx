@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { subscribeToRoomUpdates } from '../lib/supabaseClient';
+import { getIcon, getIconColor } from '../lib/iconLibrary';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -20,6 +21,18 @@ interface GuestServiceOption {
   options: string[];
 }
 
+interface GuestCustomButton {
+  id: string;
+  label: string;
+  icon: string;
+  image_url: string | null;
+  url: string;
+  button_type: 'link' | 'notification' | 'group';
+  notification_destination: 'general' | 'housekeeping_task' | 'maintenance_ticket';
+  target_section: string | null;
+  parent_button_id: string | null;
+}
+
 interface PortalData {
   business: { name: string; slug: string; logoUrl: string; links: Record<string, string>; theme: { customerBackground?: string; customerButton?: string } };
   room: { id: string; roomNumber: string; roomType: string };
@@ -29,6 +42,7 @@ interface PortalData {
   vatBreakdown: { subtotalExVat: number; vatAmount: number; vatRate: number; totalIncVat: number } | null;
   charges: FolioCharge[];
   guestServices: GuestServiceOption[];
+  customButtons: GuestCustomButton[];
 }
 
 interface OutletItem {
@@ -211,6 +225,22 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
   data: PortalData; outlets: Outlet[]; requestsCount: number;
   onSelectOutlet: (o: Outlet) => void; onNav: (v: View) => void; onRequestCategory: (service: GuestServiceOption) => void;
 }) {
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+
+  if (openGroupId) {
+    const group = data.customButtons.find((b) => b.id === openGroupId);
+    const children = data.customButtons.filter((b) => b.parent_button_id === openGroupId);
+    return (
+      <div className="space-y-2">
+        <button type="button" onClick={() => setOpenGroupId(null)} className="text-sm text-brass hover:underline">&larr; {group?.label || 'Back'}</button>
+        {children.map((btn) => (
+          <CustomButtonItem key={btn.id} btn={btn} slug={data.business.slug} roomId={data.room.id} onOpenGroup={setOpenGroupId} />
+        ))}
+        {children.length === 0 && <p className="text-sm text-ivory-dim">Nothing here yet.</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <button type="button" onClick={() => onNav('myRequests')} className="flex w-full items-center justify-between rounded-xl border border-brass/30 bg-ink-soft px-4 py-3 text-left">
@@ -245,6 +275,13 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
             {s.label}
           </button>
         ))}
+        {/* Landing Page Buttons - same customization system as the
+            restaurant-facing page, on the one page a hotel guest
+            actually reaches. Only top-level buttons render directly; a
+            group's own children only appear once that group is opened. */}
+        {data.customButtons.filter((b) => !b.parent_button_id).map((btn) => (
+          <CustomButtonItem key={btn.id} btn={btn} slug={data.business.slug} roomId={data.room.id} onOpenGroup={setOpenGroupId} />
+        ))}
         <button type="button" onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
           Reception
         </button>
@@ -253,6 +290,87 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
         </button>
       </div>
     </div>
+  );
+}
+
+function CustomButtonItem({ btn, slug, roomId, onOpenGroup }: {
+  btn: GuestCustomButton; slug: string; roomId: string; onOpenGroup: (id: string) => void;
+}) {
+  const Icon = getIcon(btn.icon);
+  const brandColor = getIconColor(btn.icon);
+  const iconEl = btn.image_url ? (
+    <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
+      <img src={btn.image_url} alt="" className="h-full w-full object-cover" />
+    </span>
+  ) : (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass" style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
+      <Icon size={15} />
+    </span>
+  );
+
+  if (btn.button_type === 'group') {
+    return (
+      <button type="button" onClick={() => onOpenGroup(btn.id)} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+        {iconEl}
+        <span>{btn.label}</span>
+        <span className="ml-auto text-ivory-dim">&rsaquo;</span>
+      </button>
+    );
+  }
+
+  if (btn.button_type === 'notification') {
+    return <CustomNotificationButton btn={btn} slug={slug} roomId={roomId} iconEl={iconEl} />;
+  }
+
+  return (
+    <a href={btn.url} target="_blank" rel="noreferrer" className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+      {iconEl}
+      <span>{btn.label}</span>
+    </a>
+  );
+}
+
+// Notification-type custom buttons need somewhere to actually land for a
+// room-scoped guest, who has no tap-event the way the restaurant landing
+// page does - reuses the same room-scoped request endpoint Services
+// already uses, routed the same way submitGuestRequest already routes
+// housekeeping/maintenance destinations, so both button systems land in
+// the exact same real staff-facing queues either way.
+function CustomNotificationButton({ btn, slug, roomId, iconEl }: { btn: GuestCustomButton; slug: string; roomId: string; iconEl: ReactNode }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  async function handleClick() {
+    setState('sending');
+    try {
+      const requestType = btn.notification_destination === 'housekeeping_task' ? 'housekeeping'
+        : btn.notification_destination === 'maintenance_ticket' ? 'maintenance'
+        : 'other';
+      const res = await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestType, note: btn.label }),
+      });
+      if (!res.ok) throw new Error();
+      setState('sent');
+    } catch {
+      setState('error');
+    }
+  }
+
+  if (state === 'sent') {
+    return (
+      <div className="flex w-full items-center gap-3 rounded-lg border border-brass/40 px-4 py-3 text-left text-brass">
+        {iconEl}
+        <span>Staff notified</span>
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" onClick={handleClick} disabled={state === 'sending'} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass disabled:opacity-50">
+      {iconEl}
+      <span>{state === 'sending' ? 'Sending...' : state === 'error' ? `${btn.label} - tap to try again` : btn.label}</span>
+    </button>
   );
 }
 

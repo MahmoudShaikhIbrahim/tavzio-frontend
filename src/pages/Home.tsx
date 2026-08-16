@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
@@ -21,6 +21,11 @@ const STEPS = [
   { n: '03', title: 'Grow', text: 'Every tap becomes a real customer touchpoint — an order, a review, a returning visit.' },
 ];
 
+// What one tap on the actual card becomes, in rotation - the hero's
+// signature moment names itself from the real product, not a generic
+// "features" list restated.
+const TAP_BECOMES = ['the menu.', 'the bill.', 'a loyalty stamp.', 'a room request.', 'a booking.'];
+
 // Two plans, priced differently for a restaurant (per table) than a
 // hotel (per room) - reflects what each unit actually is in the two
 // setups, not a one-size-fits-all number.
@@ -37,6 +42,18 @@ const PLANS = {
   },
 } as const;
 
+// Ambient, not intrusive - cycles on its own, but never for someone who's
+// asked their system to reduce motion.
+function useTapCycle() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const interval = setInterval(() => setIndex((i) => (i + 1) % TAP_BECOMES.length), 2600);
+    return () => clearInterval(interval);
+  }, []);
+  return index;
+}
+
 export default function Home() {
   // A new visitor here has no account, no stored preference - this
   // should just match their own device's setting, live, never anything
@@ -45,6 +62,7 @@ export default function Home() {
   const [exampleUnits, setExampleUnits] = useState(10);
   const [pricingType, setPricingType] = useState<'restaurant' | 'hotel'>('restaurant');
   const [pricingPlan, setPricingPlan] = useState<'connect' | 'full'>('connect');
+  const tapIndex = useTapCycle();
 
   function scrollToPricing(e: React.MouseEvent) {
     e.preventDefault();
@@ -75,35 +93,70 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Hero */}
-      <div className="relative overflow-hidden px-6 pb-16 pt-20 text-center sm:pt-28">
-        <div className="relative mx-auto max-w-2xl">
-          <Logo className="mx-auto h-16 w-auto sm:h-20" />
-          <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ivory-dim">
-            One tap turns a table, a counter, or a door into a menu, a loyalty
-            program, a booking page, and a way to pay — all without an app.
-          </p>
-          <a
-            href="#get-started"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90"
-          >
-            Get started
-          </a>
-        </div>
+      {/* Hero - the tap itself is the thesis, not a headline over a
+          generic gradient. Real product photography with a live ripple
+          at the exact point a guest's finger lands, and a caption that
+          cycles through what that single tap actually becomes. */}
+      <div className="relative overflow-hidden border-b border-ink-line">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_50%_0%,rgba(184,146,90,0.10),transparent)]" />
+        <div className="relative mx-auto grid max-w-6xl gap-16 px-6 py-20 sm:py-28 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-12">
+          <div className="text-center lg:text-left">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">For restaurants & hotels in the UAE</p>
+            <h1 className="mt-5 font-display text-[2.75rem] leading-[1.06] text-ivory sm:text-6xl">
+              One tap.
+              <br />
+              Every guest <em className="not-italic text-brass">touchpoint.</em>
+            </h1>
+            <p className="mx-auto mt-6 max-w-md text-[15px] leading-relaxed text-ivory-dim lg:mx-0">
+              A single brass card on the table or the nightstand becomes a live menu, a bill, a loyalty
+              program, a room request — replacing the staff you'd otherwise need to run each one by hand.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-5 lg:justify-start">
+              <a
+                href="#get-started"
+                className="rounded-lg bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90"
+              >
+                Get started
+              </a>
+              <a
+                href="#pricing"
+                onClick={scrollToPricing}
+                className="text-sm font-medium text-ivory-dim transition-colors hover:text-ivory"
+              >
+                See pricing →
+              </a>
+            </div>
+          </div>
 
-        {/* Real product photography, cropped from the premium marble/gold
-            set - this replaces the earlier flat card-design render now
-            that real, editorial-quality photos of the actual product exist. */}
-        <div className="mx-auto mt-14 max-w-2xl overflow-hidden rounded-2xl shadow-2xl ring-1 ring-brass/20">
-          <img src="/brand/stand-front.jpg" alt="Tavzio NFC stand" className="w-full" />
+          <div className="mx-auto w-full max-w-sm lg:max-w-none">
+            <div className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-brass/20">
+              <img src="/brand/stand-front.jpg" alt="A Tavzio NFC card and stand on a restaurant table" className="w-full" />
+              {/* Ripple origin, positioned over where a guest's phone
+                  actually lands on the card - the one animated element
+                  on the page, looping ambiently, off entirely for anyone
+                  who's asked for reduced motion. */}
+              <span className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 motion-reduce:hidden">
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full animate-tap-ripple rounded-full border border-brass-bright" />
+                  <span className="absolute inline-flex h-full w-full animate-tap-ripple rounded-full border border-brass-bright [animation-delay:0.55s]" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-brass-bright shadow-[0_0_12px_2px_rgba(212,175,120,0.55)]" />
+                </span>
+              </span>
+            </div>
+            <div className="mt-5 flex justify-center">
+              <p className="rounded-full border border-ink-line bg-ink-soft px-5 py-2 font-mono text-xs text-ivory-dim">
+                One tap becomes <span key={tapIndex} className="text-brass">{TAP_BECOMES[tapIndex]}</span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Your stand, on your tables - the two companion angles from the
           same shoot, shown together the way the pitch deck already does. */}
-      <div className="border-t border-ink-line px-6 py-20">
+      <div className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-4xl">
-          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Your stand, on your tables</p>
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Your stand, on your tables</p>
           <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
             A single card at every table — customers see it the moment they sit down.
           </p>
@@ -114,16 +167,19 @@ export default function Home() {
         </div>
       </div>
 
-      {/* How it works */}
-      <div className="border-t border-ink-line px-6 py-20">
+      {/* How it works - a genuine sequence (tap precedes connect
+          precedes grow), so numbered steps earn their place here rather
+          than decorating an unordered list. */}
+      <div className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-4xl">
-          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">How it works</p>
-          <div className="mt-10 grid gap-8 sm:grid-cols-3">
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">How it works</p>
+          <div className="relative mt-12 grid gap-10 sm:grid-cols-3 sm:gap-6">
+            <div className="pointer-events-none absolute left-0 right-0 top-[22px] hidden border-t border-dashed border-ink-line sm:block" />
             {STEPS.map((step) => (
-              <div key={step.n}>
-                <p className="font-display text-3xl text-brass/40">{step.n}</p>
-                <p className="mt-2 font-display text-lg text-ivory">{step.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-ivory-dim">{step.text}</p>
+              <div key={step.n} className="relative bg-ink text-center sm:text-left">
+                <p className="font-mono text-2xl text-brass">{step.n}</p>
+                <p className="mt-3 font-display text-xl text-ivory">{step.title}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">{step.text}</p>
               </div>
             ))}
           </div>
@@ -131,13 +187,13 @@ export default function Home() {
       </div>
 
       {/* Features */}
-      <div className="border-t border-ink-line px-6 py-20">
+      <div className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-4xl">
-          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">What's built in</p>
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">What's built in</p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {FEATURES.map((f) => (
-              <div key={f.title} className="rounded-xl border border-ink-line bg-ink-soft p-5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-brass/40 text-brass">
+              <div key={f.title} className="group rounded-xl border border-ink-line bg-ink-soft p-5 transition-colors duration-200 hover:border-brass/40">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-brass/40 text-brass transition-colors duration-200 group-hover:bg-brass/10">
                   <f.icon size={18} strokeWidth={1.75} />
                 </span>
                 <p className="mt-3 font-display text-lg text-ivory">{f.title}</p>
@@ -149,7 +205,7 @@ export default function Home() {
       </div>
 
       {/* Pricing, with a real worked example */}
-      <div id="pricing" className="border-t border-ink-line px-6 py-20">
+      <div id="pricing" className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-4xl">
           {/* Why the price is what it is, before showing the numbers themselves */}
           <div className="mb-14 grid gap-6 sm:grid-cols-2">
@@ -164,7 +220,7 @@ export default function Home() {
               </p>
             </div>
             <div className="rounded-xl border border-ink-line bg-ink-soft p-6">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-brass">The operational savings chain</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">The operational savings chain</p>
               <div className="mt-4 space-y-2 text-sm text-ivory-dim">
                 <div className="rounded-lg border border-ink-line px-3 py-2">Less payroll & salaries</div>
                 <div className="pl-3 text-brass/60">↓</div>
@@ -177,7 +233,7 @@ export default function Home() {
             </div>
           </div>
 
-          <p className="text-center font-mono text-[11px] uppercase tracking-wider text-brass">Pricing</p>
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Pricing</p>
           <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
             Two plans, priced for what you actually run — a restaurant table or a hotel room. No setup contracts, no hidden costs.
           </p>
@@ -228,7 +284,7 @@ export default function Home() {
 
           <div className="mt-6 rounded-xl border border-brass/30 bg-ink p-6">
             <div className="flex items-center justify-between">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-brass">Example — {PLANS[pricingPlan].name}</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Example — {PLANS[pricingPlan].name}</p>
               <label className="flex items-center gap-2 text-sm text-ivory-dim capitalize">
                 {pricingType === 'restaurant' ? 'Tables' : 'Rooms'}
                 <input
@@ -263,7 +319,7 @@ export default function Home() {
       </div>
 
       {/* Lead capture */}
-      <div id="get-started" className="border-t border-ink-line px-6 py-20">
+      <div id="get-started" className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-md">
           <p className="text-center font-display text-2xl text-ivory">Get started</p>
           <p className="mt-2 text-center text-sm text-ivory-dim">
@@ -273,7 +329,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="border-t border-ink-line px-6 py-10 text-center">
+      <div className="px-6 py-10 text-center">
         <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio</p>
       </div>
     </div>
