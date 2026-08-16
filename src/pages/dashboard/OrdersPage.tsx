@@ -20,6 +20,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   // exhaustive OrderStatus type.
   awaiting_payment: 'Awaiting payment',
   pending: 'New',
+  preparing: 'Preparing',
   ready: 'Ready',
   completed: 'Completed',
   cancelled: 'Cancelled',
@@ -28,6 +29,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 const STATUS_STYLE: Record<OrderStatus, string> = {
   awaiting_payment: 'border-ink-line text-ivory-dim',
   pending: 'border-brass text-brass',
+  preparing: 'border-brass/70 text-brass',
   ready: 'border-success/50 text-success',
   completed: 'border-ink-line text-ivory-dim',
   cancelled: 'border-danger/40 text-danger',

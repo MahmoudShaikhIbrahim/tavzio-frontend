@@ -14,7 +14,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-  const [language, setLanguage] = useState(user?.preferred_language || 'en');
+  const [language, setLanguage] = useState<string>(user?.preferred_language || 'en');
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [languageSaved, setLanguageSaved] = useState(false);
 

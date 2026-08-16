@@ -11,7 +11,7 @@ import type {
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
   Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, LowStockIngredient, InventoryValuation, WasteReport,
-  MenuItemFoodCost, FoodCostReport, ActualFoodCostReport, StaffSchedule, ScheduleReport, LaborCostReport, MySchedule,
+  FoodCostReport, ActualFoodCostReport, StaffSchedule, ScheduleReport, LaborCostReport, MySchedule,
   SalesForecast, BusinessBudget, BudgetVsActual,
   Lead, TillSession, FloorTable, WaitlistEntry,
   HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet, HotelBookingGroup,

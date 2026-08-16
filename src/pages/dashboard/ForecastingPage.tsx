@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { getBusiness, getSalesForecast, getBudget, setBudget, getBudgetVsActual } from '../../lib/authApi';
+import { getBusiness, getSalesForecast, setBudget, getBudgetVsActual } from '../../lib/authApi';
 import type { AdminBusiness, SalesForecast, BudgetVsActual } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
