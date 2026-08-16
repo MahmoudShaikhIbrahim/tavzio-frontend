@@ -148,7 +148,7 @@ export default function HotelGuestPortalPage() {
         )}
 
         {view !== 'home' && (
-          <button type="button" onClick={() => { setView('home'); setActiveOutlet(null); setActiveRequestKey(null); }} className="text-sm text-brass hover:underline">
+          <button type="button" onClick={() => { setView('home'); setActiveOutlet(null); setActiveRequestService(null); }} className="text-sm text-brass hover:underline">
             ← Back
           </button>
         )}
