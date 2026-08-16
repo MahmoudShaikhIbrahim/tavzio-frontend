@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { listRatePlans, createRatePlan, updateRatePlan, type HotelRatePlan } from '../../lib/authApi';
+import {
+  listRatePlans, createRatePlan, updateRatePlan, type HotelRatePlan,
+  listRateOverrides, setRateOverride, deleteRateOverride, type HotelRateOverride,
+  listPricingRules, createPricingRule, updatePricingRule, deletePricingRule, type HotelPricingRule,
+  getOccupancyForecast, type OccupancyForecast,
+} from '../../lib/authApi';
 import { Section, Field, inputClass } from '../../components/ui';
 
 // Matches the actual database constraint on hotel_rate_plans.rate_type -
@@ -64,6 +69,171 @@ export default function RatePlansPage() {
           ))}
           {plans.length === 0 && <p className="text-ivory-dim">No rate plans yet - add one above.</p>}
         </div>
+      </Section>
+
+      <RateCalendarSection businessId={businessId} plans={plans} />
+      <PricingRulesSection businessId={businessId} />
+    </div>
+  );
+}
+
+function RateCalendarSection({ businessId, plans }: { businessId: string; plans: HotelRatePlan[] }) {
+  const [ratePlanId, setRatePlanId] = useState('');
+  const [overrides, setOverrides] = useState<HotelRateOverride[]>([]);
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [rate, setRate] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (plans.length > 0 && !ratePlanId) setRatePlanId(plans[0].id);
+  }, [plans, ratePlanId]);
+
+  function reload() {
+    if (ratePlanId) listRateOverrides(businessId, ratePlanId).then(setOverrides);
+  }
+  useEffect(reload, [businessId, ratePlanId]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ratePlanId || !rate) return;
+    setSaving(true);
+    try {
+      await setRateOverride(businessId, { ratePlanId, overrideDate: date, rateAed: rate });
+      reload();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    await deleteRateOverride(businessId, id);
+    reload();
+  }
+
+  if (plans.length === 0) return null;
+
+  return (
+    <Section title="Rate calendar">
+      <p className="text-sm text-ivory-dim">
+        Set a specific price for a specific date on a plan - a holiday, an event weekend - without creating a whole new plan just for one night.
+      </p>
+      <Field label="Plan">
+        <select value={ratePlanId} onChange={(e) => setRatePlanId(e.target.value)} className={inputClass}>
+          {plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+      </Field>
+      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
+        <Field label="Date"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></Field>
+        <Field label="Rate (AED)"><input type="number" min={0} value={rate} onFocus={(e) => e.target.select()} onChange={(e) => setRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Set override'}
+        </button>
+      </form>
+      <div className="space-y-1">
+        {overrides.map((o) => (
+          <div key={o.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+            <span className="text-ivory">{new Date(o.override_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <span className="flex items-center gap-3">
+              <span className="text-brass">AED {o.rate_aed}</span>
+              <button type="button" onClick={() => handleDelete(o.id)} className="text-danger hover:underline">Remove</button>
+            </span>
+          </div>
+        ))}
+        {overrides.length === 0 && <p className="text-ivory-dim">No date-specific overrides for this plan yet.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function PricingRulesSection({ businessId }: { businessId: string }) {
+  const [rules, setRules] = useState<HotelPricingRule[]>([]);
+  const [forecast, setForecast] = useState<OccupancyForecast | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState('');
+  const [threshold, setThreshold] = useState(80);
+  const [surcharge, setSurcharge] = useState(20);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function reload() {
+    listPricingRules(businessId).then(setRules);
+    getOccupancyForecast(businessId, 14).then(setForecast);
+  }
+  useEffect(reload, [businessId]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    setError('');
+    try {
+      await createPricingRule(businessId, { name: name.trim(), occupancyThresholdPct: threshold, surchargePct: surcharge });
+      setShowAdd(false);
+      setName('');
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add pricing rule');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Remove this pricing rule?')) return;
+    await deletePricingRule(businessId, id);
+    reload();
+  }
+
+  return (
+    <div className="space-y-6">
+      <Section title="Occupancy-based pricing" action={
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add rule</button>
+      }>
+        <p className="text-sm text-ivory-dim">
+          As the hotel fills up for a given date, apply a surcharge automatically - a transparent rule, not a hidden algorithm.
+          When several rules match, only the highest threshold applies (never stacked).
+        </p>
+        {showAdd && (
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+            <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="High demand" className={inputClass} /></Field>
+            <Field label="At or above occupancy %"><input type="number" min={1} max={100} value={threshold} onFocus={(e) => e.target.select()} onChange={(e) => setThreshold(Number(e.target.value))} className={`${inputClass} w-28`} /></Field>
+            <Field label="Surcharge %"><input type="number" min={1} value={surcharge} onFocus={(e) => e.target.select()} onChange={(e) => setSurcharge(Number(e.target.value))} className={`${inputClass} w-28`} /></Field>
+            <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+              {saving ? 'Saving...' : 'Add rule'}
+            </button>
+          </form>
+        )}
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <div className="space-y-2">
+          {rules.map((r) => (
+            <div key={r.id} className={`flex items-center justify-between rounded-lg border p-3 ${r.active ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
+              <span className="text-ivory">{r.name} - at {r.occupancy_threshold_pct}%+ occupancy, +{r.surcharge_pct}%</span>
+              <div className="flex items-center gap-3 text-sm">
+                <button type="button" onClick={() => updatePricingRule(businessId, r.id, { active: !r.active }).then(reload)} className="text-ivory-dim hover:text-ivory">
+                  {r.active ? 'Deactivate' : 'Reactivate'}
+                </button>
+                <button type="button" onClick={() => handleDelete(r.id)} className="text-danger hover:underline">Remove</button>
+              </div>
+            </div>
+          ))}
+          {rules.length === 0 && <p className="text-ivory-dim">No pricing rules yet - rates use each plan's flat rate (plus any date overrides above).</p>}
+        </div>
+      </Section>
+
+      <Section title="Occupancy forecast (14 days)">
+        {forecast && forecast.forecast.length > 0 ? (
+          <div className="grid grid-cols-7 gap-2">
+            {forecast.forecast.map((f) => (
+              <div key={f.date} className={`rounded-lg border p-2 text-center ${f.occupancyPct >= 80 ? 'border-danger/40 bg-danger/5' : f.occupancyPct >= 50 ? 'border-warning/40 bg-warning/5' : 'border-ink-line'}`}>
+                <p className="text-xs text-ivory-dim">{new Date(f.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })}</p>
+                <p className="text-lg text-ivory">{f.occupancyPct}%</p>
+                <p className="text-xs text-ivory-dim">{f.occupiedRooms}/{f.totalRooms}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-ivory-dim">No rooms set up yet.</p>
+        )}
       </Section>
     </div>
   );

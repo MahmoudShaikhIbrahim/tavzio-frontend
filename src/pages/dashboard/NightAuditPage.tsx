@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { getCurrentBusinessDate, runNightAudit, listNightAudits, type NightAudit } from '../../lib/authApi';
+import { getCurrentBusinessDate, getNightAuditPreview, runNightAudit, listNightAudits, type NightAudit, type NightAuditPreview } from '../../lib/authApi';
 import { Section } from '../../components/ui';
 
 export default function NightAuditPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [businessDate, setBusinessDate] = useState<string | null>(null);
+  const [preview, setPreview] = useState<NightAuditPreview | null>(null);
   const [audits, setAudits] = useState<NightAudit[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
@@ -14,13 +15,16 @@ export default function NightAuditPage() {
   function reload() {
     if (!businessId) return;
     getCurrentBusinessDate(businessId).then((r) => setBusinessDate(r.businessDate));
+    getNightAuditPreview(businessId).then(setPreview);
     listNightAudits(businessId).then(setAudits);
   }
   useEffect(reload, [businessId]);
 
   async function handleRun() {
     if (!businessId) return;
-    if (!confirm(`Run night audit for ${businessDate}? This closes out the day - occupancy, revenue, and arrivals/departures get locked in.`)) return;
+    const parts = [`Run night audit for ${businessDate}? This closes out the day - occupancy, revenue, and arrivals/departures get locked in.`];
+    if (preview?.noShowCandidateCount) parts.push(`${preview.noShowCandidateCount} unarrived confirmed reservation(s) will be marked no-show.`);
+    if (!confirm(parts.join('\n\n'))) return;
     setRunning(true);
     setError('');
     try {
@@ -35,7 +39,7 @@ export default function NightAuditPage() {
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
 
-  const alreadyRunToday = audits.some((a) => a.business_date === businessDate);
+  const alreadyRunToday = preview?.alreadyRun ?? audits.some((a) => a.business_date === businessDate);
 
   return (
     <div className="space-y-6">
@@ -43,7 +47,7 @@ export default function NightAuditPage() {
         <h1 className="font-display text-3xl text-ivory">Night Audit</h1>
         <p className="mt-1 text-base text-ivory-dim">
           Closes out the business day - locks in occupancy, room/F&B revenue, and arrivals/departures for the
-          record. Run this once per day, typically overnight.
+          record, and processes any reservations that never arrived. Run this once per day, typically overnight.
         </p>
       </div>
 
@@ -52,6 +56,16 @@ export default function NightAuditPage() {
           <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
             <p className="text-xs uppercase tracking-wide text-brass">Current business date</p>
             <p className="mt-1 font-display text-2xl text-ivory">{businessDate}</p>
+          </div>
+        )}
+        {preview && !alreadyRunToday && (preview.noShowCandidateCount > 0 || preview.unresolvedDeparturesCount > 0) && (
+          <div className="space-y-1 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm">
+            {preview.noShowCandidateCount > 0 && (
+              <p className="text-warning">{preview.noShowCandidateCount} confirmed reservation(s) never arrived - running the audit will mark them no-show.</p>
+            )}
+            {preview.unresolvedDeparturesCount > 0 && (
+              <p className="text-warning">{preview.unresolvedDeparturesCount} guest(s) are still checked in past their checkout date - the audit will flag this, not check them out automatically.</p>
+            )}
           </div>
         )}
         {alreadyRunToday && <p className="text-sm text-ivory-dim">Already run for {businessDate}.</p>}
@@ -75,7 +89,7 @@ export default function NightAuditPage() {
                 <p className="text-sm text-ivory-dim">Run at {new Date(a.run_at).toLocaleString('en-GB')}</p>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-ivory-dim sm:grid-cols-4">
-                <p>Occupancy: <span className="text-ivory">{(a.occupancy_rate * 100).toFixed(0)}%</span></p>
+                <p>Occupancy: <span className="text-ivory">{a.occupancy_rate.toFixed(0)}%</span></p>
                 <p>Rooms sold: <span className="text-ivory">{a.rooms_sold} / {a.rooms_available}</span></p>
                 <p>Arrivals: <span className="text-ivory">{a.arrivals_count}</span></p>
                 <p>Departures: <span className="text-ivory">{a.departures_count}</span></p>
@@ -83,6 +97,8 @@ export default function NightAuditPage() {
                 <p>F&B revenue: <span className="text-ivory">AED {a.fnb_revenue_aed.toFixed(2)}</span></p>
                 <p>Other revenue: <span className="text-ivory">AED {a.other_revenue_aed.toFixed(2)}</span></p>
                 <p>Total payments: <span className="text-ivory">AED {a.total_payments_aed.toFixed(2)}</span></p>
+                {a.no_shows_processed > 0 && <p>No-shows processed: <span className="text-warning">{a.no_shows_processed}</span></p>}
+                {a.unresolved_departures_count > 0 && <p>Unresolved departures: <span className="text-warning">{a.unresolved_departures_count}</span></p>}
               </div>
             </div>
           ))}

@@ -27,6 +27,7 @@ import OrgMenuPage from './pages/orgowner/OrgMenuPage';
 
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
+import ForecastingPage from './pages/dashboard/ForecastingPage';
 import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import BusinessProfilePage from './pages/dashboard/BusinessProfilePage';
@@ -56,6 +57,7 @@ import FrontDeskPage from './pages/dashboard/FrontDeskPage';
 import HousekeepingPage from './pages/dashboard/HousekeepingPage';
 import ExternalHotelSystemsPage from './pages/dashboard/ExternalHotelSystemsPage';
 import HotelOutletsPage from './pages/dashboard/HotelOutletsPage';
+import SalesEventsPage from './pages/dashboard/SalesEventsPage';
 import RatePlansPage from './pages/dashboard/RatePlansPage';
 import NightAuditPage from './pages/dashboard/NightAuditPage';
 import PosIntegrationPage from './pages/dashboard/PosIntegrationPage';
@@ -116,6 +118,7 @@ export default function App() {
           <Route path="/admin/dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="orders" replace />} />
             <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="forecasting" element={<ForecastingPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/business-profile" element={<BusinessProfilePage />} />
@@ -142,6 +145,7 @@ export default function App() {
             <Route path="tables" element={<TableManagementPage />} />
             <Route path="settings/delivery" element={<DeliveryIntegrationPage />} />
             <Route path="front-desk" element={<FrontDeskPage />} />
+            <Route path="sales-events" element={<SalesEventsPage />} />
             <Route path="housekeeping" element={<HousekeepingPage />} />
             <Route path="settings/external-hotel-systems" element={<ExternalHotelSystemsPage />} />
             <Route path="settings/hotel-outlets" element={<HotelOutletsPage />} />

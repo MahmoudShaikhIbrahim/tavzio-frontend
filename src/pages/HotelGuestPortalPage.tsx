@@ -128,6 +128,7 @@ export default function HotelGuestPortalPage() {
       if (!res.ok) { alert(result.message || 'Could not start payment'); setPaying(false); return; }
       window.location.href = result.redirectUrl;
     } catch {
+      alert('Could not start payment - check your connection and try again');
       setPaying(false);
     }
   }
@@ -323,6 +324,9 @@ function OutletOrderView({ slug, roomId, outlet, onDone }: { slug: string; roomI
       <div className="space-y-3">
         {outlet.items.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-ink-line p-3">
+            {item.imageUrl && (
+              <img src={item.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+            )}
             <div className="min-w-0 flex-1">
               <p className="text-base text-ivory">{item.name}</p>
               {item.description && <p className="text-sm text-ivory-dim">{item.description}</p>}

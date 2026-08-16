@@ -5,9 +5,10 @@ import {
   listStaffDocuments, uploadStaffDocument, deleteStaffDocument, type StaffDocument,
   setStaffCommission, getCommissionReport, type CommissionReportRow,
   listTipDistributions, createTipDistribution, type TipDistribution,
+  setStaffWage, listSchedules, createSchedule, deleteSchedule, getLaborCostReport,
 } from '../../lib/authApi';
 import { uploadStaffDocumentFile, getStaffDocumentUrl } from '../../lib/supabaseClient';
-import type { StaffMember, AdminBusiness } from '../../types';
+import type { StaffMember, AdminBusiness, StaffSchedule, LaborCostReport } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
 const DOC_TYPES = ['Emirates ID', 'Passport', 'Visa', 'Labor Card', 'Employment Contract', 'Other'];
@@ -16,7 +17,7 @@ export default function HRPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
-  const [tab, setTab] = useState<'documents' | 'commission' | 'tips'>('documents');
+  const [tab, setTab] = useState<'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'>('documents');
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -31,7 +32,7 @@ export default function HRPage() {
         <h1 className="font-display text-3xl text-ivory">HR</h1>
         <p className="text-base text-ivory-dim">
           HR is turned off for your business. Turn it on under Features, then come back here - each module
-          (documents, commission, tips) can be enabled independently.
+          (documents, commission, tips, scheduling, labor cost) can be enabled independently.
         </p>
       </div>
     );
@@ -41,7 +42,9 @@ export default function HRPage() {
     hr.documents && { key: 'documents' as const, label: 'Staff Documents' },
     hr.commission && { key: 'commission' as const, label: 'Commission' },
     hr.tips && { key: 'tips' as const, label: 'Tip Pooling' },
-  ].filter(Boolean) as { key: 'documents' | 'commission' | 'tips'; label: string }[];
+    hr.scheduling && { key: 'scheduling' as const, label: 'Scheduling' },
+    hr.laborCost && { key: 'labor-cost' as const, label: 'Labor Cost' },
+  ].filter(Boolean) as { key: 'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'; label: string }[];
 
   return (
     <div className="space-y-6">
@@ -61,6 +64,8 @@ export default function HRPage() {
           {tab === 'documents' && hr.documents && <DocumentsTab businessId={businessId} />}
           {tab === 'commission' && hr.commission && <CommissionTab businessId={businessId} />}
           {tab === 'tips' && hr.tips && <TipsTab businessId={businessId} />}
+          {tab === 'scheduling' && hr.scheduling && <SchedulingTab businessId={businessId} />}
+          {tab === 'labor-cost' && hr.laborCost && <LaborCostTab businessId={businessId} />}
         </>
       )}
     </div>
@@ -255,6 +260,226 @@ function CommissionTab({ businessId }: { businessId: string }) {
           ))}
           {report.length === 0 && <p className="text-ivory-dim">No staff have a commission rate set yet.</p>}
         </div>
+      </Section>
+    </div>
+  );
+}
+
+function SchedulingTab({ businessId }: { businessId: string }) {
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [schedules, setSchedules] = useState<StaffSchedule[]>([]);
+  const [totalHours, setTotalHours] = useState(0);
+  const [totalForecastCostAed, setTotalForecastCostAed] = useState(0);
+  const [untrackedShiftCount, setUntrackedShiftCount] = useState(0);
+  const [rangeFrom, setRangeFrom] = useState(() => new Date().toISOString().slice(0, 10));
+  const [rangeTo, setRangeTo] = useState(() => new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10));
+  const [showAdd, setShowAdd] = useState(false);
+  const [staffId, setStaffId] = useState('');
+  const [shiftDate, setShiftDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
+  const [roleLabel, setRoleLabel] = useState('');
+  const [error, setError] = useState('');
+
+  function reload() {
+    listStaff(businessId).then(setStaff);
+    listSchedules(businessId, { from: `${rangeFrom}T00:00:00.000Z`, to: `${rangeTo}T23:59:59.999Z` }).then((r) => {
+      setSchedules(r.schedules);
+      setTotalHours(r.totalHours);
+      setTotalForecastCostAed(r.totalForecastCostAed);
+      setUntrackedShiftCount(r.untrackedShiftCount);
+    });
+  }
+  useEffect(reload, [businessId, rangeFrom, rangeTo]);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    if (!staffId) { setError('Pick a staff member'); return; }
+    const scheduledStart = `${shiftDate}T${startTime}:00`;
+    const scheduledEnd = `${shiftDate}T${endTime}:00`;
+    if (scheduledEnd <= scheduledStart) { setError('End time must be after start time (same-day shifts only for now)'); return; }
+    try {
+      await createSchedule(businessId, { staffId, scheduledStart, scheduledEnd, roleLabel });
+      setShowAdd(false);
+      setRoleLabel('');
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add shift');
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Remove this scheduled shift?')) return;
+    await deleteSchedule(businessId, id);
+    reload();
+  }
+
+  return (
+    <Section title="Roster" action={
+      <div className="flex items-center gap-2">
+        <input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+        <span className="text-ivory-dim">to</span>
+        <input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add shift</button>
+      </div>
+    }>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-ink-line p-3">
+          <p className="text-xs text-ivory-dim">Scheduled hours</p>
+          <p className="text-xl text-ivory">{totalHours}</p>
+        </div>
+        <div className="rounded-lg border border-ink-line p-3">
+          <p className="text-xs text-ivory-dim">Forecasted labor cost</p>
+          <p className="text-xl text-brass">AED {totalForecastCostAed.toFixed(2)}</p>
+        </div>
+        {untrackedShiftCount > 0 && (
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
+            <p className="text-xs text-warning">{untrackedShiftCount} shift(s) belong to staff with no hourly rate set - excluded from the forecast above. Set rates in the Labor Cost tab.</p>
+          </div>
+        )}
+      </div>
+
+      {showAdd && (
+        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+          <Field label="Staff">
+            <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <option value="">Select...</option>
+              {staff.filter((s) => s.role === 'staff').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Date"><input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+          <Field label="Start"><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+          <Field label="End"><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+          <Field label="Role (optional)"><input value={roleLabel} onChange={(e) => setRoleLabel(e.target.value)} placeholder="e.g. Floor, Kitchen" className={inputClass} /></Field>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
+        </form>
+      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+      <div className="space-y-2">
+        {schedules.map((s) => (
+          <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
+            <span className="text-ivory">
+              {s.staffName}{s.roleLabel ? ` · ${s.roleLabel}` : ''} — {new Date(s.scheduledStart).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              {' - '}{new Date(s.scheduledEnd).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            <span className="flex items-center gap-3 text-ivory-dim">
+              <span>{s.hours}h{s.forecastCostAed != null ? ` · AED ${s.forecastCostAed.toFixed(2)}` : ' · no rate set'}</span>
+              <button type="button" onClick={() => handleDelete(s.id)} className="text-danger hover:underline">Remove</button>
+            </span>
+          </div>
+        ))}
+        {schedules.length === 0 && <p className="text-ivory-dim">No shifts scheduled in this range.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function LaborCostTab({ businessId }: { businessId: string }) {
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [wages, setWages] = useState<Record<string, number | null>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [rateValue, setRateValue] = useState(0);
+  const [days, setDays] = useState(30);
+  const [report, setReport] = useState<LaborCostReport | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  function reload() {
+    setLoading(true);
+    listStaff(businessId).then(setStaff);
+    const to = new Date().toISOString();
+    const from = new Date(Date.now() - days * 86400000).toISOString();
+    getLaborCostReport(businessId, { from, to }).then((r) => {
+      setReport(r);
+      const map: Record<string, number | null> = {};
+      for (const s of r.byStaff) map[s.staffId] = s.hourlyRateAed;
+      setWages((prev) => ({ ...prev, ...map }));
+    }).finally(() => setLoading(false));
+  }
+  useEffect(reload, [businessId, days]);
+
+  async function handleSaveWage(staffId: string) {
+    const updated = await setStaffWage(businessId, staffId, rateValue || null);
+    setWages((prev) => ({ ...prev, [staffId]: updated.hourly_rate_aed }));
+    setEditingId(null);
+    reload();
+  }
+
+  async function handleClearWage(staffId: string) {
+    await setStaffWage(businessId, staffId, null);
+    setWages((prev) => ({ ...prev, [staffId]: null }));
+    reload();
+  }
+
+  return (
+    <div className="space-y-6">
+      <Section title="Hourly rates">
+        <div className="space-y-2">
+          {staff.filter((s) => s.role === 'staff').map((s) => (
+            <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line p-3">
+              <span className="text-base text-ivory">{s.name}</span>
+              {editingId === s.id ? (
+                <div className="flex items-center gap-2">
+                  <input type="number" min={0} value={rateValue} onFocus={(e) => e.target.select()} onChange={(e) => setRateValue(Number(e.target.value))} className="w-24 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
+                  <span className="text-sm text-ivory-dim">AED/hr</span>
+                  <button type="button" onClick={() => handleSaveWage(s.id)} className="text-sm text-brass hover:underline">Save</button>
+                  <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">Cancel</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-ivory-dim">{wages[s.id] != null ? `AED ${wages[s.id]!.toFixed(2)}/hr` : 'No rate set'}</span>
+                  <button type="button" onClick={() => { setEditingId(s.id); setRateValue(wages[s.id] || 0); }} className="text-brass hover:underline">Edit</button>
+                  {wages[s.id] != null && <button type="button" onClick={() => handleClearWage(s.id)} className="text-danger hover:underline">Clear</button>}
+                </div>
+              )}
+            </div>
+          ))}
+          {staff.filter((s) => s.role === 'staff').length === 0 && <p className="text-ivory-dim">No staff accounts yet.</p>}
+        </div>
+      </Section>
+
+      <Section title="Labor cost report" action={
+        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
+          <option value={7}>Last 7 days</option>
+          <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
+        </select>
+      }>
+        {loading && <p className="text-ivory-dim">Loading...</p>}
+        {!loading && report && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">Revenue</p>
+                <p className="text-xl text-ivory">AED {report.totalRevenueAed.toFixed(2)}</p>
+              </div>
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">Labor cost</p>
+                <p className="text-xl text-ivory">AED {report.totalLaborCostAed.toFixed(2)}</p>
+              </div>
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">Labor cost %</p>
+                <p className="text-xl text-brass">{report.laborCostPct != null ? `${report.laborCostPct}%` : 'n/a'}</p>
+              </div>
+            </div>
+            {report.untrackedHours > 0 && (
+              <p className="text-sm text-warning">{report.untrackedHours} worked hour(s) belong to staff with no rate set - excluded from the cost above.</p>
+            )}
+            {report.overtimeShiftCount > 0 && (
+              <p className="text-sm text-warning">{report.overtimeShiftCount} shift(s) exceeded 8 hours in this window.</p>
+            )}
+            <div className="space-y-1">
+              {report.byStaff.map((s) => (
+                <div key={s.staffId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
+                  <span className="text-ivory">{s.name}{s.overtimeShifts > 0 ? ` (${s.overtimeShifts} overtime shift${s.overtimeShifts > 1 ? 's' : ''})` : ''}</span>
+                  <span className="text-ivory-dim">{s.hours}h {s.hourlyRateAed != null ? `· AED ${s.costAed.toFixed(2)}` : '· no rate set'}</span>
+                </div>
+              ))}
+              {report.byStaff.length === 0 && <p className="text-ivory-dim">No clocked shifts in this window.</p>}
+            </div>
+          </>
+        )}
       </Section>
     </div>
   );

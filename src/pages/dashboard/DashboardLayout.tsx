@@ -25,6 +25,7 @@ const TABS = [
   { path: 'tables', label: 'Tables', ownerOnly: false, requires: 'orderingNotHotel' as const, badge: null, badge2: null },
   { path: 'front-desk', label: 'Front Desk', ownerOnly: false, requires: 'hotel' as const, badge: 'front-desk' as const, badge2: null },
   { path: 'housekeeping', label: 'Housekeeping', ownerOnly: false, requires: 'hotel' as const, badge: 'housekeeping' as const, badge2: null },
+  { path: 'sales-events', label: 'Sales & Events', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
   { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
   { path: 'inventory', label: 'Inventory', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
   { path: 'reconciliation', label: 'Bank Reconciliation', ownerOnly: true, requires: null, badge: null, badge2: null },
@@ -58,6 +59,7 @@ const SETTINGS_ITEMS = [
   { path: 'features', label: 'Features', ownerOnly: false, requires: null },
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
   { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
+  { path: 'forecasting', label: 'Forecasting & Budgeting', ownerOnly: true, requires: 'forecasting' as const },
   { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const },
   { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
 ];
@@ -146,7 +148,7 @@ export default function DashboardLayout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | null) {
+  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | 'forecasting' | null) {
     if (requires === 'hotel') return category === 'hotel';
     // Delivery platform integrations (Deliverect etc.) only make sense for
     // restaurants/cafés dispatching food off-site - a hotel has no
@@ -162,6 +164,7 @@ export default function DashboardLayout() {
     if (requires === 'staffAccounts') return features.staffAccounts;
     if (requires === 'inventory') return features.inventory?.enabled;
     if (requires === 'hr') return !!features.hr?.enabled;
+    if (requires === 'forecasting') return !!features.forecasting?.enabled;
     return true;
   }
 

@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
-import { getMyOrganization, getOrgReport, type Organization, type OrgReportRow } from '../../lib/authApi';
+import { getMyOrganization, getOrgReport, getHotelOrgReport, type Organization, type OrgReportRow, type HotelOrgReport } from '../../lib/authApi';
 import { Section } from '../../components/ui';
 
 export default function OrgOverviewPage() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [report, setReport] = useState<{ locations: OrgReportRow[]; grandTotal: number } | null>(null);
+  const [hotelReport, setHotelReport] = useState<HotelOrgReport | null>(null);
 
   useEffect(() => {
     getMyOrganization().then(setOrg);
     getOrgReport().then(setReport);
+    getHotelOrgReport().then(setHotelReport);
   }, []);
 
   if (!org) return <p className="text-ivory-dim">Loading...</p>;
+
+  const hasHotelLocations = (org.businesses || []).some((b) => b.category === 'hotel');
 
   return (
     <div className="space-y-6">
@@ -39,6 +43,53 @@ export default function OrgOverviewPage() {
           </>
         ) : <p className="text-ivory-dim">Loading...</p>}
       </Section>
+
+      {hasHotelLocations && (
+        <Section title="Hotel Performance (last 30 days)">
+          <p className="text-sm text-ivory-dim">
+            Occupancy, ADR (average daily rate), and RevPAR (revenue per available room) - the standard cross-property
+            comparison, from each location's own night audit history.
+          </p>
+          {hotelReport ? (
+            <>
+              {hotelReport.orgTotals && (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+                    <p className="text-xs uppercase tracking-wide text-brass">Total room revenue</p>
+                    <p className="mt-1 font-display text-2xl text-ivory">AED {hotelReport.orgTotals.totalRoomRevenueAed.toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+                    <p className="text-xs uppercase tracking-wide text-brass">Total rooms across group</p>
+                    <p className="mt-1 font-display text-2xl text-ivory">{hotelReport.orgTotals.totalRoomsAvailable}</p>
+                  </div>
+                </div>
+              )}
+              {hotelReport.orgTotals && hotelReport.orgTotals.locationsWithNoAuditData > 0 && (
+                <p className="text-sm text-warning">
+                  {hotelReport.orgTotals.locationsWithNoAuditData} hotel location(s) have no night audit data in this window - excluded from occupancy/ADR/RevPAR until they run one.
+                </p>
+              )}
+              <div className="space-y-2">
+                {hotelReport.locations.map((l) => (
+                  <div key={l.businessId} className="rounded-lg border border-ink-line p-3">
+                    <p className="text-base text-ivory">{l.name}</p>
+                    {l.auditedDays > 0 ? (
+                      <p className="text-sm text-ivory-dim">
+                        Occupancy <span className="text-ivory">{l.occupancyPct}%</span> ·
+                        {' '}ADR <span className="text-ivory">AED {l.adrAed?.toFixed(2)}</span> ·
+                        {' '}RevPAR <span className="text-brass">AED {l.revParAed?.toFixed(2)}</span>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-warning">No night audit data in this window.</p>
+                    )}
+                  </div>
+                ))}
+                {hotelReport.locations.length === 0 && <p className="text-ivory-dim">No hotel locations linked yet.</p>}
+              </div>
+            </>
+          ) : <p className="text-ivory-dim">Loading...</p>}
+        </Section>
+      )}
 
       <Section title="Locations">
         <div className="grid gap-3 sm:grid-cols-2">

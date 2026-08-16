@@ -114,7 +114,22 @@ export default function FeaturesPage() {
           <ToggleRow label="Tip pooling" description="Split collected tips across staff, evenly or by hours worked."
             checked={business.features.hr?.tips || false} onChange={(v) => patch({ hr: { tips: v } })}
             disabled={!business.features.hr?.enabled} />
+          <ToggleRow label="Staff scheduling" description="Build a roster of upcoming shifts per staff member, with a forecasted labor cost."
+            checked={business.features.hr?.scheduling || false} onChange={(v) => patch({ hr: { scheduling: v } })}
+            disabled={!business.features.hr?.enabled} />
+          <ToggleRow label="Labor cost tracking" description="Set an hourly rate per staff member and see real labor cost against revenue, from actual clocked hours."
+            checked={business.features.hr?.laborCost || false} onChange={(v) => patch({ hr: { laborCost: v } })}
+            disabled={!business.features.hr?.enabled} />
         </div>
+      </Section>
+
+      <Section title="Forecasting & Budgeting">
+        <p className="mb-3 text-sm text-ivory-dim">
+          Owner-only. A day-of-week sales forecast built from your own order history, plus monthly budget targets
+          you set yourself, compared against real revenue, food cost, and labor cost as the month happens.
+        </p>
+        <ToggleRow label="Enable Forecasting & Budgeting" description="Turns on the Forecasting & Budgeting section in your dashboard. Off by default."
+          checked={business.features.forecasting?.enabled || false} onChange={(v) => patch({ forecasting: { enabled: v } })} />
       </Section>
     </div>
   );

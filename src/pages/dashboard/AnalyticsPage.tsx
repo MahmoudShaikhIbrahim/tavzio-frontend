@@ -3,7 +3,11 @@ import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { getAnalyticsSummary, getCardBreakdown, getSalesByChannel, type SalesByChannel } from '../../lib/authApi';
+import {
+  getAnalyticsSummary, getCardBreakdown, getSalesByChannel, type SalesByChannel,
+  getTopItems, getRevenueTrend, getPeakHours, getKitchenPerformance, getHotelPerformance, getBusiness,
+  type TopItemsReport, type RevenueTrend, type PeakHours, type KitchenPerformance, type HotelPerformance,
+} from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { useSession } from '../../hooks/useSession';
 import type { AnalyticsSummary, CardBreakdownItem } from '../../types';
@@ -19,6 +23,13 @@ export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [cardBreakdown, setCardBreakdown] = useState<CardBreakdownItem[]>([]);
   const [salesByChannel, setSalesByChannel] = useState<SalesByChannel | null>(null);
+  const [topItems, setTopItems] = useState<TopItemsReport | null>(null);
+  const [revenueTrend, setRevenueTrend] = useState<RevenueTrend | null>(null);
+  const [peakHours, setPeakHours] = useState<PeakHours | null>(null);
+  const [kitchenPerf, setKitchenPerf] = useState<KitchenPerformance | null>(null);
+  const [hotelPerf, setHotelPerf] = useState<HotelPerformance | null>(null);
+  const [isHotel, setIsHotel] = useState(false);
+  const [topItemsView, setTopItemsView] = useState<'revenue' | 'quantity'>('revenue');
   const [liveTapCount, setLiveTapCount] = useState(0);
   const [liveFeed, setLiveFeed] = useState<string[]>([]);
 
@@ -29,6 +40,14 @@ export default function AnalyticsPage() {
     getAnalyticsSummary(businessId).then(setSummary);
     getCardBreakdown(businessId).then(setCardBreakdown);
     getSalesByChannel(businessId).then(setSalesByChannel);
+    getTopItems(businessId, { limit: 10 }).then(setTopItems);
+    getRevenueTrend(businessId).then(setRevenueTrend);
+    getPeakHours(businessId).then(setPeakHours);
+    getKitchenPerformance(businessId).then(setKitchenPerf);
+    getBusiness(businessId).then((b) => {
+      setIsHotel(b.category === 'hotel');
+      if (b.category === 'hotel') getHotelPerformance(businessId).then(setHotelPerf);
+    });
   }
 
   useEffect(reload, [businessId]);
@@ -153,6 +172,141 @@ export default function AnalyticsPage() {
           <p className="text-base text-ivory-dim">No sales in the last 30 days yet.</p>
         )}
       </Section>
+
+      <Section title="Revenue trend (30 days)">
+        {revenueTrend && revenueTrend.trend.length > 0 ? (
+          <>
+            <p className="text-sm text-ivory-dim">Real daily revenue - not visitor taps, actual money.</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={revenueTrend.trend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
+                <XAxis dataKey="date" stroke="#A79A87" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} />
+                <YAxis stroke="#A79A87" fontSize={11} />
+                <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} formatter={(v: number) => `AED ${v.toFixed(2)}`} />
+                <Line type="monotone" dataKey="revenueAed" stroke="#B8925A" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </>
+        ) : (
+          <p className="text-base text-ivory-dim">No revenue in this window yet.</p>
+        )}
+      </Section>
+
+      <Section title="Top items" action={
+        <div className="flex rounded-lg border border-ink-line">
+          <button type="button" onClick={() => setTopItemsView('revenue')} className={`px-3 py-1.5 text-sm ${topItemsView === 'revenue' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>By revenue</button>
+          <button type="button" onClick={() => setTopItemsView('quantity')} className={`px-3 py-1.5 text-sm ${topItemsView === 'quantity' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>By quantity</button>
+        </div>
+      }>
+        <div className="space-y-1">
+          {(topItemsView === 'revenue' ? topItems?.byRevenue : topItems?.byQuantity)?.map((i) => (
+            <div key={i.name} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+              <span className="text-ivory">{i.name}</span>
+              <span className="text-ivory-dim">{i.quantitySold} sold · AED {i.revenueAed.toFixed(2)} <span className="text-xs">({i.revenueSharePct}% of revenue)</span></span>
+            </div>
+          ))}
+          {(!topItems || (topItemsView === 'revenue' ? topItems.byRevenue : topItems.byQuantity).length === 0) && (
+            <p className="text-base text-ivory-dim">No sales in this window yet.</p>
+          )}
+        </div>
+      </Section>
+
+      <Section title="Peak order hours (30 days)">
+        {peakHours && peakHours.hours.some((h) => h.orderCount > 0) ? (
+          <>
+            <p className="text-sm text-ivory-dim">When orders actually land - busiest hour: {peakHours.peakHour}:00.</p>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={peakHours.hours}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
+                <XAxis dataKey="hour" stroke="#A79A87" fontSize={10} tickFormatter={(h) => `${h}:00`} />
+                <YAxis stroke="#A79A87" fontSize={11} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} labelFormatter={(h) => `${h}:00`} />
+                <Bar dataKey="orderCount" fill="#B8925A" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </>
+        ) : (
+          <p className="text-base text-ivory-dim">No orders in this window yet.</p>
+        )}
+      </Section>
+
+      {kitchenPerf && kitchenPerf.trackedTicketCount > 0 && (
+        <Section title="Kitchen performance (7 days)">
+          <p className="text-sm text-ivory-dim">
+            From {kitchenPerf.trackedTicketCount} of {kitchenPerf.ticketCount} tickets with full timing data
+            {kitchenPerf.trackedTicketCount < kitchenPerf.ticketCount ? ' (older tickets, or ones still in progress, are excluded)' : ''}.
+          </p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-lg border border-ink-line p-3">
+              <p className="text-xs text-ivory-dim">Avg time to start</p>
+              <p className="text-xl text-ivory">{kitchenPerf.avgTimeToStartMins != null ? `${kitchenPerf.avgTimeToStartMins} min` : 'n/a'}</p>
+            </div>
+            <div className="rounded-lg border border-ink-line p-3">
+              <p className="text-xs text-ivory-dim">Avg prep time</p>
+              <p className="text-xl text-ivory">{kitchenPerf.avgPrepTimeMins != null ? `${kitchenPerf.avgPrepTimeMins} min` : 'n/a'}</p>
+            </div>
+            <div className="rounded-lg border border-ink-line p-3">
+              <p className="text-xs text-ivory-dim">Avg total ticket time</p>
+              <p className="text-xl text-brass">{kitchenPerf.avgTotalTicketMins != null ? `${kitchenPerf.avgTotalTicketMins} min` : 'n/a'}</p>
+            </div>
+          </div>
+        </Section>
+      )}
+
+      {isHotel && hotelPerf && (
+        <>
+          <Section title="Occupancy, ADR & RevPAR trend (30 days)">
+            {hotelPerf.occupancyTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={hotelPerf.occupancyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
+                  <XAxis dataKey="date" stroke="#A79A87" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} />
+                  <YAxis stroke="#A79A87" fontSize={11} />
+                  <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="occupancyPct" name="Occupancy %" stroke="#B8925A" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="revParAed" name="RevPAR (AED)" stroke="#6b8f8c" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-base text-ivory-dim">No night audit history in this window yet.</p>
+            )}
+          </Section>
+
+          <Section title="Booking sources (30 days)">
+            <div className="space-y-1">
+              {hotelPerf.bookingSources.map((s) => (
+                <div key={s.source} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+                  <span className="text-ivory">{s.label}</span>
+                  <span className="text-ivory-dim">{s.count} booking{s.count === 1 ? '' : 's'} · AED {s.revenueAed.toFixed(2)} <span className="text-xs">({s.percentage}%)</span></span>
+                </div>
+              ))}
+              {hotelPerf.bookingSources.length === 0 && <p className="text-base text-ivory-dim">No reservations in this window yet.</p>}
+            </div>
+          </Section>
+
+          <Section title="Reservation outcomes (30 days)">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">Checked out</p>
+                <p className="text-xl text-success">{hotelPerf.reservationOutcomes.checkedOut}</p>
+              </div>
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">Cancellation rate</p>
+                <p className="text-xl text-ivory">{hotelPerf.reservationOutcomes.cancellationRatePct != null ? `${hotelPerf.reservationOutcomes.cancellationRatePct}%` : 'n/a'}</p>
+              </div>
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">No-show rate</p>
+                <p className="text-xl text-warning">{hotelPerf.reservationOutcomes.noShowRatePct != null ? `${hotelPerf.reservationOutcomes.noShowRatePct}%` : 'n/a'}</p>
+              </div>
+              <div className="rounded-lg border border-ink-line p-3">
+                <p className="text-xs text-ivory-dim">Avg length of stay</p>
+                <p className="text-xl text-brass">{hotelPerf.avgLengthOfStayNights != null ? `${hotelPerf.avgLengthOfStayNights} nights` : 'n/a'}</p>
+              </div>
+            </div>
+          </Section>
+        </>
+      )}
     </div>
   );
 }

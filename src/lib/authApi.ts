@@ -10,7 +10,10 @@ import type {
   Service, BookingRow, BookingStatus,
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
-  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, Lead, TillSession, FloorTable, WaitlistEntry,
+  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, LowStockIngredient, InventoryValuation, WasteReport,
+  MenuItemFoodCost, FoodCostReport, ActualFoodCostReport, StaffSchedule, ScheduleReport, LaborCostReport, MySchedule,
+  SalesForecast, BusinessBudget, BudgetVsActual,
+  Lead, TillSession, FloorTable, WaitlistEntry,
   HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet, HotelBookingGroup,
 } from '../types';
 
@@ -41,6 +44,16 @@ export function updateMyTheme(theme: 'light' | 'dark' | 'system') {
   return authFetch<Profile>('/api/auth/theme', {
     method: 'PATCH',
     body: JSON.stringify({ theme }),
+  });
+}
+
+// Same 9 languages as the customer-facing NFC interface - tied to the
+// account, not the device, so it follows a staff member to wherever
+// they next log in, and each staff account keeps its own choice.
+export function updateMyLanguage(language: string) {
+  return authFetch<Profile>('/api/auth/language', {
+    method: 'PATCH',
+    body: JSON.stringify({ language }),
   });
 }
 
@@ -161,11 +174,24 @@ export function updateRoom(businessId: string, roomId: string, payload: Partial<
 export function listGuests(businessId: string, search?: string) {
   return authFetch<HotelGuest[]>(`/api/businesses/${businessId}/hotel/guests${search ? `?search=${encodeURIComponent(search)}` : ''}`);
 }
-export function createGuest(businessId: string, payload: { name: string; email?: string; phone?: string; idDocumentType?: string; idDocumentNumber?: string; nationality?: string; notes?: string }) {
+export function matchGuestByPhone(businessId: string, phone: string) {
+  return authFetch<HotelGuest[]>(`/api/businesses/${businessId}/hotel/guests/match?phone=${encodeURIComponent(phone)}`);
+}
+export function createGuest(businessId: string, payload: { name: string; email?: string; phone?: string; idDocumentType?: string; idDocumentNumber?: string; nationality?: string; notes?: string; vip?: boolean; roomPreference?: string; dietaryNotes?: string }) {
   return authFetch<HotelGuest>(`/api/businesses/${businessId}/hotel/guests`, { method: 'POST', body: JSON.stringify(payload) });
 }
-export function updateGuest(businessId: string, guestId: string, payload: Partial<{ name: string; email: string; phone: string; idDocumentType: string; idDocumentNumber: string; nationality: string; notes: string }>) {
+export function updateGuest(businessId: string, guestId: string, payload: Partial<{ name: string; email: string; phone: string; idDocumentType: string; idDocumentNumber: string; nationality: string; notes: string; vip: boolean; roomPreference: string; dietaryNotes: string }>) {
   return authFetch<HotelGuest>(`/api/businesses/${businessId}/hotel/guests/${guestId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export interface GuestStay {
+  reservationId: string; checkInDate: string; checkOutDate: string; nights: number; status: string;
+  roomNumber: string | null; roomType: string | null; spendAed: number;
+}
+export interface GuestStayHistory {
+  stays: GuestStay[]; totalStays: number; totalNights: number; lifetimeSpendAed: number;
+}
+export function getGuestStayHistory(businessId: string, guestId: string) {
+  return authFetch<GuestStayHistory>(`/api/businesses/${businessId}/hotel/guests/${guestId}/stays`);
 }
 
 export function listReservations(businessId: string, status?: string) {
@@ -195,8 +221,97 @@ export function updateBookingGroup(businessId: string, groupId: string, payload:
 export function deleteBookingGroup(businessId: string, groupId: string) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/booking-groups/${groupId}`, { method: 'DELETE' });
 }
+
+export interface CityLedgerEntry {
+  id: string; folioId: string; companyName: string; amountAed: number; billedAt: string;
+  paidAt: string | null; paymentReference: string; notes: string; daysOutstanding: number | null; guestName: string | null;
+}
+export function listCityLedgerEntries(businessId: string, status?: 'unpaid' | 'paid') {
+  return authFetch<{ entries: CityLedgerEntry[]; totalOutstandingAed: number }>(`/api/businesses/${businessId}/hotel/city-ledger${status ? `?status=${status}` : ''}`);
+}
+export function settleCityLedgerEntry(businessId: string, entryId: string, payload: { paymentReference?: string; notes?: string }) {
+  return authFetch<CityLedgerEntry>(`/api/businesses/${businessId}/hotel/city-ledger/${entryId}/settle`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export interface HotelEventSpace {
+  id: string; business_id: string; name: string; capacity: number; hourly_rate_aed: number; description: string; active: boolean;
+}
+export function listEventSpaces(businessId: string) {
+  return authFetch<HotelEventSpace[]>(`/api/businesses/${businessId}/hotel/event-spaces`);
+}
+export function createEventSpace(businessId: string, payload: { name: string; capacity?: number; hourlyRateAed?: number; description?: string }) {
+  return authFetch<HotelEventSpace>(`/api/businesses/${businessId}/hotel/event-spaces`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateEventSpace(businessId: string, spaceId: string, payload: Partial<{ name: string; capacity: number; hourlyRateAed: number; description: string; active: boolean }>) {
+  return authFetch<HotelEventSpace>(`/api/businesses/${businessId}/hotel/event-spaces/${spaceId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export interface HotelEventCharge {
+  id: string; event_id: string; description: string; amount_aed: number; charge_type: string; created_at: string;
+}
+export interface HotelEvent {
+  id: string; business_id: string; event_space_id: string | null; client_name: string; client_phone: string; client_email: string;
+  event_type: 'wedding' | 'conference' | 'meeting' | 'corporate' | 'social' | 'other';
+  event_date: string; start_time: string; end_time: string; expected_attendance: number;
+  status: 'inquiry' | 'tentative' | 'confirmed' | 'completed' | 'cancelled';
+  sales_notes: string; hotel_event_spaces?: { name: string; capacity: number } | null;
+}
+export interface HotelEventDetail extends HotelEvent {
+  charges: HotelEventCharge[];
+  balance: number;
+}
+export function listEvents(businessId: string, params?: { from?: string; to?: string; status?: string }) {
+  const qs = new URLSearchParams();
+  if (params?.from) qs.set('from', params.from);
+  if (params?.to) qs.set('to', params.to);
+  if (params?.status) qs.set('status', params.status);
+  const s = qs.toString();
+  return authFetch<HotelEvent[]>(`/api/businesses/${businessId}/hotel/events${s ? `?${s}` : ''}`);
+}
+export function getEvent(businessId: string, eventId: string) {
+  return authFetch<HotelEventDetail>(`/api/businesses/${businessId}/hotel/events/${eventId}`);
+}
+export function createEvent(businessId: string, payload: {
+  eventSpaceId?: string | null; clientName: string; clientPhone?: string; clientEmail?: string; eventType?: string;
+  eventDate: string; startTime: string; endTime: string; expectedAttendance?: number; status?: string; salesNotes?: string;
+}) {
+  return authFetch<HotelEvent>(`/api/businesses/${businessId}/hotel/events`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateEvent(businessId: string, eventId: string, payload: Partial<{
+  status: string; eventSpaceId: string | null; eventDate: string; startTime: string; endTime: string; expectedAttendance: number; salesNotes: string;
+}>) {
+  return authFetch<HotelEvent>(`/api/businesses/${businessId}/hotel/events/${eventId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function addEventCharge(businessId: string, eventId: string, payload: { description: string; amountAed: number; chargeType?: string }) {
+  return authFetch<HotelEventCharge>(`/api/businesses/${businessId}/hotel/events/${eventId}/charges`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function recordEventPayment(businessId: string, eventId: string, payload: { amountAed: number; description?: string }) {
+  return authFetch<HotelEventCharge>(`/api/businesses/${businessId}/hotel/events/${eventId}/payment`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function deleteEventCharge(businessId: string, eventId: string, chargeId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/events/${eventId}/charges/${chargeId}`, { method: 'DELETE' });
+}
+export interface EventPipelineSummary {
+  from: string; to: string; byStatus: Record<string, number>; totalEvents: number; totalBilledAed: number;
+}
+export function getEventPipelineSummary(businessId: string, from?: string, to?: string) {
+  const qs = new URLSearchParams();
+  if (from) qs.set('from', from);
+  if (to) qs.set('to', to);
+  const s = qs.toString();
+  return authFetch<EventPipelineSummary>(`/api/businesses/${businessId}/hotel/events-pipeline-summary${s ? `?${s}` : ''}`);
+}
 export function cancelReservation(businessId: string, reservationId: string) {
   return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/cancel`, { method: 'POST' });
+}
+export function markReservationNoShow(businessId: string, reservationId: string) {
+  return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/no-show`, { method: 'POST' });
+}
+export function modifyReservation(businessId: string, reservationId: string, payload: Partial<{ checkInDate: string; checkOutDate: string; roomId: string | null; rateAed: number }>) {
+  return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function transferReservationRoom(businessId: string, reservationId: string, newRoomId: string) {
+  return authFetch<HotelReservation>(`/api/businesses/${businessId}/hotel/reservations/${reservationId}/transfer-room`, { method: 'POST', body: JSON.stringify({ newRoomId }) });
 }
 
 export function getFolio(businessId: string, folioId: string) {
@@ -245,6 +360,9 @@ export function setHotelOutletItems(businessId: string, outletId: string, menuIt
 export function addFolioCharge(businessId: string, folioId: string, payload: { description: string; amountAed: number; chargeType?: string }) {
   return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/charges`, { method: 'POST', body: JSON.stringify(payload) });
 }
+export function deleteFolioCharge(businessId: string, folioId: string, chargeId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/folios/${folioId}/charges/${chargeId}`, { method: 'DELETE' });
+}
 export function recordFolioPayment(businessId: string, folioId: string, amountAed: number, description?: string) {
   return authFetch<HotelFolioCharge>(`/api/businesses/${businessId}/hotel/folios/${folioId}/payments`, { method: 'POST', body: JSON.stringify({ amountAed, description }) });
 }
@@ -278,13 +396,65 @@ export function updateRatePlan(businessId: string, ratePlanId: string, payload: 
   return authFetch<HotelRatePlan>(`/api/businesses/${businessId}/hotel/rate-plans/${ratePlanId}`, { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
+export interface HotelRateOverride {
+  id: string; business_id: string; rate_plan_id: string; override_date: string; rate_aed: number;
+}
+export function listRateOverrides(businessId: string, ratePlanId?: string) {
+  return authFetch<HotelRateOverride[]>(`/api/businesses/${businessId}/hotel/revenue/rate-overrides${ratePlanId ? `?ratePlanId=${ratePlanId}` : ''}`);
+}
+export function setRateOverride(businessId: string, payload: { ratePlanId: string; overrideDate: string; rateAed: number }) {
+  return authFetch<HotelRateOverride>(`/api/businesses/${businessId}/hotel/revenue/rate-overrides`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+export function deleteRateOverride(businessId: string, overrideId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/revenue/rate-overrides/${overrideId}`, { method: 'DELETE' });
+}
+
+export interface HotelPricingRule {
+  id: string; business_id: string; name: string; occupancy_threshold_pct: number; surcharge_pct: number; active: boolean;
+}
+export function listPricingRules(businessId: string) {
+  return authFetch<HotelPricingRule[]>(`/api/businesses/${businessId}/hotel/revenue/pricing-rules`);
+}
+export function createPricingRule(businessId: string, payload: { name: string; occupancyThresholdPct: number; surchargePct: number }) {
+  return authFetch<HotelPricingRule>(`/api/businesses/${businessId}/hotel/revenue/pricing-rules`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updatePricingRule(businessId: string, ruleId: string, payload: Partial<{ name: string; occupancyThresholdPct: number; surchargePct: number; active: boolean }>) {
+  return authFetch<HotelPricingRule>(`/api/businesses/${businessId}/hotel/revenue/pricing-rules/${ruleId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deletePricingRule(businessId: string, ruleId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hotel/revenue/pricing-rules/${ruleId}`, { method: 'DELETE' });
+}
+
+export interface EffectiveRate {
+  ratePlanId: string; date: string; baseRateAed: number; overrideApplied: boolean; rateBeforeSurchargeAed: number;
+  occupancyPct: number; appliedRule: { id: string; name: string; surchargePct: number } | null; finalRateAed: number;
+}
+export function getEffectiveRate(businessId: string, ratePlanId: string, date: string) {
+  return authFetch<EffectiveRate>(`/api/businesses/${businessId}/hotel/revenue/effective-rate?ratePlanId=${ratePlanId}&date=${date}`);
+}
+
+export interface OccupancyForecast {
+  days: number;
+  forecast: { date: string; occupancyPct: number; totalRooms: number; occupiedRooms: number }[];
+}
+export function getOccupancyForecast(businessId: string, days = 14) {
+  return authFetch<OccupancyForecast>(`/api/businesses/${businessId}/hotel/revenue/occupancy-forecast?days=${days}`);
+}
+
 export interface NightAudit {
   id: string; business_id: string; business_date: string; run_at: string;
   room_revenue_aed: number; fnb_revenue_aed: number; other_revenue_aed: number; total_payments_aed: number;
   rooms_sold: number; rooms_available: number; occupancy_rate: number; arrivals_count: number; departures_count: number;
+  no_shows_processed: number; unresolved_departures_count: number;
 }
 export function getCurrentBusinessDate(businessId: string) {
   return authFetch<{ businessDate: string }>(`/api/businesses/${businessId}/hotel/business-date`);
+}
+export interface NightAuditPreview {
+  businessDate: string; alreadyRun: boolean; noShowCandidateCount: number; unresolvedDeparturesCount: number;
+}
+export function getNightAuditPreview(businessId: string) {
+  return authFetch<NightAuditPreview>(`/api/businesses/${businessId}/hotel/night-audit/preview`);
 }
 export function runNightAudit(businessId: string) {
   return authFetch<NightAudit>(`/api/businesses/${businessId}/hotel/night-audit/run`, { method: 'POST' });
@@ -295,31 +465,47 @@ export function listNightAudits(businessId: string) {
 
 export interface HousekeepingTask {
   id: string; business_id: string; room_id: string; task_type: string; status: 'pending' | 'in_progress' | 'done';
-  assigned_to: string | null; notes: string; created_at: string; hotel_rooms?: { room_number: string }; profiles?: { name: string };
+  priority: 'normal' | 'urgent'; assigned_to: string | null; notes: string; created_at: string; started_at: string | null; completed_at: string | null;
+  hotel_rooms?: { room_number: string }; profiles?: { name: string };
 }
 export function listHousekeepingTasks(businessId: string, status?: string) {
   return authFetch<HousekeepingTask[]>(`/api/businesses/${businessId}/hotel/housekeeping${status ? `?status=${status}` : ''}`);
 }
-export function createHousekeepingTask(businessId: string, payload: { roomId: string; taskType?: string; assignedTo?: string | null; notes?: string }) {
+export function createHousekeepingTask(businessId: string, payload: { roomId: string; taskType?: string; assignedTo?: string | null; notes?: string; priority?: 'normal' | 'urgent' }) {
   return authFetch<HousekeepingTask>(`/api/businesses/${businessId}/hotel/housekeeping`, { method: 'POST', body: JSON.stringify(payload) });
 }
 export function updateHousekeepingTask(businessId: string, taskId: string, status: string) {
   return authFetch<HousekeepingTask>(`/api/businesses/${businessId}/hotel/housekeeping/${taskId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
 }
+export interface HousekeepingPerformance {
+  days: number; taskCount: number; completedCount: number; avgQueueTimeMins: number | null; avgCleanTimeMins: number | null;
+}
+export function getHousekeepingPerformance(businessId: string, days = 7) {
+  return authFetch<HousekeepingPerformance>(`/api/businesses/${businessId}/hotel/housekeeping-performance?days=${days}`);
+}
 
 export interface MaintenanceTicket {
   id: string; business_id: string; room_id: string | null; title: string; description: string;
   status: 'open' | 'in_progress' | 'resolved'; priority: string; assigned_to: string | null; created_at: string;
+  started_at: string | null; resolved_at: string | null; took_room_out_of_service: boolean;
+  estimated_cost_aed: number | null; actual_cost_aed: number | null;
   hotel_rooms?: { room_number: string }; profiles?: { name: string };
 }
 export function listMaintenanceTickets(businessId: string, status?: string) {
   return authFetch<MaintenanceTicket[]>(`/api/businesses/${businessId}/hotel/maintenance${status ? `?status=${status}` : ''}`);
 }
-export function createMaintenanceTicket(businessId: string, payload: { roomId?: string | null; title: string; description?: string; priority?: string }) {
+export function createMaintenanceTicket(businessId: string, payload: { roomId?: string | null; title: string; description?: string; priority?: string; takeRoomOutOfService?: boolean; estimatedCostAed?: number | null }) {
   return authFetch<MaintenanceTicket>(`/api/businesses/${businessId}/hotel/maintenance`, { method: 'POST', body: JSON.stringify(payload) });
 }
-export function updateMaintenanceTicket(businessId: string, ticketId: string, payload: { status?: string; priority?: string; assignedTo?: string | null }) {
+export function updateMaintenanceTicket(businessId: string, ticketId: string, payload: { status?: string; priority?: string; assignedTo?: string | null; actualCostAed?: number | null }) {
   return authFetch<MaintenanceTicket>(`/api/businesses/${businessId}/hotel/maintenance/${ticketId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export interface MaintenancePerformance {
+  days: number; ticketCount: number; resolvedCount: number; urgentOpenCount: number;
+  avgQueueTimeMins: number | null; avgRepairTimeMins: number | null; totalActualCostAed: number;
+}
+export function getMaintenancePerformance(businessId: string, days = 30) {
+  return authFetch<MaintenancePerformance>(`/api/businesses/${businessId}/hotel/maintenance-performance?days=${days}`);
 }
 
 export interface GuestServiceRequest {
@@ -522,6 +708,54 @@ export function createTipDistribution(businessId: string, payload: { periodStart
   );
 }
 
+export function setStaffWage(businessId: string, staffId: string, hourlyRateAed: number | null) {
+  return authFetch<{ id: string; name: string; hourly_rate_aed: number | null }>(
+    `/api/businesses/${businessId}/hr/wage/${staffId}`, { method: 'PATCH', body: JSON.stringify({ hourlyRateAed }) }
+  );
+}
+
+export function listSchedules(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<ScheduleReport>(`/api/businesses/${businessId}/hr/schedules${qs ? `?${qs}` : ''}`);
+}
+export function createSchedule(businessId: string, payload: { staffId: string; scheduledStart: string; scheduledEnd: string; roleLabel?: string; notes?: string }) {
+  return authFetch<StaffSchedule>(`/api/businesses/${businessId}/hr/schedules`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateSchedule(businessId: string, scheduleId: string, payload: Partial<{ scheduledStart: string; scheduledEnd: string; roleLabel: string; notes: string }>) {
+  return authFetch<StaffSchedule>(`/api/businesses/${businessId}/hr/schedules/${scheduleId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteSchedule(businessId: string, scheduleId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/hr/schedules/${scheduleId}`, { method: 'DELETE' });
+}
+
+export function getLaborCostReport(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<LaborCostReport>(`/api/businesses/${businessId}/hr/labor-cost${qs ? `?${qs}` : ''}`);
+}
+
+export function getMySchedule(businessId: string) {
+  return authFetch<MySchedule[]>(`/api/businesses/${businessId}/staff-shifts/my-schedule`);
+}
+
+export function getSalesForecast(businessId: string, days = 7) {
+  return authFetch<SalesForecast>(`/api/businesses/${businessId}/forecasting/sales-forecast?days=${days}`);
+}
+export function getBudget(businessId: string, month: string) {
+  return authFetch<BusinessBudget | null>(`/api/businesses/${businessId}/forecasting/budget?month=${month}`);
+}
+export function setBudget(businessId: string, payload: { month: string; revenueBudgetAed?: number | null; foodCostPctBudget?: number | null; laborCostPctBudget?: number | null }) {
+  return authFetch<BusinessBudget>(`/api/businesses/${businessId}/forecasting/budget`, { method: 'PUT', body: JSON.stringify(payload) });
+}
+export function getBudgetVsActual(businessId: string, month: string) {
+  return authFetch<BudgetVsActual>(`/api/businesses/${businessId}/forecasting/budget-vs-actual?month=${month}`);
+}
+
 export function setStaffActive(businessId: string, userId: string, isActive: boolean) {
   return authFetch<StaffMember>(`/api/businesses/${businessId}/staff/${userId}`, {
     method: 'PATCH',
@@ -582,6 +816,74 @@ export function getSalesByChannel(businessId: string, range?: { from?: string; t
   if (range?.to) params.set('to', range.to);
   const qs = params.toString();
   return authFetch<SalesByChannel>(`/api/businesses/${businessId}/analytics/sales-by-channel${qs ? `?${qs}` : ''}`);
+}
+
+export interface TopItemsReport {
+  from: string; to: string;
+  byRevenue: { name: string; quantitySold: number; revenueAed: number; revenueSharePct: number }[];
+  byQuantity: { name: string; quantitySold: number; revenueAed: number; revenueSharePct: number }[];
+}
+export function getTopItems(businessId: string, range?: { from?: string; to?: string; limit?: number }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  if (range?.limit) params.set('limit', String(range.limit));
+  const qs = params.toString();
+  return authFetch<TopItemsReport>(`/api/businesses/${businessId}/analytics/top-items${qs ? `?${qs}` : ''}`);
+}
+
+export interface RevenueTrend {
+  from: string; to: string; totalRevenueAed: number;
+  trend: { date: string; revenueAed: number }[];
+}
+export function getRevenueTrend(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<RevenueTrend>(`/api/businesses/${businessId}/analytics/revenue-trend${qs ? `?${qs}` : ''}`);
+}
+
+export interface PeakHours {
+  from: string; to: string; peakHour: number;
+  hours: { hour: number; orderCount: number }[];
+}
+export function getPeakHours(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<PeakHours>(`/api/businesses/${businessId}/analytics/peak-hours${qs ? `?${qs}` : ''}`);
+}
+
+export interface KitchenPerformance {
+  from: string; to: string; ticketCount: number; trackedTicketCount: number;
+  avgTimeToStartMins: number | null; avgPrepTimeMins: number | null; avgTotalTicketMins: number | null;
+}
+export function getKitchenPerformance(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<KitchenPerformance>(`/api/businesses/${businessId}/analytics/kitchen-performance${qs ? `?${qs}` : ''}`);
+}
+
+export interface HotelPerformance {
+  from: string; to: string;
+  occupancyTrend: { date: string; occupancyPct: number; adrAed: number | null; revParAed: number | null }[];
+  bookingSources: { source: string; label: string; count: number; revenueAed: number; percentage: number }[];
+  reservationOutcomes: {
+    checkedOut: number; cancelled: number; noShow: number; stillUpcoming: number;
+    cancellationRatePct: number | null; noShowRatePct: number | null;
+  };
+  avgLengthOfStayNights: number | null;
+}
+export function getHotelPerformance(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<HotelPerformance>(`/api/businesses/${businessId}/analytics/hotel-performance${qs ? `?${qs}` : ''}`);
 }
 
 // --- Linked accounts (login-switch convenience) ---
@@ -675,6 +977,23 @@ export function getOrgReport(range?: { from?: string; to?: string }, asSuperAdmi
   if (asSuperAdminForOrgId) params.set('organizationId', asSuperAdminForOrgId);
   const qs = params.toString();
   return authFetch<{ from: string; to: string; locations: OrgReportRow[]; grandTotal: number }>(`/api/organizations/report${qs ? `?${qs}` : ''}`);
+}
+
+export interface HotelOrgReportRow {
+  businessId: string; name: string; roomsAvailable: number; auditedDays: number;
+  roomRevenueAed: number; occupancyPct: number | null; adrAed: number | null; revParAed: number | null;
+}
+export interface HotelOrgReport {
+  from: string; to: string; days: number; locations: HotelOrgReportRow[];
+  orgTotals: { totalRoomRevenueAed: number; totalRoomsAvailable: number; locationsWithNoAuditData: number } | null;
+}
+export function getHotelOrgReport(range?: { from?: string; to?: string }, asSuperAdminForOrgId?: string) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  if (asSuperAdminForOrgId) params.set('organizationId', asSuperAdminForOrgId);
+  const qs = params.toString();
+  return authFetch<HotelOrgReport>(`/api/organizations/report/hotel${qs ? `?${qs}` : ''}`);
 }
 
 // --- Zoho Books accounting sync ---
@@ -1541,6 +1860,34 @@ export function adjustStock(businessId: string, ingredientId: string, payload: {
   return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}/adjust`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export function recordWaste(businessId: string, ingredientId: string, payload: { quantity: number; wasteCategory: string; note?: string }) {
+  return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}/waste`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function getWasteReport(businessId: string, days = 30) {
+  return authFetch<WasteReport>(`/api/businesses/${businessId}/inventory/waste-report?days=${days}`);
+}
+
+export function getMenuItemFoodCost(businessId: string) {
+  return authFetch<FoodCostReport>(`/api/businesses/${businessId}/inventory/food-cost`);
+}
+
+export function getActualFoodCost(businessId: string, from?: string, to?: string) {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.toString();
+  return authFetch<ActualFoodCostReport>(`/api/businesses/${businessId}/inventory/food-cost/actual${qs ? `?${qs}` : ''}`);
+}
+
+export function getLowStock(businessId: string) {
+  return authFetch<LowStockIngredient[]>(`/api/businesses/${businessId}/inventory/low-stock`);
+}
+
+export function getInventoryValuation(businessId: string) {
+  return authFetch<InventoryValuation>(`/api/businesses/${businessId}/inventory/valuation`);
+}
+
 export function getRecipe(businessId: string, menuItemId: string) {
   return authFetch<RecipeLine[]>(`/api/businesses/${businessId}/inventory/menu-items/${menuItemId}/recipe`);
 }
@@ -1557,8 +1904,14 @@ export function createPurchaseOrder(businessId: string, payload: { supplierId?: 
   return authFetch<PurchaseOrder>(`/api/businesses/${businessId}/inventory/purchase-orders`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function receivePurchaseOrder(businessId: string, poId: string) {
-  return authFetch<PurchaseOrder>(`/api/businesses/${businessId}/inventory/purchase-orders/${poId}/receive`, { method: 'POST' });
+// Omit `items` to receive everything outstanding at once (original
+// behavior). Pass `items` to receive only some of each line - the PO's
+// status becomes 'partially_received' until every line is fully in.
+export function receivePurchaseOrder(businessId: string, poId: string, items?: { purchaseOrderItemId: string; receivedQuantity: number }[]) {
+  return authFetch<PurchaseOrder>(`/api/businesses/${businessId}/inventory/purchase-orders/${poId}/receive`, {
+    method: 'POST',
+    body: JSON.stringify(items ? { items } : {}),
+  });
 }
 
 // super_admin only - one-time, deliberate action. Overwrites whichever

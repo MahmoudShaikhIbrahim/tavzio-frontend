@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import {
-  listRooms, createRoom, updateRoom, listGuests, createGuest, listReservations, createReservation,
-  checkInReservation, checkOutReservation, cancelReservation,
-  getFoliosByReservation, addFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
+  listRooms, createRoom, updateRoom, listGuests, createGuest, matchGuestByPhone, updateGuest, getGuestStayHistory, type GuestStayHistory,
+  listReservations, createReservation,
+  checkInReservation, checkOutReservation, cancelReservation, markReservationNoShow, modifyReservation, transferReservationRoom,
+  getFoliosByReservation, addFolioCharge, deleteFolioCharge, recordFolioPayment, recordFolioDeposit, recordFolioRefund, splitFolio,
   recordFolioAdjustment, transferFolioCharge,
   listCards, updateCard, getTourismDirhamReport, type TourismDirhamCharge,
   listBookingGroups, createBookingGroup, updateBookingGroup, deleteBookingGroup,
+  listCityLedgerEntries, settleCityLedgerEntry, type CityLedgerEntry,
 } from '../../lib/authApi';
 import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card, HotelBookingGroup } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
@@ -14,7 +16,7 @@ import { Section, Field, inputClass } from '../../components/ui';
 export default function FrontDeskPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
-  const [tab, setTab] = useState<'reservations' | 'rooms' | 'groups' | 'tourism-dirham'>('reservations');
+  const [tab, setTab] = useState<'reservations' | 'rooms' | 'groups' | 'guests' | 'city-ledger' | 'tourism-dirham'>('reservations');
   const [openFolioForReservation, setOpenFolioForReservation] = useState<string | null>(null);
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
@@ -27,15 +29,17 @@ export default function FrontDeskPage() {
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">Front Desk</h1>
       <div className="flex gap-2 border-b border-ink-line">
-        {(['reservations', 'rooms', 'groups', 'tourism-dirham'] as const).map((t) => (
+        {(['reservations', 'rooms', 'groups', 'guests', 'city-ledger', 'tourism-dirham'] as const).map((t) => (
           <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t === 'tourism-dirham' ? 'Tourism Dirham' : t}
+            {t === 'tourism-dirham' ? 'Tourism Dirham' : t === 'city-ledger' ? 'City Ledger' : t}
           </button>
         ))}
       </div>
       {tab === 'reservations' && <ReservationsTab businessId={businessId} onOpenFolio={setOpenFolioForReservation} />}
       {tab === 'rooms' && <RoomsTab businessId={businessId} />}
       {tab === 'groups' && <BookingGroupsTab businessId={businessId} />}
+      {tab === 'guests' && <GuestsTab businessId={businessId} />}
+      {tab === 'city-ledger' && <CityLedgerTab businessId={businessId} />}
       {tab === 'tourism-dirham' && <TourismDirhamTab businessId={businessId} />}
     </div>
   );
@@ -76,6 +80,34 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
     reload();
   }
 
+  async function handleNoShow(reservationId: string) {
+    if (!confirm('Mark this reservation as a no-show?')) return;
+    try {
+      await markReservationNoShow(businessId, reservationId);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not mark no-show');
+    }
+  }
+
+  async function handleExtendStay(reservationId: string, newCheckOutDate: string) {
+    try {
+      await modifyReservation(businessId, reservationId, { checkOutDate: newCheckOutDate });
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not update stay dates');
+    }
+  }
+
+  async function handleTransferRoom(reservationId: string, newRoomId: string) {
+    try {
+      await transferReservationRoom(businessId, reservationId, newRoomId);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not transfer room');
+    }
+  }
+
   const availableRooms = rooms.filter((r) => r.status === 'available');
 
   return (
@@ -98,15 +130,18 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
               </div>
               <div className="flex gap-2">
                 {r.status === 'confirmed' && (
-                  <CheckInControl reservation={r} availableRooms={availableRooms} onCheckIn={handleCheckIn} onCancel={() => handleCancel(r.id)} />
+                  <CheckInControl reservation={r} availableRooms={availableRooms} onCheckIn={handleCheckIn} onCancel={() => handleCancel(r.id)} onNoShow={() => handleNoShow(r.id)} />
                 )}
                 {r.status === 'checked_in' && (
                   <>
                     <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-brass hover:underline">View folio</button>
+                    <ExtendStayControl reservation={r} onExtend={handleExtendStay} />
+                    <TransferRoomControl reservation={r} availableRooms={availableRooms} onTransfer={handleTransferRoom} />
                     <button type="button" onClick={() => handleCheckOut(r.id)} className="text-sm text-brass hover:underline">Check out</button>
                   </>
                 )}
                 {r.status === 'checked_out' && <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-ivory-dim hover:underline">View folio</button>}
+                {r.status === 'no_show' && <span className="text-sm text-danger">No-show</span>}
               </div>
             </div>
           </div>
@@ -117,7 +152,7 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
   );
 }
 
-function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel }: { reservation: HotelReservation; availableRooms: HotelRoom[]; onCheckIn: (id: string, roomId?: string) => void; onCancel: () => void }) {
+function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel, onNoShow }: { reservation: HotelReservation; availableRooms: HotelRoom[]; onCheckIn: (id: string, roomId?: string) => void; onCancel: () => void; onNoShow: () => void }) {
   const [roomId, setRoomId] = useState(reservation.room_id || '');
   return (
     <div className="flex items-center gap-2">
@@ -128,7 +163,41 @@ function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel }: { 
         </select>
       )}
       <button type="button" onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="text-sm text-brass hover:underline">Check in</button>
+      <button type="button" onClick={onNoShow} className="text-sm text-warning hover:underline">No-show</button>
       <button type="button" onClick={onCancel} className="text-sm text-danger hover:underline">Cancel</button>
+    </div>
+  );
+}
+
+function ExtendStayControl({ reservation, onExtend }: { reservation: HotelReservation; onExtend: (id: string, newCheckOutDate: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [date, setDate] = useState(reservation.check_out_date);
+  if (!editing) {
+    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">Extend/shorten stay</button>;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory" />
+      <button type="button" onClick={() => { onExtend(reservation.id, date); setEditing(false); }} className="text-xs text-brass hover:underline">Save</button>
+      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">Cancel</button>
+    </div>
+  );
+}
+
+function TransferRoomControl({ reservation, availableRooms, onTransfer }: { reservation: HotelReservation; availableRooms: HotelRoom[]; onTransfer: (id: string, newRoomId: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [newRoomId, setNewRoomId] = useState('');
+  if (!editing) {
+    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">Transfer room</button>;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <select value={newRoomId} onChange={(e) => setNewRoomId(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory">
+        <option value="">Move to...</option>
+        {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
+      </select>
+      <button type="button" disabled={!newRoomId} onClick={() => { onTransfer(reservation.id, newRoomId); setEditing(false); setNewRoomId(''); }} className="text-xs text-brass hover:underline disabled:opacity-40">Move</button>
+      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">Cancel</button>
     </div>
   );
 }
@@ -143,6 +212,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
   const [newGuestIdType, setNewGuestIdType] = useState('');
   const [newGuestIdNumber, setNewGuestIdNumber] = useState('');
   const [newGuestNationality, setNewGuestNationality] = useState('');
+  const [phoneMatches, setPhoneMatches] = useState<HotelGuest[]>([]);
   const [roomId, setRoomId] = useState('');
   const [checkInDate, setCheckInDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [checkOutDate, setCheckOutDate] = useState(() => new Date(Date.now() + 86400000).toISOString().slice(0, 10));
@@ -152,6 +222,25 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
 
   useEffect(() => { listGuests(businessId).then(setGuests); }, [businessId]);
   useEffect(() => { listBookingGroups(businessId).then(setGroups); }, [businessId]);
+
+  // Real duplicate-prevention: as soon as a phone number that already
+  // belongs to an existing guest is typed, offer to use that profile
+  // instead - this is what stops a repeat guest's history from
+  // fragmenting across a fresh blank record every visit, without
+  // silently auto-merging anything (staff still choose).
+  useEffect(() => {
+    if (guestId || newGuestPhone.trim().length < 6) { setPhoneMatches([]); return; }
+    const timer = setTimeout(() => {
+      matchGuestByPhone(businessId, newGuestPhone.trim()).then(setPhoneMatches).catch(() => setPhoneMatches([]));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [businessId, newGuestPhone, guestId]);
+
+  function useExistingGuest(guest: HotelGuest) {
+    setGuestId(guest.id);
+    setPhoneMatches([]);
+    setNewGuestName(''); setNewGuestPhone('');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -192,6 +281,16 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
           <>
             <Field label="New guest name"><input value={newGuestName} onChange={(e) => setNewGuestName(e.target.value)} className={inputClass} /></Field>
             <Field label="Phone"><input value={newGuestPhone} onChange={(e) => setNewGuestPhone(e.target.value)} className={inputClass} /></Field>
+            {phoneMatches.length > 0 && (
+              <div className="w-full rounded-lg border border-warning/40 bg-warning/5 p-3">
+                <p className="text-sm text-warning">Already a guest with this phone number:</p>
+                {phoneMatches.map((g) => (
+                  <button type="button" key={g.id} onClick={() => useExistingGuest(g)} className="mt-1 block text-sm text-brass hover:underline">
+                    Use {g.name}{g.vip ? ' (VIP)' : ''} instead of creating a new profile
+                  </button>
+                ))}
+              </div>
+            )}
             {/* Optional at booking time - a fast walk-in check-in
                 shouldn't be blocked on passport details, but they're here
                 for hotels that do want to capture them up front. */}
@@ -429,6 +528,17 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
     });
   }
 
+  function selectAllCharges(folioId: string, allChargeIds: string[]) {
+    setSelectedIds((prev) => {
+      const current = prev[folioId] || [];
+      // Toggles as a pair, not a one-way switch - already-all-selected
+      // clears instead of doing nothing, so the same control works as
+      // both Select All and Clear.
+      const next = current.length === allChargeIds.length ? [] : allChargeIds;
+      return { ...prev, [folioId]: next };
+    });
+  }
+
   function startSplit(folioId: string) {
     if ((selectedIds[folioId] || []).length === 0) { alert('Select at least one charge to split off'); return; }
     setSplittingFolioId(folioId);
@@ -460,6 +570,7 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
         <FolioCard
           key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)}
           selectedIds={selectedIds[folio.id] || []} onToggleCharge={(chargeId) => toggleCharge(folio.id, chargeId)}
+          onSelectAll={() => selectAllCharges(folio.id, folio.charges.map((c) => c.id))}
           onSplit={() => startSplit(folio.id)} onReload={reload}
           splitConfirmOpen={splittingFolioId === folio.id}
           onConfirmSplit={(companyName) => confirmSplit(folio.id, companyName)}
@@ -470,8 +581,8 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
   );
 }
 
-function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge, onSplit, onReload, splitConfirmOpen, onConfirmSplit, onCancelSplit }: {
-  businessId: string; folio: HotelFolio; otherFolios: HotelFolio[]; selectedIds: string[]; onToggleCharge: (chargeId: string) => void; onSplit: () => void; onReload: () => void;
+function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge, onSelectAll, onSplit, onReload, splitConfirmOpen, onConfirmSplit, onCancelSplit }: {
+  businessId: string; folio: HotelFolio; otherFolios: HotelFolio[]; selectedIds: string[]; onToggleCharge: (chargeId: string) => void; onSelectAll: () => void; onSplit: () => void; onReload: () => void;
   splitConfirmOpen: boolean; onConfirmSplit: (companyName: string) => void; onCancelSplit: () => void;
 }) {
   const [splitCompanyName, setSplitCompanyName] = useState('');
@@ -491,6 +602,12 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
     if (!chargeDesc.trim() || !chargeAmount) return;
     await addFolioCharge(businessId, folio.id, { description: chargeDesc, amountAed: chargeAmount });
     setChargeDesc(''); setChargeAmount(0);
+    onReload();
+  }
+
+  async function handleDeleteCharge(chargeId: string) {
+    if (!confirm('Delete this charge? The guest will no longer be billed for it.')) return;
+    await deleteFolioCharge(businessId, folio.id, chargeId);
     onReload();
   }
 
@@ -534,8 +651,18 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
   }
 
   return (
-    <Section title={`${folio.is_primary ? 'Primary folio' : 'Split folio'} - ${folio.payer_type === 'company' ? `Company: ${folio.company_name}` : 'Guest'}${folio.status === 'closed' ? ' (closed)' : ''}`}>
-      <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Charges &amp; payments</p>
+    <Section title={`${folio.is_primary ? 'Primary folio' : 'Split folio'} - ${folio.payer_type === 'company' ? `Company: ${folio.company_name}` : 'Guest'}${folio.status === 'closed' ? ' (closed)' : folio.status === 'billed_to_account' ? ' (billed to account)' : ''}`}>
+      {folio.status === 'billed_to_account' && (
+        <p className="text-sm text-warning">This folio's balance was billed to {folio.company_name || 'the company account'} at checkout - see City Ledger to track collection.</p>
+      )}
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Charges &amp; payments</p>
+        {folio.status === 'open' && folio.charges.length > 0 && (
+          <button type="button" onClick={onSelectAll} className="text-xs text-brass hover:underline">
+            {selectedIds.length === folio.charges.length ? 'Clear selection' : 'Select all'}
+          </button>
+        )}
+      </div>
       <div className="space-y-2">
         {folio.charges.map((c) => (
           <div key={c.id}>
@@ -549,6 +676,11 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 {folio.status === 'open' && otherFolios.length > 0 && (
                   <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="text-xs text-brass hover:underline">
                     Transfer
+                  </button>
+                )}
+                {folio.status === 'open' && (
+                  <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline">
+                    Delete
                   </button>
                 )}
               </span>
@@ -578,36 +710,51 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
 
       {folio.status === 'open' && (
         <>
-          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Actions</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <form onSubmit={handleAddCharge} className="space-y-2 rounded-lg border border-ink-line p-3">
-              <p className="text-sm text-ivory-dim">Add charge</p>
-              <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="Description" className={inputClass} />
+          <p className="mt-3 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Actions</p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <form onSubmit={handleAddCharge} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink-soft/40 p-4">
+              <div>
+                <p className="text-sm font-medium text-ivory">Add charge</p>
+                <p className="text-xs text-ivory-dim/70">Bill the guest for something extra (room service, minibar, damage, etc.)</p>
+              </div>
+              <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="What's it for?" className={inputClass} />
               <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Add</button>
+              <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Add charge</button>
             </form>
-            <form onSubmit={handleRecordPayment} className="space-y-2 rounded-lg border border-ink-line p-3">
-              <p className="text-sm text-ivory-dim">Record payment</p>
+            <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink-soft/40 p-4">
+              <div>
+                <p className="text-sm font-medium text-ivory">Record payment</p>
+                <p className="text-xs text-ivory-dim/70">Log money already collected - cash, card machine, any method</p>
+              </div>
               <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Record payment</button>
+              <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record payment</button>
             </form>
-            <form onSubmit={handleDeposit} className="space-y-2 rounded-lg border border-ink-line p-3">
-              <p className="text-sm text-ivory-dim">Record deposit</p>
+            <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink-soft/40 p-4">
+              <div>
+                <p className="text-sm font-medium text-ivory">Record deposit</p>
+                <p className="text-xs text-ivory-dim/70">Log an advance or security deposit held against the stay</p>
+              </div>
               <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Record deposit</button>
+              <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record deposit</button>
             </form>
-            <form onSubmit={handleRefund} className="space-y-2 rounded-lg border border-ink-line p-3">
-              <p className="text-sm text-ivory-dim">Issue refund</p>
+            <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-danger/60 bg-ink-soft/40 p-4">
+              <div>
+                <p className="text-sm font-medium text-ivory">Issue refund</p>
+                <p className="text-xs text-ivory-dim/70">Send money back to the guest - increases the balance owed</p>
+              </div>
               <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
               <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
-              <button type="submit" className="w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
+              <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
             </form>
-            <form onSubmit={handleAdjustment} className="space-y-2 rounded-lg border border-ink-line p-3">
-              <p className="text-sm text-ivory-dim">Manual adjustment (+/-)</p>
-              <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder="Amount AED - negative to credit" className={inputClass} />
+            <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink-soft/40 p-4">
+              <div>
+                <p className="text-sm font-medium text-ivory">Manual adjustment</p>
+                <p className="text-xs text-ivory-dim/70">Correct an error - positive adds to the balance, negative credits it</p>
+              </div>
+              <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder="Amount AED (+/-)" className={inputClass} />
               <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder="Description (required)" className={inputClass} />
               <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
-              <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Apply adjustment</button>
+              <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Apply adjustment</button>
             </form>
           </div>
           <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
@@ -637,6 +784,182 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
           )}
         </>
       )}
+    </Section>
+  );
+}
+
+function GuestsTab({ businessId }: { businessId: string }) {
+  const [guests, setGuests] = useState<HotelGuest[]>([]);
+  const [search, setSearch] = useState('');
+  const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
+
+  function reload() {
+    listGuests(businessId, search || undefined).then(setGuests);
+  }
+  useEffect(reload, [businessId, search]);
+
+  if (selectedGuestId) {
+    const guest = guests.find((g) => g.id === selectedGuestId);
+    if (guest) {
+      return <GuestDetail businessId={businessId} guest={guest} onBack={() => setSelectedGuestId(null)} onSaved={(updated) => { setGuests((prev) => prev.map((g) => (g.id === updated.id ? updated : g))); }} />;
+    }
+  }
+
+  return (
+    <Section title="Guests">
+      <input
+        value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name..."
+        className="w-full max-w-sm rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+      />
+      <div className="grid gap-2 sm:grid-cols-2">
+        {guests.map((g) => (
+          <button type="button" key={g.id} onClick={() => setSelectedGuestId(g.id)} className="rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40">
+            <p className="text-base text-ivory">{g.name}{g.vip && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">VIP</span>}</p>
+            <p className="text-sm text-ivory-dim">{[g.phone, g.email].filter(Boolean).join(' · ') || 'No contact details'}</p>
+          </button>
+        ))}
+        {guests.length === 0 && <p className="text-ivory-dim">No guests found.</p>}
+      </div>
+    </Section>
+  );
+}
+
+function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: string; guest: HotelGuest; onBack: () => void; onSaved: (g: HotelGuest) => void }) {
+  const [history, setHistory] = useState<GuestStayHistory | null>(null);
+  const [vip, setVip] = useState(guest.vip);
+  const [roomPreference, setRoomPreference] = useState(guest.room_preference);
+  const [dietaryNotes, setDietaryNotes] = useState(guest.dietary_notes);
+  const [notes, setNotes] = useState(guest.notes);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { getGuestStayHistory(businessId, guest.id).then(setHistory); }, [businessId, guest.id]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const updated = await updateGuest(businessId, guest.id, { vip, roomPreference, dietaryNotes, notes });
+      onSaved(updated);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <button type="button" onClick={onBack} className="text-sm text-brass hover:underline">&larr; Back to guests</button>
+
+      <Section title={guest.name}>
+        <p className="text-sm text-ivory-dim">{[guest.phone, guest.email].filter(Boolean).join(' · ') || 'No contact details'}{guest.nationality && ` · ${guest.nationality}`}</p>
+        {history && (
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-lg border border-ink-line p-3">
+              <p className="text-xs text-ivory-dim">Total stays</p>
+              <p className="text-xl text-ivory">{history.totalStays}</p>
+            </div>
+            <div className="rounded-lg border border-ink-line p-3">
+              <p className="text-xs text-ivory-dim">Total nights</p>
+              <p className="text-xl text-ivory">{history.totalNights}</p>
+            </div>
+            <div className="rounded-lg border border-ink-line p-3">
+              <p className="text-xs text-ivory-dim">Lifetime spend</p>
+              <p className="text-xl text-brass">AED {history.lifetimeSpendAed.toFixed(2)}</p>
+            </div>
+          </div>
+        )}
+      </Section>
+
+      <Section title="Preferences">
+        <label className="flex items-center gap-2 text-sm text-ivory">
+          <input type="checkbox" checked={vip} onChange={(e) => setVip(e.target.checked)} className="accent-brass" />
+          VIP guest
+        </label>
+        <Field label="Room preference"><input value={roomPreference} onChange={(e) => setRoomPreference(e.target.value)} placeholder="e.g. High floor, away from elevator" className={inputClass} /></Field>
+        <Field label="Dietary notes"><input value={dietaryNotes} onChange={(e) => setDietaryNotes(e.target.value)} placeholder="e.g. Vegetarian, nut allergy" className={inputClass} /></Field>
+        <Field label="General notes"><input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} /></Field>
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Save preferences'}
+        </button>
+      </Section>
+
+      <Section title="Stay history">
+        <div className="space-y-2">
+          {history?.stays.map((s) => (
+            <div key={s.reservationId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
+              <span className="text-ivory">{s.checkInDate} → {s.checkOutDate} · {s.nights} night{s.nights === 1 ? '' : 's'}{s.roomNumber ? ` · Room ${s.roomNumber}` : ''}</span>
+              <span className="text-ivory-dim">{s.status.replace('_', ' ')}{s.status === 'checked_out' ? ` · AED ${s.spendAed.toFixed(2)}` : ''}</span>
+            </div>
+          ))}
+          {history && history.stays.length === 0 && <p className="text-ivory-dim">No past stays.</p>}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function CityLedgerTab({ businessId }: { businessId: string }) {
+  const [filter, setFilter] = useState<'unpaid' | 'paid'>('unpaid');
+  const [entries, setEntries] = useState<CityLedgerEntry[]>([]);
+  const [totalOutstanding, setTotalOutstanding] = useState(0);
+  const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [reference, setReference] = useState('');
+
+  function reload() {
+    listCityLedgerEntries(businessId, filter).then((r) => { setEntries(r.entries); setTotalOutstanding(r.totalOutstandingAed); });
+  }
+  useEffect(reload, [businessId, filter]);
+
+  async function handleSettle(entryId: string) {
+    await settleCityLedgerEntry(businessId, entryId, { paymentReference: reference });
+    setSettlingId(null);
+    setReference('');
+    reload();
+  }
+
+  return (
+    <Section title="City Ledger" action={
+      <div className="flex rounded-lg border border-ink-line">
+        <button type="button" onClick={() => setFilter('unpaid')} className={`px-3 py-1.5 text-sm ${filter === 'unpaid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>Outstanding</button>
+        <button type="button" onClick={() => setFilter('paid')} className={`px-3 py-1.5 text-sm ${filter === 'paid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>Settled</button>
+      </div>
+    }>
+      <p className="text-sm text-ivory-dim">
+        Company-billed folios closed at checkout without payment - what's owed to you by corporate accounts, and what's already been collected.
+      </p>
+      {filter === 'unpaid' && (
+        <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+          <p className="text-xs uppercase tracking-wide text-brass">Total outstanding</p>
+          <p className="mt-1 font-display text-2xl text-ivory">AED {totalOutstanding.toFixed(2)}</p>
+        </div>
+      )}
+      <div className="space-y-2">
+        {entries.map((e) => (
+          <div key={e.id} className="rounded-lg border border-ink-line p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-base text-ivory">{e.companyName}{e.guestName ? ` · ${e.guestName}` : ''}</p>
+                <p className="text-sm text-ivory-dim">
+                  Billed {new Date(e.billedAt).toLocaleDateString('en-GB')}
+                  {e.daysOutstanding != null && ` · ${e.daysOutstanding} day${e.daysOutstanding === 1 ? '' : 's'} outstanding`}
+                  {e.paidAt && ` · Settled ${new Date(e.paidAt).toLocaleDateString('en-GB')}${e.paymentReference ? ` (ref: ${e.paymentReference})` : ''}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-brass">AED {e.amountAed.toFixed(2)}</span>
+                {!e.paidAt && (
+                  <button type="button" onClick={() => setSettlingId(settlingId === e.id ? null : e.id)} className="text-sm text-brass hover:underline">Mark settled</button>
+                )}
+              </div>
+            </div>
+            {settlingId === e.id && (
+              <div className="mt-2 flex items-center gap-2 border-t border-ink-line pt-2">
+                <input value={reference} onChange={(ev) => setReference(ev.target.value)} placeholder="Payment reference (optional)" className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
+                <button type="button" onClick={() => handleSettle(e.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Confirm</button>
+              </div>
+            )}
+          </div>
+        ))}
+        {entries.length === 0 && <p className="text-ivory-dim">{filter === 'unpaid' ? 'Nothing outstanding.' : 'Nothing settled yet.'}</p>}
+      </div>
     </Section>
   );
 }

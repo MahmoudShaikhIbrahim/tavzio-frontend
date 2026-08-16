@@ -117,6 +117,11 @@ export interface BusinessFeatures {
     documents: boolean;
     commission: boolean;
     tips: boolean;
+    scheduling?: boolean;
+    laborCost?: boolean;
+  };
+  forecasting?: {
+    enabled: boolean;
   };
 }
 
@@ -192,6 +197,7 @@ export interface Profile {
   is_active: boolean;
   email?: string;
   theme_preference: 'light' | 'dark' | 'system';
+  preferred_language: 'en' | 'ar' | 'ru' | 'es' | 'hi' | 'ur' | 'tl' | 'zh' | 'fr';
   must_change_password: boolean;
   job_role?: string | null;
   assigned_sections?: string[] | null;
@@ -271,6 +277,7 @@ export interface PurchaseOrderItem {
   ingredient_id: string;
   quantity: number;
   unit_cost_aed: number;
+  received_quantity: number;
   ingredients?: { name: string; unit: string };
 }
 
@@ -278,12 +285,133 @@ export interface PurchaseOrder {
   id: string;
   business_id: string;
   supplier_id: string | null;
-  status: 'pending' | 'received' | 'cancelled';
+  status: 'pending' | 'partially_received' | 'received' | 'cancelled';
   total_cost_aed: number;
   ordered_at: string;
   received_at: string | null;
   suppliers?: { name: string } | null;
   purchase_order_items: PurchaseOrderItem[];
+}
+
+export interface LowStockIngredient {
+  ingredientId: string;
+  name: string;
+  unit: string;
+  stockQty: number;
+  lowStockThreshold: number;
+  costPerUnit: number;
+  supplierId: string | null;
+  supplierName: string | null;
+  suggestedReorderQty: number;
+}
+
+export interface InventoryValuation {
+  totalValueAed: number;
+  lines: { ingredientId: string; name: string; unit: string; stockQty: number; costPerUnit: number; valueAed: number }[];
+}
+
+export interface WasteReport {
+  days: number;
+  totalCostAed: number;
+  byIngredient: { ingredientId: string; name: string; unit: string; quantity: number; costAed: number }[];
+  byCategory: { category: string; quantityEvents: number; costAed: number }[];
+  events: { id: string; ingredientName: string; quantity: number; unit: string; costAed: number; wasteCategory: string; note: string; createdAt: string }[];
+}
+
+export interface MenuItemFoodCost {
+  menuItemId: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  recipeCostAed: number | null;
+  foodCostPct: number | null;
+  marginAed: number | null;
+  marginPct: number | null;
+  trackedByRecipe: boolean;
+}
+
+export interface FoodCostReport {
+  items: MenuItemFoodCost[];
+  avgFoodCostPct: number | null;
+  untrackedCount: number;
+}
+
+export interface ActualFoodCostReport {
+  from: string;
+  to: string;
+  totalRevenueAed: number;
+  totalCostAed: number;
+  untrackedRevenueAed: number;
+  foodCostPct: number | null;
+  byItem: { name: string; quantitySold: number; revenueAed: number; costAed: number; trackedByRecipe: boolean }[];
+}
+
+export interface StaffSchedule {
+  id: string;
+  staffId: string;
+  staffName: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  roleLabel: string;
+  notes: string;
+  hours: number;
+  forecastCostAed: number | null;
+}
+
+export interface ScheduleReport {
+  schedules: StaffSchedule[];
+  totalHours: number;
+  totalForecastCostAed: number;
+  untrackedShiftCount: number;
+}
+
+export interface LaborCostReport {
+  from: string;
+  to: string;
+  totalRevenueAed: number;
+  totalLaborCostAed: number;
+  laborCostPct: number | null;
+  untrackedHours: number;
+  overtimeShiftCount: number;
+  byStaff: { staffId: string; name: string; hours: number; costAed: number; hourlyRateAed: number | null; overtimeShifts: number }[];
+}
+
+export interface MySchedule {
+  id: string;
+  scheduled_start: string;
+  scheduled_end: string;
+  role_label: string;
+  notes: string;
+}
+
+export interface SalesForecast {
+  days: number;
+  historyWeeks: number;
+  forecast: { date: string; dayOfWeek: string; forecastRevenueAed: number | null; basedOnSampleSize: number }[];
+  totalForecastAed: number;
+  lowConfidenceDays: number;
+}
+
+export interface BusinessBudget {
+  id: string;
+  business_id: string;
+  period_month: string;
+  revenue_budget_aed: number | null;
+  food_cost_pct_budget: number | null;
+  labor_cost_pct_budget: number | null;
+}
+
+export interface BudgetVsActual {
+  month: string;
+  budget: BusinessBudget | null;
+  actual: {
+    revenueAed: number;
+    foodCostPct: number | null;
+    foodCostNote: string;
+    laborCostPct: number | null;
+    laborCostNote: string;
+  };
+  variance: { revenueAed: number | null; foodCostPct: number | null; laborCostPct: number | null } | null;
 }
 
 export interface Lead {
@@ -360,6 +488,9 @@ export interface HotelGuest {
   id_document_number: string;
   nationality: string;
   notes: string;
+  vip: boolean;
+  room_preference: string;
+  dietary_notes: string;
 }
 
 export interface HotelReservation {
@@ -396,7 +527,7 @@ export interface HotelFolio {
   id: string;
   business_id: string;
   reservation_id: string;
-  status: 'open' | 'closed';
+  status: 'open' | 'closed' | 'billed_to_account';
   is_primary: boolean;
   payer_type: 'guest' | 'company';
   company_name: string;
@@ -548,6 +679,7 @@ export interface MenuItem {
   offer_starts_at?: string | null;
   offer_ends_at?: string | null;
   image_url: string;
+  station?: string;
   is_available: boolean;
   sort_order: number;
   // Only populated by the public getPublicMenu endpoint - the dashboard's
@@ -567,7 +699,7 @@ export interface CartLine {
   selectedAddons: MenuItemAddon[]; // priced server-side again on submit, this is just for display + the ids sent
 }
 
-export type OrderStatus = 'awaiting_payment' | 'pending' | 'ready' | 'completed' | 'cancelled';
+export type OrderStatus = 'awaiting_payment' | 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 export type OrderRequestType = 'order' | 'call_waiter' | 'request_bill';
 
 export interface OrderItemAddonSnapshot {
@@ -589,6 +721,7 @@ export interface OrderItemRow {
   course: string;
   course_status: 'held' | 'fired';
   fired_at: string | null;
+  station?: string;
 }
 
 export interface OrderRow {
@@ -609,6 +742,8 @@ export interface OrderRow {
   void_reason: string;
   placed_by_staff_id: string | null;
   created_at: string;
+  prep_started_at?: string | null;
+  ready_at?: string | null;
   order_items: OrderItemRow[];
   source?: 'customer_tap' | 'staff_pos' | 'delivery';
   delivery_platform?: string | null;

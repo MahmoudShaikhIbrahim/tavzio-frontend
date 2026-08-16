@@ -190,6 +190,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
   const [price, setPrice] = useState(existing?.price ?? 0);
   const [categoryId, setCategoryId] = useState(existing?.category_id || '');
   const [imageUrl, setImageUrl] = useState(existing?.image_url || '');
+  const [station, setStation] = useState(existing?.station || '');
   const [offerEnabled, setOfferEnabled] = useState(!!existing?.offer_price);
   const [offerPrice, setOfferPrice] = useState(existing?.offer_price ?? 0);
   const [offerStartsAt, setOfferStartsAt] = useState(existing?.offer_starts_at?.slice(0, 16) || '');
@@ -201,7 +202,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
     e.preventDefault();
     setSaving(true);
     const payload = {
-      name, description, price, categoryId: categoryId || null, imageUrl,
+      name, description, price, categoryId: categoryId || null, imageUrl, station,
       offerPrice: offerEnabled ? offerPrice : null,
       offerStartsAt: offerEnabled && offerStartsAt ? new Date(offerStartsAt).toISOString() : null,
       offerEndsAt: offerEnabled && offerEndsAt ? new Date(offerEndsAt).toISOString() : null,
@@ -253,6 +254,9 @@ function ItemForm({ businessId, categories, existing, onDone }: {
       </div>
       <Field label="Description">
         <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
+      </Field>
+      <Field label="Kitchen station (optional)">
+        <input value={station} onChange={(e) => setStation(e.target.value)} placeholder="e.g. Grill, Cold, Dessert, Bar" className={inputClass} />
       </Field>
       <Field label="Category">
         <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
