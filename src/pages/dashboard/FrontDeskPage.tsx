@@ -641,141 +641,164 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
     onReload();
   }
 
+  const isSplit = !folio.is_primary;
+  const payerLabel = folio.payer_type === 'company' ? `Company · ${folio.company_name}` : 'Guest';
+  const statusBadge = folio.status === 'closed' ? { text: 'Closed', cls: 'border-ink-line text-ivory-dim' }
+    : folio.status === 'billed_to_account' ? { text: 'Billed to account', cls: 'border-warning/50 text-warning' }
+    : { text: 'Open', cls: 'border-success/50 text-success' };
+
   return (
-    <Section title={`${folio.is_primary ? 'Primary folio' : 'Split folio'} - ${folio.payer_type === 'company' ? `Company: ${folio.company_name}` : 'Guest'}${folio.status === 'closed' ? ' (closed)' : folio.status === 'billed_to_account' ? ' (billed to account)' : ''}`}>
-      {folio.status === 'billed_to_account' && (
-        <p className="text-sm text-warning">This folio's balance was billed to {folio.company_name || 'the company account'} at checkout - see City Ledger to track collection.</p>
-      )}
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Charges &amp; payments</p>
-        {folio.status === 'open' && folio.charges.length > 0 && (
-          <button type="button" onClick={onSelectAll} className="text-xs text-brass hover:underline">
-            {selectedIds.length === folio.charges.length ? 'Clear selection' : 'Select all'}
-          </button>
-        )}
-      </div>
-      <div className="space-y-2">
-        {folio.charges.map((c) => (
-          <div key={c.id}>
-            <label className="flex items-center justify-between gap-2 text-base">
-              <span className="flex items-center gap-2 text-ivory-dim">
-                {folio.status === 'open' && <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => onToggleCharge(c.id)} className="accent-brass" />}
-                {c.description} <span className="text-xs uppercase text-ivory-dim/60">({c.charge_type})</span>
-              </span>
-              <span className="flex items-center gap-2">
-                <span className={c.amount_aed < 0 ? 'text-success' : 'text-ivory'}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
-                {folio.status === 'open' && otherFolios.length > 0 && (
-                  <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="text-xs text-brass hover:underline">
-                    Transfer
-                  </button>
-                )}
-                {folio.status === 'open' && (
-                  <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline">
-                    Delete
-                  </button>
-                )}
-              </span>
-            </label>
-            {transferringChargeId === c.id && (
-              <div className="ml-6 mt-1 flex items-center gap-2">
-                <select
-                  onChange={(e) => handleTransfer(c.id, e.target.value)}
-                  defaultValue=""
-                  className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory"
-                >
-                  <option value="" disabled>Move to which folio...</option>
-                  {otherFolios.map((f) => (
-                    <option key={f.id} value={f.id}>{f.is_primary ? 'Primary folio' : f.payer_type === 'company' ? `Company: ${f.company_name}` : 'Guest folio'}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        ))}
-        {folio.charges.length === 0 && <p className="text-sm italic text-ivory-dim">No charges yet.</p>}
-      </div>
-      <div className="flex justify-between border-t border-ink-line pt-3 text-lg">
-        <span className="text-ivory">Balance</span>
-        <span className={folio.balance > 0 ? 'text-warning' : 'text-success'}>AED {folio.balance.toFixed(2)}</span>
+    <div className="overflow-hidden rounded-2xl border border-ink-line bg-ink-soft">
+      {/* Header - a real ledger header with distinct badges, not one long
+          concatenated string trying to say five things at once. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-line bg-ink px-5 py-4">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider ${isSplit ? 'border-brass/50 text-brass' : 'border-ivory-dim/30 text-ivory-dim'}`}>
+            {isSplit ? 'Split folio' : 'Primary folio'}
+          </span>
+          <span className="font-display text-lg text-ivory">{payerLabel}</span>
+          <span className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider ${statusBadge.cls}`}>
+            {statusBadge.text}
+          </span>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-ivory-dim/60">Balance</p>
+          <p className={`font-mono text-2xl tabular-nums ${folio.balance > 0 ? 'text-warning' : 'text-success'}`}>AED {folio.balance.toFixed(2)}</p>
+        </div>
       </div>
 
-      {folio.status === 'open' && (
-        <>
-          <p className="mt-3 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Actions</p>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <form onSubmit={handleAddCharge} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink-soft/40 p-4">
-              <div>
-                <p className="text-sm font-medium text-ivory">Add charge</p>
-                <p className="text-xs text-ivory-dim/70">Bill the guest for something extra (room service, minibar, damage, etc.)</p>
-              </div>
-              <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="What's it for?" className={inputClass} />
-              <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Add charge</button>
-            </form>
-            <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink-soft/40 p-4">
-              <div>
-                <p className="text-sm font-medium text-ivory">Record payment</p>
-                <p className="text-xs text-ivory-dim/70">Log money already collected - cash, card machine, any method</p>
-              </div>
-              <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record payment</button>
-            </form>
-            <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink-soft/40 p-4">
-              <div>
-                <p className="text-sm font-medium text-ivory">Record deposit</p>
-                <p className="text-xs text-ivory-dim/70">Log an advance or security deposit held against the stay</p>
-              </div>
-              <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record deposit</button>
-            </form>
-            <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-danger/60 bg-ink-soft/40 p-4">
-              <div>
-                <p className="text-sm font-medium text-ivory">Issue refund</p>
-                <p className="text-xs text-ivory-dim/70">Send money back to the guest - increases the balance owed</p>
-              </div>
-              <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder="Amount AED" className={inputClass} />
-              <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
-              <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
-            </form>
-            <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink-soft/40 p-4">
-              <div>
-                <p className="text-sm font-medium text-ivory">Manual adjustment</p>
-                <p className="text-xs text-ivory-dim/70">Correct an error - positive adds to the balance, negative credits it</p>
-              </div>
-              <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder="Amount AED (+/-)" className={inputClass} />
-              <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder="Description (required)" className={inputClass} />
-              <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
-              <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Apply adjustment</button>
-            </form>
-          </div>
-          <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
-            Split {selectedIds.length > 0 ? `${selectedIds.length} selected charge(s)` : 'selected charges'} into new folio
-          </button>
-          {splitConfirmOpen && (
-            <div className="space-y-2 rounded-lg border border-brass/40 bg-ink-soft p-3">
-              <p className="text-sm text-ivory">
-                Moving {selectedIds.length} charge{selectedIds.length === 1 ? '' : 's'} (AED{' '}
-                {folio.charges.filter((c) => selectedIds.includes(c.id)).reduce((sum, c) => sum + c.amount_aed, 0).toFixed(2)}) into a new, separate folio.
-              </p>
-              <input
-                value={splitCompanyName}
-                onChange={(e) => setSplitCompanyName(e.target.value)}
-                placeholder="Company name (leave blank if this is guest-paid)"
-                className={inputClass}
-              />
-              <div className="flex gap-2">
-                <button type="button" onClick={() => { onConfirmSplit(splitCompanyName); setSplitCompanyName(''); }} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">
-                  Confirm split
-                </button>
-                <button type="button" onClick={() => { onCancelSplit(); setSplitCompanyName(''); }} className="text-sm text-ivory-dim">
-                  Cancel
-                </button>
-              </div>
-            </div>
+      <div className="p-5">
+        {folio.status === 'billed_to_account' && (
+          <p className="mb-3 text-sm text-warning">This folio's balance was billed to {folio.company_name || 'the company account'} at checkout - see City Ledger to track collection.</p>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Charges &amp; payments</p>
+          {folio.status === 'open' && folio.charges.length > 0 && (
+            <button type="button" onClick={onSelectAll} className="text-xs text-brass hover:underline">
+              {selectedIds.length === folio.charges.length ? 'Clear selection' : 'Select all'}
+            </button>
           )}
-        </>
-      )}
-    </Section>
+        </div>
+        <div className="mt-2 divide-y divide-ink-line rounded-lg border border-ink-line">
+          {folio.charges.map((c) => (
+            <div key={c.id} className="px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2 text-base">
+                <span className="flex items-center gap-2 text-ivory-dim">
+                  {folio.status === 'open' && <input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => onToggleCharge(c.id)} className="accent-brass" />}
+                  <span className="text-ivory">{c.description}</span>
+                  <span className="font-mono text-[10px] uppercase text-ivory-dim/60">{c.charge_type}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className={`font-mono tabular-nums ${c.amount_aed < 0 ? 'text-success' : 'text-ivory'}`}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
+                  {folio.status === 'open' && otherFolios.length > 0 && (
+                    <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="text-xs text-brass hover:underline">
+                      Transfer
+                    </button>
+                  )}
+                  {folio.status === 'open' && (
+                    <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline">
+                      Delete
+                    </button>
+                  )}
+                </span>
+              </div>
+              {transferringChargeId === c.id && (
+                <div className="ml-6 mt-1.5 flex items-center gap-2">
+                  <select
+                    onChange={(e) => handleTransfer(c.id, e.target.value)}
+                    defaultValue=""
+                    className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory"
+                  >
+                    <option value="" disabled>Move to which folio...</option>
+                    {otherFolios.map((f) => (
+                      <option key={f.id} value={f.id}>{f.is_primary ? 'Primary folio' : f.payer_type === 'company' ? `Company: ${f.company_name}` : 'Guest folio'}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          ))}
+          {folio.charges.length === 0 && <p className="px-3 py-4 text-sm italic text-ivory-dim">No charges yet.</p>}
+        </div>
+
+        {folio.status === 'open' && (
+          <>
+            <p className="mt-5 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Actions</p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <form onSubmit={handleAddCharge} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink p-4">
+                <div>
+                  <p className="text-sm font-medium text-ivory">Add charge</p>
+                  <p className="text-xs text-ivory-dim/70">Bill the guest for something extra (room service, minibar, damage, etc.)</p>
+                </div>
+                <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="What's it for?" className={inputClass} />
+                <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Add charge</button>
+              </form>
+              <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink p-4">
+                <div>
+                  <p className="text-sm font-medium text-ivory">Record payment</p>
+                  <p className="text-xs text-ivory-dim/70">Log money already collected - cash, card machine, any method</p>
+                </div>
+                <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record payment</button>
+              </form>
+              <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink p-4">
+                <div>
+                  <p className="text-sm font-medium text-ivory">Record deposit</p>
+                  <p className="text-xs text-ivory-dim/70">Log an advance or security deposit held against the stay</p>
+                </div>
+                <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record deposit</button>
+              </form>
+              <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-danger/60 bg-ink p-4">
+                <div>
+                  <p className="text-sm font-medium text-ivory">Issue refund</p>
+                  <p className="text-xs text-ivory-dim/70">Send money back to the guest - increases the balance owed</p>
+                </div>
+                <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
+                <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
+              </form>
+              <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink p-4">
+                <div>
+                  <p className="text-sm font-medium text-ivory">Manual adjustment</p>
+                  <p className="text-xs text-ivory-dim/70">Correct an error - positive adds to the balance, negative credits it</p>
+                </div>
+                <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder="Amount AED (+/-)" className={`${inputClass} font-mono`} />
+                <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder="Description (required)" className={inputClass} />
+                <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Apply adjustment</button>
+              </form>
+            </div>
+            <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="mt-3 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
+              Split {selectedIds.length > 0 ? `${selectedIds.length} selected charge(s)` : 'selected charges'} into new folio
+            </button>
+            {splitConfirmOpen && (
+              <div className="mt-2 space-y-2 rounded-lg border border-brass/40 bg-ink p-3">
+                <p className="text-sm text-ivory">
+                  Moving {selectedIds.length} charge{selectedIds.length === 1 ? '' : 's'} (<span className="font-mono">AED{' '}
+                  {folio.charges.filter((c) => selectedIds.includes(c.id)).reduce((sum, c) => sum + c.amount_aed, 0).toFixed(2)}</span>) into a new, separate folio.
+                </p>
+                <input
+                  value={splitCompanyName}
+                  onChange={(e) => setSplitCompanyName(e.target.value)}
+                  placeholder="Company name (leave blank if this is guest-paid)"
+                  className={inputClass}
+                />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { onConfirmSplit(splitCompanyName); setSplitCompanyName(''); }} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">
+                    Confirm split
+                  </button>
+                  <button type="button" onClick={() => { onCancelSplit(); setSplitCompanyName(''); }} className="text-sm text-ivory-dim">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 

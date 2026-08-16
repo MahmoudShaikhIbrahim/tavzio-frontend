@@ -17,6 +17,7 @@ export default function MenuManagementPage() {
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [tab, setTab] = useState<'ordering-status' | 'ai-upload' | 'categories' | 'items'>('categories');
 
   function reload() {
     if (!businessId) return;
@@ -35,28 +36,39 @@ export default function MenuManagementPage() {
   }
 
   return (
-    <div className="space-y-10">
-      <Section title="Ordering status">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-base text-ivory">Pause all ordering</p>
-            <p className="text-sm text-ivory-dim">
-              Turns every item on the customer menu grayed-out and un-orderable, all at once — for when the
-              kitchen's closed or too busy, without touching each item individually.
-            </p>
-          </div>
-          <button type="button"
-            onClick={togglePauseAll}
-            className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
-          >
-            {business.ordering_paused ? 'Paused — tap to resume' : 'Ordering is open'}
+    <div className="space-y-6">
+      <h1 className="font-display text-3xl text-ivory">Menu Management</h1>
+      <div className="flex flex-wrap gap-2 border-b border-ink-line">
+        {(['ordering-status', 'ai-upload', 'categories', 'items'] as const).map((t) => (
+          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t === 'ordering-status' ? 'Ordering Status' : t === 'ai-upload' ? 'AI Upload' : t === 'categories' ? 'Categories' : 'Items'}
           </button>
-        </div>
-      </Section>
+        ))}
+      </div>
 
-      <MenuAiUpload businessId={businessId} onPublished={reload} />
-      <CategoriesSection businessId={businessId} categories={categories} onCategoriesChange={setCategories} onChange={reload} />
-      <ItemsSection businessId={businessId} categories={categories} items={items} onItemsChange={setItems} onChange={reload} />
+      {tab === 'ordering-status' && (
+        <Section title="Ordering status">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-base text-ivory">Pause all ordering</p>
+              <p className="text-sm text-ivory-dim">
+                Turns every item on the customer menu grayed-out and un-orderable, all at once — for when the
+                kitchen's closed or too busy, without touching each item individually.
+              </p>
+            </div>
+            <button type="button"
+              onClick={togglePauseAll}
+              className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
+            >
+              {business.ordering_paused ? 'Paused — tap to resume' : 'Ordering is open'}
+            </button>
+          </div>
+        </Section>
+      )}
+
+      {tab === 'ai-upload' && <MenuAiUpload businessId={businessId} onPublished={reload} />}
+      {tab === 'categories' && <CategoriesSection businessId={businessId} categories={categories} onCategoriesChange={setCategories} onChange={reload} />}
+      {tab === 'items' && <ItemsSection businessId={businessId} categories={categories} items={items} onItemsChange={setItems} onChange={reload} />}
     </div>
   );
 }

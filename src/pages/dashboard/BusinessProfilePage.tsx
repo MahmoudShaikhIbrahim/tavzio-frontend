@@ -12,6 +12,7 @@ export default function BusinessProfilePage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
+  const [tab, setTab] = useState<'profile' | 'appearance' | 'account'>('profile');
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -20,13 +21,23 @@ export default function BusinessProfilePage() {
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
   return (
-    <div className="space-y-8">
-      <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />
-      <AppearanceSection business={business} businessId={businessId} onSaved={setBusiness} />
-      {/* Change Password lives here, not as its own settings entry - it's
-          personal account security, not a business configuration, so it
-          belongs alongside the rest of "who am I / how do I sign in" here. */}
-      <ChangePasswordPage />
+    <div className="space-y-6">
+      <h1 className="font-display text-3xl text-ivory">Business Profile</h1>
+      <div className="flex gap-2 border-b border-ink-line">
+        {(['profile', 'appearance', 'account'] as const).map((t) => (
+          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'profile' && <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />}
+      {tab === 'appearance' && <AppearanceSection business={business} businessId={businessId} onSaved={setBusiness} />}
+      {/* Change Password (and Preferred language) live here, not as their
+          own settings entry - personal account security and preference,
+          not business configuration, so they belong alongside "who am I /
+          how do I sign in" rather than mixed into the business's own profile. */}
+      {tab === 'account' && <ChangePasswordPage />}
     </div>
   );
 }
@@ -40,54 +51,93 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
   const [trn, setTrn] = useState(business.trn || '');
   const [tourismDirhamRateAed, setTourismDirhamRateAed] = useState(business.tourism_dirham_rate_aed || 0);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaved(false);
     const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl, trn, tourismDirhamRateAed } as Partial<AdminBusiness>);
     onSaved(updated);
     setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
 
   return (
-    <Section title="Business profile">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex flex-wrap gap-4">
-          <Field label="Name">
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-64 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
-          </Field>
-          <Field label="Business Type">
-            <div className="w-48 rounded-lg border border-ink-line bg-ink-soft/50 px-3.5 py-2.5 text-base text-ivory-dim">
-              {category} <span className="text-xs">(contact Tavzio to change)</span>
+    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_1.6fr] lg:items-start">
+      {/* A live preview, not a form field - the identity being edited
+          shown as it will actually appear, rather than asking an owner
+          to imagine it from a name field and a URL string. */}
+      <div className="lg:sticky lg:top-6">
+        <div className="overflow-hidden rounded-2xl border border-brass/30 bg-ink-soft shadow-xl">
+          <div className="flex h-28 items-center justify-center border-b border-ink-line bg-ink bg-cover bg-center" style={coverImageUrl ? { backgroundImage: `url(${coverImageUrl})` } : undefined}>
+            {!coverImageUrl && <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/30">No cover image</p>}
+          </div>
+          <div className="flex flex-col items-center px-6 pb-6 pt-0">
+            <div className="-mt-10 h-20 w-20 overflow-hidden rounded-full border-4 border-ink-soft bg-ink shadow-lg">
+              {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center font-display text-2xl text-brass/50">{name[0]?.toUpperCase() || '?'}</div>}
             </div>
-          </Field>
-          <Field label="TRN (optional - shown on your receipts, needed to reclaim VAT)">
-            <input value={trn} onChange={(e) => setTrn(e.target.value)} placeholder="100000000000003" className="w-56 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
-          </Field>
-          {category === 'hotel' && (
-            <Field label="Tourism Dirham fee, per room per night (AED)">
-              <input
-                type="number"
-                min={0}
-                step={1}
-                onFocus={(e) => e.target.select()}
-                value={tourismDirhamRateAed}
-                onChange={(e) => setTourismDirhamRateAed(Number(e.target.value))}
-                className="w-56 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
-              />
-            </Field>
-          )}
+            <p className="mt-3 font-display text-xl text-ivory">{name || 'Business name'}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-brass">{category}</p>
+            <p className="mt-3 text-center text-sm leading-relaxed text-ivory-dim">{description || 'Add a description so guests know what to expect.'}</p>
+          </div>
         </div>
-        <Field label="Description">
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} className={`${inputClass} max-w-2xl`} />
-        </Field>
+      </div>
 
-        <ImageUploadField label="Logo" businessId={businessId} kind="logo" value={logoUrl} onUploaded={setLogoUrl} />
-        <ImageUploadField label="Cover image" businessId={businessId} kind="cover" value={coverImageUrl} onUploaded={setCoverImageUrl} />
+      <div className="space-y-6">
+        <Section title="Identity">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Name">
+              <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="Business type">
+              <div className="rounded-lg border border-ink-line bg-ink-soft/50 px-3.5 py-2.5 text-base text-ivory-dim">
+                <span className="capitalize">{category}</span> <span className="text-xs">(contact Tavzio to change)</span>
+              </div>
+            </Field>
+          </div>
+          <Field label="Description">
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} className={inputClass} />
+          </Field>
+        </Section>
 
-        <PrimaryButton disabled={saving}>{saving ? 'Saving...' : 'Save profile'}</PrimaryButton>
-      </form>
-    </Section>
+        <Section title="Media">
+          <ImageUploadField label="Logo" businessId={businessId} kind="logo" value={logoUrl} onUploaded={setLogoUrl} />
+          <ImageUploadField label="Cover image" businessId={businessId} kind="cover" value={coverImageUrl} onUploaded={setCoverImageUrl} />
+        </Section>
+
+        <Section title="Tax & compliance">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Your TRN (optional)">
+              <input value={trn} onChange={(e) => setTrn(e.target.value)} placeholder="100000000000003" className={inputClass} />
+            </Field>
+            {category === 'hotel' && (
+              <Field label="Tourism Dirham, per room per night (AED)">
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  onFocus={(e) => e.target.select()}
+                  value={tourismDirhamRateAed}
+                  onChange={(e) => setTourismDirhamRateAed(Number(e.target.value))}
+                  className={inputClass}
+                />
+              </Field>
+            )}
+          </div>
+          <p className="text-sm text-ivory-dim">
+            Your own Tax Registration Number - shown on Tavzio's invoices to you, so you can reclaim VAT on your
+            subscription. Has no effect on your own customers' receipts.
+          </p>
+        </Section>
+
+        <div className="flex items-center gap-3">
+          <PrimaryButton disabled={saving}>{saving ? 'Saving...' : 'Save profile'}</PrimaryButton>
+          {saved && <p className="text-sm text-success">Saved.</p>}
+        </div>
+      </div>
+    </form>
   );
 }
 

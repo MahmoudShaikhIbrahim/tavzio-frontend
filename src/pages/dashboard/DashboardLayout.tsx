@@ -9,6 +9,7 @@ import Logo from '../../components/Logo';
 import ClockWidget from '../../components/ClockWidget';
 import AccountSwitcher from '../../components/AccountSwitcher';
 import { useTheme } from '../../lib/ThemeContext';
+import { translateNavLabel } from '../../lib/i18n/navTranslations';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import ChangePasswordPage from './ChangePasswordPage';
 
@@ -46,7 +47,6 @@ const SETTINGS_ITEMS = [
   // field on every item, to keep this array's shape uniform.
   { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
   { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
-  { path: 'settings/guest-services', label: 'Guest Portal Services', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/rate-plans', label: 'Rate Plans', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/night-audit', label: 'Night Audit', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/pos-integration', label: 'POS Integration', ownerOnly: true, requires: 'ordering' as const },
@@ -217,7 +217,11 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-ink" style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}>
+    <div
+      className="min-h-screen bg-ink"
+      dir={user?.preferred_language === 'ar' || user?.preferred_language === 'ur' ? 'rtl' : 'ltr'}
+      style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}
+    >
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <Logo className="h-9 w-auto" />
@@ -226,7 +230,7 @@ export default function DashboardLayout() {
             <AccountSwitcher />
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
-            <button type="button" onClick={logout} className="hover:text-ivory">Sign out</button>
+            <button type="button" onClick={logout} className="hover:text-ivory">{translateNavLabel('Sign out', user?.preferred_language)}</button>
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
@@ -243,7 +247,7 @@ export default function DashboardLayout() {
                       : 'border-transparent text-ivory-dim hover:text-ivory'
                   }`}
                 >
-                  {t.label}
+                  {translateNavLabel(t.label, user?.preferred_language)}
                   {count > 0 && (
                     <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
                       {count > 9 ? '9+' : count}
@@ -261,7 +265,7 @@ export default function DashboardLayout() {
                 isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
               }`}
             >
-              Settings
+              {translateNavLabel('Settings', user?.preferred_language)}
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${settingsOpen ? 'rotate-180' : ''}`}>
                 <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -281,7 +285,7 @@ export default function DashboardLayout() {
                           : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                       }`}
                     >
-                      {t.label}
+                      {translateNavLabel(t.label, user?.preferred_language)}
                     </Link>
                   ))}
                 </div>

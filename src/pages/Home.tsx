@@ -8,11 +8,11 @@ import Logo from '../components/Logo';
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
 const FEATURES = [
-  { icon: Utensils, title: 'Ordering', text: 'Customers browse the menu and order straight from the table, no app required.' },
-  { icon: CreditCard, title: 'Pay Bill', text: 'Apple Pay and Google Pay at the table, with split-bill built in.' },
-  { icon: Star, title: 'Loyalty', text: 'Stamps, points, tiers, or spend-based rewards, tracked automatically.' },
-  { icon: Calendar, title: 'Booking', text: 'Salons, clinics, and gyms can take appointment requests the same way.' },
-  { icon: BarChart3, title: 'Live analytics', text: 'See exactly which table or spot gets the most engagement.' },
+  { n: '01', icon: Utensils, title: 'Ordering', text: 'Customers browse the menu and order straight from the table, no app required.' },
+  { n: '02', icon: CreditCard, title: 'Pay Bill', text: 'Apple Pay and Google Pay at the table, with split-bill built in.' },
+  { n: '03', icon: Star, title: 'Loyalty', text: 'Stamps, points, tiers, or spend-based rewards, tracked automatically.' },
+  { n: '04', icon: Calendar, title: 'Booking', text: 'Salons, clinics, and gyms can take appointment requests the same way.' },
+  { n: '05', icon: BarChart3, title: 'Live analytics', text: 'See exactly which table or spot gets the most engagement.' },
 ];
 
 const STEPS = [
@@ -32,11 +32,13 @@ const TAP_BECOMES = ['the menu.', 'the bill.', 'a loyalty stamp.', 'a room reque
 const PLANS = {
   connect: {
     name: 'Tavzio Connect',
+    tagline: 'The core platform, ready on day one.',
     restaurant: { base: 300, perUnit: 20 },
     hotel: { base: 1500, perUnit: 20 },
   },
   full: {
     name: 'Tavzio Full',
+    tagline: 'Everything in Connect, plus the full operational suite.',
     restaurant: { base: 800, perUnit: 20 },
     hotel: { base: 2500, perUnit: 20 },
   },
@@ -76,21 +78,12 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <Logo className="h-9 w-auto" />
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href="#pricing"
-            onClick={scrollToPricing}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-ivory-dim transition-colors hover:text-ivory"
-          >
-            Pricing
-          </a>
-          <Link
-            to="/admin/login"
-            className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
-          >
-            Sign In
-          </Link>
-        </div>
+        <Link
+          to="/admin/login"
+          className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
+        >
+          Sign In
+        </Link>
       </div>
 
       {/* Hero - the tap itself is the thesis, not a headline over a
@@ -152,17 +145,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Your stand, on your tables - the two companion angles from the
-          same shoot, shown together the way the pitch deck already does. */}
-      <div className="border-b border-ink-line px-6 py-20">
-        <div className="mx-auto max-w-4xl">
+      {/* Your stand, on your tables - an editorial spread rather than a
+          plain matched pair: one image leads at full weight, the second
+          sits offset beneath it like a caption photo in a print layout,
+          with a pull-quote standing in place of ordinary body copy. */}
+      <div className="border-b border-ink-line px-6 py-24">
+        <div className="mx-auto max-w-5xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Your stand, on your tables</p>
-          <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
-            A single card at every table — customers see it the moment they sit down.
-          </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
-            <img src="/brand/stand-angled.jpg" alt="Tavzio NFC stand, angled view" className="w-full rounded-xl shadow-lg" />
-            <img src="/brand/stand-side.jpg" alt="Tavzio NFC stand, side profile" className="w-full rounded-xl shadow-lg" />
+          <div className="mt-12 grid gap-6 lg:grid-cols-[1.3fr_1fr] lg:items-end">
+            <div className="overflow-hidden rounded-2xl shadow-2xl ring-1 ring-ink-line">
+              <img src="/brand/stand-angled.jpg" alt="Tavzio NFC stand, angled view" className="w-full" />
+            </div>
+            <div className="flex flex-col gap-6">
+              <div className="overflow-hidden rounded-2xl shadow-xl ring-1 ring-ink-line lg:ms-8">
+                <img src="/brand/stand-side.jpg" alt="Tavzio NFC stand, side profile" className="w-full" />
+              </div>
+              <p className="font-display text-xl leading-snug text-ivory lg:ms-8">
+                "A single card at every table — <span className="text-brass">customers see it the moment they sit down.</span>"
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -186,18 +187,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Features */}
+      {/* Features - an indexed list, not a grid of matched icon cards.
+          The numbering ties back to the same editorial device used for
+          "How it works" and the pricing example, so the page reads as
+          one considered system rather than five separate templates
+          bolted together. */}
       <div className="border-b border-ink-line px-6 py-20">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-3xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">What's built in</p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          <div className="mt-12 divide-y divide-ink-line border-y border-ink-line">
             {FEATURES.map((f) => (
-              <div key={f.title} className="group rounded-xl border border-ink-line bg-ink-soft p-5 transition-colors duration-200 hover:border-brass/40">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-brass/40 text-brass transition-colors duration-200 group-hover:bg-brass/10">
-                  <f.icon size={18} strokeWidth={1.75} />
+              <div key={f.title} className="group flex items-start gap-5 py-6 transition-colors duration-200 hover:bg-ink-soft/40 sm:gap-8 sm:px-4">
+                <p className="font-mono text-sm text-brass/50 transition-colors duration-200 group-hover:text-brass">{f.n}</p>
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
+                  <f.icon size={16} strokeWidth={1.75} />
                 </span>
-                <p className="mt-3 font-display text-lg text-ivory">{f.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-ivory-dim">{f.text}</p>
+                <div>
+                  <p className="font-display text-lg text-ivory">{f.title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-ivory-dim">{f.text}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -238,19 +246,21 @@ export default function Home() {
             Two plans, priced for what you actually run — a restaurant table or a hotel room. No setup contracts, no hidden costs.
           </p>
 
-          <div className="mt-8 flex justify-center gap-2">
-            {(['restaurant', 'hotel'] as const).map((t) => (
-              <button
-                type="button"
-                key={t}
-                onClick={() => setPricingType(t)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium capitalize transition-colors ${
-                  pricingType === t ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="mt-8 flex justify-center">
+            <div className="inline-flex rounded-lg border border-ink-line bg-ink-soft p-1">
+              {(['restaurant', 'hotel'] as const).map((t) => (
+                <button
+                  type="button"
+                  key={t}
+                  onClick={() => setPricingType(t)}
+                  className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+                    pricingType === t ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -258,25 +268,25 @@ export default function Home() {
               const plan = PLANS[planKey];
               const rates = plan[pricingType];
               const unit = pricingType === 'restaurant' ? 'table' : 'room';
+              const selected = pricingPlan === planKey;
               return (
                 <button
                   type="button"
                   key={planKey}
                   onClick={() => setPricingPlan(planKey)}
-                  className={`rounded-xl border p-6 text-left transition-colors ${
-                    pricingPlan === planKey ? 'border-brass bg-ink-soft' : 'border-ink-line bg-ink-soft/60 hover:border-brass/40'
+                  className={`relative rounded-xl border p-6 text-left transition-colors ${
+                    selected ? 'border-brass bg-ink-soft' : 'border-ink-line bg-ink-soft/60 hover:border-brass/40'
                   }`}
                 >
+                  {planKey === 'full' && (
+                    <span className="absolute -top-2.5 right-6 rounded-full bg-brass px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink">Full suite</span>
+                  )}
                   <p className="font-display text-xl text-ivory">{plan.name}</p>
-                  <p className="mt-2 font-display text-3xl text-ivory">
-                    {rates.base} <span className="text-base text-ivory-dim">AED / month</span>
+                  <p className="mt-2 font-mono text-4xl tabular-nums text-ivory">
+                    {rates.base}<span className="ml-1 text-base font-sans text-ivory-dim">AED / month</span>
                   </p>
-                  <p className="mt-1 text-sm text-ivory-dim">+ {rates.perUnit} AED / {unit} / month</p>
-                  <p className="mt-3 text-sm text-ivory-dim">
-                    {planKey === 'connect'
-                      ? `The core platform — ordering, payments, and guest engagement, sized for a ${pricingType}.`
-                      : `Everything in Connect, plus the full operational suite — inventory, staff, analytics, and more.`}
-                  </p>
+                  <p className="mt-1 font-mono text-sm text-ivory-dim">+ {rates.perUnit} AED / {unit} / month</p>
+                  <p className="mt-3 text-sm text-ivory-dim">{plan.tagline}</p>
                 </button>
               );
             })}
@@ -303,13 +313,13 @@ export default function Home() {
               const unitLabel = pricingType === 'restaurant' ? 'table' : 'room';
               return (
                 <>
-                  <div className="mt-3 space-y-1 text-sm text-ivory-dim">
-                    <div className="flex justify-between"><span>Base</span><span>{rates.base} AED</span></div>
-                    <div className="flex justify-between"><span>{units} {unitLabel}{units === 1 ? '' : 's'}</span><span>{units * rates.perUnit} AED</span></div>
+                  <div className="mt-3 space-y-1 font-mono text-sm text-ivory-dim">
+                    <div className="flex justify-between"><span className="font-sans">Base</span><span>{rates.base} AED</span></div>
+                    <div className="flex justify-between"><span className="font-sans">{units} {unitLabel}{units === 1 ? '' : 's'}</span><span>{units * rates.perUnit} AED</span></div>
                   </div>
                   <div className="mt-3 flex justify-between border-t border-ink-line pt-3 font-display text-lg text-ivory">
                     <span>Total / month</span>
-                    <span className="text-brass">{rates.base + units * rates.perUnit} AED</span>
+                    <span className="font-mono text-brass">{rates.base + units * rates.perUnit} AED</span>
                   </div>
                 </>
               );
@@ -319,10 +329,10 @@ export default function Home() {
       </div>
 
       {/* Lead capture */}
-      <div id="get-started" className="border-b border-ink-line px-6 py-20">
-        <div className="mx-auto max-w-md">
-          <p className="text-center font-display text-2xl text-ivory">Get started</p>
-          <p className="mt-2 text-center text-sm text-ivory-dim">
+      <div id="get-started" className="border-b border-ink-line px-6 py-24">
+        <div className="mx-auto max-w-md text-center">
+          <p className="font-display text-3xl text-ivory">Get started</p>
+          <p className="mt-3 text-sm leading-relaxed text-ivory-dim">
             Tell us a bit about your business — we'll reach out to set everything up personally.
           </p>
           <LeadForm />
@@ -330,7 +340,7 @@ export default function Home() {
       </div>
 
       <div className="px-6 py-10 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio</p>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio — the tap is the interface</p>
       </div>
     </div>
   );
@@ -369,7 +379,7 @@ function LeadForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-3">
+    <form onSubmit={handleSubmit} className="mt-8 space-y-3 text-left">
       <input
         type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
         className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"

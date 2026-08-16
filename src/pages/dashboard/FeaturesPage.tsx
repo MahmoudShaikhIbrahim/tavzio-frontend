@@ -10,6 +10,7 @@ export default function FeaturesPage() {
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [paymentConnected, setPaymentConnected] = useState(false);
+  const [tab, setTab] = useState<'ordering' | 'booking' | 'other' | 'inventory' | 'hr' | 'forecasting'>('ordering');
   // The real fix for the nav-visibility problem the old reload was
   // covering for: DashboardLayout now exposes a way to refresh its own
   // copy of features directly, through the same Outlet context every
@@ -39,98 +40,119 @@ export default function FeaturesPage() {
   const { ordering, booking } = business.features;
 
   return (
-    <div className="space-y-10">
-      <Section title="Ordering">
-        <p className="mb-3 text-sm text-ivory-dim">
-          Call a Waiter, Request the Bill, and any other guest-notification button now live under
-          Landing Page Buttons, alongside your other buttons - not here anymore.
-        </p>
-        <div className="space-y-2">
-          <ToggleRow label="Menu view" description="Customers can browse the menu after tapping."
-            checked={ordering.menuView} onChange={(v) => patch({ ordering: { menuView: v } })} />
-          <ToggleRow label="Order submission" description="Customers can actually place an order — Tavzio's own order screen always works, no POS needed."
-            checked={ordering.submission} onChange={(v) => patch({ ordering: { submission: v } })} />
-          <ToggleRow label="POS integration" description="Push orders into a connected POS, on top of Tavzio's own screen. Set up by the platform operator."
-            checked={ordering.posIntegration} onChange={(v) => patch({ ordering: { posIntegration: v } })} />
-          <ToggleRow
-            label="Pay before order"
-            description={
-              paymentConnected
-                ? 'Customers pay (card or cash) the moment they hit "Send order" - it only reaches the kitchen once payment is confirmed.'
-                : 'Connect a payment provider in Pay Bill Setup first - this needs somewhere to actually charge the card.'
-            }
-            checked={ordering.payBeforeOrder}
-            onChange={(v) => patch({ ordering: { payBeforeOrder: v } })}
-            disabled={!ordering.submission || !paymentConnected}
-          />
-        </div>
-      </Section>
+    <div className="space-y-6">
+      <h1 className="font-display text-3xl text-ivory">Features</h1>
+      <div className="flex flex-wrap gap-2 border-b border-ink-line">
+        {(['ordering', 'booking', 'other', 'inventory', 'hr', 'forecasting'] as const).map((t) => (
+          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t === 'hr' ? 'HR' : t === 'forecasting' ? 'Forecasting & Budgeting' : t}
+          </button>
+        ))}
+      </div>
 
-      <Section title="Booking">
-        <div className="space-y-2">
-          <ToggleRow label="Booking page" description="Customers can browse services after tapping."
-            checked={booking.menuView} onChange={(v) => patch({ booking: { menuView: v } })} />
-          <ToggleRow label="Booking submission" description="Customers can request an appointment — you confirm or decline."
-            checked={booking.submission} onChange={(v) => patch({ booking: { submission: v } })} />
-          <ToggleRow label="Booking integration" description="Push bookings into a connected system. Set up by the platform operator."
-            checked={booking.integration} onChange={(v) => patch({ booking: { integration: v } })} />
-        </div>
-      </Section>
+      {tab === 'ordering' && (
+        <Section title="Ordering">
+          <p className="mb-3 text-sm text-ivory-dim">
+            Call a Waiter, Request the Bill, and any other guest-notification button now live under
+            Landing Page Buttons, alongside your other buttons - not here anymore.
+          </p>
+          <div className="space-y-2">
+            <ToggleRow label="Menu view" description="Customers can browse the menu after tapping."
+              checked={ordering.menuView} onChange={(v) => patch({ ordering: { menuView: v } })} />
+            <ToggleRow label="Order submission" description="Customers can actually place an order — Tavzio's own order screen always works, no POS needed."
+              checked={ordering.submission} onChange={(v) => patch({ ordering: { submission: v } })} />
+            <ToggleRow label="POS integration" description="Push orders into a connected POS, on top of Tavzio's own screen. Set up by the platform operator."
+              checked={ordering.posIntegration} onChange={(v) => patch({ ordering: { posIntegration: v } })} />
+            <ToggleRow
+              label="Pay before order"
+              description={
+                paymentConnected
+                  ? 'Customers pay (card or cash) the moment they hit "Send order" - it only reaches the kitchen once payment is confirmed.'
+                  : 'Connect a payment provider in Pay Bill Setup first - this needs somewhere to actually charge the card.'
+              }
+              checked={ordering.payBeforeOrder}
+              onChange={(v) => patch({ ordering: { payBeforeOrder: v } })}
+              disabled={!ordering.submission || !paymentConnected}
+            />
+          </div>
+        </Section>
+      )}
 
-      <Section title="Other">
-        <div className="space-y-2">
-          <ToggleRow label="Loyalty program" checked={business.features.loyalty}
-            onChange={(v) => patch({ loyalty: v })} />
-          <ToggleRow label="Staff accounts" description="Turn off if this business never needs a second account."
-            checked={business.features.staffAccounts} onChange={(v) => patch({ staffAccounts: v })} />
-        </div>
-      </Section>
+      {tab === 'booking' && (
+        <Section title="Booking">
+          <div className="space-y-2">
+            <ToggleRow label="Booking page" description="Customers can browse services after tapping."
+              checked={booking.menuView} onChange={(v) => patch({ booking: { menuView: v } })} />
+            <ToggleRow label="Booking submission" description="Customers can request an appointment — you confirm or decline."
+              checked={booking.submission} onChange={(v) => patch({ booking: { submission: v } })} />
+            <ToggleRow label="Booking integration" description="Push bookings into a connected system. Set up by the platform operator."
+              checked={booking.integration} onChange={(v) => patch({ booking: { integration: v } })} />
+          </div>
+        </Section>
+      )}
 
-      <Section title="Inventory">
-        <div className="space-y-2">
-          <ToggleRow label="Ingredient-level inventory" description="Track real stock per ingredient via menu-item recipes, not just per-dish counts."
-            checked={business.features.inventory?.enabled || false} onChange={(v) => patch({ inventory: { enabled: v } })} />
-          <ToggleRow label="Block orders on insufficient stock" description="If off, orders are still tracked but never blocked for low stock."
-            checked={business.features.inventory?.blockOrdersOnLowStock ?? true}
-            onChange={(v) => patch({ inventory: { blockOrdersOnLowStock: v } })}
-            disabled={!business.features.inventory?.enabled} />
-        </div>
-      </Section>
+      {tab === 'other' && (
+        <Section title="Other">
+          <div className="space-y-2">
+            <ToggleRow label="Loyalty program" checked={business.features.loyalty}
+              onChange={(v) => patch({ loyalty: v })} />
+            <ToggleRow label="Staff accounts" description="Turn off if this business never needs a second account."
+              checked={business.features.staffAccounts} onChange={(v) => patch({ staffAccounts: v })} />
+          </div>
+        </Section>
+      )}
 
-      <Section title="HR">
-        <p className="mb-3 text-sm text-ivory-dim">
-          Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
-          Each piece below is independent; turn on only what your business actually uses.
-        </p>
-        <div className="space-y-2">
-          <ToggleRow label="Enable HR" description="Master switch - turns on the HR section in your dashboard. Off by default."
-            checked={business.features.hr?.enabled || false} onChange={(v) => patch({ hr: { enabled: v } })} />
-          <ToggleRow label="Staff documents" description="Store each staff member's ID, visa, labor card, or signed contract."
-            checked={business.features.hr?.documents || false} onChange={(v) => patch({ hr: { documents: v } })}
-            disabled={!business.features.hr?.enabled} />
-          <ToggleRow label="Commission tracking" description="Set a commission rate per staff member and see it calculated from their actual sales."
-            checked={business.features.hr?.commission || false} onChange={(v) => patch({ hr: { commission: v } })}
-            disabled={!business.features.hr?.enabled} />
-          <ToggleRow label="Tip pooling" description="Split collected tips across staff, evenly or by hours worked."
-            checked={business.features.hr?.tips || false} onChange={(v) => patch({ hr: { tips: v } })}
-            disabled={!business.features.hr?.enabled} />
-          <ToggleRow label="Staff scheduling" description="Build a roster of upcoming shifts per staff member, with a forecasted labor cost."
-            checked={business.features.hr?.scheduling || false} onChange={(v) => patch({ hr: { scheduling: v } })}
-            disabled={!business.features.hr?.enabled} />
-          <ToggleRow label="Labor cost tracking" description="Set an hourly rate per staff member and see real labor cost against revenue, from actual clocked hours."
-            checked={business.features.hr?.laborCost || false} onChange={(v) => patch({ hr: { laborCost: v } })}
-            disabled={!business.features.hr?.enabled} />
-        </div>
-      </Section>
+      {tab === 'inventory' && (
+        <Section title="Inventory">
+          <div className="space-y-2">
+            <ToggleRow label="Ingredient-level inventory" description="Track real stock per ingredient via menu-item recipes, not just per-dish counts."
+              checked={business.features.inventory?.enabled || false} onChange={(v) => patch({ inventory: { enabled: v } })} />
+            <ToggleRow label="Block orders on insufficient stock" description="If off, orders are still tracked but never blocked for low stock."
+              checked={business.features.inventory?.blockOrdersOnLowStock ?? true}
+              onChange={(v) => patch({ inventory: { blockOrdersOnLowStock: v } })}
+              disabled={!business.features.inventory?.enabled} />
+          </div>
+        </Section>
+      )}
 
-      <Section title="Forecasting & Budgeting">
-        <p className="mb-3 text-sm text-ivory-dim">
-          Owner-only. A day-of-week sales forecast built from your own order history, plus monthly budget targets
-          you set yourself, compared against real revenue, food cost, and labor cost as the month happens.
-        </p>
-        <ToggleRow label="Enable Forecasting & Budgeting" description="Turns on the Forecasting & Budgeting section in your dashboard. Off by default."
-          checked={business.features.forecasting?.enabled || false} onChange={(v) => patch({ forecasting: { enabled: v } })} />
-      </Section>
+      {tab === 'hr' && (
+        <Section title="HR">
+          <p className="mb-3 text-sm text-ivory-dim">
+            Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
+            Each piece below is independent; turn on only what your business actually uses.
+          </p>
+          <div className="space-y-2">
+            <ToggleRow label="Enable HR" description="Master switch - turns on the HR section in your dashboard. Off by default."
+              checked={business.features.hr?.enabled || false} onChange={(v) => patch({ hr: { enabled: v } })} />
+            <ToggleRow label="Staff documents" description="Store each staff member's ID, visa, labor card, or signed contract."
+              checked={business.features.hr?.documents || false} onChange={(v) => patch({ hr: { documents: v } })}
+              disabled={!business.features.hr?.enabled} />
+            <ToggleRow label="Commission tracking" description="Set a commission rate per staff member and see it calculated from their actual sales."
+              checked={business.features.hr?.commission || false} onChange={(v) => patch({ hr: { commission: v } })}
+              disabled={!business.features.hr?.enabled} />
+            <ToggleRow label="Tip pooling" description="Split collected tips across staff, evenly or by hours worked."
+              checked={business.features.hr?.tips || false} onChange={(v) => patch({ hr: { tips: v } })}
+              disabled={!business.features.hr?.enabled} />
+            <ToggleRow label="Staff scheduling" description="Build a roster of upcoming shifts per staff member, with a forecasted labor cost."
+              checked={business.features.hr?.scheduling || false} onChange={(v) => patch({ hr: { scheduling: v } })}
+              disabled={!business.features.hr?.enabled} />
+            <ToggleRow label="Labor cost tracking" description="Set an hourly rate per staff member and see real labor cost against revenue, from actual clocked hours."
+              checked={business.features.hr?.laborCost || false} onChange={(v) => patch({ hr: { laborCost: v } })}
+              disabled={!business.features.hr?.enabled} />
+          </div>
+        </Section>
+      )}
+
+      {tab === 'forecasting' && (
+        <Section title="Forecasting & Budgeting">
+          <p className="mb-3 text-sm text-ivory-dim">
+            Owner-only. A day-of-week sales forecast built from your own order history, plus monthly budget targets
+            you set yourself, compared against real revenue, food cost, and labor cost as the month happens.
+          </p>
+          <ToggleRow label="Enable Forecasting & Budgeting" description="Turns on the Forecasting & Budgeting section in your dashboard. Off by default."
+            checked={business.features.forecasting?.enabled || false} onChange={(v) => patch({ forecasting: { enabled: v } })} />
+        </Section>
+      )}
     </div>
   );
 }

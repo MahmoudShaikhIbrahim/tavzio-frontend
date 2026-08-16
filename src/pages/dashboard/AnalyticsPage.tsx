@@ -32,6 +32,7 @@ export default function AnalyticsPage() {
   const [topItemsView, setTopItemsView] = useState<'revenue' | 'quantity'>('revenue');
   const [liveTapCount, setLiveTapCount] = useState(0);
   const [liveFeed, setLiveFeed] = useState<string[]>([]);
+  const [tab, setTab] = useState<'overview' | 'sales' | 'kitchen' | 'hotel'>('overview');
 
   const businessId = user?.business_id;
 
@@ -77,8 +78,18 @@ export default function AnalyticsPage() {
     ? Math.round((returning.returning / (returning.new + returning.returning)) * 100)
     : null;
 
+  const showKitchenTab = !!kitchenPerf && kitchenPerf.trackedTicketCount > 0;
+  const showHotelTab = isHotel && !!hotelPerf;
+  const tabs = [
+    { key: 'overview' as const, label: 'Overview' },
+    { key: 'sales' as const, label: 'Sales' },
+    showKitchenTab && { key: 'kitchen' as const, label: 'Kitchen' },
+    showHotelTab && { key: 'hotel' as const, label: 'Hotel Performance' },
+  ].filter((t): t is { key: 'overview' | 'sales' | 'kitchen' | 'hotel'; label: string } => !!t);
+  const activeTab = tabs.some((t) => t.key === tab) ? tab : 'overview';
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Total taps (30d)" value={summary.totalTaps + liveTapCount} live={liveTapCount > 0} />
         <Stat label="Top hour" value={summary.topHours[0] ? `${summary.topHours[0].hour}:00` : '—'} />
@@ -86,151 +97,167 @@ export default function AnalyticsPage() {
         <Stat label="Returning visitors" value={returningPct !== null ? `${returningPct}%` : '—'} />
       </div>
 
-      {liveFeed.length > 0 && (
-        <Section title="Live activity">
-          <ul className="space-y-1 text-base text-ivory-dim">
-            {liveFeed.map((f, i) => <li key={i}>{f}</li>)}
-          </ul>
-        </Section>
-      )}
+      <div className="flex flex-wrap gap-2 border-b border-ink-line">
+        {tabs.map((t) => (
+          <button type="button" key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2 text-base ${activeTab === t.key ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <Section title="Taps over time">
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={summary.tapsByDay}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
-            <XAxis dataKey="day" stroke="#A79A87" fontSize={11} />
-            <YAxis stroke="#A79A87" fontSize={11} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} />
-            <Line type="monotone" dataKey="count" stroke="#B8925A" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </Section>
+      {activeTab === 'overview' && (
+        <div className="space-y-10">
+          {liveFeed.length > 0 && (
+            <Section title="Live activity">
+              <ul className="space-y-1 text-base text-ivory-dim">
+                {liveFeed.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </Section>
+          )}
 
-      <Section title="Button clicks">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={summary.eventsByType.filter((e) => e.type !== 'nfc_tap')}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
-            <XAxis dataKey="type" stroke="#A79A87" fontSize={10} interval={0} angle={-25} textAnchor="end" height={60} />
-            <YAxis stroke="#A79A87" fontSize={11} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} />
-            <Bar dataKey="count" fill="#B8925A" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Section>
-
-      <Section title="Card performance">
-        <div className="space-y-4">
-          {cardBreakdown.map((c) => (
-            <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
-              <span className="text-ivory">{c.label || 'Untitled'}</span>
-              <span className="text-ivory-dim">{c.taps} taps</span>
-            </div>
-          ))}
-          {cardBreakdown.length === 0 && <p className="text-base text-ivory-dim">No card activity yet.</p>}
-        </div>
-      </Section>
-
-      <Section title="Sales by Channel">
-        {salesByChannel && salesByChannel.channels.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={salesByChannel.channels}
-                    dataKey="total"
-                    nameKey="label"
-                    innerRadius={55}
-                    outerRadius={90}
-                    paddingAngle={2}
-                  >
-                    {salesByChannel.channels.map((_, i) => (
-                      <Cell key={i} fill={CHANNEL_COLORS[i % CHANNEL_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => `AED ${value.toFixed(2)}`} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="space-y-2 self-center">
-              {salesByChannel.channels.map((c, i) => (
-                <div key={c.source} className="flex items-center justify-between text-base">
-                  <span className="flex items-center gap-2 text-ivory-dim">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHANNEL_COLORS[i % CHANNEL_COLORS.length] }} />
-                    {c.label}
-                  </span>
-                  <span className="text-ivory">AED {c.total.toFixed(2)} <span className="text-sm text-ivory-dim">({c.percentage}%)</span></span>
-                </div>
-              ))}
-              <div className="mt-2 border-t border-ink-line pt-2 text-base">
-                <span className="text-ivory">Total: AED {salesByChannel.grandTotal.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-base text-ivory-dim">No sales in the last 30 days yet.</p>
-        )}
-      </Section>
-
-      <Section title="Revenue trend (30 days)">
-        {revenueTrend && revenueTrend.trend.length > 0 ? (
-          <>
-            <p className="text-sm text-ivory-dim">Real daily revenue - not visitor taps, actual money.</p>
+          <Section title="Taps over time">
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={revenueTrend.trend}>
+              <LineChart data={summary.tapsByDay}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
-                <XAxis dataKey="date" stroke="#A79A87" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} />
-                <YAxis stroke="#A79A87" fontSize={11} />
-                <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} formatter={(v: number) => `AED ${v.toFixed(2)}`} />
-                <Line type="monotone" dataKey="revenueAed" stroke="#B8925A" strokeWidth={2} dot={false} />
+                <XAxis dataKey="day" stroke="#A79A87" fontSize={11} />
+                <YAxis stroke="#A79A87" fontSize={11} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} />
+                <Line type="monotone" dataKey="count" stroke="#B8925A" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
-          </>
-        ) : (
-          <p className="text-base text-ivory-dim">No revenue in this window yet.</p>
-        )}
-      </Section>
+          </Section>
 
-      <Section title="Top items" action={
-        <div className="flex rounded-lg border border-ink-line">
-          <button type="button" onClick={() => setTopItemsView('revenue')} className={`px-3 py-1.5 text-sm ${topItemsView === 'revenue' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>By revenue</button>
-          <button type="button" onClick={() => setTopItemsView('quantity')} className={`px-3 py-1.5 text-sm ${topItemsView === 'quantity' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>By quantity</button>
-        </div>
-      }>
-        <div className="space-y-1">
-          {(topItemsView === 'revenue' ? topItems?.byRevenue : topItems?.byQuantity)?.map((i) => (
-            <div key={i.name} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
-              <span className="text-ivory">{i.name}</span>
-              <span className="text-ivory-dim">{i.quantitySold} sold · AED {i.revenueAed.toFixed(2)} <span className="text-xs">({i.revenueSharePct}% of revenue)</span></span>
-            </div>
-          ))}
-          {(!topItems || (topItemsView === 'revenue' ? topItems.byRevenue : topItems.byQuantity).length === 0) && (
-            <p className="text-base text-ivory-dim">No sales in this window yet.</p>
-          )}
-        </div>
-      </Section>
-
-      <Section title="Peak order hours (30 days)">
-        {peakHours && peakHours.hours.some((h) => h.orderCount > 0) ? (
-          <>
-            <p className="text-sm text-ivory-dim">When orders actually land - busiest hour: {peakHours.peakHour}:00.</p>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={peakHours.hours}>
+          <Section title="Button clicks">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={summary.eventsByType.filter((e) => e.type !== 'nfc_tap')}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
-                <XAxis dataKey="hour" stroke="#A79A87" fontSize={10} tickFormatter={(h) => `${h}:00`} />
+                <XAxis dataKey="type" stroke="#A79A87" fontSize={10} interval={0} angle={-25} textAnchor="end" height={60} />
                 <YAxis stroke="#A79A87" fontSize={11} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} labelFormatter={(h) => `${h}:00`} />
-                <Bar dataKey="orderCount" fill="#B8925A" radius={[4, 4, 0, 0]} />
+                <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} />
+                <Bar dataKey="count" fill="#B8925A" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </>
-        ) : (
-          <p className="text-base text-ivory-dim">No orders in this window yet.</p>
-        )}
-      </Section>
+          </Section>
 
-      {kitchenPerf && kitchenPerf.trackedTicketCount > 0 && (
+          <Section title="Card performance">
+            <div className="space-y-4">
+              {cardBreakdown.map((c) => (
+                <div key={c.cardId} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
+                  <span className="text-ivory">{c.label || 'Untitled'}</span>
+                  <span className="text-ivory-dim">{c.taps} taps</span>
+                </div>
+              ))}
+              {cardBreakdown.length === 0 && <p className="text-base text-ivory-dim">No card activity yet.</p>}
+            </div>
+          </Section>
+        </div>
+      )}
+
+      {activeTab === 'sales' && (
+        <div className="space-y-10">
+          <Section title="Sales by Channel">
+            {salesByChannel && salesByChannel.channels.length > 0 ? (
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={salesByChannel.channels}
+                        dataKey="total"
+                        nameKey="label"
+                        innerRadius={55}
+                        outerRadius={90}
+                        paddingAngle={2}
+                      >
+                        {salesByChannel.channels.map((_, i) => (
+                          <Cell key={i} fill={CHANNEL_COLORS[i % CHANNEL_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => `AED ${value.toFixed(2)}`} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-2 self-center">
+                  {salesByChannel.channels.map((c, i) => (
+                    <div key={c.source} className="flex items-center justify-between text-base">
+                      <span className="flex items-center gap-2 text-ivory-dim">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHANNEL_COLORS[i % CHANNEL_COLORS.length] }} />
+                        {c.label}
+                      </span>
+                      <span className="text-ivory">AED {c.total.toFixed(2)} <span className="text-sm text-ivory-dim">({c.percentage}%)</span></span>
+                    </div>
+                  ))}
+                  <div className="mt-2 border-t border-ink-line pt-2 text-base">
+                    <span className="text-ivory">Total: AED {salesByChannel.grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-base text-ivory-dim">No sales in the last 30 days yet.</p>
+            )}
+          </Section>
+
+          <Section title="Revenue trend (30 days)">
+            {revenueTrend && revenueTrend.trend.length > 0 ? (
+              <>
+                <p className="text-sm text-ivory-dim">Real daily revenue - not visitor taps, actual money.</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={revenueTrend.trend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
+                    <XAxis dataKey="date" stroke="#A79A87" fontSize={11} tickFormatter={(d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} />
+                    <YAxis stroke="#A79A87" fontSize={11} />
+                    <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} formatter={(v: number) => `AED ${v.toFixed(2)}`} />
+                    <Line type="monotone" dataKey="revenueAed" stroke="#B8925A" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </>
+            ) : (
+              <p className="text-base text-ivory-dim">No revenue in this window yet.</p>
+            )}
+          </Section>
+
+          <Section title="Top items" action={
+            <div className="flex rounded-lg border border-ink-line">
+              <button type="button" onClick={() => setTopItemsView('revenue')} className={`px-3 py-1.5 text-sm ${topItemsView === 'revenue' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>By revenue</button>
+              <button type="button" onClick={() => setTopItemsView('quantity')} className={`px-3 py-1.5 text-sm ${topItemsView === 'quantity' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>By quantity</button>
+            </div>
+          }>
+            <div className="space-y-1">
+              {(topItemsView === 'revenue' ? topItems?.byRevenue : topItems?.byQuantity)?.map((i) => (
+                <div key={i.name} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+                  <span className="text-ivory">{i.name}</span>
+                  <span className="text-ivory-dim">{i.quantitySold} sold · AED {i.revenueAed.toFixed(2)} <span className="text-xs">({i.revenueSharePct}% of revenue)</span></span>
+                </div>
+              ))}
+              {(!topItems || (topItemsView === 'revenue' ? topItems.byRevenue : topItems.byQuantity).length === 0) && (
+                <p className="text-base text-ivory-dim">No sales in this window yet.</p>
+              )}
+            </div>
+          </Section>
+
+          <Section title="Peak order hours (30 days)">
+            {peakHours && peakHours.hours.some((h) => h.orderCount > 0) ? (
+              <>
+                <p className="text-sm text-ivory-dim">When orders actually land - busiest hour: {peakHours.peakHour}:00.</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={peakHours.hours}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#332B23" />
+                    <XAxis dataKey="hour" stroke="#A79A87" fontSize={10} tickFormatter={(h) => `${h}:00`} />
+                    <YAxis stroke="#A79A87" fontSize={11} allowDecimals={false} />
+                    <Tooltip contentStyle={{ background: '#1F1A15', border: '1px solid #332B23' }} labelFormatter={(h) => `${h}:00`} />
+                    <Bar dataKey="orderCount" fill="#B8925A" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </>
+            ) : (
+              <p className="text-base text-ivory-dim">No orders in this window yet.</p>
+            )}
+          </Section>
+        </div>
+      )}
+
+      {activeTab === 'kitchen' && showKitchenTab && kitchenPerf && (
         <Section title="Kitchen performance (7 days)">
           <p className="text-sm text-ivory-dim">
             From {kitchenPerf.trackedTicketCount} of {kitchenPerf.ticketCount} tickets with full timing data
@@ -253,8 +280,8 @@ export default function AnalyticsPage() {
         </Section>
       )}
 
-      {isHotel && hotelPerf && (
-        <>
+      {activeTab === 'hotel' && showHotelTab && hotelPerf && (
+        <div className="space-y-10">
           <Section title="Occupancy, ADR & RevPAR trend (30 days)">
             {hotelPerf.occupancyTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -305,7 +332,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
           </Section>
-        </>
+        </div>
       )}
     </div>
   );
