@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getPosIntegration, getPosIntegrationStatus, upsertPosIntegration, togglePosIntegration } from '../../lib/authApi';
 import type { PosProvider } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
@@ -17,6 +18,7 @@ const PROVIDERS: { key: PosProvider; label: string; note?: string }[] = [
 
 export default function PosIntegrationPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [provider, setProvider] = useState<PosProvider>('square');
   const [enabled, setEnabled] = useState(false);
@@ -98,36 +100,35 @@ export default function PosIntegrationPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl text-ivory">POS Integration</h1>
+        <h1 className="font-display text-3xl text-ivory">{t('POS Integration')}</h1>
         <p className="mt-1 text-base text-ivory-dim">
-          Push every order placed through Tavzio out to an external POS in real time, on top of Tavzio's own
-          order screen - which always works regardless of whether this is connected.
+          {t("Push every order placed through Tavzio out to an external POS in real time, on top of Tavzio's own order screen - which always works regardless of whether this is connected.")}
         </p>
       </div>
 
       <Section
-        title="Connection"
+        title={t('Connection')}
         action={
           <button type="button" onClick={handleToggle} className={`rounded-lg border px-3.5 py-2 text-sm font-medium ${enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
-            {enabled ? 'Enabled' : 'Disabled'}
+            {enabled ? t('Enabled') : t('Disabled')}
           </button>
         }
       >
         {status && (
           <p className="text-sm text-ivory-dim">
-            Status: <span className="capitalize text-ivory">{status.status}</span>
-            {status.lastSyncedAt && ` · Last synced ${new Date(status.lastSyncedAt).toLocaleString('en-GB')}`}
+            {t('Status:')} <span className="capitalize text-ivory">{status.status}</span>
+            {status.lastSyncedAt && ` · ${t('Last synced')} ${new Date(status.lastSyncedAt).toLocaleString('en-GB')}`}
           </p>
         )}
-        <Field label="Provider">
+        <Field label={t('Provider')}>
           <select value={provider} onChange={(e) => { setProvider(e.target.value as PosProvider); setConfig({}); }} className={inputClass}>
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
         </Field>
-        {providerNote && <p className="text-sm text-ivory-dim">{providerNote}</p>}
+        {providerNote && <p className="text-sm text-ivory-dim">{t(providerNote)}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
           {fieldsByProvider[provider].map((f) => (
-            <Field key={f.key} label={f.label}>
+            <Field key={f.key} label={t(f.label)}>
               <input
                 value={config[f.key] || ''}
                 onChange={(e) => setConfig((prev) => ({ ...prev, [f.key]: e.target.value }))}
@@ -138,7 +139,7 @@ export default function PosIntegrationPage() {
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
         <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('Saving...') : t('Save')}
         </button>
       </Section>
     </div>

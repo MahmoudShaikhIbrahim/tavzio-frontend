@@ -1365,6 +1365,17 @@ export function updateBookingStatus(businessId: string, bookingId: string, statu
     body: JSON.stringify({ status }),
   });
 }
+export function assignBookingTable(businessId: string, bookingId: string, tableId: string | null) {
+  return authFetch<BookingRow>(`/api/businesses/${businessId}/bookings/${bookingId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ tableId }),
+  });
+}
+export function createBooking(businessId: string, payload: {
+  guestName: string; contactPhone?: string; partySize?: number; requestedAt: string; note?: string; tableId?: string | null;
+}) {
+  return authFetch<BookingRow>(`/api/businesses/${businessId}/bookings`, { method: 'POST', body: JSON.stringify(payload) });
+}
 
 // --- Notification sounds - convenience wrapper around updateBusiness ---
 
@@ -1818,7 +1829,7 @@ export function updateReceiptBranding(payload: { stampUrl?: string; signatureUrl
 // --- Contracts ---
 
 export function createContract(businessId: string, payload: {
-  startDate: string; paymentFrequency: 'monthly' | 'quarterly' | 'yearly';
+  startDate: string; paymentFrequency: 'monthly' | 'quarterly' | 'yearly'; planType?: 'connect' | 'full';
   standsCount: number; systemFeeOverride?: number; cardPriceOverride?: number;
 }) {
   return authFetch<Contract>(`/api/businesses/${businessId}/contracts`, { method: 'POST', body: JSON.stringify(payload) });

@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listServices, createService, updateService, deleteService } from '../../lib/authApi';
 import type { Service } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 
 export default function ServicesManagementPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [services, setServices] = useState<Service[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -20,13 +22,13 @@ export default function ServicesManagementPage() {
 
   return (
     <Section
-      title="Services"
+      title={t('Services')}
       action={
         <button type="button"
           onClick={() => setShowForm((s) => !s)}
           className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >
-          + Add service
+          {t('+ Add service')}
         </button>
       }
     >
@@ -35,13 +37,14 @@ export default function ServicesManagementPage() {
         {services.map((service) => (
           <ServiceRow key={service.id} service={service} services={services} businessId={businessId} onServicesChange={setServices} onChange={reload} />
         ))}
-        {services.length === 0 && <p className="text-base text-ivory-dim">No services yet.</p>}
+        {services.length === 0 && <p className="text-base text-ivory-dim">{t('No services yet.')}</p>}
       </div>
     </Section>
   );
 }
 
 function ServiceForm({ businessId, existing, onDone }: { businessId: string; existing?: Service; onDone: () => void }) {
+  const { t } = useT();
   const [name, setName] = useState(existing?.name || '');
   const [description, setDescription] = useState(existing?.description || '');
   const [price, setPrice] = useState(existing?.price ?? 0);
@@ -64,14 +67,14 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
   return (
     <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
       <div className="grid grid-cols-3 gap-3">
-        <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-        <Field label="Price"><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
-        <Field label="Duration (min)"><input type="number" onFocus={(e) => e.target.select()} min={5} step={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Price')}><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label={t('Duration (min)')}><input type="number" onFocus={(e) => e.target.select()} min={5} step={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className={inputClass} /></Field>
       </div>
-      <Field label="Description">
+      <Field label={t('Description')}>
         <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
       </Field>
-      <PrimaryButton disabled={saving}>{saving ? 'Saving...' : existing ? 'Save changes' : 'Add service'}</PrimaryButton>
+      <PrimaryButton disabled={saving}>{saving ? t('Saving...') : existing ? t('Save changes') : t('Add service')}</PrimaryButton>
     </form>
   );
 }
@@ -79,6 +82,7 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
 function ServiceRow({ service, services, businessId, onServicesChange, onChange }: {
   service: Service; services: Service[]; businessId: string; onServicesChange: (s: Service[]) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -90,7 +94,7 @@ function ServiceRow({ service, services, businessId, onServicesChange, onChange 
       <div>
         <span className="text-ivory">{service.name}</span>
         <span className="ml-2 text-ivory-dim">{service.price.toFixed(2)} · {service.duration_minutes} min</span>
-        {!service.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
+        {!service.is_available && <span className="ml-2 text-base text-danger">{t('unavailable')}</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <ActionButton
@@ -99,9 +103,9 @@ function ServiceRow({ service, services, businessId, onServicesChange, onChange 
             updateService(businessId, service.id, { isAvailable: !service.is_available }).catch(onChange);
           }}
         >
-          {service.is_available ? 'Mark unavailable' : 'Mark available'}
+          {service.is_available ? t('Mark unavailable') : t('Mark available')}
         </ActionButton>
-        <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
+        <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
         <ActionButton
           danger
           onClick={() => {
@@ -109,7 +113,7 @@ function ServiceRow({ service, services, businessId, onServicesChange, onChange 
             deleteService(businessId, service.id).catch(onChange);
           }}
         >
-          Remove
+          {t('Remove')}
         </ActionButton>
       </div>
     </div>

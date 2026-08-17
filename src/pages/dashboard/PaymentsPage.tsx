@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listPayments, getBusiness, refundPayment } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -9,6 +10,7 @@ import ExportButtons from '../../components/ExportButtons';
 
 export default function PaymentsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
@@ -44,20 +46,20 @@ export default function PaymentsPage() {
   return (
     <div className="space-y-10">
       <Section
-        title="Payment history"
+        title={t('Payment history')}
         action={
           <div className="flex gap-2">
             <ExportButtons businessId={businessId} kind="payments" />
           </div>
         }
       >
-        <p className="text-base text-ivory-dim">Today's total: <span className="text-ivory">{totalToday.toFixed(2)} AED</span></p>
-        <p className="text-sm text-ivory-dim">Showing last 24h - use Export for older dates.</p>
+        <p className="text-base text-ivory-dim">{t("Today's total:")} <span className="text-ivory">{totalToday.toFixed(2)} AED</span></p>
+        <p className="text-sm text-ivory-dim">{t('Showing last 24h - use Export for older dates.')}</p>
         <div className="space-y-4">
           {recent.map((p) => (
             <PaymentRowItem key={p.id} payment={p} businessId={businessId} onChange={reload} />
           ))}
-          {recent.length === 0 && <p className="text-base text-ivory-dim">No payments in the last 24h.</p>}
+          {recent.length === 0 && <p className="text-base text-ivory-dim">{t('No payments in the last 24h.')}</p>}
         </div>
       </Section>
     </div>
@@ -74,13 +76,18 @@ const METHOD_LABEL: Record<string, string> = {
 };
 
 function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow; businessId: string; onChange: () => void }) {
+  const { t } = useT();
   const [showRefund, setShowRefund] = useState(false);
   const [amount, setAmount] = useState(Number(payment.amount) + Number(payment.tip_amount));
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const isManual = payment.provider?.startsWith('manual_');
-  const methodLabel = METHOD_LABEL[payment.provider] || payment.provider || 'Unknown';
+  // Telr, N-Genius, and Ziina are real gateway brand names, never
+  // translated - only the generic method words (Tap/Cash/Card machine)
+  // and the Unknown fallback go through t().
+  const rawLabel = METHOD_LABEL[payment.provider] || payment.provider || 'Unknown';
+  const methodLabel = ['Tap', 'Cash', 'Card machine', 'Unknown'].includes(rawLabel) ? t(rawLabel) : rawLabel;
 
   async function handleRefund() {
     setSubmitting(true);
@@ -108,9 +115,9 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
             {(Number(payment.amount) + Number(payment.tip_amount)).toFixed(2)} AED{payment.tip_amount > 0 && ` (incl. ${payment.tip_amount} tip)`}
           </span>
           {payment.refunded ? (
-            <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">Refunded {payment.refund_amount}</span>
+            <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">{t('Refunded')} {payment.refund_amount}</span>
           ) : !isManual ? (
-            <button type="button" onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">Refund</button>
+            <button type="button" onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">{t('Refund')}</button>
           ) : null}
         </div>
       </div>
@@ -128,7 +135,7 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
               className="w-28 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
             />
             <input
-              placeholder="Reason (optional)"
+              placeholder={t('Reason (optional)')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="flex-1 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
@@ -140,7 +147,7 @@ function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow
             disabled={submitting}
             className="w-full rounded-lg bg-danger/10 border border-danger/40 px-3 py-1.5 text-base text-danger disabled:opacity-50"
           >
-            {submitting ? 'Processing...' : `Confirm refund of ${amount.toFixed(2)} AED`}
+            {submitting ? t('Processing...') : `${t('Confirm refund of')} ${amount.toFixed(2)} AED`}
           </button>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getPrinterIntegration, listAvailablePrinters, upsertPrinterIntegration } from '../../lib/authApi';
 import type { PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
@@ -12,6 +13,7 @@ export default function PrinterSetupPage() {
 }
 
 function PrinterSetup({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -69,25 +71,22 @@ function PrinterSetup({ businessId }: { businessId: string }) {
   if (!loaded) return null;
 
   return (
-    <Section title="Receipt printer">
+    <Section title={t('Receipt printer')}>
       <p className="text-base text-ivory-dim">
-        Connects Tavzio to a real receipt printer via PrintNode, so pressing "Print" on Table Receipts sends
-        straight to the printer next to your cashier. Requires the free PrintNode Client running once on whatever
-        computer is physically connected to your printer - after that, everything else is automatic. Only you can
-        see or edit this, not staff, not the platform operator.
+        {t('Connects Tavzio to a real receipt printer via PrintNode, so pressing "Print" on Table Receipts sends straight to the printer next to your cashier. Requires the free PrintNode Client running once on whatever computer is physically connected to your printer - after that, everything else is automatic. Only you can see or edit this, not staff, not the platform operator.')}
       </p>
       {integration?.status && (
         <p className="text-base">
-          Status: <span className={integration.status === 'connected' ? 'text-success' : 'text-ivory-dim'}>{integration.status}</span>
+          {t('Status:')} <span className={integration.status === 'connected' ? 'text-success' : 'text-ivory-dim'}>{integration.status}</span>
           {printerName && <span className="text-ivory-dim"> — {printerName}</span>}
         </p>
       )}
       <div className="max-w-lg space-y-5 rounded-xl border border-ink-line p-5">
-        <Field label="PrintNode API key">
+        <Field label={t('PrintNode API key')}>
           <input
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="From your PrintNode account's API Keys page"
+            placeholder={t("From your PrintNode account's API Keys page")}
             className={inputClass}
           />
         </Field>
@@ -98,12 +97,12 @@ function PrinterSetup({ businessId }: { businessId: string }) {
           disabled={refreshing || !apiKey}
           className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
         >
-          {refreshing ? 'Refreshing...' : 'Refresh printers'}
+          {refreshing ? t('Refreshing...') : t('Refresh printers')}
         </button>
         {refreshError && <p className="text-base text-danger">{refreshError}</p>}
 
         {printers.length > 0 && (
-          <Field label="Printer">
+          <Field label={t('Printer')}>
             <select
               value={printerId}
               onChange={(e) => {
@@ -112,7 +111,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
               }}
               className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
             >
-              <option value="">Select a printer...</option>
+              <option value="">{t('Select a printer...')}</option>
               {printers.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}{p.description ? ` — ${p.description}` : ''}</option>
               ))}
@@ -122,7 +121,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
 
         <label className="flex items-center gap-2 text-base text-ivory">
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
-          Enabled
+          {t('Enabled')}
         </label>
 
         {saveError && <p className="text-base text-danger">{saveError}</p>}
@@ -131,7 +130,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
           disabled={saving || (enabled && !printerId)}
           className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('Saving...') : t('Save')}
         </button>
       </div>
     </Section>

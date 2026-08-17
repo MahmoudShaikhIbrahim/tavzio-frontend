@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getBusiness, updateBusinessFeatures, getPaymentStatus } from '../../lib/authApi';
 import type { AdminBusiness } from '../../types';
 import { Section, ToggleRow } from '../../components/ui';
 
 export default function FeaturesPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [paymentConnected, setPaymentConnected] = useState(false);
@@ -41,34 +43,41 @@ export default function FeaturesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl text-ivory">Features</h1>
+      <h1 className="font-display text-3xl text-ivory">{t('Features')}</h1>
       <div className="flex flex-wrap gap-2 border-b border-ink-line">
-        {(['ordering', 'booking', 'other', 'inventory', 'hr', 'forecasting'] as const).map((t) => (
-          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t === 'hr' ? 'HR' : t === 'forecasting' ? 'Forecasting & Budgeting' : t}
-          </button>
-        ))}
+        {(['ordering', 'booking', 'other', 'inventory', 'hr', 'forecasting'] as const).map((tabKey) => {
+          const label = tabKey === 'hr' ? 'HR'
+            : tabKey === 'forecasting' ? 'Forecasting & Budgeting'
+            : tabKey === 'ordering' ? 'Ordering'
+            : tabKey === 'booking' ? 'Booking'
+            : tabKey === 'inventory' ? 'Inventory'
+            : 'Other';
+          return (
+            <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+              {t(label)}
+            </button>
+          );
+        })}
       </div>
 
       {tab === 'ordering' && (
-        <Section title="Ordering">
+        <Section title={t('Ordering')}>
           <p className="mb-3 text-sm text-ivory-dim">
-            Call a Waiter, Request the Bill, and any other guest-notification button now live under
-            Landing Page Buttons, alongside your other buttons - not here anymore.
+            {t('Call a Waiter, Request the Bill, and any other guest-notification button now live under Landing Page Buttons, alongside your other buttons - not here anymore.')}
           </p>
           <div className="space-y-2">
-            <ToggleRow label="Menu view" description="Customers can browse the menu after tapping."
+            <ToggleRow label={t('Menu view')} description={t('Customers can browse the menu after tapping.')}
               checked={ordering.menuView} onChange={(v) => patch({ ordering: { menuView: v } })} />
-            <ToggleRow label="Order submission" description="Customers can actually place an order — Tavzio's own order screen always works, no POS needed."
+            <ToggleRow label={t('Order submission')} description={t("Customers can actually place an order — Tavzio's own order screen always works, no POS needed.")}
               checked={ordering.submission} onChange={(v) => patch({ ordering: { submission: v } })} />
-            <ToggleRow label="POS integration" description="Push orders into a connected POS, on top of Tavzio's own screen. Set up by the platform operator."
+            <ToggleRow label={t('POS integration')} description={t("Push orders into a connected POS, on top of Tavzio's own screen. Set up by the platform operator.")}
               checked={ordering.posIntegration} onChange={(v) => patch({ ordering: { posIntegration: v } })} />
             <ToggleRow
-              label="Pay before order"
+              label={t('Pay before order')}
               description={
                 paymentConnected
-                  ? 'Customers pay (card or cash) the moment they hit "Send order" - it only reaches the kitchen once payment is confirmed.'
-                  : 'Connect a payment provider in Pay Bill Setup first - this needs somewhere to actually charge the card.'
+                  ? t('Customers pay (card or cash) the moment they hit "Send order" - it only reaches the kitchen once payment is confirmed.')
+                  : t('Connect a payment provider in Pay Bill Setup first - this needs somewhere to actually charge the card.')
               }
               checked={ordering.payBeforeOrder}
               onChange={(v) => patch({ ordering: { payBeforeOrder: v } })}
@@ -79,35 +88,35 @@ export default function FeaturesPage() {
       )}
 
       {tab === 'booking' && (
-        <Section title="Booking">
+        <Section title={t('Booking')}>
           <div className="space-y-2">
-            <ToggleRow label="Booking page" description="Customers can browse services after tapping."
+            <ToggleRow label={t('Booking page')} description={t('Customers can browse services after tapping.')}
               checked={booking.menuView} onChange={(v) => patch({ booking: { menuView: v } })} />
-            <ToggleRow label="Booking submission" description="Customers can request an appointment — you confirm or decline."
+            <ToggleRow label={t('Booking submission')} description={t('Customers can request an appointment — you confirm or decline.')}
               checked={booking.submission} onChange={(v) => patch({ booking: { submission: v } })} />
-            <ToggleRow label="Booking integration" description="Push bookings into a connected system. Set up by the platform operator."
+            <ToggleRow label={t('Booking integration')} description={t('Push bookings into a connected system. Set up by the platform operator.')}
               checked={booking.integration} onChange={(v) => patch({ booking: { integration: v } })} />
           </div>
         </Section>
       )}
 
       {tab === 'other' && (
-        <Section title="Other">
+        <Section title={t('Other')}>
           <div className="space-y-2">
-            <ToggleRow label="Loyalty program" checked={business.features.loyalty}
+            <ToggleRow label={t('Loyalty program')} checked={business.features.loyalty}
               onChange={(v) => patch({ loyalty: v })} />
-            <ToggleRow label="Staff accounts" description="Turn off if this business never needs a second account."
+            <ToggleRow label={t('Staff accounts')} description={t('Turn off if this business never needs a second account.')}
               checked={business.features.staffAccounts} onChange={(v) => patch({ staffAccounts: v })} />
           </div>
         </Section>
       )}
 
       {tab === 'inventory' && (
-        <Section title="Inventory">
+        <Section title={t('Inventory')}>
           <div className="space-y-2">
-            <ToggleRow label="Ingredient-level inventory" description="Track real stock per ingredient via menu-item recipes, not just per-dish counts."
+            <ToggleRow label={t('Ingredient-level inventory')} description={t('Track real stock per ingredient via menu-item recipes, not just per-dish counts.')}
               checked={business.features.inventory?.enabled || false} onChange={(v) => patch({ inventory: { enabled: v } })} />
-            <ToggleRow label="Block orders on insufficient stock" description="If off, orders are still tracked but never blocked for low stock."
+            <ToggleRow label={t('Block orders on insufficient stock')} description={t('If off, orders are still tracked but never blocked for low stock.')}
               checked={business.features.inventory?.blockOrdersOnLowStock ?? true}
               onChange={(v) => patch({ inventory: { blockOrdersOnLowStock: v } })}
               disabled={!business.features.inventory?.enabled} />
@@ -116,27 +125,26 @@ export default function FeaturesPage() {
       )}
 
       {tab === 'hr' && (
-        <Section title="HR">
+        <Section title={t('HR')}>
           <p className="mb-3 text-sm text-ivory-dim">
-            Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to.
-            Each piece below is independent; turn on only what your business actually uses.
+            {t("Owner-only, always — staff accounts never see any of this, regardless of what sections they're assigned to. Each piece below is independent; turn on only what your business actually uses.")}
           </p>
           <div className="space-y-2">
-            <ToggleRow label="Enable HR" description="Master switch - turns on the HR section in your dashboard. Off by default."
+            <ToggleRow label={t('Enable HR')} description={t('Master switch - turns on the HR section in your dashboard. Off by default.')}
               checked={business.features.hr?.enabled || false} onChange={(v) => patch({ hr: { enabled: v } })} />
-            <ToggleRow label="Staff documents" description="Store each staff member's ID, visa, labor card, or signed contract."
+            <ToggleRow label={t('Staff documents')} description={t("Store each staff member's ID, visa, labor card, or signed contract.")}
               checked={business.features.hr?.documents || false} onChange={(v) => patch({ hr: { documents: v } })}
               disabled={!business.features.hr?.enabled} />
-            <ToggleRow label="Commission tracking" description="Set a commission rate per staff member and see it calculated from their actual sales."
+            <ToggleRow label={t('Commission tracking')} description={t('Set a commission rate per staff member and see it calculated from their actual sales.')}
               checked={business.features.hr?.commission || false} onChange={(v) => patch({ hr: { commission: v } })}
               disabled={!business.features.hr?.enabled} />
-            <ToggleRow label="Tip pooling" description="Split collected tips across staff, evenly or by hours worked."
+            <ToggleRow label={t('Tip pooling')} description={t('Split collected tips across staff, evenly or by hours worked.')}
               checked={business.features.hr?.tips || false} onChange={(v) => patch({ hr: { tips: v } })}
               disabled={!business.features.hr?.enabled} />
-            <ToggleRow label="Staff scheduling" description="Build a roster of upcoming shifts per staff member, with a forecasted labor cost."
+            <ToggleRow label={t('Staff scheduling')} description={t('Build a roster of upcoming shifts per staff member, with a forecasted labor cost.')}
               checked={business.features.hr?.scheduling || false} onChange={(v) => patch({ hr: { scheduling: v } })}
               disabled={!business.features.hr?.enabled} />
-            <ToggleRow label="Labor cost tracking" description="Set an hourly rate per staff member and see real labor cost against revenue, from actual clocked hours."
+            <ToggleRow label={t('Labor cost tracking')} description={t('Set an hourly rate per staff member and see real labor cost against revenue, from actual clocked hours.')}
               checked={business.features.hr?.laborCost || false} onChange={(v) => patch({ hr: { laborCost: v } })}
               disabled={!business.features.hr?.enabled} />
           </div>
@@ -144,12 +152,11 @@ export default function FeaturesPage() {
       )}
 
       {tab === 'forecasting' && (
-        <Section title="Forecasting & Budgeting">
+        <Section title={t('Forecasting & Budgeting')}>
           <p className="mb-3 text-sm text-ivory-dim">
-            Owner-only. A day-of-week sales forecast built from your own order history, plus monthly budget targets
-            you set yourself, compared against real revenue, food cost, and labor cost as the month happens.
+            {t('Owner-only. A day-of-week sales forecast built from your own order history, plus monthly budget targets you set yourself, compared against real revenue, food cost, and labor cost as the month happens.')}
           </p>
-          <ToggleRow label="Enable Forecasting & Budgeting" description="Turns on the Forecasting & Budgeting section in your dashboard. Off by default."
+          <ToggleRow label={t('Enable Forecasting & Budgeting')} description={t('Turns on the Forecasting & Budgeting section in your dashboard. Off by default.')}
             checked={business.features.forecasting?.enabled || false} onChange={(v) => patch({ forecasting: { enabled: v } })} />
         </Section>
       )}

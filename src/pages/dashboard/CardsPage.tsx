@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listCards, updateCard } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import type { Card } from '../../types';
@@ -7,6 +8,7 @@ import { Section } from '../../components/ui';
 
 export default function CardsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [cards, setCards] = useState<Card[]>([]);
 
@@ -33,21 +35,20 @@ export default function CardsPage() {
   const customerCards = cards.filter((c) => !c.linked_user_id);
 
   return (
-    <Section title={`Table / customer cards (${customerCards.length})`}>
+    <Section title={`${t('Table / customer cards')} (${customerCards.length})`}>
       <p className="text-base text-ivory-dim">
-        Rename a card, or change its status if one's lost — new cards are
-        created by the platform operator, since it's them who physically
-        programs the chip.
+        {t("Rename a card, or change its status if one's lost — new cards are created by the platform operator, since it's them who physically programs the chip.")}
       </p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {customerCards.map((c) => <CardRow key={c.id} card={c} cards={cards} businessId={businessId} onCardsChange={setCards} onChange={reload} />)}
-        {customerCards.length === 0 && <p className="text-base text-ivory-dim">No cards yet.</p>}
+        {customerCards.length === 0 && <p className="text-base text-ivory-dim">{t('No cards yet.')}</p>}
       </div>
     </Section>
   );
 }
 
 function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: Card; cards: Card[]; businessId: string; onCardsChange: (c: Card[]) => void; onChange: () => void }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(card.label);
   const [copied, setCopied] = useState(false);
@@ -77,20 +78,20 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: C
               autoFocus
               className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-base text-ivory"
             />
-            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
-            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
+            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline">{t('Save')}</button>
+            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
           </>
         ) : (
           <>
-            <span className="truncate text-ivory">{card.label || 'Untitled'}</span>
+            <span className="truncate text-ivory">{card.label || t('Untitled')}</span>
             <span className="shrink-0 font-mono text-base text-ivory-dim">{card.uid}</span>
-            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
+            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">{t('Rename')}</button>
           </>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
-          {copied ? 'Copied!' : 'Copy URL'}
+          {copied ? t('Copied!') : t('Copy URL')}
         </button>
         <select
           value={card.status}
@@ -101,10 +102,10 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: C
           }}
           className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim"
         >
-          <option value="active">active</option>
-          <option value="inactive">inactive</option>
-          <option value="lost">lost</option>
-          <option value="disabled">disabled</option>
+          <option value="active">{t('active')}</option>
+          <option value="inactive">{t('inactive')}</option>
+          <option value="lost">{t('lost')}</option>
+          <option value="disabled">{t('disabled')}</option>
         </select>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   getLoyaltyProgram, upsertLoyaltyProgram, listLoyaltyMembers, adjustLoyaltyMember, redeemLoyaltyReward,
 } from '../../lib/authApi';
@@ -16,6 +17,7 @@ const REWARD_TYPE_LABELS: Record<RewardType, string> = {
 
 export default function LoyaltyPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [program, setProgram] = useState<LoyaltyProgramAdmin | null>(null);
   const [members, setMembers] = useState<LoyaltyMemberRow[]>([]);
@@ -38,9 +40,9 @@ export default function LoyaltyPage() {
       <ProgramConfigForm key={program?.id || 'new'} businessId={businessId} program={program} onSaved={setProgram} />
 
       {program && (
-        <Section title="Members">
+        <Section title={t('Members')}>
           <input
-            placeholder="Search by phone..."
+            placeholder={t('Search by phone...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={inputClass}
@@ -49,7 +51,7 @@ export default function LoyaltyPage() {
             {members.map((m) => (
               <MemberRow key={m.id} member={m} businessId={businessId} program={program} onChange={() => listLoyaltyMembers(businessId, search).then(setMembers)} />
             ))}
-            {members.length === 0 && <p className="text-base text-ivory-dim">No members yet.</p>}
+            {members.length === 0 && <p className="text-base text-ivory-dim">{t('No members yet.')}</p>}
           </div>
         </Section>
       )}
@@ -60,6 +62,7 @@ export default function LoyaltyPage() {
 function ProgramConfigForm({ businessId, program, onSaved }: {
   businessId: string; program: LoyaltyProgramAdmin | null; onSaved: (p: LoyaltyProgramAdmin) => void;
 }) {
+  const { t } = useT();
   const [earnMethod, setEarnMethod] = useState<LoyaltyEarnMethod>(program?.earn_method || 'visit');
   const [structure, setStructure] = useState<LoyaltyStructure>(program?.structure || 'threshold');
   const [usePoints, setUsePoints] = useState(program?.use_points ?? false);
@@ -134,19 +137,19 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
   }
 
   return (
-    <Section title="Loyalty program">
+    <Section title={t('Loyalty program')}>
       <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="How it's earned">
+          <Field label={t("How it's earned")}>
             <select value={earnMethod} onChange={(e) => setEarnMethod(e.target.value as LoyaltyEarnMethod)} className={inputClass}>
-              <option value="visit">Visit (customer taps the card)</option>
-              <option value="spend">Spend (staff enter the amount)</option>
+              <option value="visit">{t('Visit (customer taps the card)')}</option>
+              <option value="spend">{t('Spend (staff enter the amount)')}</option>
             </select>
           </Field>
-          <Field label="How rewards work">
+          <Field label={t('How rewards work')}>
             <select value={structure} onChange={(e) => setStructure(e.target.value as LoyaltyStructure)} className={inputClass}>
-              <option value="threshold">Threshold — one reward, then resets</option>
-              <option value="tiered">Tiered — ongoing status, applies automatically</option>
+              <option value="threshold">{t('Threshold — one reward, then resets')}</option>
+              <option value="tiered">{t('Tiered — ongoing status, applies automatically')}</option>
             </select>
           </Field>
         </div>
@@ -154,7 +157,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
         {earnMethod === 'visit' && (
           <label className="flex items-center gap-2 text-base text-ivory-dim">
             <input type="checkbox" checked={usePoints} onChange={(e) => setUsePoints(e.target.checked)} className="accent-brass" />
-            Measure in points (visits × a points-per-visit multiplier) instead of raw visit count
+            {t('Measure in points (visits × a points-per-visit multiplier) instead of raw visit count')}
           </label>
         )}
 
@@ -162,39 +165,39 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
         <div className="grid grid-cols-2 gap-3">
           {earnMethod === 'spend' && (
             <>
-              <Field label="Currency"><input value={currency} onChange={(e) => setCurrency(e.target.value)} className={inputClass} /></Field>
+              <Field label={t('Currency')}><input value={currency} onChange={(e) => setCurrency(e.target.value)} className={inputClass} /></Field>
               {structure === 'threshold' && (
-                <Field label="Threshold amount"><input type="number" onFocus={(e) => e.target.select()} min={1} value={thresholdAmount} onChange={(e) => setThresholdAmount(Number(e.target.value))} className={inputClass} /></Field>
+                <Field label={t('Threshold amount')}><input type="number" onFocus={(e) => e.target.select()} min={1} value={thresholdAmount} onChange={(e) => setThresholdAmount(Number(e.target.value))} className={inputClass} /></Field>
               )}
             </>
           )}
           {earnMethod === 'visit' && usePoints && (
             <>
-              <Field label="Points per visit"><input type="number" onFocus={(e) => e.target.select()} min={1} value={pointsPerVisit} onChange={(e) => setPointsPerVisit(Number(e.target.value))} className={inputClass} /></Field>
+              <Field label={t('Points per visit')}><input type="number" onFocus={(e) => e.target.select()} min={1} value={pointsPerVisit} onChange={(e) => setPointsPerVisit(Number(e.target.value))} className={inputClass} /></Field>
               {structure === 'threshold' && (
-                <Field label="Redeem threshold"><input type="number" onFocus={(e) => e.target.select()} min={1} value={redeemThreshold} onChange={(e) => setRedeemThreshold(Number(e.target.value))} className={inputClass} /></Field>
+                <Field label={t('Redeem threshold')}><input type="number" onFocus={(e) => e.target.select()} min={1} value={redeemThreshold} onChange={(e) => setRedeemThreshold(Number(e.target.value))} className={inputClass} /></Field>
               )}
             </>
           )}
           {earnMethod === 'visit' && !usePoints && structure === 'threshold' && (
-            <Field label="Visits required"><input type="number" onFocus={(e) => e.target.select()} min={1} value={visitsRequired} onChange={(e) => setVisitsRequired(Number(e.target.value))} className={inputClass} /></Field>
+            <Field label={t('Visits required')}><input type="number" onFocus={(e) => e.target.select()} min={1} value={visitsRequired} onChange={(e) => setVisitsRequired(Number(e.target.value))} className={inputClass} /></Field>
           )}
         </div>
 
         {/* Threshold reward - one, structured */}
         {structure === 'threshold' && (
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Reward type">
+            <Field label={t('Reward type')}>
               <select value={rewardType} onChange={(e) => setRewardType(e.target.value as RewardType)} className={inputClass}>
-                {Object.entries(REWARD_TYPE_LABELS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                {Object.entries(REWARD_TYPE_LABELS).map(([val, label]) => <option key={val} value={val}>{t(label)}</option>)}
               </select>
             </Field>
             {rewardType !== 'manual' && (
-              <Field label={rewardType === 'percentage' ? 'Percentage (%)' : `Amount (${currency || 'AED'})`}>
+              <Field label={rewardType === 'percentage' ? t('Percentage (%)') : `${t('Amount')} (${currency || 'AED'})`}>
                 <input type="number" onFocus={(e) => e.target.select()} min={0} value={rewardValue} onChange={(e) => setRewardValue(Number(e.target.value))} className={inputClass} />
               </Field>
             )}
-            <Field label="Description (shown to customer & staff)">
+            <Field label={t('Description (shown to customer & staff)')}>
               <input value={rewardDescription} onChange={(e) => setRewardDescription(e.target.value)} placeholder="Free coffee" className={inputClass} />
             </Field>
           </div>
@@ -204,75 +207,73 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
         {structure === 'tiered' && (
           <div className="space-y-3">
             <p className="text-base text-ivory-dim">
-              Each tier is an ongoing status unlocked at a {measureLabel} threshold — its reward applies automatically on every bill from then on, never claimed, never resets.
+              {t('Each tier is an ongoing status unlocked at a')} {t(measureLabel)} {t('threshold — its reward applies automatically on every bill from then on, never claimed, never resets.')}
             </p>
             <div className="space-y-2">
               {tiers.map((tier, i) => (
                 <div key={i} className="space-y-2 rounded-lg border border-ink-line p-3">
                   <div className="flex items-end gap-2">
-                    <Field label="Tier name">
+                    <Field label={t('Tier name')}>
                       <input value={tier.name} onChange={(e) => updateTier(i, { name: e.target.value })} placeholder="Silver" className={`${inputClass} w-32`} />
                     </Field>
-                    <Field label={`Threshold (${measureLabel})`}>
+                    <Field label={`${t('Threshold')} (${t(measureLabel)})`}>
                       <input type="number" onFocus={(e) => e.target.select()} min={1} value={tier.threshold} onChange={(e) => updateTier(i, { threshold: Number(e.target.value) })} className={`${inputClass} w-28`} />
                     </Field>
                     <button type="button" onClick={() => removeTier(i)} className="mb-0.5 shrink-0 rounded-lg border border-danger/40 px-3 py-2.5 text-base text-danger hover:bg-danger/10">
-                      Remove
+                      {t('Remove')}
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <Field label="Reward type">
+                    <Field label={t('Reward type')}>
                       <select value={tier.rewardType} onChange={(e) => updateTier(i, { rewardType: e.target.value as RewardType })} className={inputClass}>
-                        {Object.entries(REWARD_TYPE_LABELS).map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                        {Object.entries(REWARD_TYPE_LABELS).map(([val, label]) => <option key={val} value={val}>{t(label)}</option>)}
                       </select>
                     </Field>
                     {tier.rewardType !== 'manual' && (
-                      <Field label={tier.rewardType === 'percentage' ? 'Percentage (%)' : 'Amount'}>
+                      <Field label={tier.rewardType === 'percentage' ? t('Percentage (%)') : t('Amount')}>
                         <input type="number" onFocus={(e) => e.target.select()} min={0} value={tier.rewardValue} onChange={(e) => updateTier(i, { rewardValue: Number(e.target.value) })} className={inputClass} />
                       </Field>
                     )}
-                    <Field label="Description">
+                    <Field label={t('Description')}>
                       <input value={tier.rewardDescription} onChange={(e) => updateTier(i, { rewardDescription: e.target.value })} placeholder="10% off every visit" className={inputClass} />
                     </Field>
                   </div>
                 </div>
               ))}
-              {tiers.length === 0 && <p className="text-base text-ivory-dim">No tiers yet — add at least one below.</p>}
+              {tiers.length === 0 && <p className="text-base text-ivory-dim">{t('No tiers yet — add at least one below.')}</p>}
             </div>
             <button type="button" onClick={addTier} className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10">
-              + Add tier
+              {t('+ Add tier')}
             </button>
           </div>
         )}
 
         {earnMethod === 'visit' && (
-          <Field label="How often a tap counts">
+          <Field label={t('How often a tap counts')}>
             <div className="flex gap-2">
               <select value={cooldownType} onChange={(e) => setCooldownType(e.target.value as CooldownType)} className={inputClass}>
-                <option value="none">Every tap counts</option>
-                <option value="daily">Once per day</option>
-                <option value="weekly">Once per week</option>
-                <option value="custom">Custom</option>
+                <option value="none">{t('Every tap counts')}</option>
+                <option value="daily">{t('Once per day')}</option>
+                <option value="weekly">{t('Once per week')}</option>
+                <option value="custom">{t('Custom')}</option>
               </select>
               {cooldownType === 'custom' && (
-                <input type="number" onFocus={(e) => e.target.select()} min={1} value={cooldownHours} onChange={(e) => setCooldownHours(Number(e.target.value))} placeholder="Hours" className={`${inputClass} w-28`} />
+                <input type="number" onFocus={(e) => e.target.select()} min={1} value={cooldownHours} onChange={(e) => setCooldownHours(Number(e.target.value))} placeholder={t('Hours')} className={`${inputClass} w-28`} />
               )}
             </div>
             <p className="mt-1 text-base text-ivory-dim">
-              A customer tapping again before this passes sees their current
-              progress with "Already counted for today," instead of getting
-              credited twice.
+              {t('A customer tapping again before this passes sees their current progress with "Already counted for today," instead of getting credited twice.')}
             </p>
           </Field>
         )}
 
         <label className="flex items-center gap-2 text-base text-ivory-dim">
           <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
-          Enabled — shows on the public landing page
+          {t('Enabled — shows on the public landing page')}
         </label>
 
         {error && <p className="text-base text-danger">{error}</p>}
-        <PrimaryButton disabled={saving}>{saving ? 'Saving...' : 'Save program'}</PrimaryButton>
+        <PrimaryButton disabled={saving}>{saving ? t('Saving...') : t('Save program')}</PrimaryButton>
       </form>
     </Section>
   );
@@ -281,6 +282,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
 function MemberRow({ member, businessId, program, onChange }: {
   member: LoyaltyMemberRow; businessId: string; program: LoyaltyProgramAdmin; onChange: () => void;
 }) {
+  const { t } = useT();
   const [showAdjust, setShowAdjust] = useState(false);
   const [redeemError, setRedeemError] = useState('');
 
@@ -295,20 +297,20 @@ function MemberRow({ member, businessId, program, onChange }: {
   }
 
   const progressText =
-    program.earn_method === 'spend' ? `${member.total_spend} spent` :
-    program.use_points ? `${member.points} points` :
-    program.structure === 'tiered' ? (member.current_tier || 'No tier') :
-    `${member.visits} visits`;
+    program.earn_method === 'spend' ? `${member.total_spend} ${t('spent')}` :
+    program.use_points ? `${member.points} ${t('points')}` :
+    program.structure === 'tiered' ? (member.current_tier || t('No tier')) :
+    `${member.visits} ${t('visits')}`;
 
   return (
     <div className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-ivory">{member.customers?.phone || 'Unknown'}</span>
+        <span className="text-ivory">{member.customers?.phone || t('Unknown')}</span>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-ivory-dim">{progressText}</span>
-          <ActionButton onClick={() => setShowAdjust((s) => !s)}>Adjust</ActionButton>
+          <ActionButton onClick={() => setShowAdjust((s) => !s)}>{t('Adjust')}</ActionButton>
           {program.structure === 'threshold' && (
-            <ActionButton onClick={handleRedeem}>Redeem</ActionButton>
+            <ActionButton onClick={handleRedeem}>{t('Redeem')}</ActionButton>
           )}
         </div>
       </div>
@@ -321,6 +323,7 @@ function MemberRow({ member, businessId, program, onChange }: {
 function AdjustForm({ businessId, membershipId, program, onDone }: {
   businessId: string; membershipId: string; program: LoyaltyProgramAdmin; onDone: () => void;
 }) {
+  const { t } = useT();
   const [visits, setVisits] = useState(0);
   const [points, setPoints] = useState(0);
   const [spendAmount, setSpendAmount] = useState(0);
@@ -345,8 +348,8 @@ function AdjustForm({ businessId, membershipId, program, onDone }: {
       {isSpend && <Field label="+ Spend"><input type="number" onFocus={(e) => e.target.select()} value={spendAmount} onChange={(e) => setSpendAmount(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
       {isPoints && <Field label="± Points"><input type="number" onFocus={(e) => e.target.select()} value={points} onChange={(e) => setPoints(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
       {!isSpend && !isPoints && <Field label="± Visits"><input type="number" onFocus={(e) => e.target.select()} value={visits} onChange={(e) => setVisits(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>}
-      <Field label="Note"><input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} /></Field>
-      <PrimaryButton>Apply</PrimaryButton>
+      <Field label={t('Note')}><input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} /></Field>
+      <PrimaryButton>{t('Apply')}</PrimaryButton>
     </form>
   );
 }

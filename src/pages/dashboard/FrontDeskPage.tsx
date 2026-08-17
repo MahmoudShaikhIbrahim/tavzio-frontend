@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   listRooms, createRoom, updateRoom, listGuests, createGuest, matchGuestByPhone, updateGuest, getGuestStayHistory, type GuestStayHistory,
   listReservations, createReservation,
@@ -15,6 +16,7 @@ import { Section, Field, inputClass } from '../../components/ui';
 
 export default function FrontDeskPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [tab, setTab] = useState<'reservations' | 'rooms' | 'groups' | 'guests' | 'city-ledger' | 'tourism-dirham'>('reservations');
   const [openFolioForReservation, setOpenFolioForReservation] = useState<string | null>(null);
@@ -25,13 +27,18 @@ export default function FrontDeskPage() {
     return <FolioView businessId={businessId} reservationId={openFolioForReservation} onClose={() => setOpenFolioForReservation(null)} />;
   }
 
+  const tabLabels: Record<typeof tab, string> = {
+    reservations: 'Reservations', rooms: 'Rooms', groups: 'Groups',
+    guests: 'Guests', 'city-ledger': 'City Ledger', 'tourism-dirham': 'Tourism Dirham',
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl text-ivory">Front Desk</h1>
+      <h1 className="font-display text-3xl text-ivory">{t('Front Desk')}</h1>
       <div className="flex gap-2 border-b border-ink-line">
-        {(['reservations', 'rooms', 'groups', 'guests', 'city-ledger', 'tourism-dirham'] as const).map((t) => (
-          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t === 'tourism-dirham' ? 'Tourism Dirham' : t === 'city-ledger' ? 'City Ledger' : t}
+        {(['reservations', 'rooms', 'groups', 'guests', 'city-ledger', 'tourism-dirham'] as const).map((tabKey) => (
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t(tabLabels[tabKey])}
           </button>
         ))}
       </div>
@@ -46,6 +53,7 @@ export default function FrontDeskPage() {
 }
 
 function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOpenFolio: (id: string) => void }) {
+  const { t } = useT();
   const [reservations, setReservations] = useState<HotelReservation[]>([]);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [showNew, setShowNew] = useState(false);
@@ -111,8 +119,8 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
   const availableRooms = rooms.filter((r) => r.status === 'available');
 
   return (
-    <Section title="Reservations" action={
-      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New reservation</button>
+    <Section title={t('Reservations')} action={
+      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New reservation')}</button>
     }>
       {showNew && <NewReservationForm businessId={businessId} rooms={rooms} onDone={() => { setShowNew(false); reload(); }} />}
       {loading && <p className="text-ivory-dim">Loading...</p>}
@@ -121,10 +129,10 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
           <div key={r.id} className="rounded-lg border border-ink-line p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-base text-ivory">{r.hotel_guests?.name || 'Guest'} · {r.check_in_date} → {r.check_out_date}</p>
+                <p className="text-base text-ivory">{r.hotel_guests?.name || t('Guest')} · {r.check_in_date} → {r.check_out_date}</p>
                 <p className="text-sm text-ivory-dim">
-                  {r.hotel_rooms?.room_number ? `Room ${r.hotel_rooms.room_number}` : 'No room assigned'} · {r.adults} adult{r.adults === 1 ? '' : 's'}
-                  {r.children > 0 && `, ${r.children} child${r.children === 1 ? '' : 'ren'}`} · AED {r.rate_aed}/night ·{' '}
+                  {r.hotel_rooms?.room_number ? `${t('Room')} ${r.hotel_rooms.room_number}` : t('No room assigned')} · {r.adults} {r.adults === 1 ? t('adult') : t('adults')}
+                  {r.children > 0 && `, ${r.children} ${r.children === 1 ? t('child') : t('children')}`} · AED {r.rate_aed}/night ·{' '}
                   <span className="text-brass">{r.status}</span>
                 </p>
               </div>
@@ -134,75 +142,79 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
                 )}
                 {r.status === 'checked_in' && (
                   <>
-                    <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-brass hover:underline">View folio</button>
+                    <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-brass hover:underline">{t('View folio')}</button>
                     <ExtendStayControl reservation={r} onExtend={handleExtendStay} />
                     <TransferRoomControl reservation={r} availableRooms={availableRooms} onTransfer={handleTransferRoom} />
-                    <button type="button" onClick={() => handleCheckOut(r.id)} className="text-sm text-brass hover:underline">Check out</button>
+                    <button type="button" onClick={() => handleCheckOut(r.id)} className="text-sm text-brass hover:underline">{t('Check out')}</button>
                   </>
                 )}
-                {r.status === 'checked_out' && <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-ivory-dim hover:underline">View folio</button>}
-                {r.status === 'no_show' && <span className="text-sm text-danger">No-show</span>}
+                {r.status === 'checked_out' && <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-ivory-dim hover:underline">{t('View folio')}</button>}
+                {r.status === 'no_show' && <span className="text-sm text-danger">{t('No-show')}</span>}
               </div>
             </div>
           </div>
         ))}
-        {!loading && reservations.length === 0 && <p className="text-ivory-dim">No reservations yet.</p>}
+        {!loading && reservations.length === 0 && <p className="text-ivory-dim">{t('No reservations yet.')}</p>}
       </div>
     </Section>
   );
 }
 
 function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel, onNoShow }: { reservation: HotelReservation; availableRooms: HotelRoom[]; onCheckIn: (id: string, roomId?: string) => void; onCancel: () => void; onNoShow: () => void }) {
+  const { t } = useT();
   const [roomId, setRoomId] = useState(reservation.room_id || '');
   return (
     <div className="flex items-center gap-2">
       {!reservation.room_id && (
         <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory">
-          <option value="">Assign room...</option>
+          <option value="">{t('Assign room...')}</option>
           {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
         </select>
       )}
-      <button type="button" onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="text-sm text-brass hover:underline">Check in</button>
-      <button type="button" onClick={onNoShow} className="text-sm text-warning hover:underline">No-show</button>
-      <button type="button" onClick={onCancel} className="text-sm text-danger hover:underline">Cancel</button>
+      <button type="button" onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="text-sm text-brass hover:underline">{t('Check in')}</button>
+      <button type="button" onClick={onNoShow} className="text-sm text-warning hover:underline">{t('No-show')}</button>
+      <button type="button" onClick={onCancel} className="text-sm text-danger hover:underline">{t('Cancel')}</button>
     </div>
   );
 }
 
 function ExtendStayControl({ reservation, onExtend }: { reservation: HotelReservation; onExtend: (id: string, newCheckOutDate: string) => void }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
   const [date, setDate] = useState(reservation.check_out_date);
   if (!editing) {
-    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">Extend/shorten stay</button>;
+    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">{t('Extend/shorten stay')}</button>;
   }
   return (
     <div className="flex items-center gap-1.5">
       <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory" />
-      <button type="button" onClick={() => { onExtend(reservation.id, date); setEditing(false); }} className="text-xs text-brass hover:underline">Save</button>
-      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">Cancel</button>
+      <button type="button" onClick={() => { onExtend(reservation.id, date); setEditing(false); }} className="text-xs text-brass hover:underline">{t('Save')}</button>
+      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">{t('Cancel')}</button>
     </div>
   );
 }
 
 function TransferRoomControl({ reservation, availableRooms, onTransfer }: { reservation: HotelReservation; availableRooms: HotelRoom[]; onTransfer: (id: string, newRoomId: string) => void }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
   const [newRoomId, setNewRoomId] = useState('');
   if (!editing) {
-    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">Transfer room</button>;
+    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">{t('Transfer room')}</button>;
   }
   return (
     <div className="flex items-center gap-1.5">
       <select value={newRoomId} onChange={(e) => setNewRoomId(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory">
-        <option value="">Move to...</option>
+        <option value="">{t('Move to...')}</option>
         {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
       </select>
-      <button type="button" disabled={!newRoomId} onClick={() => { onTransfer(reservation.id, newRoomId); setEditing(false); setNewRoomId(''); }} className="text-xs text-brass hover:underline disabled:opacity-40">Move</button>
-      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">Cancel</button>
+      <button type="button" disabled={!newRoomId} onClick={() => { onTransfer(reservation.id, newRoomId); setEditing(false); setNewRoomId(''); }} className="text-xs text-brass hover:underline disabled:opacity-40">{t('Move')}</button>
+      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">{t('Cancel')}</button>
     </div>
   );
 }
 
 function NewReservationForm({ businessId, rooms, onDone }: { businessId: string; rooms: HotelRoom[]; onDone: () => void }) {
+  const { t } = useT();
   const [guests, setGuests] = useState<HotelGuest[]>([]);
   const [guestId, setGuestId] = useState('');
   const [groups, setGroups] = useState<HotelBookingGroup[]>([]);
@@ -271,22 +283,22 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
   return (
     <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-ink-line p-4">
       <div className="flex flex-wrap gap-3">
-        <Field label="Guest">
+        <Field label={t('Guest')}>
           <select value={guestId} onChange={(e) => setGuestId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-            <option value="">New guest...</option>
+            <option value="">{t('New guest')}...</option>
             {guests.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
         </Field>
         {!guestId && (
           <>
-            <Field label="New guest name"><input value={newGuestName} onChange={(e) => setNewGuestName(e.target.value)} className={inputClass} /></Field>
-            <Field label="Phone"><input value={newGuestPhone} onChange={(e) => setNewGuestPhone(e.target.value)} className={inputClass} /></Field>
+            <Field label={t('New guest name')}><input value={newGuestName} onChange={(e) => setNewGuestName(e.target.value)} className={inputClass} /></Field>
+            <Field label={t('Phone')}><input value={newGuestPhone} onChange={(e) => setNewGuestPhone(e.target.value)} className={inputClass} /></Field>
             {phoneMatches.length > 0 && (
               <div className="w-full rounded-lg border border-warning/40 bg-warning/5 p-3">
-                <p className="text-sm text-warning">Already a guest with this phone number:</p>
+                <p className="text-sm text-warning">{t('Already a guest with this phone number:')}</p>
                 {phoneMatches.map((g) => (
                   <button type="button" key={g.id} onClick={() => useExistingGuest(g)} className="mt-1 block text-sm text-brass hover:underline">
-                    Use {g.name}{g.vip ? ' (VIP)' : ''} instead of creating a new profile
+                    {t('Use')} {g.name}{g.vip ? ` (${t('VIP')})` : ''} {t('instead of creating a new profile')}
                   </button>
                 ))}
               </div>
@@ -294,39 +306,39 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
             {/* Optional at booking time - a fast walk-in check-in
                 shouldn't be blocked on passport details, but they're here
                 for hotels that do want to capture them up front. */}
-            <Field label="ID type">
+            <Field label={t('ID type')}>
               <select value={newGuestIdType} onChange={(e) => setNewGuestIdType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                <option value="">Not captured</option>
-                <option value="passport">Passport</option>
-                <option value="emirates_id">Emirates ID</option>
-                <option value="national_id">National ID</option>
+                <option value="">{t('Not captured')}</option>
+                <option value="passport">{t('Passport')}</option>
+                <option value="emirates_id">{t('Emirates ID')}</option>
+                <option value="national_id">{t('National ID')}</option>
               </select>
             </Field>
             {newGuestIdType && (
               <>
-                <Field label="ID number"><input value={newGuestIdNumber} onChange={(e) => setNewGuestIdNumber(e.target.value)} className={inputClass} /></Field>
-                <Field label="Nationality"><input value={newGuestNationality} onChange={(e) => setNewGuestNationality(e.target.value)} className={inputClass} /></Field>
+                <Field label={t('ID number')}><input value={newGuestIdNumber} onChange={(e) => setNewGuestIdNumber(e.target.value)} className={inputClass} /></Field>
+                <Field label={t('Nationality')}><input value={newGuestNationality} onChange={(e) => setNewGuestNationality(e.target.value)} className={inputClass} /></Field>
               </>
             )}
           </>
         )}
       </div>
       <div className="flex flex-wrap gap-3">
-        <Field label="Check-in"><input type="date" value={checkInDate} onChange={(e) => setCheckInDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-        <Field label="Check-out"><input type="date" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-        <Field label="Adults"><input type="number" min={1} onFocus={(e) => e.target.select()} value={adults} onChange={(e) => setAdults(Number(e.target.value))} className={`${inputClass} w-20`} /></Field>
-        <Field label="Room (optional now)">
+        <Field label={t('Check-in')}><input type="date" value={checkInDate} onChange={(e) => setCheckInDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+        <Field label={t('Check-out')}><input type="date" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+        <Field label={t('Adults')}><input type="number" min={1} onFocus={(e) => e.target.select()} value={adults} onChange={(e) => setAdults(Number(e.target.value))} className={`${inputClass} w-20`} /></Field>
+        <Field label={t('Room (optional now)')}>
           <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-            <option value="">Assign later</option>
+            <option value="">{t('Assign later')}</option>
             {rooms.filter((r) => r.status === 'available').map((r) => (
-              <option key={r.id} value={r.id}>{r.room_number}{r.cards?.[0] ? '' : ' (no stand connected)'}</option>
+              <option key={r.id} value={r.id}>{r.room_number}{r.cards?.[0] ? '' : ` ${t('(no stand connected)')}`}</option>
             ))}
           </select>
         </Field>
         {groups.length > 0 && (
-          <Field label="Booking group (optional)">
+          <Field label={t('Booking group (optional)')}>
             <select value={bookingGroupId} onChange={(e) => setBookingGroupId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-              <option value="">Not part of a group</option>
+              <option value="">{t('Not part of a group')}</option>
               {groups.map((g) => <option key={g.id} value={g.id}>{g.group_name}</option>)}
             </select>
           </Field>
@@ -334,13 +346,14 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
       </div>
       {error && <p className="text-base text-danger">{error}</p>}
       <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-        {saving ? 'Creating...' : 'Create reservation'}
+        {saving ? t('Creating...') : t('Create reservation')}
       </button>
     </form>
   );
 }
 
 function RoomsTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -377,7 +390,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleUnlink(cardId: string) {
-    if (!confirm('Disconnect this stand from the room? Tapping it will go back to the normal landing page until reconnected.')) return;
+    if (!confirm(t('Disconnect this stand from the room? Tapping it will go back to the normal landing page until reconnected.'))) return;
     await updateCard(businessId, cardId, { roomId: null });
     reload();
   }
@@ -386,33 +399,35 @@ function RoomsTab({ businessId }: { businessId: string }) {
     available: 'border-success/50 text-success', occupied: 'border-brass text-brass',
     dirty: 'border-warning/50 text-warning', maintenance: 'border-ivory-dim/50 text-ivory-dim', out_of_order: 'border-danger/50 text-danger',
   };
+  const STATUS_LABEL: Record<string, string> = {
+    available: 'Available', occupied: 'Occupied', dirty: 'Dirty', maintenance: 'Maintenance', out_of_order: 'Out of order',
+  };
 
   return (
-    <Section title="Rooms" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add room</button>}>
+    <Section title={t('Rooms')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add room')}</button>}>
       {showAdd && (
         <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
           <div className="flex flex-wrap items-end gap-3">
-            <Field label="Room number"><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
-            <Field label="Type"><input value={roomType} onChange={(e) => setRoomType(e.target.value)} className={inputClass} /></Field>
-            <Field label="Rate/night (AED)"><input type="number" min={0} onFocus={(e) => e.target.select()} value={baseRate} onChange={(e) => setBaseRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
+            <Field label={t('Room number')}><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
+            <Field label={t('Type')}><input value={roomType} onChange={(e) => setRoomType(e.target.value)} className={inputClass} /></Field>
+            <Field label={t('Rate/night (AED)')}><input type="number" min={0} onFocus={(e) => e.target.select()} value={baseRate} onChange={(e) => setBaseRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
           </div>
           {/* Deliberately its own visually distinct row, not the 4th
               field quietly tucked at the end of a flat form - this is
               what actually makes orders, bills, and requests from this
               room's stand work at all, not a cosmetic extra. */}
           <div className="rounded-lg border border-brass/40 bg-ink-soft p-3">
-            <Field label="Connect this room's NFC stand now">
+            <Field label={t("Connect this room's NFC stand now")}>
               <select value={newRoomCardId} onChange={(e) => setNewRoomCardId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                <option value="">I'll connect it later from this list</option>
+                <option value="">{t("I'll connect it later from this list")}</option>
                 {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
               </select>
             </Field>
             <p className="mt-1.5 text-sm text-ivory-dim">
-              A room with no stand connected can't receive orders, bills, or requests until one is - you can
-              always connect it later from the room card below, but doing it now saves a step.
+              {t("A room with no stand connected can't receive orders, bills, or requests until one is - you can always connect it later from the room card below, but doing it now saves a step.")}
             </p>
           </div>
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
         </form>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -425,15 +440,15 @@ function RoomsTab({ businessId }: { businessId: string }) {
             <div key={r.id} className={`rounded-lg border p-3 ${STATUS_COLOR[r.status]}`}>
               <div className="flex items-start justify-between gap-1">
                 <p className="text-base text-ivory">{r.room_number}</p>
-                <button type="button" onClick={() => setEditingRoomId(r.id)} className="text-xs text-brass hover:underline">Edit</button>
+                <button type="button" onClick={() => setEditingRoomId(r.id)} className="text-xs text-brass hover:underline">{t('Edit')}</button>
               </div>
-              <p className="text-sm capitalize">{r.status}</p>
+              <p className="text-sm">{t(STATUS_LABEL[r.status] || r.status)}</p>
               <p className="text-xs text-ivory-dim">{r.room_type} · AED {r.base_rate_aed}/night</p>
 
               {connectedCard ? (
                 <div className="mt-2 flex items-center justify-between gap-1 border-t border-current/20 pt-2 text-xs">
-                  <span className="text-ivory-dim">Stand: {connectedCard.label || connectedCard.uid.slice(0, 6)}</span>
-                  <button type="button" onClick={() => handleUnlink(connectedCard.id)} className="text-danger hover:underline">Disconnect</button>
+                  <span className="text-ivory-dim">{t('Stand:')} {connectedCard.label || connectedCard.uid.slice(0, 6)}</span>
+                  <button type="button" onClick={() => handleUnlink(connectedCard.id)} className="text-danger hover:underline">{t('Disconnect')}</button>
                 </div>
               ) : linkingRoomId === r.id ? (
                 <div className="mt-2 border-t border-current/20 pt-2">
@@ -443,25 +458,26 @@ function RoomsTab({ businessId }: { businessId: string }) {
                     defaultValue=""
                     className="w-full rounded border border-ink-line bg-ink px-1.5 py-1 text-xs text-ivory"
                   >
-                    <option value="" disabled>Select stand...</option>
+                    <option value="" disabled>{t('Select stand...')}</option>
                     {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
                   </select>
                 </div>
               ) : (
                 <button type="button" onClick={() => setLinkingRoomId(r.id)} className="mt-2 w-full border-t border-current/20 pt-2 text-left text-xs text-brass hover:underline">
-                  + Connect stand
+                  {t('Connect stand')}
                 </button>
               )}
             </div>
           );
         })}
-        {rooms.length === 0 && <p className="text-ivory-dim">No rooms yet.</p>}
+        {rooms.length === 0 && <p className="text-ivory-dim">{t('No rooms yet.')}</p>}
       </div>
     </Section>
   );
 }
 
 function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: string; room: HotelRoom; onDone: () => void; onCancel: () => void }) {
+  const { t } = useT();
   const [roomNumber, setRoomNumber] = useState(room.room_number);
   const [roomType, setRoomType] = useState(room.room_type);
   const [baseRate, setBaseRate] = useState(room.base_rate_aed);
@@ -483,23 +499,23 @@ function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: stri
 
   return (
     <div className="space-y-2 rounded-lg border border-brass/40 bg-ink-soft p-3">
-      <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder="Room number" className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-      <input value={roomType} onChange={(e) => setRoomType(e.target.value)} placeholder="Type" className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-      <input type="number" min={0} value={baseRate} onFocus={(e) => e.target.select()} onChange={(e) => setBaseRate(Number(e.target.value))} placeholder="Rate/night" className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+      <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder={t('Room number')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+      <input value={roomType} onChange={(e) => setRoomType(e.target.value)} placeholder={t('Type')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
+      <input type="number" min={0} value={baseRate} onFocus={(e) => e.target.select()} onChange={(e) => setBaseRate(Number(e.target.value))} placeholder={t('Rate/night (AED)')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
       <select value={status} onChange={(e) => setStatus(e.target.value as HotelRoom['status'])} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory">
-        <option value="available">Available</option>
-        <option value="occupied">Occupied</option>
-        <option value="dirty">Dirty</option>
-        <option value="maintenance">Maintenance</option>
-        <option value="out_of_order">Out of order</option>
+        <option value="available">{t('Available')}</option>
+        <option value="occupied">{t('Occupied')}</option>
+        <option value="dirty">{t('Dirty')}</option>
+        <option value="maintenance">{t('Maintenance')}</option>
+        <option value="out_of_order">{t('Out of order')}</option>
       </select>
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex gap-2">
         <button type="button" onClick={handleSave} disabled={saving} className="flex-1 rounded bg-brass px-2 py-1.5 text-xs font-medium text-ink disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('Saving...') : t('Save')}
         </button>
         <button type="button" onClick={onCancel} className="flex-1 rounded border border-ink-line px-2 py-1.5 text-xs text-ivory-dim">
-          Cancel
+          {t('Cancel')}
         </button>
       </div>
     </div>
@@ -509,6 +525,7 @@ function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: stri
 
 
 function FolioView({ businessId, reservationId, onClose }: { businessId: string; reservationId: string; onClose: () => void }) {
+  const { t } = useT();
   const [folios, setFolios] = useState<HotelFolio[]>([]);
   const [selectedIds, setSelectedIds] = useState<Record<string, string[]>>({});
   // Which folio's split confirmation is currently open, if any - a
@@ -552,11 +569,11 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
     reload();
   }
 
-  if (folios.length === 0) return <p className="text-ivory-dim">Loading folio...</p>;
+  if (folios.length === 0) return <p className="text-ivory-dim">{t('Loading folio...')}</p>;
 
   return (
     <div className="space-y-6">
-      <button type="button" onClick={onClose} className="text-sm text-brass hover:underline">← Back to reservations</button>
+      <button type="button" onClick={onClose} className="text-sm text-brass hover:underline">{t('← Back to reservations')}</button>
       {folios.map((folio) => (
         <FolioCard
           key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)}
@@ -576,6 +593,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
   businessId: string; folio: HotelFolio; otherFolios: HotelFolio[]; selectedIds: string[]; onToggleCharge: (chargeId: string) => void; onSelectAll: () => void; onSplit: () => void; onReload: () => void;
   splitConfirmOpen: boolean; onConfirmSplit: (companyName: string) => void; onCancelSplit: () => void;
 }) {
+  const { t } = useT();
   const [splitCompanyName, setSplitCompanyName] = useState('');
   const [chargeDesc, setChargeDesc] = useState('');
   const [chargeAmount, setChargeAmount] = useState(0);
@@ -642,10 +660,10 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
   }
 
   const isSplit = !folio.is_primary;
-  const payerLabel = folio.payer_type === 'company' ? `Company · ${folio.company_name}` : 'Guest';
-  const statusBadge = folio.status === 'closed' ? { text: 'Closed', cls: 'border-ink-line text-ivory-dim' }
-    : folio.status === 'billed_to_account' ? { text: 'Billed to account', cls: 'border-warning/50 text-warning' }
-    : { text: 'Open', cls: 'border-success/50 text-success' };
+  const payerLabel = folio.payer_type === 'company' ? `${t('Company ·')} ${folio.company_name}` : t('Guest');
+  const statusBadge = folio.status === 'closed' ? { text: t('Closed'), cls: 'border-ink-line text-ivory-dim' }
+    : folio.status === 'billed_to_account' ? { text: t('Billed to account'), cls: 'border-warning/50 text-warning' }
+    : { text: t('Open'), cls: 'border-success/50 text-success' };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-ink-line bg-ink-soft">
@@ -654,7 +672,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-line bg-ink px-5 py-4">
         <div className="flex flex-wrap items-center gap-2.5">
           <span className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider ${isSplit ? 'border-brass/50 text-brass' : 'border-ivory-dim/30 text-ivory-dim'}`}>
-            {isSplit ? 'Split folio' : 'Primary folio'}
+            {isSplit ? t('Split folio') : t('Primary folio')}
           </span>
           <span className="font-display text-lg text-ivory">{payerLabel}</span>
           <span className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider ${statusBadge.cls}`}>
@@ -662,20 +680,20 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
           </span>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-ivory-dim/60">Balance</p>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-ivory-dim/60">{t('Balance')}</p>
           <p className={`font-mono text-2xl tabular-nums ${folio.balance > 0 ? 'text-warning' : 'text-success'}`}>AED {folio.balance.toFixed(2)}</p>
         </div>
       </div>
 
       <div className="p-5">
         {folio.status === 'billed_to_account' && (
-          <p className="mb-3 text-sm text-warning">This folio's balance was billed to {folio.company_name || 'the company account'} at checkout - see City Ledger to track collection.</p>
+          <p className="mb-3 text-sm text-warning">{t("This folio's balance was billed to")} {folio.company_name || t('the company account')} {t('at checkout - see City Ledger to track collection.')}</p>
         )}
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Charges &amp; payments</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">{t('Charges & payments')}</p>
           {folio.status === 'open' && folio.charges.length > 0 && (
             <button type="button" onClick={onSelectAll} className="text-xs text-brass hover:underline">
-              {selectedIds.length === folio.charges.length ? 'Clear selection' : 'Select all'}
+              {selectedIds.length === folio.charges.length ? t('Clear selection') : t('Select all')}
             </button>
           )}
         </div>
@@ -692,12 +710,12 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                   <span className={`font-mono tabular-nums ${c.amount_aed < 0 ? 'text-success' : 'text-ivory'}`}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
                   {folio.status === 'open' && otherFolios.length > 0 && (
                     <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="text-xs text-brass hover:underline">
-                      Transfer
+                      {t('Transfer')}
                     </button>
                   )}
                   {folio.status === 'open' && (
                     <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline">
-                      Delete
+                      {t('Delete')}
                     </button>
                   )}
                 </span>
@@ -709,88 +727,88 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                     defaultValue=""
                     className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory"
                   >
-                    <option value="" disabled>Move to which folio...</option>
+                    <option value="" disabled>{t('Move to which folio...')}</option>
                     {otherFolios.map((f) => (
-                      <option key={f.id} value={f.id}>{f.is_primary ? 'Primary folio' : f.payer_type === 'company' ? `Company: ${f.company_name}` : 'Guest folio'}</option>
+                      <option key={f.id} value={f.id}>{f.is_primary ? t('Primary folio') : f.payer_type === 'company' ? `${t('Company:')} ${f.company_name}` : t('Guest folio')}</option>
                     ))}
                   </select>
                 </div>
               )}
             </div>
           ))}
-          {folio.charges.length === 0 && <p className="px-3 py-4 text-sm italic text-ivory-dim">No charges yet.</p>}
+          {folio.charges.length === 0 && <p className="px-3 py-4 text-sm italic text-ivory-dim">{t('No charges yet.')}</p>}
         </div>
 
         {folio.status === 'open' && (
           <>
-            <p className="mt-5 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">Actions</p>
+            <p className="mt-5 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">{t('Actions')}</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <form onSubmit={handleAddCharge} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink p-4">
                 <div>
-                  <p className="text-sm font-medium text-ivory">Add charge</p>
-                  <p className="text-xs text-ivory-dim/70">Bill the guest for something extra (room service, minibar, damage, etc.)</p>
+                  <p className="text-sm font-medium text-ivory">{t('Add charge')}</p>
+                  <p className="text-xs text-ivory-dim/70">{t('Bill the guest for something extra (room service, minibar, damage, etc.)')}</p>
                 </div>
-                <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="What's it for?" className={inputClass} />
-                <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Add charge</button>
+                <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder={t("What's it for?")} className={inputClass} />
+                <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Add charge')}</button>
               </form>
               <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink p-4">
                 <div>
-                  <p className="text-sm font-medium text-ivory">Record payment</p>
-                  <p className="text-xs text-ivory-dim/70">Log money already collected - cash, card machine, any method</p>
+                  <p className="text-sm font-medium text-ivory">{t('Record payment')}</p>
+                  <p className="text-xs text-ivory-dim/70">{t('Log money already collected - cash, card machine, any method')}</p>
                 </div>
-                <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record payment</button>
+                <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">{t('Record payment')}</button>
               </form>
               <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink p-4">
                 <div>
-                  <p className="text-sm font-medium text-ivory">Record deposit</p>
-                  <p className="text-xs text-ivory-dim/70">Log an advance or security deposit held against the stay</p>
+                  <p className="text-sm font-medium text-ivory">{t('Record deposit')}</p>
+                  <p className="text-xs text-ivory-dim/70">{t('Log an advance or security deposit held against the stay')}</p>
                 </div>
-                <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">Record deposit</button>
+                <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">{t('Record deposit')}</button>
               </form>
               <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-danger/60 bg-ink p-4">
                 <div>
-                  <p className="text-sm font-medium text-ivory">Issue refund</p>
-                  <p className="text-xs text-ivory-dim/70">Send money back to the guest - increases the balance owed</p>
+                  <p className="text-sm font-medium text-ivory">{t('Issue refund')}</p>
+                  <p className="text-xs text-ivory-dim/70">{t('Send money back to the guest - increases the balance owed')}</p>
                 </div>
-                <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder="Amount AED" className={`${inputClass} font-mono`} />
-                <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">Issue refund</button>
+                <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
+                <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder={t('Reason (required)')} className={inputClass} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">{t('Issue refund')}</button>
               </form>
               <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink p-4">
                 <div>
-                  <p className="text-sm font-medium text-ivory">Manual adjustment</p>
-                  <p className="text-xs text-ivory-dim/70">Correct an error - positive adds to the balance, negative credits it</p>
+                  <p className="text-sm font-medium text-ivory">{t('Manual adjustment')}</p>
+                  <p className="text-xs text-ivory-dim/70">{t('Correct an error - positive adds to the balance, negative credits it')}</p>
                 </div>
-                <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder="Amount AED (+/-)" className={`${inputClass} font-mono`} />
-                <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder="Description (required)" className={inputClass} />
-                <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder="Reason (required)" className={inputClass} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">Apply adjustment</button>
+                <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder={t('Amount AED (+/-)')} className={`${inputClass} font-mono`} />
+                <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder={t('Description (required)')} className={inputClass} />
+                <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder={t('Reason (required)')} className={inputClass} />
+                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Apply adjustment')}</button>
               </form>
             </div>
             <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="mt-3 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
-              Split {selectedIds.length > 0 ? `${selectedIds.length} selected charge(s)` : 'selected charges'} into new folio
+              {t('Split')} {selectedIds.length > 0 ? `${selectedIds.length} ${t('selected charge(s)')}` : t('selected charges')} {t('into new folio')}
             </button>
             {splitConfirmOpen && (
               <div className="mt-2 space-y-2 rounded-lg border border-brass/40 bg-ink p-3">
                 <p className="text-sm text-ivory">
-                  Moving {selectedIds.length} charge{selectedIds.length === 1 ? '' : 's'} (<span className="font-mono">AED{' '}
-                  {folio.charges.filter((c) => selectedIds.includes(c.id)).reduce((sum, c) => sum + c.amount_aed, 0).toFixed(2)}</span>) into a new, separate folio.
+                  {t('Moving')} {selectedIds.length} {selectedIds.length === 1 ? t('charge') : t('charges')} (<span className="font-mono">AED{' '}
+                  {folio.charges.filter((c) => selectedIds.includes(c.id)).reduce((sum, c) => sum + c.amount_aed, 0).toFixed(2)}</span>) {t('into a new, separate folio.')}
                 </p>
                 <input
                   value={splitCompanyName}
                   onChange={(e) => setSplitCompanyName(e.target.value)}
-                  placeholder="Company name (leave blank if this is guest-paid)"
+                  placeholder={t('Company name (leave blank if this is guest-paid)')}
                   className={inputClass}
                 />
                 <div className="flex gap-2">
                   <button type="button" onClick={() => { onConfirmSplit(splitCompanyName); setSplitCompanyName(''); }} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">
-                    Confirm split
+                    {t('Confirm split')}
                   </button>
                   <button type="button" onClick={() => { onCancelSplit(); setSplitCompanyName(''); }} className="text-sm text-ivory-dim">
-                    Cancel
+                    {t('Cancel')}
                   </button>
                 </div>
               </div>
@@ -803,6 +821,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
 }
 
 function GuestsTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [guests, setGuests] = useState<HotelGuest[]>([]);
   const [search, setSearch] = useState('');
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
@@ -820,25 +839,26 @@ function GuestsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="Guests">
+    <Section title={t('Guests')}>
       <input
-        value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name..."
+        value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search by name...')}
         className="w-full max-w-sm rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
       />
       <div className="grid gap-2 sm:grid-cols-2">
         {guests.map((g) => (
           <button type="button" key={g.id} onClick={() => setSelectedGuestId(g.id)} className="rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40">
-            <p className="text-base text-ivory">{g.name}{g.vip && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">VIP</span>}</p>
-            <p className="text-sm text-ivory-dim">{[g.phone, g.email].filter(Boolean).join(' · ') || 'No contact details'}</p>
+            <p className="text-base text-ivory">{g.name}{g.vip && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('VIP')}</span>}</p>
+            <p className="text-sm text-ivory-dim">{[g.phone, g.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
           </button>
         ))}
-        {guests.length === 0 && <p className="text-ivory-dim">No guests found.</p>}
+        {guests.length === 0 && <p className="text-ivory-dim">{t('No guests found.')}</p>}
       </div>
     </Section>
   );
 }
 
 function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: string; guest: HotelGuest; onBack: () => void; onSaved: (g: HotelGuest) => void }) {
+  const { t } = useT();
   const [history, setHistory] = useState<GuestStayHistory | null>(null);
   const [vip, setVip] = useState(guest.vip);
   const [roomPreference, setRoomPreference] = useState(guest.room_preference);
@@ -860,50 +880,50 @@ function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: strin
 
   return (
     <div className="space-y-6">
-      <button type="button" onClick={onBack} className="text-sm text-brass hover:underline">&larr; Back to guests</button>
+      <button type="button" onClick={onBack} className="text-sm text-brass hover:underline">{t('← Back to guests')}</button>
 
       <Section title={guest.name}>
-        <p className="text-sm text-ivory-dim">{[guest.phone, guest.email].filter(Boolean).join(' · ') || 'No contact details'}{guest.nationality && ` · ${guest.nationality}`}</p>
+        <p className="text-sm text-ivory-dim">{[guest.phone, guest.email].filter(Boolean).join(' · ') || t('No contact details')}{guest.nationality && ` · ${guest.nationality}`}</p>
         {history && (
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Total stays</p>
+              <p className="text-xs text-ivory-dim">{t('Total stays')}</p>
               <p className="text-xl text-ivory">{history.totalStays}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Total nights</p>
+              <p className="text-xs text-ivory-dim">{t('Total nights')}</p>
               <p className="text-xl text-ivory">{history.totalNights}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Lifetime spend</p>
+              <p className="text-xs text-ivory-dim">{t('Lifetime spend')}</p>
               <p className="text-xl text-brass">AED {history.lifetimeSpendAed.toFixed(2)}</p>
             </div>
           </div>
         )}
       </Section>
 
-      <Section title="Preferences">
+      <Section title={t('Preferences')}>
         <label className="flex items-center gap-2 text-sm text-ivory">
           <input type="checkbox" checked={vip} onChange={(e) => setVip(e.target.checked)} className="accent-brass" />
-          VIP guest
+          {t('VIP guest')}
         </label>
-        <Field label="Room preference"><input value={roomPreference} onChange={(e) => setRoomPreference(e.target.value)} placeholder="e.g. High floor, away from elevator" className={inputClass} /></Field>
-        <Field label="Dietary notes"><input value={dietaryNotes} onChange={(e) => setDietaryNotes(e.target.value)} placeholder="e.g. Vegetarian, nut allergy" className={inputClass} /></Field>
-        <Field label="General notes"><input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Room preference')}><input value={roomPreference} onChange={(e) => setRoomPreference(e.target.value)} placeholder="e.g. High floor, away from elevator" className={inputClass} /></Field>
+        <Field label={t('Dietary notes')}><input value={dietaryNotes} onChange={(e) => setDietaryNotes(e.target.value)} placeholder="e.g. Vegetarian, nut allergy" className={inputClass} /></Field>
+        <Field label={t('General notes')}><input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} /></Field>
         <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save preferences'}
+          {saving ? t('Saving...') : t('Save preferences')}
         </button>
       </Section>
 
-      <Section title="Stay history">
+      <Section title={t('Stay history')}>
         <div className="space-y-2">
           {history?.stays.map((s) => (
             <div key={s.reservationId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
-              <span className="text-ivory">{s.checkInDate} → {s.checkOutDate} · {s.nights} night{s.nights === 1 ? '' : 's'}{s.roomNumber ? ` · Room ${s.roomNumber}` : ''}</span>
+              <span className="text-ivory">{s.checkInDate} → {s.checkOutDate} · {s.nights} {s.nights === 1 ? t('night') : t('nights')}{s.roomNumber ? ` · ${t('Room')} ${s.roomNumber}` : ''}</span>
               <span className="text-ivory-dim">{s.status.replace('_', ' ')}{s.status === 'checked_out' ? ` · AED ${s.spendAed.toFixed(2)}` : ''}</span>
             </div>
           ))}
-          {history && history.stays.length === 0 && <p className="text-ivory-dim">No past stays.</p>}
+          {history && history.stays.length === 0 && <p className="text-ivory-dim">{t('No past stays.')}</p>}
         </div>
       </Section>
     </div>
@@ -911,6 +931,7 @@ function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: strin
 }
 
 function CityLedgerTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [filter, setFilter] = useState<'unpaid' | 'paid'>('unpaid');
   const [entries, setEntries] = useState<CityLedgerEntry[]>([]);
   const [totalOutstanding, setTotalOutstanding] = useState(0);
@@ -930,18 +951,18 @@ function CityLedgerTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="City Ledger" action={
+    <Section title={t('City Ledger')} action={
       <div className="flex rounded-lg border border-ink-line">
-        <button type="button" onClick={() => setFilter('unpaid')} className={`px-3 py-1.5 text-sm ${filter === 'unpaid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>Outstanding</button>
-        <button type="button" onClick={() => setFilter('paid')} className={`px-3 py-1.5 text-sm ${filter === 'paid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>Settled</button>
+        <button type="button" onClick={() => setFilter('unpaid')} className={`px-3 py-1.5 text-sm ${filter === 'unpaid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Outstanding')}</button>
+        <button type="button" onClick={() => setFilter('paid')} className={`px-3 py-1.5 text-sm ${filter === 'paid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Settled')}</button>
       </div>
     }>
       <p className="text-sm text-ivory-dim">
-        Company-billed folios closed at checkout without payment - what's owed to you by corporate accounts, and what's already been collected.
+        {t("Company-billed folios closed at checkout without payment - what's owed to you by corporate accounts, and what's already been collected.")}
       </p>
       {filter === 'unpaid' && (
         <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
-          <p className="text-xs uppercase tracking-wide text-brass">Total outstanding</p>
+          <p className="text-xs uppercase tracking-wide text-brass">{t('Total outstanding')}</p>
           <p className="mt-1 font-display text-2xl text-ivory">AED {totalOutstanding.toFixed(2)}</p>
         </div>
       )}
@@ -952,33 +973,34 @@ function CityLedgerTab({ businessId }: { businessId: string }) {
               <div>
                 <p className="text-base text-ivory">{e.companyName}{e.guestName ? ` · ${e.guestName}` : ''}</p>
                 <p className="text-sm text-ivory-dim">
-                  Billed {new Date(e.billedAt).toLocaleDateString('en-GB')}
-                  {e.daysOutstanding != null && ` · ${e.daysOutstanding} day${e.daysOutstanding === 1 ? '' : 's'} outstanding`}
-                  {e.paidAt && ` · Settled ${new Date(e.paidAt).toLocaleDateString('en-GB')}${e.paymentReference ? ` (ref: ${e.paymentReference})` : ''}`}
+                  {t('Billed')} {new Date(e.billedAt).toLocaleDateString('en-GB')}
+                  {e.daysOutstanding != null && ` · ${e.daysOutstanding} ${e.daysOutstanding === 1 ? t('day') : t('days')} ${t('outstanding')}`}
+                  {e.paidAt && ` · ${t('Settled')} ${new Date(e.paidAt).toLocaleDateString('en-GB')}${e.paymentReference ? ` ${t('(ref:')} ${e.paymentReference})` : ''}`}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-brass">AED {e.amountAed.toFixed(2)}</span>
                 {!e.paidAt && (
-                  <button type="button" onClick={() => setSettlingId(settlingId === e.id ? null : e.id)} className="text-sm text-brass hover:underline">Mark settled</button>
+                  <button type="button" onClick={() => setSettlingId(settlingId === e.id ? null : e.id)} className="text-sm text-brass hover:underline">{t('Mark settled')}</button>
                 )}
               </div>
             </div>
             {settlingId === e.id && (
               <div className="mt-2 flex items-center gap-2 border-t border-ink-line pt-2">
-                <input value={reference} onChange={(ev) => setReference(ev.target.value)} placeholder="Payment reference (optional)" className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
-                <button type="button" onClick={() => handleSettle(e.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Confirm</button>
+                <input value={reference} onChange={(ev) => setReference(ev.target.value)} placeholder={t('Payment reference (optional)')} className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
+                <button type="button" onClick={() => handleSettle(e.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">{t('Confirm')}</button>
               </div>
             )}
           </div>
         ))}
-        {entries.length === 0 && <p className="text-ivory-dim">{filter === 'unpaid' ? 'Nothing outstanding.' : 'Nothing settled yet.'}</p>}
+        {entries.length === 0 && <p className="text-ivory-dim">{filter === 'unpaid' ? t('Nothing outstanding.') : t('Nothing settled yet.')}</p>}
       </div>
     </Section>
   );
 }
 
 function TourismDirhamTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [from, setFrom] = useState(() => {
     const d = new Date();
     d.setDate(1); // first of this month - the natural default range for a DTCM-style report
@@ -998,41 +1020,41 @@ function TourismDirhamTab({ businessId }: { businessId: string }) {
 
   return (
     <Section
-      title="Tourism Dirham"
+      title={t('Tourism Dirham')}
       action={
         <div className="flex items-center gap-2">
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
-          <span className="text-sm text-ivory-dim">to</span>
+          <span className="text-sm text-ivory-dim">{t('to')}</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
         </div>
       }
     >
       <p className="text-base text-ivory-dim">
-        Every Tourism Dirham fee charged at check-in, for DTCM reporting - collected automatically per room-night
-        once a rate is set in Business Profile. Set to AED 0 there if this doesn't apply to you.
+        {t("Every Tourism Dirham fee charged at check-in, for DTCM reporting - collected automatically per room-night once a rate is set in Business Profile. Set to AED 0 there if this doesn't apply to you.")}
       </p>
       <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
-        <p className="text-xs uppercase tracking-wide text-brass">Total collected</p>
-        <p className="mt-1 font-display text-2xl text-ivory">AED {total.toFixed(2)} <span className="text-base text-ivory-dim">({charges.length} charges)</span></p>
+        <p className="text-xs uppercase tracking-wide text-brass">{t('Total collected')}</p>
+        <p className="mt-1 font-display text-2xl text-ivory">AED {total.toFixed(2)} <span className="text-base text-ivory-dim">({charges.length} {t('charges)')}</span></p>
       </div>
       <div className="space-y-2">
         {charges.map((c) => (
           <div key={c.id} className="flex items-center justify-between text-sm text-ivory-dim">
             <span>
-              {c.hotel_folios?.hotel_reservations?.hotel_rooms?.room_number ? `Room ${c.hotel_folios.hotel_reservations.hotel_rooms.room_number}` : c.description}
+              {c.hotel_folios?.hotel_reservations?.hotel_rooms?.room_number ? `${t('Room')} ${c.hotel_folios.hotel_reservations.hotel_rooms.room_number}` : c.description}
               {c.hotel_folios?.hotel_reservations?.hotel_guests?.name ? ` · ${c.hotel_folios.hotel_reservations.hotel_guests.name}` : ''}
             </span>
             <span>{new Date(c.created_at).toLocaleDateString('en-GB')}</span>
             <span className="text-ivory">AED {Number(c.amount_aed).toFixed(2)}</span>
           </div>
         ))}
-        {charges.length === 0 && <p className="text-ivory-dim">No Tourism Dirham charges in this range.</p>}
+        {charges.length === 0 && <p className="text-ivory-dim">{t('No Tourism Dirham charges in this range.')}</p>}
       </div>
     </Section>
   );
 }
 
 function BookingGroupsTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [groups, setGroups] = useState<HotelBookingGroup[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -1058,27 +1080,26 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(g: HotelBookingGroup) {
-    if (!confirm(`Delete "${g.group_name}"? Its reservations stay as they are, just no longer grouped together.`)) return;
+    if (!confirm(`${t('Delete "')}${g.group_name}${t('"? Its reservations stay as they are, just no longer grouped together.')}`)) return;
     await deleteBookingGroup(businessId, g.id);
     reload();
   }
 
   return (
     <Section
-      title="Booking Groups"
-      action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add group</button>}
+      title={t('Booking Groups')}
+      action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add group')}</button>}
     >
       <p className="text-base text-ivory-dim">
-        A wedding party, a corporate block - link several reservations under one group so they can be tracked
-        together. Create the group here, then pick it from "Booking group" when creating each reservation.
+        {t('A wedding party, a corporate block - link several reservations under one group so they can be tracked together. Create the group here, then pick it from "Booking group" when creating each reservation.')}
       </p>
       {showAdd && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
-          <Field label="Group name"><input value={groupName} onChange={(e) => setGroupName(e.target.value)} required placeholder="Al Mansoori Wedding" className={inputClass} /></Field>
-          <Field label="Contact name"><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
-          <Field label="Contact phone"><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
+          <Field label={t('Group name')}><input value={groupName} onChange={(e) => setGroupName(e.target.value)} required placeholder="Al Mansoori Wedding" className={inputClass} /></Field>
+          <Field label={t('Contact name')}><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
+          <Field label={t('Contact phone')}><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
           <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-            {saving ? 'Adding...' : 'Add'}
+            {saving ? t('Adding...') : t('Add')}
           </button>
         </form>
       )}
@@ -1093,9 +1114,9 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-base text-ivory">{g.group_name}</p>
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-ivory-dim">{reservations.length} room{reservations.length === 1 ? '' : 's'}</span>
-                  <button type="button" onClick={() => setEditingId(g.id)} className="text-brass hover:underline">Edit</button>
-                  <button type="button" onClick={() => handleDelete(g)} className="text-danger hover:underline">Delete</button>
+                  <span className="text-ivory-dim">{reservations.length} {reservations.length === 1 ? t('room') : t('rooms')}</span>
+                  <button type="button" onClick={() => setEditingId(g.id)} className="text-brass hover:underline">{t('Edit')}</button>
+                  <button type="button" onClick={() => handleDelete(g)} className="text-danger hover:underline">{t('Delete')}</button>
                 </div>
               </div>
               {(g.contact_name || g.contact_phone) && (
@@ -1105,8 +1126,8 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
                 <div className="mt-2 space-y-1 border-t border-ink-line pt-2 text-sm">
                   {reservations.map((r) => (
                     <div key={r.id} className="flex items-center justify-between text-ivory-dim">
-                      <span>{r.hotel_guests?.name || 'Unassigned'} {r.hotel_rooms?.room_number ? `· Room ${r.hotel_rooms.room_number}` : ''}</span>
-                      <span className="capitalize">{r.status.replace('_', ' ')}</span>
+                      <span>{r.hotel_guests?.name || t('Unassigned')} {r.hotel_rooms?.room_number ? `· ${t('Room')} ${r.hotel_rooms.room_number}` : ''}</span>
+                      <span>{r.status.replace('_', ' ')}</span>
                     </div>
                   ))}
                 </div>
@@ -1114,7 +1135,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
             </div>
           );
         })}
-        {groups.length === 0 && <p className="text-ivory-dim">No booking groups yet.</p>}
+        {groups.length === 0 && <p className="text-ivory-dim">{t('No booking groups yet.')}</p>}
       </div>
     </Section>
   );
@@ -1123,6 +1144,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
 function BookingGroupEditForm({ businessId, group, onDone, onCancel }: {
   businessId: string; group: HotelBookingGroup; onDone: () => void; onCancel: () => void;
 }) {
+  const { t } = useT();
   const [groupName, setGroupName] = useState(group.group_name);
   const [contactName, setContactName] = useState(group.contact_name || '');
   const [contactPhone, setContactPhone] = useState(group.contact_phone || '');
@@ -1142,18 +1164,18 @@ function BookingGroupEditForm({ businessId, group, onDone, onCancel }: {
 
   return (
     <div className="space-y-3 rounded-lg border border-brass/40 bg-ink-soft p-4">
-      <Field label="Group name"><input value={groupName} onChange={(e) => setGroupName(e.target.value)} className={inputClass} /></Field>
+      <Field label={t('Group name')}><input value={groupName} onChange={(e) => setGroupName(e.target.value)} className={inputClass} /></Field>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Contact name"><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
-        <Field label="Contact phone"><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
-        <Field label="Contact email"><input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Contact name')}><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Contact phone')}><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Contact email')}><input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className={inputClass} /></Field>
       </div>
-      <Field label="Notes"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} /></Field>
+      <Field label={t('Notes')}><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} /></Field>
       <div className="flex items-center gap-3">
         <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save changes'}
+          {saving ? t('Saving...') : t('Save changes')}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">Cancel</button>
+        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>
       </div>
     </div>
   );

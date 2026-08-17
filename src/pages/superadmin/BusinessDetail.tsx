@@ -416,6 +416,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
 function ContractForm({ businessId, onDone, onReload }: { businessId: string; onDone: () => void; onReload: () => void }) {
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [paymentFrequency, setPaymentFrequency] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [planType, setPlanType] = useState<'connect' | 'full'>('connect');
   const [standsCount, setStandsCount] = useState(0);
   const [systemFeeOverride, setSystemFeeOverride] = useState('');
   const [cardPriceOverride, setCardPriceOverride] = useState('');
@@ -430,6 +431,7 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
       await createContract(businessId, {
         startDate,
         paymentFrequency,
+        planType,
         standsCount,
         systemFeeOverride: systemFeeOverride ? Number(systemFeeOverride) : undefined,
         cardPriceOverride: cardPriceOverride ? Number(cardPriceOverride) : undefined,
@@ -456,13 +458,19 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
             <option value="yearly">Yearly</option>
           </select>
         </Field>
+        <Field label="Plan">
+          <select value={planType} onChange={(e) => setPlanType(e.target.value as typeof planType)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <option value="connect">Tavzio Connect</option>
+            <option value="full">Tavzio Full</option>
+          </select>
+        </Field>
         <Field label="Number of stands">
           <input type="number" min={0} onFocus={(e) => e.target.select()} value={standsCount} onChange={(e) => setStandsCount(Number(e.target.value))} className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
         </Field>
       </div>
       <div className="flex flex-wrap gap-4">
         <Field label="System fee override (AED, optional)">
-          <input value={systemFeeOverride} onChange={(e) => setSystemFeeOverride(e.target.value)} placeholder="200" className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
+          <input value={systemFeeOverride} onChange={(e) => setSystemFeeOverride(e.target.value)} placeholder="Auto-filled from plan + business type" className="w-56 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
         </Field>
         <Field label="Card price override (AED, optional)">
           <input value={cardPriceOverride} onChange={(e) => setCardPriceOverride(e.target.value)} placeholder="20" className="w-40 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />

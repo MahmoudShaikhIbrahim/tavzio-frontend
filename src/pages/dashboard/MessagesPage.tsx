@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listMessages, sendMessage, markMessagesRead } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import type { SupportMessage } from '../../types';
 
 export default function MessagesPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [text, setText] = useState('');
@@ -53,8 +55,8 @@ export default function MessagesPage() {
   return (
     <div className="flex h-[70vh] flex-col rounded-xl border border-ink-line">
       <div className="border-b border-ink-line p-4">
-        <h1 className="font-display text-xl text-ivory">Contact us</h1>
-        <p className="text-base text-ivory-dim">Message the platform operator directly — they'll reply here.</p>
+        <h1 className="font-display text-xl text-ivory">{t('Contact us')}</h1>
+        <p className="text-base text-ivory-dim">{t("Message the platform operator directly — they'll reply here.")}</p>
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-4">
@@ -70,7 +72,7 @@ export default function MessagesPage() {
             </div>
           </div>
         ))}
-        {messages.length === 0 && <p className="text-base text-ivory-dim">No messages yet — send one below if you need help.</p>}
+        {messages.length === 0 && <p className="text-base text-ivory-dim">{t('No messages yet — send one below if you need help.')}</p>}
         <div ref={bottomRef} />
       </div>
 
@@ -78,12 +80,12 @@ export default function MessagesPage() {
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Describe the issue..."
+          placeholder={t('Describe the issue...')}
           rows={2}
           className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
         <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
-          Send
+          {t('Send')}
         </button>
       </form>
     </div>

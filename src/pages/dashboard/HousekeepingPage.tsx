@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   listRooms, listHousekeepingTasks, createHousekeepingTask, updateHousekeepingTask, getHousekeepingPerformance,
   listMaintenanceTickets, createMaintenanceTicket, updateMaintenanceTicket, getMaintenancePerformance,
@@ -18,8 +19,19 @@ const ROOM_STATUS_STYLE: Record<string, string> = {
   out_of_order: 'border-danger/60 bg-danger/10 text-danger',
 };
 
+// Underlying DB values stay snake_case/English - this only translates
+// what's actually shown to a person. Replaces every underscore, not
+// just the first (the original .replace('_', ' ') here only handled
+// one, which silently produced "out of_order" for a status with two
+// underscores - harmless in English since it still reads fine, but it
+// would never have matched a translation dictionary key correctly).
+function statusWord(t: (text: string) => string, raw: string) {
+  return t(raw.replace(/_/g, ' '));
+}
+
 export default function HousekeepingPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [tab, setTab] = useState<'housekeeping' | 'maintenance' | 'requests'>('housekeeping');
 
@@ -27,11 +39,11 @@ export default function HousekeepingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl text-ivory">Housekeeping & Maintenance</h1>
+      <h1 className="font-display text-3xl text-ivory">{t('Housekeeping & Maintenance')}</h1>
       <div className="flex gap-2 border-b border-ink-line">
-        {(['housekeeping', 'maintenance', 'requests'] as const).map((t) => (
-          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base capitalize ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t === 'requests' ? 'Guest Requests' : t}
+        {(['housekeeping', 'maintenance', 'requests'] as const).map((tabKey) => (
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base capitalize ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {tabKey === 'requests' ? t('Guest Requests') : t(tabKey)}
           </button>
         ))}
       </div>
@@ -43,6 +55,7 @@ export default function HousekeepingPage() {
 }
 
 function HousekeepingTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [performance, setPerformance] = useState<HousekeepingPerformance | null>(null);
@@ -76,7 +89,7 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
   }
 
   async function handleStatus(taskId: string, status: 'pending' | 'in_progress' | 'done') {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status } : t)));
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status } : task)));
     try {
       await updateHousekeepingTask(businessId, taskId, status);
     } catch {
@@ -88,85 +101,85 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
 
   return (
     <div className="space-y-6">
-      <Section title="Room status">
+      <Section title={t('Room status')}>
         <div className="flex flex-wrap gap-3 text-sm text-ivory-dim">
           {Object.entries(roomCounts).map(([status, count]) => (
-            <span key={status} className="capitalize">{count} {status.replace('_', ' ')}</span>
+            <span key={status} className="capitalize">{count} {statusWord(t, status)}</span>
           ))}
         </div>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
           {rooms.map((r) => (
             <div key={r.id} className={`rounded-lg border px-2 py-3 text-center ${ROOM_STATUS_STYLE[r.status] || 'border-ink-line text-ivory-dim'}`}>
               <p className="text-base font-medium">{r.room_number}</p>
-              <p className="text-[10px] uppercase tracking-wide">{r.status.replace('_', ' ')}</p>
+              <p className="text-[10px] uppercase tracking-wide">{statusWord(t, r.status)}</p>
             </div>
           ))}
-          {rooms.length === 0 && <p className="text-ivory-dim">No rooms set up yet.</p>}
+          {rooms.length === 0 && <p className="text-ivory-dim">{t('No rooms set up yet.')}</p>}
         </div>
       </Section>
 
-      <Section title="Housekeeping Tasks" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New task</button>}>
+      <Section title={t('Housekeeping Tasks')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New task')}</button>}>
         {showAdd && (
           <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
-            <Field label="Room">
+            <Field label={t('Room')}>
               <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                <option value="">Select room...</option>
+                <option value="">{t('Select room...')}</option>
                 {rooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
               </select>
             </Field>
-            <Field label="Task type">
+            <Field label={t('Task type')}>
               <select value={taskType} onChange={(e) => setTaskType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                <option value="cleaning">Cleaning</option>
-                <option value="turndown">Turndown</option>
-                <option value="inspection">Inspection</option>
-                <option value="deep_clean">Deep clean</option>
+                <option value="cleaning">{t('Cleaning')}</option>
+                <option value="turndown">{t('Turndown')}</option>
+                <option value="inspection">{t('Inspection')}</option>
+                <option value="deep_clean">{t('Deep clean')}</option>
               </select>
             </Field>
-            <Field label="Priority">
+            <Field label={t('Priority')}>
               <select value={priority} onChange={(e) => setPriority(e.target.value as 'normal' | 'urgent')} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                <option value="normal">Normal</option>
-                <option value="urgent">Urgent</option>
+                <option value="normal">{t('Normal')}</option>
+                <option value="urgent">{t('Urgent')}</option>
               </select>
             </Field>
-            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
+            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
           </form>
         )}
         <div className="space-y-2">
-          {tasks.map((t) => (
-            <div key={t.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3 ${t.priority === 'urgent' && t.status !== 'done' ? 'border-danger/40 bg-danger/5' : 'border-ink-line'}`}>
+          {tasks.map((task) => (
+            <div key={task.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3 ${task.priority === 'urgent' && task.status !== 'done' ? 'border-danger/40 bg-danger/5' : 'border-ink-line'}`}>
               <div>
                 <p className="text-base text-ivory">
-                  Room {t.hotel_rooms?.room_number} · {t.task_type.replace('_', ' ')}
-                  {t.priority === 'urgent' && <span className="ml-2 rounded-full border border-danger/40 px-2 py-0.5 text-xs text-danger">Urgent</span>}
+                  {t('Room')} {task.hotel_rooms?.room_number} · {statusWord(t, task.task_type)}
+                  {task.priority === 'urgent' && <span className="ml-2 rounded-full border border-danger/40 px-2 py-0.5 text-xs text-danger">{t('Urgent')}</span>}
                 </p>
-                <p className="text-sm text-ivory-dim">{t.status.replace('_', ' ')}</p>
+                <p className="text-sm text-ivory-dim">{statusWord(t, task.status)}</p>
               </div>
-              {t.status !== 'done' && (
+              {task.status !== 'done' && (
                 <div className="flex gap-2">
-                  {t.status === 'pending' && <button type="button" onClick={() => handleStatus(t.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
-                  <button type="button" onClick={() => handleStatus(t.id, 'done')} className="text-sm text-success hover:underline">Mark done</button>
+                  {task.status === 'pending' && <button type="button" onClick={() => handleStatus(task.id, 'in_progress')} className="text-sm text-brass hover:underline">{t('Start')}</button>}
+                  <button type="button" onClick={() => handleStatus(task.id, 'done')} className="text-sm text-success hover:underline">{t('Mark done')}</button>
                 </div>
               )}
             </div>
           ))}
-          {tasks.length === 0 && <p className="text-ivory-dim">No housekeeping tasks.</p>}
+          {tasks.length === 0 && <p className="text-ivory-dim">{t('No housekeeping tasks.')}</p>}
         </div>
       </Section>
 
       {performance && performance.taskCount > 0 && (
-        <Section title="Turnover performance (7 days)">
+        <Section title={t('Turnover performance (7 days)')}>
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Tasks completed</p>
+              <p className="text-xs text-ivory-dim">{t('Tasks completed')}</p>
               <p className="text-xl text-ivory">{performance.completedCount} / {performance.taskCount}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Avg time in queue</p>
-              <p className="text-xl text-ivory">{performance.avgQueueTimeMins != null ? `${performance.avgQueueTimeMins} min` : 'n/a'}</p>
+              <p className="text-xs text-ivory-dim">{t('Avg time in queue')}</p>
+              <p className="text-xl text-ivory">{performance.avgQueueTimeMins != null ? `${performance.avgQueueTimeMins} min` : t('n/a')}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Avg clean time</p>
-              <p className="text-xl text-brass">{performance.avgCleanTimeMins != null ? `${performance.avgCleanTimeMins} min` : 'n/a'}</p>
+              <p className="text-xs text-ivory-dim">{t('Avg clean time')}</p>
+              <p className="text-xl text-brass">{performance.avgCleanTimeMins != null ? `${performance.avgCleanTimeMins} min` : t('n/a')}</p>
             </div>
           </div>
         </Section>
@@ -176,6 +189,7 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
 }
 
 function MaintenanceTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [performance, setPerformance] = useState<MaintenancePerformance | null>(null);
@@ -212,7 +226,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
   }
 
   async function handleStatus(ticketId: string, status: 'open' | 'in_progress' | 'resolved') {
-    setTickets((prev) => prev.map((t) => (t.id === ticketId ? { ...t, status } : t)));
+    setTickets((prev) => prev.map((ticket) => (ticket.id === ticketId ? { ...ticket, status } : ticket)));
     try {
       await updateMaintenanceTicket(businessId, ticketId, { status });
       reload(); // room status may have changed (restored to 'dirty' on resolve) - refresh for real state
@@ -225,78 +239,78 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
 
   return (
     <div className="space-y-6">
-      <Section title="Maintenance Tickets" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ New ticket</button>}>
+      <Section title={t('Maintenance Tickets')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New ticket')}</button>}>
         {showAdd && (
           <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
             <div className="flex flex-wrap items-end gap-3">
-              <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} required className={inputClass} /></Field>
-              <Field label="Priority">
+              <Field label={t('Title')}><input value={title} onChange={(e) => setTitle(e.target.value)} required className={inputClass} /></Field>
+              <Field label={t('Priority')}>
                 <select value={priority} onChange={(e) => setPriority(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                  <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
+                  <option value="low">{t('Low')}</option><option value="normal">{t('Normal')}</option><option value="high">{t('High')}</option><option value="urgent">{t('Urgent')}</option>
                 </select>
               </Field>
-              <Field label="Room (optional)">
+              <Field label={t('Room (optional)')}>
                 <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                  <option value="">No specific room</option>
+                  <option value="">{t('No specific room')}</option>
                   {rooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
                 </select>
               </Field>
-              <Field label="Estimated cost (AED, optional)">
+              <Field label={t('Estimated cost (AED, optional)')}>
                 <input type="number" min={0} value={estimatedCost} onFocus={(e) => e.target.select()} onChange={(e) => setEstimatedCost(e.target.value)} className={`${inputClass} w-32`} />
               </Field>
             </div>
             {roomId && (
               <label className="flex items-center gap-2 text-sm text-ivory">
                 <input type="checkbox" checked={takeRoomOutOfService} onChange={(e) => setTakeRoomOutOfService(e.target.checked)} className="accent-brass" />
-                Take this room out of service until resolved (blocks check-in - recommended)
+                {t('Take this room out of service until resolved (blocks check-in - recommended)')}
               </label>
             )}
-            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
+            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
           </form>
         )}
         <div className="space-y-2">
-          {tickets.map((t) => (
-            <div key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3">
+          {tickets.map((ticket) => (
+            <div key={ticket.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3">
               <div>
                 <p className="text-base text-ivory">
-                  {t.title}{t.hotel_rooms?.room_number && ` · Room ${t.hotel_rooms.room_number}`}
-                  {t.took_room_out_of_service && t.status !== 'resolved' && <span className="ml-2 rounded-full border border-danger/40 px-2 py-0.5 text-xs text-danger">Room out of service</span>}
+                  {ticket.title}{ticket.hotel_rooms?.room_number && ` · ${t('Room')} ${ticket.hotel_rooms.room_number}`}
+                  {ticket.took_room_out_of_service && ticket.status !== 'resolved' && <span className="ml-2 rounded-full border border-danger/40 px-2 py-0.5 text-xs text-danger">{t('Room out of service')}</span>}
                 </p>
-                <p className={`text-sm ${PRIORITY_COLOR[t.priority]}`}>
-                  {t.priority} · {t.status}
-                  {(t.estimated_cost_aed || t.actual_cost_aed) && ` · ${t.actual_cost_aed != null ? `AED ${t.actual_cost_aed} actual` : `AED ${t.estimated_cost_aed} estimated`}`}
+                <p className={`text-sm ${PRIORITY_COLOR[ticket.priority]}`}>
+                  {statusWord(t, ticket.priority)} · {statusWord(t, ticket.status)}
+                  {(ticket.estimated_cost_aed || ticket.actual_cost_aed) && ` · ${ticket.actual_cost_aed != null ? `AED ${ticket.actual_cost_aed} ${t('actual')}` : `AED ${ticket.estimated_cost_aed} ${t('estimated')}`}`}
                 </p>
               </div>
-              {t.status !== 'resolved' && (
+              {ticket.status !== 'resolved' && (
                 <div className="flex gap-2">
-                  {t.status === 'open' && <button type="button" onClick={() => handleStatus(t.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
-                  <button type="button" onClick={() => handleStatus(t.id, 'resolved')} className="text-sm text-success hover:underline">Resolve</button>
+                  {ticket.status === 'open' && <button type="button" onClick={() => handleStatus(ticket.id, 'in_progress')} className="text-sm text-brass hover:underline">{t('Start')}</button>}
+                  <button type="button" onClick={() => handleStatus(ticket.id, 'resolved')} className="text-sm text-success hover:underline">{t('Resolve')}</button>
                 </div>
               )}
             </div>
           ))}
-          {tickets.length === 0 && <p className="text-ivory-dim">No maintenance tickets.</p>}
+          {tickets.length === 0 && <p className="text-ivory-dim">{t('No maintenance tickets.')}</p>}
         </div>
       </Section>
 
       {performance && performance.ticketCount > 0 && (
-        <Section title="Maintenance performance (30 days)">
-          {performance.urgentOpenCount > 0 && <p className="text-sm text-danger">{performance.urgentOpenCount} urgent ticket(s) still open.</p>}
+        <Section title={t('Maintenance performance (30 days)')}>
+          {performance.urgentOpenCount > 0 && <p className="text-sm text-danger">{performance.urgentOpenCount} {t('urgent ticket(s) still open.')}</p>}
           <div className="grid grid-cols-4 gap-3">
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Resolved</p>
+              <p className="text-xs text-ivory-dim">{t('Resolved')}</p>
               <p className="text-xl text-ivory">{performance.resolvedCount} / {performance.ticketCount}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Avg time to start</p>
-              <p className="text-xl text-ivory">{performance.avgQueueTimeMins != null ? `${performance.avgQueueTimeMins} min` : 'n/a'}</p>
+              <p className="text-xs text-ivory-dim">{t('Avg time to start')}</p>
+              <p className="text-xl text-ivory">{performance.avgQueueTimeMins != null ? `${performance.avgQueueTimeMins} min` : t('n/a')}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Avg repair time</p>
-              <p className="text-xl text-ivory">{performance.avgRepairTimeMins != null ? `${performance.avgRepairTimeMins} min` : 'n/a'}</p>
+              <p className="text-xs text-ivory-dim">{t('Avg repair time')}</p>
+              <p className="text-xl text-ivory">{performance.avgRepairTimeMins != null ? `${performance.avgRepairTimeMins} min` : t('n/a')}</p>
             </div>
             <div className="rounded-lg border border-ink-line p-3">
-              <p className="text-xs text-ivory-dim">Total cost</p>
+              <p className="text-xs text-ivory-dim">{t('Total cost')}</p>
               <p className="text-xl text-brass">AED {performance.totalActualCostAed.toFixed(2)}</p>
             </div>
           </div>
@@ -307,6 +321,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
 }
 
 function GuestRequestsTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [requests, setRequests] = useState<GuestServiceRequest[]>([]);
 
   function reload() { listGuestRequests(businessId).then(setRequests); }
@@ -328,24 +343,24 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="Guest Requests">
+    <Section title={t('Guest Requests')}>
       <div className="space-y-2">
         {requests.map((r) => (
           <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3">
             <div>
-              <p className="text-base text-ivory">Room {r.hotel_rooms?.room_number} · {r.request_type}</p>
+              <p className="text-base text-ivory">{t('Room')} {r.hotel_rooms?.room_number} · {t(r.request_type)}</p>
               {r.note && <p className="text-sm text-ivory-dim">{r.note}</p>}
-              <p className="text-sm text-ivory-dim">{r.status}</p>
+              <p className="text-sm text-ivory-dim">{statusWord(t, r.status)}</p>
             </div>
             {r.status !== 'done' && (
               <div className="flex gap-2">
-                {r.status === 'pending' && <button type="button" onClick={() => handleStatus(r.id, 'in_progress')} className="text-sm text-brass hover:underline">Start</button>}
-                <button type="button" onClick={() => handleStatus(r.id, 'done')} className="text-sm text-success hover:underline">Mark done</button>
+                {r.status === 'pending' && <button type="button" onClick={() => handleStatus(r.id, 'in_progress')} className="text-sm text-brass hover:underline">{t('Start')}</button>}
+                <button type="button" onClick={() => handleStatus(r.id, 'done')} className="text-sm text-success hover:underline">{t('Mark done')}</button>
               </div>
             )}
           </div>
         ))}
-        {requests.length === 0 && <p className="text-ivory-dim">No guest requests.</p>}
+        {requests.length === 0 && <p className="text-ivory-dim">{t('No guest requests.')}</p>}
       </div>
     </Section>
   );

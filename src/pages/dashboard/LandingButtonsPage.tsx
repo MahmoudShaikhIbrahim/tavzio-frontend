@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   getBusiness, updateBusiness,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
@@ -15,6 +16,7 @@ import { Section, Field, inputClass, ActionButton } from '../../components/ui';
 
 export default function LandingButtonsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [tab, setTab] = useState<'landing' | 'guest-portal'>('landing');
@@ -34,9 +36,9 @@ export default function LandingButtonsPage() {
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-ink-line">
-        {(['landing', 'guest-portal'] as const).map((t) => (
-          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t === 'landing' ? 'Landing Page' : 'Guest Portal Services'}
+        {(['landing', 'guest-portal'] as const).map((tabKey) => (
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {tabKey === 'landing' ? t('Landing Page') : t('Guest Portal Services')}
           </button>
         ))}
       </div>
@@ -63,6 +65,7 @@ const ROUTING_TYPE_LABELS: Record<string, string> = {
 // page buttons, applied to the other customer interface (the in-room
 // NFC portal) that has its own separate button set.
 function GuestPortalServicesSection({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [services, setServices] = useState<HotelGuestServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -87,7 +90,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string, label: string) {
-    if (!confirm(`Remove "${label}" from the guest portal?`)) return;
+    if (!confirm(`${t('Remove')} "${label}" ${t('from the guest portal?')}`)) return;
     await deleteGuestService(businessId, id);
     reload();
   }
@@ -95,13 +98,11 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
   const sorted = [...services].sort((a, b) => a.sort_order - b.sort_order);
 
   return (
-    <Section title="Guest Portal Services" action={
-      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add service</button>
+    <Section title={t('Guest Portal Services')} action={
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add service')}</button>
     }>
       <p className="text-sm text-ivory-dim">
-        These are the buttons a guest sees under "Services" in the in-room NFC portal (Extra towels, Housekeeping, and so on) -
-        rename, reorder, disable, or add your own. Each one routes to a specific place internally (housekeeping, maintenance,
-        or a general staff request), which you pick when adding it.
+        {t('These are the buttons a guest sees under "Services" in the in-room NFC portal (Extra towels, Housekeeping, and so on) - rename, reorder, disable, or add your own. Each one routes to a specific place internally (housekeeping, maintenance, or a general staff request), which you pick when adding it.')}
       </p>
       {showAdd && <GuestServiceForm businessId={businessId} onDone={() => { setShowAdd(false); reload(); }} />}
       {loading && <p className="text-ivory-dim">Loading...</p>}
@@ -114,7 +115,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
               <div>
                 <p className="text-base text-ivory">{s.label}</p>
                 <p className="text-sm text-ivory-dim">
-                  {ROUTING_TYPE_LABELS[s.routing_type] || s.routing_type}
+                  {t(ROUTING_TYPE_LABELS[s.routing_type] || s.routing_type)}
                   {s.options.length > 0 && ` · options: ${s.options.join(', ')}`}
                 </p>
               </div>
@@ -122,15 +123,15 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
                 <button type="button" onClick={() => handleReorder(s.id, -1)} disabled={i === 0} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↑</button>
                 <button type="button" onClick={() => handleReorder(s.id, 1)} disabled={i === sorted.length - 1} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↓</button>
                 <button type="button" onClick={() => updateGuestService(businessId, s.id, { enabled: !s.enabled }).then(reload)} className="text-ivory-dim hover:text-ivory">
-                  {s.enabled ? 'Disable' : 'Enable'}
+                  {s.enabled ? t('Disable') : t('Enable')}
                 </button>
-                <button type="button" onClick={() => setEditingId(s.id)} className="text-brass hover:underline">Edit</button>
-                <button type="button" onClick={() => handleDelete(s.id, s.label)} className="text-danger hover:underline">Delete</button>
+                <button type="button" onClick={() => setEditingId(s.id)} className="text-brass hover:underline">{t('Edit')}</button>
+                <button type="button" onClick={() => handleDelete(s.id, s.label)} className="text-danger hover:underline">{t('Delete')}</button>
               </div>
             </div>
           )
         ))}
-        {!loading && services.length === 0 && <p className="text-ivory-dim">No services yet.</p>}
+        {!loading && services.length === 0 && <p className="text-ivory-dim">{t('No services yet.')}</p>}
       </div>
     </Section>
   );
@@ -139,6 +140,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
 function GuestServiceForm({ businessId, existing, onDone, onCancel }: {
   businessId: string; existing?: HotelGuestServiceRow; onDone: () => void; onCancel?: () => void;
 }) {
+  const { t } = useT();
   const [label, setLabel] = useState(existing?.label || '');
   const [routingType, setRoutingType] = useState(existing?.routing_type || 'other');
   const [optionsText, setOptionsText] = useState((existing?.options || []).join(', '));
@@ -167,29 +169,30 @@ function GuestServiceForm({ businessId, existing, onDone, onCancel }: {
 
   return (
     <form onSubmit={handleSubmit} className="mb-3 max-w-xl space-y-3 rounded-lg border border-brass/40 bg-ink-soft p-4">
-      <Field label="Label (what the guest sees)">
+      <Field label={t('Label (what the guest sees)')}>
         <input required value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Spa Booking" className={inputClass} />
       </Field>
-      <Field label="Routes to">
+      <Field label={t('Routes to')}>
         <select value={routingType} onChange={(e) => setRoutingType(e.target.value)} className={inputClass}>
-          {GUEST_SERVICE_ROUTING_TYPES.map((t) => <option key={t} value={t}>{ROUTING_TYPE_LABELS[t] || t}</option>)}
+          {GUEST_SERVICE_ROUTING_TYPES.map((rt) => <option key={rt} value={rt}>{t(ROUTING_TYPE_LABELS[rt] || rt)}</option>)}
         </select>
       </Field>
-      <Field label="Sub-options (comma-separated, optional)">
+      <Field label={t('Sub-options (comma-separated, optional)')}>
         <input value={optionsText} onChange={(e) => setOptionsText(e.target.value)} placeholder="e.g. Massage, Facial, Manicure" className={inputClass} />
       </Field>
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex items-center gap-3">
         <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : existing ? 'Save changes' : 'Add service'}
+          {saving ? t('Saving...') : existing ? t('Save changes') : t('Add service')}
         </button>
-        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">Cancel</button>}
+        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>}
       </div>
     </form>
   );
 }
 
 function LandingPageButtonsSection({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
+  const { t } = useT();
   const [links, setLinks] = useState<BusinessLinks>(business.links);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -257,21 +260,19 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
 
   return (
     <Section
-      title="Landing page buttons"
+      title={t('Landing page buttons')}
       action={
         <button type="button"
           onClick={handleSave}
           disabled={saving}
           className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save buttons'}
+          {saving ? t('Saving...') : t('Save buttons')}
         </button>
       }
     >
       <p className="text-base text-ivory-dim">
-        Toggle a button on and fill in its link — it'll show on your landing
-        page in this order. Rename it, pick an icon, or upload your own
-        image for it. Add more of your own further below.
+        {t("Toggle a button on and fill in its link — it'll show on your landing page in this order. Rename it, pick an icon, or upload your own image for it. Add more of your own further below.")}
       </p>
       <div className="grid gap-6 lg:grid-cols-2">
         {LINK_ORDER.map((key) => {
@@ -288,7 +289,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                   onClick={() => toggleEnabled(key)}
                   className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
                 >
-                  {cfg.enabled ? 'On' : 'Off'}
+                  {cfg.enabled ? t('On') : t('Off')}
                 </button>
                 {cfg.imageUrl ? (
                   <img src={cfg.imageUrl} alt="" className="h-9 w-9 shrink-0 rounded-full border border-ink-line object-cover" />
@@ -304,7 +305,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                   value={cfg.label ?? meta.label}
                   onChange={(e) => updateLabel(key, e.target.value)}
                   className="min-w-0 flex-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
-                  placeholder="Button label"
+                  placeholder={t('Button label')}
                 />
               </div>
 
@@ -317,14 +318,14 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                 >
                   {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
-                <span className="text-sm text-ivory-dim">or</span>
+                <span className="text-sm text-ivory-dim">{t('or')}</span>
                 <label className="w-auto cursor-pointer rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/60 hover:text-ivory">
-                  Upload image
+                  {t('Upload image')}
                   <input type="file" accept="image/*" onChange={(e) => handleImageUpload(key, e)} className="hidden" />
                 </label>
                 {cfg.imageUrl && (
                   <button type="button" onClick={() => updateImage(key, null)} className="w-auto text-sm text-danger hover:underline">
-                    Remove
+                    {t('Remove')}
                   </button>
                 )}
               </div>
@@ -357,7 +358,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
             onClick={() => setShowAddForm(true)}
             className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10"
           >
-            + Add another link
+            {t('+ Add another link')}
           </button>
         )}
       </div>
@@ -370,6 +371,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
 function CustomButtonForm({ business, businessId, existing, forcedParentId, onDone }: {
   business: AdminBusiness; businessId: string; existing?: CustomButton; forcedParentId?: string; onDone: () => void;
 }) {
+  const { t } = useT();
   const [label, setLabel] = useState(existing?.label || '');
   const [icon, setIcon] = useState(existing?.icon || 'link');
   const [imageUrl, setImageUrl] = useState<string | null>(existing?.image_url || null);
@@ -432,78 +434,78 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
   return (
     <form onSubmit={handleSubmit} className="mb-4 space-y-4 rounded-xl border border-ink-line p-5">
       {!forcedParentId && (
-        <Field label="What does this button do?">
+        <Field label={t('What does this button do?')}>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setButtonType('link')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'link' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
-              Opens a link
+              {t('Opens a link')}
             </button>
             <button type="button" onClick={() => setButtonType('notification')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'notification' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
-              Notifies staff
+              {t('Notifies staff')}
             </button>
             <button type="button" onClick={() => setButtonType('group')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'group' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
-              A list of services
+              {t('A list of services')}
             </button>
           </div>
           <p className="mt-1.5 text-sm text-ivory-dim">
             {buttonType === 'link'
-              ? 'Opens a website, WhatsApp chat, or anything else with a URL.'
+              ? t('Opens a website, WhatsApp chat, or anything else with a URL.')
               : buttonType === 'group'
-                ? 'Shows a list of individual services when tapped - e.g. "Services" opening onto Housekeeping, Maintenance, Room Service.'
-                : "Sends a request straight to a specific department's screen - no URL needed."}
+                ? t('Shows a list of individual services when tapped - e.g. "Services" opening onto Housekeeping, Maintenance, Room Service.')
+                : t("Sends a request straight to a specific department's screen - no URL needed.")}
           </p>
         </Field>
       )}
 
       {buttonType === 'notification' && (
-        <Field label="Where should this request go?">
+        <Field label={t('Where should this request go?')}>
           <select value={notificationDestination} onChange={(e) => setNotificationDestination(e.target.value as typeof notificationDestination)} className={inputClass}>
-            <option value="general">Front Desk / Requests list</option>
-            {isHotel && <option value="housekeeping_task">Housekeeping</option>}
-            {isHotel && <option value="maintenance_ticket">Maintenance</option>}
+            <option value="general">{t('Front Desk / Requests list')}</option>
+            {isHotel && <option value="housekeeping_task">{t('Housekeeping')}</option>}
+            {isHotel && <option value="maintenance_ticket">{t('Maintenance')}</option>}
           </select>
           {notificationDestination === 'general' && (
             <>
-              <p className="mt-2 text-sm text-ivory-dim">Which section should see it? Leave blank to notify everyone with Requests access.</p>
+              <p className="mt-2 text-sm text-ivory-dim">{t('Which section should see it? Leave blank to notify everyone with Requests access.')}</p>
               <select value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className={`${inputClass} mt-1`}>
-                <option value="">Everyone with Requests access</option>
-                {SECTION_OPTIONS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                <option value="">{t('Everyone with Requests access')}</option>
+                {SECTION_OPTIONS.map((s) => <option key={s.key} value={s.key}>{t(s.label)}</option>)}
               </select>
             </>
           )}
           {notificationDestination === 'housekeeping_task' && (
-            <p className="mt-2 text-sm text-ivory-dim">Lands directly on the Housekeeping screen as a real task, for the room the guest tapped from.</p>
+            <p className="mt-2 text-sm text-ivory-dim">{t('Lands directly on the Housekeeping screen as a real task, for the room the guest tapped from.')}</p>
           )}
           {notificationDestination === 'maintenance_ticket' && (
-            <p className="mt-2 text-sm text-ivory-dim">Lands directly as a maintenance ticket - room if tapped in-room, otherwise a common-area issue.</p>
+            <p className="mt-2 text-sm text-ivory-dim">{t('Lands directly as a maintenance ticket - room if tapped in-room, otherwise a common-area issue.')}</p>
           )}
         </Field>
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Label"><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
-        <Field label="Icon (used unless you upload your own image below)">
+        <Field label={t('Label')}><input required value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Icon (used unless you upload your own image below)')}>
           <select value={icon} onChange={(e) => setIcon(e.target.value)} className={inputClass}>
             {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
           </select>
         </Field>
       </div>
-      <Field label="Or upload your own logo/picture">
+      <Field label={t('Or upload your own logo/picture')}>
         <div className="flex items-center gap-3">
           {imageUrl && <img src={imageUrl} alt="" className="h-10 w-10 rounded-full border border-ink-line object-cover" />}
           <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-ivory-dim" />
           {imageUrl && (
             <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-danger hover:underline">
-              Remove
+              {t('Remove')}
             </button>
           )}
         </div>
-        {uploading && <p className="mt-1 text-sm text-ivory-dim">Uploading...</p>}
+        {uploading && <p className="mt-1 text-sm text-ivory-dim">{t('Uploading...')}</p>}
       </Field>
       {buttonType === 'link' && (
-        <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
+        <Field label={t('URL')}><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
       )}
       <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
-        {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
+        {saving ? t('Saving...') : existing ? t('Save changes') : t('Add button')}
       </button>
       {error && <p className="text-base text-danger">{error}</p>}
     </form>
@@ -514,6 +516,7 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
 function CustomButtonRow({ button, buttons, business, businessId, onButtonsChange, onChange }: {
   button: CustomButton; buttons: CustomButton[]; business: AdminBusiness; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
   if (editing) return <CustomButtonForm business={business} businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
@@ -522,10 +525,10 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
   const brandColor = getIconColor(button.icon);
   const children = buttons.filter((b) => b.parent_button_id === button.id);
   const badgeLabel = button.button_type === 'group'
-    ? 'Group'
+    ? t('Group')
     : button.button_type === 'notification'
-      ? button.notification_destination === 'housekeeping_task' ? 'Housekeeping' : button.notification_destination === 'maintenance_ticket' ? 'Maintenance' : 'Notifies staff'
-      : 'Link';
+      ? button.notification_destination === 'housekeeping_task' ? t('Housekeeping') : button.notification_destination === 'maintenance_ticket' ? t('Maintenance') : t('Notifies staff')
+      : t('Link');
 
   return (
     <div className="rounded-lg border border-ink-line px-5 py-4">
@@ -554,9 +557,9 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
               updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
             }}
           >
-            {button.enabled ? 'On' : 'Off'}
+            {button.enabled ? t('On') : t('Off')}
           </ActionButton>
-          <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
+          <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
           <ActionButton
             danger
             onClick={() => {
@@ -564,7 +567,7 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
               deleteCustomButton(businessId, button.id).catch(onChange);
             }}
           >
-            Delete
+            {t('Delete')}
           </ActionButton>
         </div>
       </div>
@@ -578,7 +581,7 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
             <CustomButtonForm business={business} businessId={businessId} forcedParentId={button.id} onDone={() => { setAddingChild(false); onChange(); }} />
           ) : (
             <button type="button" onClick={() => setAddingChild(true)} className="text-sm text-brass hover:underline">
-              + Add a service inside "{button.label}"
+              {t('+ Add a service inside')} "{button.label}"
             </button>
           )}
         </div>
@@ -586,4 +589,3 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
     </div>
   );
 }
-

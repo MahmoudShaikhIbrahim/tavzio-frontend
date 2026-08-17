@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent, useRef } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   listMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
   listMenuItems, createMenuItem, updateMenuItem, deleteMenuItem,
@@ -13,6 +14,7 @@ import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../c
 
 export default function MenuManagementPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -35,32 +37,35 @@ export default function MenuManagementPage() {
     setBusiness(updated);
   }
 
+  const tabLabels: Record<typeof tab, string> = {
+    'ordering-status': 'Ordering Status', 'ai-upload': 'AI Upload', categories: 'Categories', items: 'Items',
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl text-ivory">Menu Management</h1>
+      <h1 className="font-display text-3xl text-ivory">{t('Menu Management')}</h1>
       <div className="flex flex-wrap gap-2 border-b border-ink-line">
-        {(['ordering-status', 'ai-upload', 'categories', 'items'] as const).map((t) => (
-          <button type="button" key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-base ${tab === t ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {t === 'ordering-status' ? 'Ordering Status' : t === 'ai-upload' ? 'AI Upload' : t === 'categories' ? 'Categories' : 'Items'}
+        {(['ordering-status', 'ai-upload', 'categories', 'items'] as const).map((tabKey) => (
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+            {t(tabLabels[tabKey])}
           </button>
         ))}
       </div>
 
       {tab === 'ordering-status' && (
-        <Section title="Ordering status">
+        <Section title={t('Ordering status')}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-base text-ivory">Pause all ordering</p>
+              <p className="text-base text-ivory">{t('Pause all ordering')}</p>
               <p className="text-sm text-ivory-dim">
-                Turns every item on the customer menu grayed-out and un-orderable, all at once — for when the
-                kitchen's closed or too busy, without touching each item individually.
+                {t("Turns every item on the customer menu grayed-out and un-orderable, all at once — for when the kitchen's closed or too busy, without touching each item individually.")}
               </p>
             </div>
             <button type="button"
               onClick={togglePauseAll}
               className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
             >
-              {business.ordering_paused ? 'Paused — tap to resume' : 'Ordering is open'}
+              {business.ordering_paused ? t('Paused — tap to resume') : t('Ordering is open')}
             </button>
           </div>
         </Section>
@@ -76,6 +81,7 @@ export default function MenuManagementPage() {
 function CategoriesSection({ businessId, categories, onCategoriesChange, onChange }: {
   businessId: string; categories: MenuCategory[]; onCategoriesChange: (cats: MenuCategory[]) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -107,7 +113,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
   }
 
   return (
-    <Section title="Categories">
+    <Section title={t('Categories')}>
       <div className="space-y-4">
         {categories.map((c, i) => (
           <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
@@ -117,7 +123,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
                 onClick={() => moveCategory(i, -1)}
                 disabled={i === 0}
                 className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
-                title="Move up"
+                title={t('Move up')}
               >
                 ↑
               </button>
@@ -125,7 +131,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
                 onClick={() => moveCategory(i, 1)}
                 disabled={i === categories.length - 1}
                 className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
-                title="Move down"
+                title={t('Move down')}
               >
                 ↓
               </button>
@@ -136,7 +142,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
                 }}
                 className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
               >
-                {c.paused ? 'Paused' : 'Orderable'}
+                {c.paused ? t('Paused') : t('Orderable')}
               </button>
               <ActionButton
                 danger
@@ -145,16 +151,16 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
                   deleteMenuCategory(businessId, c.id).catch(onChange);
                 }}
               >
-                Remove
+                {t('Remove')}
               </ActionButton>
             </div>
           </div>
         ))}
-        {categories.length === 0 && <p className="text-base text-ivory-dim">No categories yet — items can also exist without one.</p>}
+        {categories.length === 0 && <p className="text-base text-ivory-dim">{t('No categories yet — items can also exist without one.')}</p>}
       </div>
       <form onSubmit={handleAdd} className="flex gap-2.5 border-t border-ink-line pt-4">
         <input placeholder="e.g. Starters" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
-        <PrimaryButton disabled={saving}>{saving ? 'Adding...' : 'Add category'}</PrimaryButton>
+        <PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add category')}</PrimaryButton>
       </form>
     </Section>
   );
@@ -163,17 +169,18 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
 function ItemsSection({ businessId, categories, items, onItemsChange, onChange }: {
   businessId: string; categories: MenuCategory[]; items: MenuItem[]; onItemsChange: (items: MenuItem[]) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const [showForm, setShowForm] = useState(false);
 
   return (
     <Section
-      title="Items"
+      title={t('Items')}
       action={
         <button type="button"
           onClick={() => setShowForm((s) => !s)}
           className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
         >
-          + Add item
+          {t('+ Add item')}
         </button>
       }
     >
@@ -188,7 +195,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
         {items.map((item) => (
           <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onItemsChange={onItemsChange} items={items} onChange={onChange} />
         ))}
-        {items.length === 0 && <p className="text-base text-ivory-dim">No items yet.</p>}
+        {items.length === 0 && <p className="text-base text-ivory-dim">{t('No items yet.')}</p>}
       </div>
     </Section>
   );
@@ -197,6 +204,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
 function ItemForm({ businessId, categories, existing, onDone }: {
   businessId: string; categories: MenuCategory[]; existing?: MenuItem; onDone: () => void;
 }) {
+  const { t } = useT();
   const [name, setName] = useState(existing?.name || '');
   const [description, setDescription] = useState(existing?.description || '');
   const [price, setPrice] = useState(existing?.price ?? 0);
@@ -256,23 +264,23 @@ function ItemForm({ businessId, categories, existing, onDone }: {
         </div>
         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
           className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
-          {imageUrl ? 'Change photo' : 'Add photo'}
+          {imageUrl ? t('Change photo') : t('Add photo')}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-        <Field label="Price"><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Price')}><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
       </div>
-      <Field label="Description">
+      <Field label={t('Description')}>
         <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
       </Field>
-      <Field label="Kitchen station (optional)">
+      <Field label={t('Kitchen station (optional)')}>
         <input value={station} onChange={(e) => setStation(e.target.value)} placeholder="e.g. Grill, Cold, Dessert, Bar" className={inputClass} />
       </Field>
-      <Field label="Category">
+      <Field label={t('Category')}>
         <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass}>
-          <option value="">No category</option>
+          <option value="">{t('No category')}</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </Field>
@@ -280,22 +288,21 @@ function ItemForm({ businessId, categories, existing, onDone }: {
       <div className="rounded-lg border border-ink-line p-3">
         <label className="flex items-center gap-2 text-base text-ivory">
           <input type="checkbox" checked={offerEnabled} onChange={(e) => setOfferEnabled(e.target.checked)} className="accent-brass" />
-          Special offer
+          {t('Special offer')}
         </label>
         {offerEnabled && (
           <div className="mt-3 space-y-3">
             <p className="text-sm text-ivory-dim">
-              Shows in a "Special Offers" section at the top of the menu during this window, with the
-              original price crossed out. Reverts automatically when it ends - nothing to undo manually.
+              {t('Shows in a "Special Offers" section at the top of the menu during this window, with the original price crossed out. Reverts automatically when it ends - nothing to undo manually.')}
             </p>
-            <Field label="Offer price">
+            <Field label={t('Offer price')}>
               <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={offerPrice} onChange={(e) => setOfferPrice(Number(e.target.value))} className={inputClass} />
             </Field>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="Starts">
+              <Field label={t('Starts')}>
                 <input type="datetime-local" value={offerStartsAt} onChange={(e) => setOfferStartsAt(e.target.value)} className={inputClass} />
               </Field>
-              <Field label="Ends">
+              <Field label={t('Ends')}>
                 <input type="datetime-local" value={offerEndsAt} onChange={(e) => setOfferEndsAt(e.target.value)} className={inputClass} />
               </Field>
             </div>
@@ -303,7 +310,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
         )}
       </div>
 
-      <PrimaryButton disabled={saving}>{saving ? 'Saving...' : existing ? 'Save changes' : 'Add item'}</PrimaryButton>
+      <PrimaryButton disabled={saving}>{saving ? t('Saving...') : existing ? t('Save changes') : t('Add item')}</PrimaryButton>
     </form>
   );
 }
@@ -311,6 +318,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
 function ItemRow({ item, items, businessId, categories, onItemsChange, onChange }: {
   item: MenuItem; items: MenuItem[]; businessId: string; categories: MenuCategory[]; onItemsChange: (items: MenuItem[]) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
   const [showAddons, setShowAddons] = useState(false);
   const [showRecipe, setShowRecipe] = useState(false);
@@ -329,8 +337,8 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
           <div>
             <span className="text-ivory">{item.name}</span>
             <span className="ml-2 text-ivory-dim">{item.price.toFixed(2)}</span>
-            {!item.is_available && <span className="ml-2 text-base text-danger">unavailable</span>}
-            {item.offer_price != null && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">Special offer</span>}
+            {!item.is_available && <span className="ml-2 text-base text-danger">{t('unavailable')}</span>}
+            {item.offer_price != null && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('Special offer')}</span>}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -340,11 +348,11 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
               updateMenuItem(businessId, item.id, { isAvailable: !item.is_available }).catch(onChange);
             }}
           >
-            {item.is_available ? 'Mark unavailable' : 'Mark available'}
+            {item.is_available ? t('Mark unavailable') : t('Mark available')}
           </ActionButton>
-          <ActionButton onClick={() => setShowAddons((s) => !s)}>Add-ons</ActionButton>
-          <ActionButton onClick={() => setShowRecipe((s) => !s)}>Recipe</ActionButton>
-          <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
+          <ActionButton onClick={() => setShowAddons((s) => !s)}>{t('Add-ons')}</ActionButton>
+          <ActionButton onClick={() => setShowRecipe((s) => !s)}>{t('Recipe')}</ActionButton>
+          <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
           <ActionButton
             danger
             onClick={() => {
@@ -352,7 +360,7 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
               deleteMenuItem(businessId, item.id).catch(onChange);
             }}
           >
-            Remove
+            {t('Remove')}
           </ActionButton>
         </div>
       </div>
@@ -363,6 +371,7 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
 }
 
 function RecipeManager({ businessId, menuItemId }: { businessId: string; menuItemId: string }) {
+  const { t } = useT();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [lines, setLines] = useState<{ ingredientId: string; quantity: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -386,15 +395,14 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
     }
   }
 
-  if (loading) return <div className="border-t border-ink-line p-4"><p className="text-ivory-dim">Loading recipe...</p></div>;
+  if (loading) return <div className="border-t border-ink-line p-4"><p className="text-ivory-dim">{t('Loading recipe...')}</p></div>;
 
   return (
     <div className="space-y-3 border-t border-ink-line p-4">
       <p className="text-sm text-ivory-dim">
-        How much of each ingredient one order of this item consumes - orders automatically deduct these
-        quantities from stock.
+        {t('How much of each ingredient one order of this item consumes - orders automatically deduct these quantities from stock.')}
       </p>
-      {ingredients.length === 0 && <p className="text-sm text-ivory-dim">Add ingredients in Inventory first.</p>}
+      {ingredients.length === 0 && <p className="text-sm text-ivory-dim">{t('Add ingredients in Inventory first.')}</p>}
       {lines.map((line, i) => (
         <div key={i} className="flex flex-wrap items-center gap-2">
           <select
@@ -402,28 +410,28 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
             onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, ingredientId: e.target.value } : l))}
             className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
           >
-            <option value="">Select ingredient...</option>
+            <option value="">{t('Select ingredient...')}</option>
             {ingredients.map((ing) => <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>)}
           </select>
           <input
             type="number"
-            placeholder="Quantity"
+            placeholder={t('Quantity')}
             onFocus={(e) => e.target.select()}
             value={line.quantity}
             onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, quantity: e.target.value } : l))}
             className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
           />
           <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
-            Remove
+            {t('Remove')}
           </button>
         </div>
       ))}
       <button type="button" onClick={() => setLines((prev) => [...prev, { ingredientId: '', quantity: '' }])} className="text-sm text-brass hover:underline">
-        + Add ingredient
+        {t('+ Add ingredient')}
       </button>
       <div>
         <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save recipe'}
+          {saving ? t('Saving...') : t('Save recipe')}
         </button>
       </div>
     </div>
@@ -431,6 +439,7 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
 }
 
 function AddonManager({ businessId, itemId }: { businessId: string; itemId: string }) {
+  const { t } = useT();
   const [addons, setAddons] = useState<MenuItemAddon[]>([]);
   const [name, setName] = useState('');
   const [price, setPrice] = useState(0);
@@ -471,8 +480,8 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
           <div key={a.id} className="flex items-center gap-2">
             <input value={editName} onChange={(e) => setEditName(e.target.value)} className={`${inputClass} flex-1`} />
             <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={editPrice} onChange={(e) => setEditPrice(Number(e.target.value))} className={`${inputClass} w-24`} />
-            <ActionButton onClick={() => handleSaveEdit(a.id)}>Save</ActionButton>
-            <ActionButton onClick={() => setEditingId(null)}>Cancel</ActionButton>
+            <ActionButton onClick={() => handleSaveEdit(a.id)}>{t('Save')}</ActionButton>
+            <ActionButton onClick={() => setEditingId(null)}>{t('Cancel')}</ActionButton>
           </div>
         ) : (
           <div key={a.id} className="flex items-center justify-between text-base">
@@ -486,16 +495,16 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
                 deleteAddon(businessId, itemId, a.id).catch(reload);
               }}
             >
-              Remove
+              {t('Remove')}
             </ActionButton>
           </div>
         )
       ))}
-      {addons.length === 0 && <p className="text-base text-ivory-dim">No add-ons yet.</p>}
+      {addons.length === 0 && <p className="text-base text-ivory-dim">{t('No add-ons yet.')}</p>}
       <form onSubmit={handleAdd} className="flex gap-2 pt-1">
         <input placeholder="e.g. Extra cheese" value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} flex-1`} />
-        <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} placeholder="Price" value={price} onChange={(e) => setPrice(Number(e.target.value))} className={`${inputClass} w-24`} />
-        <PrimaryButton>Add</PrimaryButton>
+        <input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} placeholder={t('Price')} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={`${inputClass} w-24`} />
+        <PrimaryButton>{t('Add')}</PrimaryButton>
       </form>
     </div>
   );

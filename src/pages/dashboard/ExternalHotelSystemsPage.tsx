@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listExternalHotelSystems, connectExternalHotelSystem, disconnectExternalHotelSystem, type ExternalHotelSystem } from '../../lib/authApi';
 import { Section } from '../../components/ui';
 
@@ -7,6 +8,7 @@ const ROLE_LABEL: Record<string, string> = { channel_manager: 'Channel Manager',
 
 export default function ExternalHotelSystemsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [systems, setSystems] = useState<ExternalHotelSystem[]>([]);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
@@ -57,11 +59,9 @@ export default function ExternalHotelSystemsPage() {
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
 
   return (
-    <Section title="External Hotel Systems">
+    <Section title={t('External Hotel Systems')}>
       <p className="text-base text-ivory-dim">
-        For hotels keeping their existing PMS/POS - Tavzio's NFC guest experience connects alongside it instead of
-        replacing it. Each of these needs a real partner account with the vendor before it can go live; connecting
-        here just records which one this hotel uses and stores your property ID with them.
+        {t("For hotels keeping their existing PMS/POS - Tavzio's NFC guest experience connects alongside it instead of replacing it. Each of these needs a real partner account with the vendor before it can go live; connecting here just records which one this hotel uses and stores your property ID with them.")}
       </p>
       <div className="space-y-3">
         {systems.map((s) => (
@@ -70,7 +70,7 @@ export default function ExternalHotelSystemsPage() {
               <div>
                 <p className="text-base text-ivory">{s.label} <span className="text-xs uppercase text-brass">{ROLE_LABEL[s.role]}</span></p>
                 <p className="text-sm text-ivory-dim">{s.requirement}</p>
-                {s.connected && <p className="mt-1 text-sm text-ivory">Property ID: {s.externalPropertyId || '(not set)'}</p>}
+                {s.connected && <p className="mt-1 text-sm text-ivory">{t('Property ID:')} {s.externalPropertyId || t('(not set)')}</p>}
               </div>
               <div>
                 {editingProvider === s.provider ? (
@@ -79,28 +79,28 @@ export default function ExternalHotelSystemsPage() {
                       <input
                         value={propertyId}
                         onChange={(e) => setPropertyId(e.target.value)}
-                        placeholder="Property ID with vendor"
+                        placeholder={t('Property ID with vendor')}
                         autoFocus
                         className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
                       />
                       <button type="button" onClick={() => handleConnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-brass hover:underline disabled:opacity-50">
-                        {busyProvider === s.provider ? 'Saving...' : 'Save'}
+                        {busyProvider === s.provider ? t('Saving...') : t('Save')}
                       </button>
-                      <button type="button" onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline">Cancel</button>
+                      <button type="button" onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline">{t('Cancel')}</button>
                     </div>
                     {error && <p className="text-xs text-danger">{error}</p>}
                   </div>
                 ) : s.connected ? (
                   <div className="flex items-center gap-3">
-                    <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? 'Live' : 'Awaiting real credentials'}</span>
-                    <button type="button" onClick={() => startEditing(s)} className="text-sm text-brass hover:underline">Edit</button>
+                    <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? t('Live') : t('Awaiting real credentials')}</span>
+                    <button type="button" onClick={() => startEditing(s)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
                     <button type="button" onClick={() => handleDisconnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-danger hover:underline disabled:opacity-50">
-                      {busyProvider === s.provider ? 'Disconnecting...' : 'Disconnect'}
+                      {busyProvider === s.provider ? t('Disconnecting...') : t('Disconnect')}
                     </button>
                   </div>
                 ) : (
                   <button type="button" onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
-                    Connect
+                    {t('Connect')}
                   </button>
                 )}
               </div>

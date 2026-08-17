@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getBusiness, updateNotificationSettings } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
 import { SOUND_PRESETS, playPresetSound } from '../../lib/soundPlayer';
@@ -16,6 +17,7 @@ const EVENT_META: Record<NotificationEvent, { label: string; description: string
 
 export default function NotificationsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
 
@@ -29,8 +31,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-4">
       <p className="text-base text-ivory-dim">
-        Each alert is fully independent — turn any of them off, pick a
-        preset, or upload your own sound.
+        {t('Each alert is fully independent — turn any of them off, pick a preset, or upload your own sound.')}
       </p>
       {(Object.keys(EVENT_META) as NotificationEvent[]).map((event) => (
         <NotificationEventCard
@@ -53,6 +54,7 @@ export default function NotificationsPage() {
 function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate, onChange }: {
   businessId: string; event: NotificationEvent; setting: NotificationSetting; onOptimisticUpdate: (update: Partial<NotificationSetting>) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const meta = EVENT_META[event];
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,11 +81,11 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
   }
 
   return (
-    <Section title={meta.label}>
-      <p className="text-base text-ivory-dim">{meta.description}</p>
+    <Section title={t(meta.label)}>
+      <p className="text-base text-ivory-dim">{t(meta.description)}</p>
 
       <div className="flex items-center justify-between">
-        <span className="text-base text-ivory-dim">Sound</span>
+        <span className="text-base text-ivory-dim">{t('Sound')}</span>
         <button type="button"
           onClick={() => patch({ enabled: !setting.enabled })}
           disabled={saving}
@@ -91,7 +93,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
             setting.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
           }`}
         >
-          {setting.enabled ? 'On' : 'Off'}
+          {setting.enabled ? t('On') : t('Off')}
         </button>
       </div>
 
@@ -105,14 +107,14 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
               className="min-w-0 flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             >
               {SOUND_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-              {setting.customUrl && <option value="custom">Custom upload</option>}
+              {setting.customUrl && <option value="custom">{t('Custom upload')}</option>}
             </select>
             {setting.sound !== 'custom' && (
               <button type="button"
                 onClick={() => playPresetSound(setting.sound)}
                 className="shrink-0 rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
               >
-                ▶ Preview
+                ▶ {t('Preview')}
               </button>
             )}
           </div>
@@ -123,7 +125,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
               disabled={saving}
               className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
             >
-              Upload custom sound
+              {t('Upload custom sound')}
             </button>
             <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleUpload} className="hidden" />
             {setting.customUrl && (
@@ -131,7 +133,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
                 onClick={() => patch({ sound: 'default', customUrl: '' })}
                 className="text-base text-danger hover:underline"
               >
-                Remove custom sound
+                {t('Remove custom sound')}
               </button>
             )}
           </div>

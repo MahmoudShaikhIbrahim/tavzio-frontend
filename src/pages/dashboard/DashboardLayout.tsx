@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, type NotificationCounts } from '../../lib/authApi';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
@@ -9,7 +10,7 @@ import Logo from '../../components/Logo';
 import ClockWidget from '../../components/ClockWidget';
 import AccountSwitcher from '../../components/AccountSwitcher';
 import { useTheme } from '../../lib/ThemeContext';
-import { translateNavLabel } from '../../lib/i18n/navTranslations';
+import { DashboardLanguageProvider } from '../../lib/i18n/DashboardLanguageContext';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import ChangePasswordPage from './ChangePasswordPage';
 
@@ -67,7 +68,20 @@ const SETTINGS_ITEMS = [
 ];
 
 export default function DashboardLayout() {
+  // The provider has to sit outside the component that actually
+  // consumes it via useT() - a component can't read a context it
+  // provides in its own render. Everything that used to be the whole
+  // export now lives in DashboardLayoutInner below.
+  return (
+    <DashboardLanguageProvider>
+      <DashboardLayoutInner />
+    </DashboardLanguageProvider>
+  );
+}
+
+function DashboardLayoutInner() {
   const { user, logout } = useSession();
+  const { t, isRtl } = useT();
   const location = useLocation();
   const isOwner = user?.role === 'business_owner';
   const [features, setFeatures] = useState<BusinessFeatures | null>(null);
@@ -219,7 +233,7 @@ export default function DashboardLayout() {
   return (
     <div
       className="min-h-screen bg-ink"
-      dir={user?.preferred_language === 'ar' || user?.preferred_language === 'ur' ? 'rtl' : 'ltr'}
+      dir={isRtl ? 'rtl' : 'ltr'}
       style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}
     >
       <header className="border-b border-ink-line">
@@ -230,24 +244,24 @@ export default function DashboardLayout() {
             <AccountSwitcher />
             <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
-            <button type="button" onClick={logout} className="hover:text-ivory">{translateNavLabel('Sign out', user?.preferred_language)}</button>
+            <button type="button" onClick={logout} className="hover:text-ivory">{t('Sign out')}</button>
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
           <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
-            {visibleTabs.map((t) => {
-              const count = (t.badge ? counts[t.badge] : 0) + (t.badge2 ? counts[t.badge2] : 0);
+            {visibleTabs.map((tab) => {
+              const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
               return (
                 <Link
-                  key={t.path}
-                  to={`/admin/dashboard/${t.path}`}
+                  key={tab.path}
+                  to={`/admin/dashboard/${tab.path}`}
                   className={`relative shrink-0 border-b-2 px-3 py-2.5 text-base ${
-                    location.pathname.includes(t.path)
+                    location.pathname.includes(tab.path)
                       ? 'border-brass text-ivory'
                       : 'border-transparent text-ivory-dim hover:text-ivory'
                   }`}
                 >
-                  {translateNavLabel(t.label, user?.preferred_language)}
+                  {t(tab.label)}
                   {count > 0 && (
                     <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
                       {count > 9 ? '9+' : count}
@@ -265,7 +279,7 @@ export default function DashboardLayout() {
                 isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
               }`}
             >
-              {translateNavLabel('Settings', user?.preferred_language)}
+              {t('Settings')}
               <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${settingsOpen ? 'rotate-180' : ''}`}>
                 <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -274,18 +288,18 @@ export default function DashboardLayout() {
             {settingsOpen && (
               <div className="absolute end-0 top-full z-30 mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
                 <div className="grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2">
-                  {visibleSettingsItems.map((t) => (
+                  {visibleSettingsItems.map((tab) => (
                     <Link
-                      key={t.path}
-                      to={`/admin/dashboard/${t.path}`}
+                      key={tab.path}
+                      to={`/admin/dashboard/${tab.path}`}
                       onClick={() => setSettingsOpen(false)}
                       className={`rounded-lg px-3 py-2.5 text-base transition-colors ${
-                        location.pathname.includes(t.path)
+                        location.pathname.includes(tab.path)
                           ? 'bg-brass/10 text-brass'
                           : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                       }`}
                     >
-                      {translateNavLabel(t.label, user?.preferred_language)}
+                      {t(tab.label)}
                     </Link>
                   ))}
                 </div>

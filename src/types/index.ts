@@ -777,6 +777,11 @@ export interface BookingRow {
   pos_sync_status: 'not_applicable' | 'pending' | 'synced' | 'failed';
   pos_sync_error: string;
   created_at: string;
+  party_size: number | null;
+  table_id: string | null;
+  guest_name: string;
+  created_by_staff_id: string | null;
+  cards?: { label: string } | null;
 }
 
 // --- POS / booking-system integration ---

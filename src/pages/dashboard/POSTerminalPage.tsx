@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions,
   listMenuCategories, listMenuItems, createPosOrder, confirmPosCardPayment, getBusiness, lookupFolioByRoom,
@@ -20,6 +21,7 @@ interface CartLine {
 
 export default function POSTerminalPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [till, setTill] = useState<TillSession | null | undefined>(undefined);
   const [searchParams] = useSearchParams();
@@ -49,7 +51,7 @@ export default function POSTerminalPage() {
     <div className="space-y-4">
       {cardPaymentResult && (
         <div className={`rounded-lg border px-4 py-3 text-sm ${cardPaymentResult === 'success' ? 'border-success/40 bg-success/10 text-success' : 'border-danger/40 bg-danger/10 text-danger'}`}>
-          {cardPaymentResult === 'success' ? 'Online card payment confirmed.' : 'Online card payment was not completed.'}
+          {cardPaymentResult === 'success' ? t('Online card payment confirmed.') : t('Online card payment was not completed.')}
         </div>
       )}
       <TerminalScreen businessId={businessId} till={till} onTillClosed={reloadTill} />
@@ -58,6 +60,7 @@ export default function POSTerminalPage() {
 }
 
 function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened: () => void }) {
+  const { t } = useT();
   const [openingFloat, setOpeningFloat] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -93,19 +96,19 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
 
   return (
     <div className="mx-auto max-w-md space-y-6">
-      <Section title="Open your till">
+      <Section title={t('Open your till')}>
         <p className="text-base text-ivory-dim">
-          Count the cash currently in the drawer before you start your shift - this is your starting float.
+          {t('Count the cash currently in the drawer before you start your shift - this is your starting float.')}
         </p>
         {isHotel && (
-          <Field label="Outlet - this till stays locked to it for the whole session">
+          <Field label={t('Outlet - this till stays locked to it for the whole session')}>
             <select value={outletId} onChange={(e) => setOutletId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory">
-              <option value="">Select an outlet...</option>
+              <option value="">{t('Select an outlet...')}</option>
               {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </Field>
         )}
-        <Field label="Opening float (AED)">
+        <Field label={t('Opening float (AED)')}>
           <input
             type="number" min={0} onFocus={(e) => e.target.select()}
             value={openingFloat} onChange={(e) => setOpeningFloat(Number(e.target.value))}
@@ -114,23 +117,23 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
         <button type="button" onClick={handleOpen} disabled={saving} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Opening...' : 'Open till & start selling'}
+          {saving ? t('Opening...') : t('Open till & start selling')}
         </button>
       </Section>
 
       {history.length > 0 && (
-        <Section title="Recent till sessions">
+        <Section title={t('Recent till sessions')}>
           <div className="space-y-2">
             {history.map((h) => (
               <div key={h.id} className="rounded-lg border border-ink-line px-4 py-3 text-sm">
-                <p className="text-ivory">{h.profiles?.name || 'Staff'} · {new Date(h.opened_at).toLocaleDateString()}</p>
+                <p className="text-ivory">{h.profiles?.name || t('Staff')} · {new Date(h.opened_at).toLocaleDateString()}</p>
                 {h.status === 'closed' ? (
                   <p className={Number(h.variance_aed) === 0 ? 'text-success' : 'text-warning'}>
-                    Expected {h.expected_cash_aed?.toFixed(2)} · Counted {h.counted_cash_aed?.toFixed(2)} ·
-                    {' '}Variance {Number(h.variance_aed) >= 0 ? '+' : ''}{h.variance_aed?.toFixed(2)}
+                    {t('Expected')} {h.expected_cash_aed?.toFixed(2)} · {t('Counted')} {h.counted_cash_aed?.toFixed(2)} ·
+                    {' '}{t('Variance')} {Number(h.variance_aed) >= 0 ? '+' : ''}{h.variance_aed?.toFixed(2)}
                   </p>
                 ) : (
-                  <p className="text-brass">Still open</p>
+                  <p className="text-brass">{t('Still open')}</p>
                 )}
               </div>
             ))}
@@ -142,6 +145,7 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
 }
 
 function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string; till: TillSession; onTillClosed: () => void }) {
+  const { t } = useT();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -358,13 +362,13 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   if (confirmed) {
     return (
       <div className="mx-auto max-w-sm space-y-4 text-center">
-        <p className="font-display text-2xl text-ivory">Order sent to kitchen</p>
-        <p className="text-ivory-dim">AED {confirmed.total.toFixed(2)} · paid by {confirmed.method}</p>
+        <p className="font-display text-2xl text-ivory">{t('Order sent to kitchen')}</p>
+        <p className="text-ivory-dim">AED {confirmed.total.toFixed(2)} · {t('paid by')} {confirmed.method}</p>
         <p className="text-sm text-ivory-dim">
-          Incl. VAT (5%): AED {(confirmed.total - confirmed.total / 1.05).toFixed(2)}
+          {t('Incl. VAT (5%):')} AED {(confirmed.total - confirmed.total / 1.05).toFixed(2)}
         </p>
         <button type="button" onClick={() => setConfirmed(null)} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">
-          New order
+          {t('New order')}
         </button>
       </div>
     );
@@ -378,14 +382,14 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="font-display text-2xl text-ivory">POS Terminal</h1>
-          <button type="button" onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">Close till</button>
+          <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
+          <button type="button" onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">{t('Close till')}</button>
         </div>
         {(isOffline || queuedCount > 0) && (
           <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${isOffline ? 'border-danger/40 text-danger' : 'border-warning/40 text-warning'}`}>
             {isOffline
-              ? `Offline - orders are being saved locally${queuedCount > 0 ? ` (${queuedCount} waiting to sync)` : ''} and will send automatically once you're back online.`
-              : `Syncing ${queuedCount} order${queuedCount === 1 ? '' : 's'} saved while offline...`}
+              ? `${t('Offline - orders are being saved locally')}${queuedCount > 0 ? ` (${queuedCount} ${t('waiting to sync')})` : ''} ${t("and will send automatically once you're back online.")}`
+              : `${t('Syncing')} ${queuedCount} ${t('order(s) saved while offline...')}`}
           </div>
         )}
         <div className="flex gap-2 overflow-x-auto border-b border-ink-line pb-2">
@@ -424,12 +428,12 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               </div>
             </button>
           ))}
-          {visibleItems.length === 0 && <p className="text-ivory-dim">No items in this category.</p>}
+          {visibleItems.length === 0 && <p className="text-ivory-dim">{t('No items in this category.')}</p>}
         </div>
       </div>
 
       <div className="rounded-xl border border-ink-line p-4">
-        <Field label="Table / order label">
+        <Field label={t('Table / order label')}>
           <input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} className={inputClass} placeholder="Walk-in, Phone #3, Table 5..." />
         </Field>
         <div className="mt-4 max-h-96 space-y-1.5 overflow-y-auto">
@@ -453,14 +457,14 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
                 onChange={(e) => setLineCourse(line.menuItemId, e.target.value)}
                 className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory-dim"
               >
-                <option value="">Fire now</option>
-                <option value="Starter">Hold: Starter</option>
-                <option value="Main">Hold: Main</option>
-                <option value="Dessert">Hold: Dessert</option>
+                <option value="">{t('Fire now')}</option>
+                <option value="Starter">{t('Hold: Starter')}</option>
+                <option value="Main">{t('Hold: Main')}</option>
+                <option value="Dessert">{t('Hold: Dessert')}</option>
               </select>
             </div>
           ))}
-          {cart.length === 0 && <p className="text-ivory-dim">Cart is empty.</p>}
+          {cart.length === 0 && <p className="text-ivory-dim">{t('Cart is empty.')}</p>}
         </div>
         <div className="mt-4 space-y-2 rounded-lg border border-ink-line p-3">
           <div className="flex items-center gap-2">
@@ -469,9 +473,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               onChange={(e) => setDiscountType(e.target.value as '' | 'percentage' | 'fixed')}
               className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
             >
-              <option value="">No discount</option>
-              <option value="percentage">% off</option>
-              <option value="fixed">AED off</option>
+              <option value="">{t('No discount')}</option>
+              <option value="percentage">{t('% off')}</option>
+              <option value="fixed">{t('AED off')}</option>
             </select>
             {discountType && (
               <input
@@ -489,7 +493,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             <input
               value={discountReason}
               onChange={(e) => setDiscountReason(e.target.value)}
-              placeholder="Reason (required - e.g. regular customer, kitchen delay)"
+              placeholder={t('Reason (required - e.g. regular customer, kitchen delay)')}
               className="w-full rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory placeholder:text-ivory-dim/60"
             />
           )}
@@ -499,17 +503,17 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           {discountAmount > 0 && (
             <>
               <div className="flex justify-between text-sm text-ivory-dim">
-                <span>Subtotal</span>
+                <span>{t('Subtotal')}</span>
                 <span>AED {cartSubtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-danger">
-                <span>Discount</span>
+                <span>{t('Discount')}</span>
                 <span>−AED {discountAmount.toFixed(2)}</span>
               </div>
             </>
           )}
           <div className="flex justify-between text-lg">
-            <span className="text-ivory">Total</span>
+            <span className="text-ivory">{t('Total')}</span>
             <span className="text-brass">AED {cartTotal.toFixed(2)}</span>
           </div>
         </div>
@@ -517,11 +521,11 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
 
         {isHotel && (
           <div className="mt-4 rounded-lg border border-brass/30 bg-ink-soft p-3">
-            <p className="mb-2 text-sm text-ivory">Charge to Room</p>
+            <p className="mb-2 text-sm text-ivory">{t('Charge to Room')}</p>
             {roomFolio ? (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-ivory">Room {roomFolio.roomNumber}{roomFolio.guestName ? ` · ${roomFolio.guestName}` : ''}</span>
-                <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">Change</button>
+                <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">{t('Change')}</button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -529,11 +533,11 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
                   value={roomNumber}
                   onChange={(e) => setRoomNumber(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleRoomLookup()}
-                  placeholder="Room number"
+                  placeholder={t('Room number')}
                   className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
                 />
                 <button type="button" onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
-                  {lookingUpRoom ? 'Looking up...' : 'Find'}
+                  {lookingUpRoom ? t('Looking up...') : t('Find')}
                 </button>
               </div>
             )}
@@ -548,17 +552,17 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               disabled={checkingOut || cart.length === 0 || !roomFolio}
               className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
             >
-              Charge to Room{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
+              {t('Charge to Room')}{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
           <button type="button" onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-            Charge - Cash
+            {t('Charge - Cash')}
           </button>
           <button type="button" onClick={() => handleCharge('card')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
-            Charge - Card (external machine)
+            {t('Charge - Card (external machine)')}
           </button>
           <button type="button" onClick={() => handleCharge('card_online')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
-            Charge - Card online (real gateway)
+            {t('Charge - Card online (real gateway)')}
           </button>
         </div>
       </div>
@@ -567,6 +571,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
 }
 
 function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: string; till: TillSession; onDone: () => void; onCancel: () => void }) {
+  const { t } = useT();
   const [countedCash, setCountedCash] = useState(0);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -590,35 +595,35 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
     const variance = Number(result.variance_aed);
     return (
       <div className="mx-auto max-w-sm space-y-4 text-center">
-        <p className="font-display text-2xl text-ivory">Till closed</p>
+        <p className="font-display text-2xl text-ivory">{t('Till closed')}</p>
         <div className="space-y-1 text-base text-ivory-dim">
-          <p>Expected: AED {result.expected_cash_aed?.toFixed(2)}</p>
-          <p>Counted: AED {result.counted_cash_aed?.toFixed(2)}</p>
+          <p>{t('Expected:')} AED {result.expected_cash_aed?.toFixed(2)}</p>
+          <p>{t('Counted:')} AED {result.counted_cash_aed?.toFixed(2)}</p>
           <p className={variance === 0 ? 'text-success' : 'text-warning'}>
-            Variance: {variance >= 0 ? '+' : ''}{variance.toFixed(2)} AED
+            {t('Variance:')} {variance >= 0 ? '+' : ''}{variance.toFixed(2)} AED
           </p>
         </div>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">Done</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">{t('Done')}</button>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-sm space-y-4">
-      <Section title="Close till">
-        <p className="text-base text-ivory-dim">Count the cash physically in the drawer and enter the real total.</p>
-        <Field label="Counted cash (AED)">
+      <Section title={t('Close till')}>
+        <p className="text-base text-ivory-dim">{t('Count the cash physically in the drawer and enter the real total.')}</p>
+        <Field label={t('Counted cash (AED)')}>
           <input type="number" min={0} onFocus={(e) => e.target.select()} value={countedCash} onChange={(e) => setCountedCash(Number(e.target.value))} className={inputClass} />
         </Field>
-        <Field label="Notes (optional)">
+        <Field label={t('Notes (optional)')}>
           <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
         <div className="flex gap-2">
           <button type="button" onClick={handleClose} disabled={saving} className="flex-1 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-            {saving ? 'Closing...' : 'Close till'}
+            {saving ? t('Closing...') : t('Close till')}
           </button>
-          <button type="button" onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim">Cancel</button>
+          <button type="button" onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim">{t('Cancel')}</button>
         </div>
       </Section>
     </div>

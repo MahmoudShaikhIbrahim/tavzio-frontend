@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   getBusiness, listStaff,
   listStaffDocuments, uploadStaffDocument, deleteStaffDocument, type StaffDocument,
@@ -15,6 +16,7 @@ const DOC_TYPES = ['Emirates ID', 'Passport', 'Visa', 'Labor Card', 'Employment 
 
 export default function HRPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [tab, setTab] = useState<'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'>('documents');
@@ -31,8 +33,7 @@ export default function HRPage() {
       <div className="max-w-lg space-y-3">
         <h1 className="font-display text-3xl text-ivory">HR</h1>
         <p className="text-base text-ivory-dim">
-          HR is turned off for your business. Turn it on under Features, then come back here - each module
-          (documents, commission, tips, scheduling, labor cost) can be enabled independently.
+          {t('HR is turned off for your business. Turn it on under Features, then come back here - each module (documents, commission, tips, scheduling, labor cost) can be enabled independently.')}
         </p>
       </div>
     );
@@ -50,15 +51,15 @@ export default function HRPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl text-ivory">HR</h1>
-        <p className="mt-1 text-base text-ivory-dim">Owner-only - staff accounts never see this section.</p>
+        <p className="mt-1 text-base text-ivory-dim">{t('Owner-only - staff accounts never see this section.')}</p>
       </div>
       {availableTabs.length === 0 ? (
-        <p className="text-ivory-dim">No HR modules are turned on yet - enable one under Features.</p>
+        <p className="text-ivory-dim">{t('No HR modules are turned on yet - enable one under Features.')}</p>
       ) : (
         <>
           <div className="flex gap-1.5 border-b border-ink-line">
-            {availableTabs.map((t) => (
-              <TabButton key={t.key} active={tab === t.key} onClick={() => setTab(t.key)}>{t.label}</TabButton>
+            {availableTabs.map((tabItem) => (
+              <TabButton key={tabItem.key} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)}>{t(tabItem.label)}</TabButton>
             ))}
           </div>
           {tab === 'documents' && hr.documents && <DocumentsTab businessId={businessId} />}
@@ -84,6 +85,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 function DocumentsTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [documents, setDocuments] = useState<StaffDocument[]>([]);
   const [staffId, setStaffId] = useState('');
@@ -127,30 +129,30 @@ function DocumentsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(doc: StaffDocument) {
-    if (!confirm(`Delete "${doc.label || doc.doc_type}"? This can't be undone.`)) return;
+    if (!confirm(`${t('Delete')} "${doc.label || doc.doc_type}"? ${t("This can't be undone.")}`)) return;
     await deleteStaffDocument(businessId, doc.id);
     reload();
   }
 
   return (
-    <Section title="Staff Documents">
+    <Section title={t('Staff Documents')}>
       <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
-        <Field label="Staff member">
+        <Field label={t('Staff member')}>
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-            <option value="">Select...</option>
+            <option value="">{t('Select...')}</option>
             {staff.filter((s) => s.role === 'staff').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
-        <Field label="Document type">
+        <Field label={t('Document type')}>
           <select value={docType} onChange={(e) => setDocType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-            {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {DOC_TYPES.map((dt) => <option key={dt} value={dt}>{t(dt)}</option>)}
           </select>
         </Field>
-        <Field label="Label (optional)"><input value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
-        <Field label="Expiry (optional)"><input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-        <Field label="File"><input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm text-ivory-dim" /></Field>
+        <Field label={t('Label (optional)')}><input value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Expiry (optional)')}><input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+        <Field label={t('File')}><input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm text-ivory-dim" /></Field>
         <button type="submit" disabled={uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {uploading ? 'Uploading...' : 'Upload'}
+          {uploading ? t('Uploading...') : t('Upload')}
         </button>
       </form>
       {error && <p className="text-base text-danger">{error}</p>}
@@ -161,28 +163,29 @@ function DocumentsTab({ businessId }: { businessId: string }) {
           return (
             <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3 text-base">
               <div>
-                <span className="text-ivory">{d.profiles?.name || 'Unknown'}</span>
+                <span className="text-ivory">{d.profiles?.name || t('Unknown')}</span>
                 <span className="text-ivory-dim"> · {d.doc_type}{d.label ? ` (${d.label})` : ''}</span>
                 {d.expiry_date && (
                   <span className={`ml-2 text-sm ${expiringSoon ? 'text-warning' : 'text-ivory-dim'}`}>
-                    expires {new Date(d.expiry_date).toLocaleDateString('en-GB')}
+                    {t('expires')} {new Date(d.expiry_date).toLocaleDateString('en-GB')}
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <button type="button" onClick={() => handleView(d)} className="text-brass hover:underline">View</button>
-                <button type="button" onClick={() => handleDelete(d)} className="text-danger hover:underline">Delete</button>
+                <button type="button" onClick={() => handleView(d)} className="text-brass hover:underline">{t('View')}</button>
+                <button type="button" onClick={() => handleDelete(d)} className="text-danger hover:underline">{t('Delete')}</button>
               </div>
             </div>
           );
         })}
-        {documents.length === 0 && <p className="text-ivory-dim">No documents uploaded yet.</p>}
+        {documents.length === 0 && <p className="text-ivory-dim">{t('No documents uploaded yet.')}</p>}
       </div>
     </Section>
   );
 }
 
 function CommissionTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [report, setReport] = useState<CommissionReportRow[]>([]);
   const [totalCommission, setTotalCommission] = useState(0);
@@ -209,7 +212,7 @@ function CommissionTab({ businessId }: { businessId: string }) {
 
   return (
     <div className="space-y-6">
-      <Section title="Commission Rates">
+      <Section title={t('Commission Rates')}>
         <div className="space-y-2">
           {staff.filter((s) => s.role === 'staff').map((s) => {
             const reportRow = report.find((r) => r.staffId === s.id);
@@ -220,22 +223,22 @@ function CommissionTab({ businessId }: { businessId: string }) {
                   {editingId === s.id ? (
                     <div className="flex items-center gap-2">
                       <select value={rateType} onChange={(e) => setRateType(e.target.value as 'percentage' | 'fixed_per_order')} className="rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory">
-                        <option value="percentage">% of sales</option>
-                        <option value="fixed_per_order">AED per order</option>
+                        <option value="percentage">{t('% of sales')}</option>
+                        <option value="fixed_per_order">{t('AED per order')}</option>
                       </select>
                       <input type="number" min={0} value={rateValue} onFocus={(e) => e.target.select()} onChange={(e) => setRateValue(Number(e.target.value))} className="w-20 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
-                      <button type="button" onClick={() => handleSave(s.id)} className="text-sm text-brass hover:underline">Save</button>
-                      <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">Cancel</button>
+                      <button type="button" onClick={() => handleSave(s.id)} className="text-sm text-brass hover:underline">{t('Save')}</button>
+                      <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">{t('Cancel')}</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 text-sm">
                       {reportRow?.commissionType ? (
                         <span className="text-ivory-dim">{reportRow.commissionRate}{reportRow.commissionType === 'percentage' ? '%' : ' AED/order'}</span>
                       ) : (
-                        <span className="text-ivory-dim">No commission set</span>
+                        <span className="text-ivory-dim">{t('No commission set')}</span>
                       )}
-                      <button type="button" onClick={() => { setEditingId(s.id); setRateType('percentage'); setRateValue(0); }} className="text-brass hover:underline">Edit</button>
-                      {reportRow?.commissionType && <button type="button" onClick={() => handleClear(s.id)} className="text-danger hover:underline">Clear</button>}
+                      <button type="button" onClick={() => { setEditingId(s.id); setRateType('percentage'); setRateValue(0); }} className="text-brass hover:underline">{t('Edit')}</button>
+                      {reportRow?.commissionType && <button type="button" onClick={() => handleClear(s.id)} className="text-danger hover:underline">{t('Clear')}</button>}
                     </div>
                   )}
                 </div>
@@ -245,20 +248,20 @@ function CommissionTab({ businessId }: { businessId: string }) {
         </div>
       </Section>
 
-      <Section title="Commission Report (last 30 days)">
+      <Section title={t('Commission Report (last 30 days)')}>
         <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
-          <p className="text-xs uppercase tracking-wide text-brass">Total commission owed</p>
+          <p className="text-xs uppercase tracking-wide text-brass">{t('Total commission owed')}</p>
           <p className="mt-1 font-display text-2xl text-ivory">AED {totalCommission.toFixed(2)}</p>
         </div>
         <div className="space-y-2">
           {report.map((r) => (
             <div key={r.staffId} className="flex items-center justify-between text-sm text-ivory-dim">
               <span>{r.name}</span>
-              <span>{r.orderCount} orders · AED {r.salesTotal.toFixed(2)} sales</span>
+              <span>{r.orderCount} {t('orders ·')} AED {r.salesTotal.toFixed(2)} {t('sales')}</span>
               <span className="text-ivory">AED {r.commission.toFixed(2)}</span>
             </div>
           ))}
-          {report.length === 0 && <p className="text-ivory-dim">No staff have a commission rate set yet.</p>}
+          {report.length === 0 && <p className="text-ivory-dim">{t('No staff have a commission rate set yet.')}</p>}
         </div>
       </Section>
     </div>
@@ -266,6 +269,7 @@ function CommissionTab({ businessId }: { businessId: string }) {
 }
 
 function SchedulingTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [schedules, setSchedules] = useState<StaffSchedule[]>([]);
   const [totalHours, setTotalHours] = useState(0);
@@ -310,49 +314,49 @@ function SchedulingTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Remove this scheduled shift?')) return;
+    if (!confirm(t('Remove this scheduled shift?'))) return;
     await deleteSchedule(businessId, id);
     reload();
   }
 
   return (
-    <Section title="Roster" action={
+    <Section title={t('Roster')} action={
       <div className="flex items-center gap-2">
         <input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-        <span className="text-ivory-dim">to</span>
+        <span className="text-ivory-dim">{t('to')}</span>
         <input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Add shift</button>
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ {t('Add shift')}</button>
       </div>
     }>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-ink-line p-3">
-          <p className="text-xs text-ivory-dim">Scheduled hours</p>
+          <p className="text-xs text-ivory-dim">{t('Scheduled hours')}</p>
           <p className="text-xl text-ivory">{totalHours}</p>
         </div>
         <div className="rounded-lg border border-ink-line p-3">
-          <p className="text-xs text-ivory-dim">Forecasted labor cost</p>
+          <p className="text-xs text-ivory-dim">{t('Forecasted labor cost')}</p>
           <p className="text-xl text-brass">AED {totalForecastCostAed.toFixed(2)}</p>
         </div>
         {untrackedShiftCount > 0 && (
           <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
-            <p className="text-xs text-warning">{untrackedShiftCount} shift(s) belong to staff with no hourly rate set - excluded from the forecast above. Set rates in the Labor Cost tab.</p>
+            <p className="text-xs text-warning">{untrackedShiftCount} {t('shift(s) belong to staff with no hourly rate set - excluded from the forecast above. Set rates in the Labor Cost tab.')}</p>
           </div>
         )}
       </div>
 
       {showAdd && (
         <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
-          <Field label="Staff">
+          <Field label={t('Staff')}>
             <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-              <option value="">Select...</option>
+              <option value="">{t('Select...')}</option>
               {staff.filter((s) => s.role === 'staff').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </Field>
-          <Field label="Date"><input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-          <Field label="Start"><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-          <Field label="End"><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-          <Field label="Role (optional)"><input value={roleLabel} onChange={(e) => setRoleLabel(e.target.value)} placeholder="e.g. Floor, Kitchen" className={inputClass} /></Field>
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">Add</button>
+          <Field label={t('Date')}><input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+          <Field label={t('Start')}><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+          <Field label={t('End')}><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+          <Field label={t('Role (optional)')}><input value={roleLabel} onChange={(e) => setRoleLabel(e.target.value)} placeholder="e.g. Floor, Kitchen" className={inputClass} /></Field>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
         </form>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -365,18 +369,19 @@ function SchedulingTab({ businessId }: { businessId: string }) {
               {' - '}{new Date(s.scheduledEnd).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
             </span>
             <span className="flex items-center gap-3 text-ivory-dim">
-              <span>{s.hours}h{s.forecastCostAed != null ? ` · AED ${s.forecastCostAed.toFixed(2)}` : ' · no rate set'}</span>
-              <button type="button" onClick={() => handleDelete(s.id)} className="text-danger hover:underline">Remove</button>
+              <span>{s.hours}h{s.forecastCostAed != null ? ` · AED ${s.forecastCostAed.toFixed(2)}` : ` · ${t('no rate set')}`}</span>
+              <button type="button" onClick={() => handleDelete(s.id)} className="text-danger hover:underline">{t('Remove')}</button>
             </span>
           </div>
         ))}
-        {schedules.length === 0 && <p className="text-ivory-dim">No shifts scheduled in this range.</p>}
+        {schedules.length === 0 && <p className="text-ivory-dim">{t('No shifts scheduled in this range.')}</p>}
       </div>
     </Section>
   );
 }
 
 function LaborCostTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [wages, setWages] = useState<Record<string, number | null>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -414,7 +419,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
 
   return (
     <div className="space-y-6">
-      <Section title="Hourly rates">
+      <Section title={t('Hourly rates')}>
         <div className="space-y-2">
           {staff.filter((s) => s.role === 'staff').map((s) => (
             <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line p-3">
@@ -423,27 +428,27 @@ function LaborCostTab({ businessId }: { businessId: string }) {
                 <div className="flex items-center gap-2">
                   <input type="number" min={0} value={rateValue} onFocus={(e) => e.target.select()} onChange={(e) => setRateValue(Number(e.target.value))} className="w-24 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
                   <span className="text-sm text-ivory-dim">AED/hr</span>
-                  <button type="button" onClick={() => handleSaveWage(s.id)} className="text-sm text-brass hover:underline">Save</button>
-                  <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">Cancel</button>
+                  <button type="button" onClick={() => handleSaveWage(s.id)} className="text-sm text-brass hover:underline">{t('Save')}</button>
+                  <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">{t('Cancel')}</button>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 text-sm">
-                  <span className="text-ivory-dim">{wages[s.id] != null ? `AED ${wages[s.id]!.toFixed(2)}/hr` : 'No rate set'}</span>
-                  <button type="button" onClick={() => { setEditingId(s.id); setRateValue(wages[s.id] || 0); }} className="text-brass hover:underline">Edit</button>
-                  {wages[s.id] != null && <button type="button" onClick={() => handleClearWage(s.id)} className="text-danger hover:underline">Clear</button>}
+                  <span className="text-ivory-dim">{wages[s.id] != null ? `AED ${wages[s.id]!.toFixed(2)}/hr` : t('No rate set')}</span>
+                  <button type="button" onClick={() => { setEditingId(s.id); setRateValue(wages[s.id] || 0); }} className="text-brass hover:underline">{t('Edit')}</button>
+                  {wages[s.id] != null && <button type="button" onClick={() => handleClearWage(s.id)} className="text-danger hover:underline">{t('Clear')}</button>}
                 </div>
               )}
             </div>
           ))}
-          {staff.filter((s) => s.role === 'staff').length === 0 && <p className="text-ivory-dim">No staff accounts yet.</p>}
+          {staff.filter((s) => s.role === 'staff').length === 0 && <p className="text-ivory-dim">{t('No staff accounts yet.')}</p>}
         </div>
       </Section>
 
-      <Section title="Labor cost report" action={
+      <Section title={t('Labor cost report')} action={
         <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
-          <option value={7}>Last 7 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
+          <option value={7}>{t('Last 7 days')}</option>
+          <option value={30}>{t('Last 30 days')}</option>
+          <option value={90}>{t('Last 90 days')}</option>
         </select>
       }>
         {loading && <p className="text-ivory-dim">Loading...</p>}
@@ -451,32 +456,32 @@ function LaborCostTab({ businessId }: { businessId: string }) {
           <>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-ink-line p-3">
-                <p className="text-xs text-ivory-dim">Revenue</p>
+                <p className="text-xs text-ivory-dim">{t('Revenue')}</p>
                 <p className="text-xl text-ivory">AED {report.totalRevenueAed.toFixed(2)}</p>
               </div>
               <div className="rounded-lg border border-ink-line p-3">
-                <p className="text-xs text-ivory-dim">Labor cost</p>
+                <p className="text-xs text-ivory-dim">{t('Labor cost')}</p>
                 <p className="text-xl text-ivory">AED {report.totalLaborCostAed.toFixed(2)}</p>
               </div>
               <div className="rounded-lg border border-ink-line p-3">
-                <p className="text-xs text-ivory-dim">Labor cost %</p>
-                <p className="text-xl text-brass">{report.laborCostPct != null ? `${report.laborCostPct}%` : 'n/a'}</p>
+                <p className="text-xs text-ivory-dim">{t('Labor cost %')}</p>
+                <p className="text-xl text-brass">{report.laborCostPct != null ? `${report.laborCostPct}%` : t('n/a')}</p>
               </div>
             </div>
             {report.untrackedHours > 0 && (
-              <p className="text-sm text-warning">{report.untrackedHours} worked hour(s) belong to staff with no rate set - excluded from the cost above.</p>
+              <p className="text-sm text-warning">{report.untrackedHours} {t('worked hour(s) belong to staff with no rate set - excluded from the cost above.')}</p>
             )}
             {report.overtimeShiftCount > 0 && (
-              <p className="text-sm text-warning">{report.overtimeShiftCount} shift(s) exceeded 8 hours in this window.</p>
+              <p className="text-sm text-warning">{report.overtimeShiftCount} {t('shift(s) exceeded 8 hours in this window.')}</p>
             )}
             <div className="space-y-1">
               {report.byStaff.map((s) => (
                 <div key={s.staffId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
-                  <span className="text-ivory">{s.name}{s.overtimeShifts > 0 ? ` (${s.overtimeShifts} overtime shift${s.overtimeShifts > 1 ? 's' : ''})` : ''}</span>
-                  <span className="text-ivory-dim">{s.hours}h {s.hourlyRateAed != null ? `· AED ${s.costAed.toFixed(2)}` : '· no rate set'}</span>
+                  <span className="text-ivory">{s.name}{s.overtimeShifts > 0 ? ` (${s.overtimeShifts} ${t('overtime shift')}${s.overtimeShifts > 1 ? 's' : ''})` : ''}</span>
+                  <span className="text-ivory-dim">{s.hours}h {s.hourlyRateAed != null ? `· AED ${s.costAed.toFixed(2)}` : `· ${t('no rate set')}`}</span>
                 </div>
               ))}
-              {report.byStaff.length === 0 && <p className="text-ivory-dim">No clocked shifts in this window.</p>}
+              {report.byStaff.length === 0 && <p className="text-ivory-dim">{t('No clocked shifts in this window.')}</p>}
             </div>
           </>
         )}
@@ -486,6 +491,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
 }
 
 function TipsTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [distributions, setDistributions] = useState<TipDistribution[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -532,22 +538,22 @@ function TipsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="Tip Pooling" action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ Distribute tips</button>}>
+    <Section title={t('Tip Pooling')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Distribute tips')}</button>}>
       {showAdd && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-ink-line p-4">
           <div className="flex flex-wrap items-end gap-3">
-            <Field label="Period start"><input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-            <Field label="Period end"><input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-            <Field label="Total tips (AED)"><input type="number" min={0} value={totalAmount} onFocus={(e) => e.target.select()} onChange={(e) => setTotalAmount(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
-            <Field label="Split method">
+            <Field label={t('Period start')}><input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+            <Field label={t('Period end')}><input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+            <Field label={t('Total tips (AED)')}><input type="number" min={0} value={totalAmount} onFocus={(e) => e.target.select()} onChange={(e) => setTotalAmount(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
+            <Field label={t('Split method')}>
               <select value={method} onChange={(e) => setMethod(e.target.value as 'even' | 'by_hours')} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
-                <option value="even">Even split</option>
-                <option value="by_hours">By hours worked</option>
+                <option value="even">{t('Even split')}</option>
+                <option value="by_hours">{t('By hours worked')}</option>
               </select>
             </Field>
           </div>
           <div>
-            <p className="mb-1.5 text-sm text-ivory-dim">Include staff</p>
+            <p className="mb-1.5 text-sm text-ivory-dim">{t('Include staff')}</p>
             <div className="flex flex-wrap gap-3">
               {staff.filter((s) => s.role === 'staff').map((s) => (
                 <label key={s.id} className="flex items-center gap-1.5 text-sm text-ivory">
@@ -559,7 +565,7 @@ function TipsTab({ businessId }: { businessId: string }) {
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-            {saving ? 'Distributing...' : 'Distribute'}
+            {saving ? t('Distributing...') : t('Distribute')}
           </button>
         </form>
       )}
@@ -570,19 +576,19 @@ function TipsTab({ businessId }: { businessId: string }) {
               <p className="text-base text-ivory">
                 AED {Number(d.total_amount_aed).toFixed(2)} · {new Date(d.period_start).toLocaleDateString('en-GB')} - {new Date(d.period_end).toLocaleDateString('en-GB')}
               </p>
-              <span className="text-sm text-ivory-dim capitalize">{d.method.replace('_', ' ')}</span>
+              <span className="text-sm text-ivory-dim">{d.method === 'even' ? t('Even split') : t('By hours worked')}</span>
             </div>
             <div className="mt-2 space-y-1 border-t border-ink-line pt-2 text-sm">
               {(d.tip_distribution_shares || []).map((s) => (
                 <div key={s.id} className="flex justify-between text-ivory-dim">
-                  <span>{s.profiles?.name || 'Unknown'}</span>
+                  <span>{s.profiles?.name || t('Unknown')}</span>
                   <span className="text-ivory">AED {Number(s.amount_aed).toFixed(2)}</span>
                 </div>
               ))}
             </div>
           </div>
         ))}
-        {distributions.length === 0 && <p className="text-ivory-dim">No tip distributions yet.</p>}
+        {distributions.length === 0 && <p className="text-ivory-dim">{t('No tip distributions yet.')}</p>}
       </div>
     </Section>
   );

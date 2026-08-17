@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { changePassword, updateMyLanguage } from '../../lib/authApi';
 import { useSession } from '../../hooks/useSession';
+import { useDashboardLanguage } from '../../lib/i18n/DashboardLanguageContext';
+import { useT } from '../../hooks/useT';
 import { Section, Field, inputClass } from '../../components/ui';
 import { LANGUAGES } from '../../lib/i18n/types';
 
 export default function ChangePasswordPage({ forced = false }: { forced?: boolean }) {
   const { user } = useSession();
+  const { t } = useT();
   const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -14,18 +17,16 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-  const [language, setLanguage] = useState<string>(user?.preferred_language || 'en');
+  // The context IS the single source of truth for which language is
+  // currently active - no separate local copy to keep in sync. Reading
+  // it here means this page's own "which button is highlighted" state
+  // can never drift from what the rest of the dashboard is actually
+  // showing.
+  const { language, setLanguage } = useDashboardLanguage();
   const [savingLanguage, setSavingLanguage] = useState(false);
   const [languageSaved, setLanguageSaved] = useState(false);
   const [languageError, setLanguageError] = useState('');
   const languageAttemptRef = useRef(0);
-
-  // The session's own account loads asynchronously - this picks up the
-  // account's real saved preference the moment it arrives, same pattern
-  // DashboardLayout uses for theme_preference.
-  useEffect(() => {
-    if (user?.preferred_language) setLanguage(user.preferred_language);
-  }, [user?.preferred_language]);
 
   async function handleLanguageChange(code: string) {
     // A real bug this fixes: clicking through several language buttons in
@@ -39,6 +40,12 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
     languageAttemptRef.current += 1;
     const thisAttempt = languageAttemptRef.current;
 
+    // Instant, not waiting on the network - this is what makes the
+    // whole dashboard switch language immediately, everywhere, the
+    // moment someone taps a button. The save below still runs, so the
+    // choice survives a future login; if it fails, the switch itself
+    // has already happened and languageError below explains the save
+    // problem separately rather than undoing the visible change.
     setLanguage(code);
     setSavingLanguage(true);
     setLanguageSaved(false);
@@ -87,9 +94,9 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
   const content = (
     <>
       {!forced && (
-        <Section title="Preferred language">
+        <Section title={t('Preferred language')}>
           <p className="text-sm text-ivory-dim">
-            Applies to your own account only - each staff member sets their own, separately from anyone else's.
+            {t("Applies to your own account only - each staff member sets their own, separately from anyone else's.")}
           </p>
           <div className="flex flex-wrap gap-2">
             {LANGUAGES.map((l) => (
@@ -107,33 +114,32 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
               </button>
             ))}
           </div>
-          {languageSaved && <p className="text-sm text-success">Saved.</p>}
+          {languageSaved && <p className="text-sm text-success">{t('Saved.')}</p>}
           {languageError && <p className="text-sm text-danger">{languageError}</p>}
         </Section>
       )}
-      <Section title={forced ? 'Set your own password' : 'Change password'}>
+      <Section title={forced ? t('Set your own password') : t('Change password')}>
         {forced && (
           <p className="text-base text-ivory-dim">
-            Welcome{user?.name ? `, ${user.name}` : ''}. For security, set a password only you know before continuing -
-            the one used to create your account was set by Tavzio and shouldn't stay in use.
+            {t('Welcome')}{user?.name ? `, ${user.name}` : ''}. {t("For security, set a password only you know before continuing - the one used to create your account was set by Tavzio and shouldn't stay in use.")}
           </p>
         )}
         {done ? (
-          <p className="text-base text-success">Password updated{forced ? ' - taking you to your dashboard...' : '.'}</p>
+          <p className="text-base text-success">{t('Password updated')}{forced ? ` ${t('- taking you to your dashboard...')}` : '.'}</p>
         ) : (
           <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
-            <Field label={forced ? 'Current (temporary) password' : 'Current password'}>
+            <Field label={forced ? t('Current (temporary) password') : t('Current password')}>
               <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className={inputClass} />
             </Field>
-            <Field label="New password">
+            <Field label={t('New password')}>
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} className={inputClass} />
             </Field>
-            <Field label="Confirm new password">
+            <Field label={t('Confirm new password')}>
               <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={inputClass} />
             </Field>
             {error && <p className="text-base text-danger">{error}</p>}
             <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-              {saving ? 'Saving...' : 'Set new password'}
+              {saving ? t('Saving...') : t('Set new password')}
             </button>
           </form>
         )}

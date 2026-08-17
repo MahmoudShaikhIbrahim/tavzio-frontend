@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
   voidOrderItem, clearTable, recordManualPayment, fireCourse,
@@ -39,6 +40,7 @@ const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export default function OrdersPage() {
   const { user } = useSession();
+  const { t } = useT();
   const navigate = useNavigate();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -169,7 +171,7 @@ export default function OrdersPage() {
   // its own labeled section (never merged at the data level - each order
   // stays a real, separate record, this is purely a display grouping).
   const tableGroups = active.reduce<Record<string, OrderRow[]>>((acc, o) => {
-    const key = o.table_label || 'No table';
+    const key = o.table_label || t('No table');
     (acc[key] ||= []).push(o);
     return acc;
   }, {});
@@ -190,7 +192,7 @@ export default function OrdersPage() {
     <div className="space-y-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <h1 className="font-display text-3xl text-ivory">Orders</h1>
+          <h1 className="font-display text-3xl text-ivory">{t('Orders')}</h1>
           {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -200,14 +202,14 @@ export default function OrdersPage() {
               POS. This page is now purely the live status/notifications
               feed; POS is the only place a new order gets created. */}
           <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
-            Take an order in POS →
+            {t('Take an order in POS →')}
           </button>
           {payBillEnabled && (
             <button type="button"
               onClick={() => setShowRecordPayment(true)}
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
             >
-              Record payment
+              {t('Record payment')}
             </button>
           )}
           {!payBillEnabled && (
@@ -215,7 +217,7 @@ export default function OrdersPage() {
               onClick={() => navigate('/admin/dashboard/table-receipts')}
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
             >
-              Table Receipts
+              {t('Table Receipts')}
             </button>
           )}
           <ExportButtons businessId={businessId} kind="orders" />
@@ -227,42 +229,42 @@ export default function OrdersPage() {
           {readyUnacked.map((o) => (
             <div key={o.id} className="rounded-xl border border-success/50 bg-success/10 p-4">
               <p className="text-base font-medium text-success">
-                Ready — <span className="text-ivory">{o.table_label || 'No table'}</span>
+                {t('Ready —')} <span className="text-ivory">{o.table_label || t('No table')}</span>
               </p>
               <button type="button" onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-2 text-base text-success hover:bg-success/10">
-                Dismiss
+                {t('Dismiss')}
               </button>
             </div>
           ))}
           {requests.map((r) => (
             <div key={r.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
               <p className="text-base font-medium text-brass">
-                {r.request_type === 'call_waiter' ? 'Call Waiter' : r.request_type === 'request_bill' ? 'Request Bill' : r.custom_request_label || 'Request'} — <span className="text-ivory">{r.table_label || 'No table'}</span>
+                {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')} — <span className="text-ivory">{r.table_label || t('No table')}</span>
               </p>
               <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10">
-                Dismiss
+                {t('Dismiss')}
               </button>
             </div>
           ))}
           {cashPending.map((item) => (
             <div key={item.id} className="rounded-xl border border-warning/50 bg-warning/10 p-4">
               <p className="text-base font-medium text-warning">
-                Cash pending — <span className="text-ivory">{item.table_label || 'No table'}</span>
+                {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
               </p>
               <p className="mt-1 text-sm text-ivory-dim">{item.quantity}× {item.item_name}</p>
-              <p className="mt-2 text-sm text-ivory-dim">Use Record payment to confirm</p>
+              <p className="mt-2 text-sm text-ivory-dim">{t('Use Record payment to confirm')}</p>
             </div>
           ))}
           {claims.map((c) => (
             <div key={c.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
               <p className="text-base font-medium text-brass">
-                Loyalty reward — <span className="text-ivory">{c.table_label || 'No table'}</span>
+                {t('Loyalty reward —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
               </p>
               <button type="button"
                 onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
                 className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10"
               >
-                Mark redeemed
+                {t('Mark redeemed')}
               </button>
             </div>
           ))}
@@ -270,7 +272,7 @@ export default function OrdersPage() {
       )}
 
       {Object.keys(tableGroups).length === 0 ? (
-        <p className="text-base text-ivory-dim">No active orders right now.</p>
+        <p className="text-base text-ivory-dim">{t('No active orders right now.')}</p>
       ) : (
         <div className="flex flex-wrap items-start gap-6">
           {Object.keys(tableGroups).map((table) => (
@@ -285,7 +287,7 @@ export default function OrdersPage() {
             onClick={() => setRecentOpen((v) => !v)}
             className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim hover:text-ivory"
           >
-            <span>Recent, last 24h ({past.length})</span>
+            <span>{t('Recent, last 24h')} ({past.length})</span>
             <span>{recentOpen ? '▲' : '▼'}</span>
           </button>
           {recentOpen && (
@@ -293,7 +295,7 @@ export default function OrdersPage() {
             {past.slice(0, 10).map((order) => (
               <div key={order.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
                 <span className="text-ivory-dim">
-                  {order.table_label || 'No table'} — {order.total.toFixed(2)}
+                  {order.table_label || t('No table')} — {order.total.toFixed(2)}
                   <span className="ms-2 text-sm text-ivory-dim/60">
                     {new Date(order.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                     {' · '}
@@ -301,7 +303,7 @@ export default function OrdersPage() {
                   </span>
                 </span>
                 <span className={`rounded-full border px-2 py-0.5 text-sm ${STATUS_STYLE[order.status]}`}>
-                  {STATUS_LABEL[order.status]}
+                  {t(STATUS_LABEL[order.status])}
                 </span>
               </div>
             ))}
@@ -320,6 +322,7 @@ export default function OrdersPage() {
 function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange, onChange }: {
   table: string; orders: OrderRow[]; businessId: string; payBillEnabled: boolean; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
 }) {
+  const { t } = useT();
   const [clearing, setClearing] = useState(false);
   const [completing, setCompleting] = useState(false);
   // Any of these orders' card_id works to identify the table for clearing.
@@ -363,7 +366,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
   async function handleClearTable() {
     if (!cardId) return;
-    if (!confirm(`Clear ${table}? This voids everything currently unpaid at this table.`)) return;
+    if (!confirm(`${t('Clear')} ${table}? ${t('This voids everything currently unpaid at this table.')}`)) return;
     setClearing(true);
     // Matches the backend's own rule exactly: skip only an order that's
     // genuinely fully paid already (that belongs to Mark Completed). An
@@ -407,7 +410,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
         <div>
           <h2 className="font-display text-xl text-ivory">{table}</h2>
           <p className="text-sm text-ivory-dim">
-            {orders.length} order{orders.length === 1 ? '' : 's'} · {tableTotal.toFixed(2)} total
+            {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
           </p>
         </div>
         {cardId && (
@@ -418,7 +421,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 disabled={completing}
                 className="rounded-lg border border-brass/40 px-3 py-1.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
               >
-                {completing ? 'Completing...' : 'Mark completed'}
+                {completing ? t('Completing...') : t('Mark completed')}
               </button>
             )}
             <button type="button"
@@ -426,7 +429,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               disabled={clearing}
               className="rounded-lg border border-danger/40 px-2.5 py-1 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
             >
-              {clearing ? 'Clearing...' : 'Clear table'}
+              {clearing ? t('Clearing...') : t('Clear table')}
             </button>
           </div>
         )}
@@ -439,13 +442,13 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               const count = entries.reduce((s, e) => s + e.count, 0);
               return (
                 <div key={course} className="flex items-center justify-between text-sm">
-                  <span className="text-ivory-dim">{course} held ({count})</span>
+                  <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
                   <button type="button"
                     onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
                     disabled={firing === course}
                     className="rounded-lg bg-brass px-3 py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
                   >
-                    {firing === course ? 'Firing...' : `Fire ${course}`}
+                    {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
                   </button>
                 </div>
               );
@@ -457,10 +460,10 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
             <div>
               <span className="text-ivory">{item.quantity}×</span> {item.item_name}
               {item.course_status === 'held' && (
-                <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">Held: {item.course}</span>
+                <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
               )}
               {item.cash_pending && (
-                <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">Cash pending</span>
+                <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
               )}
               {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
               {item.note && <span className="block italic">— {item.note}</span>}
@@ -477,23 +480,23 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 voidOrderItem(businessId, order.id, item.id).catch(onChange);
               }}
               className="shrink-0 text-base text-danger hover:underline"
-              title="Delete just this item"
+              title={t('Delete just this item')}
             >
-              Delete
+              {t('Delete')}
             </button>
           </div>
         ))}
-        {allItems.length === 0 && <p className="text-base italic text-ivory-dim">All items deleted</p>}
+        {allItems.length === 0 && <p className="text-base italic text-ivory-dim">{t('All items deleted')}</p>}
       </div>
 
       {notes.length > 0 && (
         <div className="mt-3 space-y-1">
-          {notes.map((n, i) => <p key={i} className="text-base italic text-brass">Note: {n}</p>)}
+          {notes.map((n, i) => <p key={i} className="text-base italic text-brass">{t('Note:')} {n}</p>)}
         </div>
       )}
 
       {syncIssue && (
-        <p className="mt-2 text-base text-ivory-dim">POS sync failed{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
+        <p className="mt-2 text-base text-ivory-dim">{t('POS sync failed')}{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
       )}
     </div>
   );
@@ -505,6 +508,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
   businessId: string; orders: OrderRow[]; onClose: () => void; onDone: () => void;
 }) {
+  const { t } = useT();
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [method, setMethod] = useState<'card_machine' | 'cash'>('card_machine');
@@ -512,7 +516,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
   const [error, setError] = useState('');
 
   const tableGroups = orders.reduce<Record<string, OrderRow[]>>((acc, o) => {
-    const key = o.table_label || 'No table';
+    const key = o.table_label || t('No table');
     const unpaid = o.order_items.filter((i) => !i.voided && !i.paid);
     if (unpaid.length > 0) (acc[key] ||= []).push(o);
     return acc;
@@ -564,13 +568,13 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-ink-line bg-ink p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-xl text-ivory">Record payment</h2>
-          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">Close</button>
+          <h2 className="font-display text-xl text-ivory">{t('Record payment')}</h2>
+          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">{t('Close')}</button>
         </div>
 
         {!selectedTable ? (
           <div className="space-y-2">
-            {Object.keys(tableGroups).length === 0 && <p className="text-base text-ivory-dim">No unpaid items right now.</p>}
+            {Object.keys(tableGroups).length === 0 && <p className="text-base text-ivory-dim">{t('No unpaid items right now.')}</p>}
             {Object.keys(tableGroups).map((table) => (
               <button type="button"
                 key={table}
@@ -583,14 +587,14 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
           </div>
         ) : (
           <div className="space-y-4">
-            <button type="button" onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">← Back to tables</button>
+            <button type="button" onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">{t('← Back to tables')}</button>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-ivory-dim">{selected.size} of {itemToOrder.size} selected</p>
+              <p className="text-sm text-ivory-dim">{selected.size} {t('of')} {itemToOrder.size} {t('selected')}</p>
               <button type="button"
                 onClick={() => setSelected(selected.size === itemToOrder.size ? new Set() : new Set(itemToOrder.keys()))}
                 className="text-sm text-brass hover:underline"
               >
-                {selected.size === itemToOrder.size ? 'Deselect all' : 'Select all'}
+                {selected.size === itemToOrder.size ? t('Deselect all') : t('Select all')}
               </button>
             </div>
             <div className="space-y-2">
@@ -598,7 +602,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
                 <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
                   <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="accent-brass" />
                   {item.quantity}× {item.item_name}
-                  {item.cash_pending && <span className="text-xs text-warning">(cash pending)</span>}
+                  {item.cash_pending && <span className="text-xs text-warning">{t('(cash pending)')}</span>}
                   <span className="ml-auto text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
                 </label>
               )))}
@@ -610,7 +614,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
                   onClick={() => setMethod(m)}
                   className={`flex-1 rounded-lg border px-3 py-2 text-sm ${method === m ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
                 >
-                  {m === 'card_machine' ? 'Card machine' : 'Cash'}
+                  {m === 'card_machine' ? t('Card machine') : t('Cash')}
                 </button>
               ))}
             </div>
@@ -620,7 +624,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
               disabled={recording}
               className="w-full rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
             >
-              {recording ? 'Recording…' : 'Confirm payment received'}
+              {recording ? t('Recording…') : t('Confirm payment received')}
             </button>
           </div>
         )}

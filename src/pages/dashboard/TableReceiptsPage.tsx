@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listTablesWithUnpaid, getTableReceipt, printTableReceipt, type TableWithUnpaid } from '../../lib/authApi';
 import type { OrderItemRow } from '../../types';
 import { Section } from '../../components/ui';
 
 export default function TableReceiptsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const navigate = useNavigate();
   const [tables, setTables] = useState<TableWithUnpaid[]>([]);
@@ -39,29 +41,28 @@ export default function TableReceiptsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-3xl text-ivory">Table Receipts</h1>
+        <h1 className="font-display text-3xl text-ivory">{t('Table Receipts')}</h1>
         <button type="button" onClick={() => navigate('/admin/dashboard/orders')} className="text-sm text-ivory-dim hover:text-ivory">
-          Back to Orders
+          {t('Back to Orders')}
         </button>
       </div>
       <p className="text-base text-ivory-dim">
-        For businesses without Pay Bill - prepare and print an itemized receipt for a table, so staff can bring it
-        to the customer along with the card machine.
+        {t('For businesses without Pay Bill - prepare and print an itemized receipt for a table, so staff can bring it to the customer along with the card machine.')}
       </p>
 
       {loading && <p className="text-base text-ivory-dim">Loading...</p>}
-      {!loading && tables.length === 0 && <p className="text-base text-ivory-dim">No tables currently have anything unpaid.</p>}
+      {!loading && tables.length === 0 && <p className="text-base text-ivory-dim">{t('No tables currently have anything unpaid.')}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {tables.map((t) => (
+        {tables.map((tbl) => (
           <button type="button"
-            key={t.cardId}
-            onClick={() => setSelectedCardId(t.cardId)}
+            key={tbl.cardId}
+            onClick={() => setSelectedCardId(tbl.cardId)}
             className="rounded-xl border border-ink-line p-5 text-start hover:border-brass/40"
           >
-            <p className="font-display text-lg text-ivory">{t.tableLabel || 'No table'}</p>
-            <p className="mt-1 text-sm text-ivory-dim">{t.itemCount} item{t.itemCount === 1 ? '' : 's'}</p>
-            <p className="mt-2 text-base text-brass">AED {t.total.toFixed(2)}</p>
+            <p className="font-display text-lg text-ivory">{tbl.tableLabel || t('No table')}</p>
+            <p className="mt-1 text-sm text-ivory-dim">{tbl.itemCount} item{tbl.itemCount === 1 ? '' : 's'}</p>
+            <p className="mt-2 text-base text-brass">AED {tbl.total.toFixed(2)}</p>
           </button>
         ))}
       </div>
@@ -72,6 +73,7 @@ export default function TableReceiptsPage() {
 function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
   businessId: string; cardId: string; onBack: () => void; onPrinted: () => void;
 }) {
+  const { t } = useT();
   const [tableLabel, setTableLabel] = useState('');
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
@@ -128,17 +130,16 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
     return (
       <div className="space-y-4">
         <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
-        <Section title={`Receipt for ${tableLabel || 'this table'}`}>
+        <Section title={`${t('Receipt for')} ${tableLabel || t('this table')}`}>
           {printedResult.printed ? (
-            <p className="text-base text-success">Sent to the printer.</p>
+            <p className="text-base text-success">{t('Sent to the printer.')}</p>
           ) : (
             <p className="text-base text-warning">
-              No printer connected{printedResult.printError ? ` (${printedResult.printError})` : ''} - opened your browser's print
-              dialog instead.
+              {t('No printer connected')}{printedResult.printError ? ` (${printedResult.printError})` : ''} - {t("opened your browser's print dialog instead.")}
             </p>
           )}
           <button type="button" onClick={onPrinted} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
-            Done
+            {t('Done')}
           </button>
         </Section>
       </div>
@@ -148,10 +149,9 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
   return (
     <div className="space-y-4">
       <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
-      <Section title={`Receipt for ${tableLabel || 'this table'}`}>
+      <Section title={`${t('Receipt for')} ${tableLabel || t('this table')}`}>
         <p className="text-base text-ivory-dim">
-          Uncheck anything that shouldn't be on the printed receipt. This only changes what prints - it never removes
-          the item from the order, and every removal is recorded in the audit log.
+          {t("Uncheck anything that shouldn't be on the printed receipt. This only changes what prints - it never removes the item from the order, and every removal is recorded in the audit log.")}
         </p>
         <div className="space-y-2">
           {items.map((item) => (
@@ -172,7 +172,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
           ))}
         </div>
         <div className="space-y-1 border-t border-ink-line pt-3 text-base">
-          <div className="flex justify-between text-ivory-dim"><span>Net</span><span>AED {net.toFixed(2)}</span></div>
+          <div className="flex justify-between text-ivory-dim"><span>{t('Net')}</span><span>AED {net.toFixed(2)}</span></div>
           <div className="flex justify-between text-ivory-dim"><span>VAT (5%)</span><span>AED {vat.toFixed(2)}</span></div>
           <div className="flex justify-between font-medium text-ivory"><span>Total</span><span className="text-brass">AED {subtotal.toFixed(2)}</span></div>
         </div>
@@ -182,7 +182,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
           disabled={printing || finalItems.length === 0}
           className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
         >
-          {printing ? 'Printing...' : 'Print'}
+          {printing ? t('Printing...') : t('Print')}
         </button>
       </Section>
     </div>

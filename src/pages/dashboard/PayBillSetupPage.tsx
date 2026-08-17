@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getPaymentIntegration, upsertPaymentIntegration } from '../../lib/authApi';
 import type { PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
@@ -21,6 +22,7 @@ export default function PayBillSetupPage() {
 }
 
 function PaymentProviderSetup({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [provider, setProvider] = useState<'tap' | 'telr' | 'ngenius' | 'ziina' | ''>('');
@@ -63,7 +65,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
   }, [businessId]);
 
   async function handleSave() {
-    if (!provider) { setSaveError('Choose a payment provider first'); return; }
+    if (!provider) { setSaveError(t('Choose a payment provider first')); return; }
     setSaving(true);
     setSaveError('');
     try {
@@ -87,36 +89,34 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
   if (!loaded) return null;
 
   return (
-    <Section title="Pay Bill setup">
+    <Section title={t('Pay Bill setup')}>
       <p className="text-base text-ivory-dim">
-        Your own payment account — money goes straight to your bank,
-        Tavzio never touches it. Only you can see or edit this, not staff,
-        not the platform operator.
+        {t('Your own payment account — money goes straight to your bank, Tavzio never touches it. Only you can see or edit this, not staff, not the platform operator.')}
       </p>
       {integration?.status && (
         <p className="text-base">
-          Status: <span className={integration.status === 'connected' ? 'text-success' : 'text-ivory-dim'}>{integration.status}</span>
+          {t('Status:')} <span className={integration.status === 'connected' ? 'text-success' : 'text-ivory-dim'}>{integration.status}</span>
         </p>
       )}
       <div className="max-w-lg space-y-5 rounded-xl border border-ink-line p-5">
-        <Field label="Payment provider">
+        <Field label={t('Payment provider')}>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina' | '')}
             className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
           >
-            <option value="">Choose a provider...</option>
+            <option value="">{t('Choose a provider...')}</option>
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
         </Field>
 
         {provider === 'tap' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Tap secret key">
+            <Field label={t('Tap secret key')}>
               <input
                 value={secretKey}
                 onChange={(e) => setSecretKey(e.target.value)}
-                placeholder="From your Tap Payments dashboard"
+                placeholder={t('From your Tap Payments dashboard')}
                 className={inputClass}
               />
             </Field>
@@ -125,27 +125,24 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'telr' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Store ID">
-              <input value={storeId} onChange={(e) => setStoreId(e.target.value)} placeholder="From your Telr account" className={inputClass} />
+            <Field label={t('Store ID')}>
+              <input value={storeId} onChange={(e) => setStoreId(e.target.value)} placeholder={t('From your Telr account')} className={inputClass} />
             </Field>
-            <Field label="Authentication key">
-              <input value={authKey} onChange={(e) => setAuthKey(e.target.value)} placeholder="From your Telr account" className={inputClass} />
+            <Field label={t('Authentication key')}>
+              <input value={authKey} onChange={(e) => setAuthKey(e.target.value)} placeholder={t('From your Telr account')} className={inputClass} />
             </Field>
             <p className="text-sm text-ivory-dim">
-              One extra step with Telr: live payments only work from server
-              addresses Telr has pre-approved — ask Telr support to whitelist
-              your Tavzio server's IPs when setting up. Test mode has no such
-              restriction.
+              {t('One extra step with Telr: live payments only work from server addresses Telr has pre-approved — ask Telr support to whitelist your Tavzio server\'s IPs when setting up. Test mode has no such restriction.')}
             </p>
           </div>
         )}
 
         {provider === 'ngenius' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Service account API key">
+            <Field label={t('Service account API key')}>
               <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="N-Genius portal → Settings → Integrations → Service Accounts" className={inputClass} />
             </Field>
-            <Field label="Outlet reference">
+            <Field label={t('Outlet reference')}>
               <input value={outletRef} onChange={(e) => setOutletRef(e.target.value)} placeholder="N-Genius portal → Settings → Organization Hierarchy" className={inputClass} />
             </Field>
           </div>
@@ -153,12 +150,11 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'ziina' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Ziina API key">
-              <input value={ziinaApiKey} onChange={(e) => setZiinaApiKey(e.target.value)} placeholder="From your Ziina Business dashboard → Developers" className={inputClass} />
+            <Field label={t('Ziina API key')}>
+              <input value={ziinaApiKey} onChange={(e) => setZiinaApiKey(e.target.value)} placeholder={t('From your Ziina Business dashboard → Developers')} className={inputClass} />
             </Field>
             <p className="text-sm text-ivory-dim">
-              This is your own Ziina account, separate from Tavzio's — money
-              goes straight to your Ziina balance, not through us.
+              {t("This is your own Ziina account, separate from Tavzio's — money goes straight to your Ziina balance, not through us.")}
             </p>
           </div>
         )}
@@ -166,21 +162,21 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
         {provider !== 'tap' && (
           <label className="flex items-center gap-2.5 text-base text-ivory-dim">
             <input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} className="accent-brass" />
-            Test mode — for trying it out before going live
+            {t('Test mode — for trying it out before going live')}
           </label>
         )}
 
         <div className="space-y-4 border-t border-ink-line pt-5">
           <label className="flex items-center gap-2.5 text-base text-ivory-dim">
             <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-brass" />
-            Enabled — let customers pay via Pay Bill
+            {t('Enabled — let customers pay via Pay Bill')}
           </label>
           <button type="button"
             onClick={handleSave}
             disabled={saving}
             className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? t('Saving...') : t('Save')}
           </button>
           {saveError && <p className="text-sm text-danger">{saveError}</p>}
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listOrders, updateOrderStatus, getBusiness } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -27,9 +28,10 @@ function useTicker() {
 }
 
 function TicketAge({ createdAt }: { createdAt: string }) {
+  const { t } = useT();
   const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
   const color = minutes >= RED_AFTER_MINUTES ? 'text-danger' : minutes >= AMBER_AFTER_MINUTES ? 'text-warning' : 'text-ivory-dim';
-  return <span className={`font-mono text-sm ${color}`}>{minutes < 1 ? 'just now' : `${minutes} min`}</span>;
+  return <span className={`font-mono text-sm ${color}`}>{minutes < 1 ? t('just now') : `${minutes} min`}</span>;
 }
 
 // Kitchen is deliberately the simplest page in the whole dashboard: one
@@ -40,6 +42,7 @@ function TicketAge({ createdAt }: { createdAt: string }) {
 // for attention on a screen that's meant to just sit in the kitchen.
 export default function KitchenPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
@@ -123,14 +126,14 @@ export default function KitchenPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <h1 className="font-display text-2xl text-ivory">Kitchen</h1>
+        <h1 className="font-display text-2xl text-ivory">{t('Kitchen')}</h1>
         {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
       </div>
 
       {stations.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => setStationFilter('all')} className={`rounded-full border px-3 py-1 text-sm ${stationFilter === 'all' ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim'}`}>
-            All stations
+            {t('All stations')}
           </button>
           {stations.map((s) => (
             <button type="button" key={s} onClick={() => setStationFilter(s)} className={`rounded-full border px-3 py-1 text-sm ${stationFilter === s ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim'}`}>
@@ -141,7 +144,7 @@ export default function KitchenPage() {
       )}
 
       {visibleOrders.length === 0 && (
-        <p className="text-base text-ivory-dim">No pending orders right now.</p>
+        <p className="text-base text-ivory-dim">{t('No pending orders right now.')}</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -158,9 +161,9 @@ export default function KitchenPage() {
           return (
             <div key={order.id} className={`rounded-xl border-2 bg-ink-soft p-4 transition-colors ${borderColor}`}>
               <div className="flex items-center justify-between">
-                <p className="font-display text-xl text-ivory">{order.table_label || 'No table'}</p>
+                <p className="font-display text-xl text-ivory">{order.table_label || t('No table')}</p>
                 <div className="flex items-center gap-2">
-                  {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">Preparing</span>}
+                  {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('Preparing')}</span>}
                   <TicketAge createdAt={order.created_at} />
                 </div>
               </div>
@@ -177,23 +180,23 @@ export default function KitchenPage() {
                 ))}
               </div>
               {heldCourses.length > 0 && (
-                <p className="mt-2 text-sm text-brass/70">Waiting to fire: {heldCourses.join(', ')}</p>
+                <p className="mt-2 text-sm text-brass/70">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
               )}
-              {order.note && <p className="mt-2 text-sm italic text-brass">Note: {order.note}</p>}
+              {order.note && <p className="mt-2 text-sm italic text-brass">{t('Note:')} {order.note}</p>}
               <div className="mt-4 flex gap-2">
                 {order.status === 'pending' && (
                   <button type="button"
                     onClick={() => handleStart(order.id)}
                     className="flex-1 rounded-lg border border-brass/40 px-3 py-2.5 text-base font-medium text-brass hover:bg-brass/10"
                   >
-                    Start
+                    {t('Start')}
                   </button>
                 )}
                 <button type="button"
                   onClick={() => handleMarkReady(order.id)}
                   className="flex-1 rounded-lg bg-brass px-3 py-2.5 text-base font-medium text-ink hover:opacity-90"
                 >
-                  Mark ready
+                  {t('Mark ready')}
                 </button>
               </div>
             </div>

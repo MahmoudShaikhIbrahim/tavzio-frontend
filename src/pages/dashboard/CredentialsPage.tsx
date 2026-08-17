@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getBusiness } from '../../lib/authApi';
 import PayBillSetupPage from './PayBillSetupPage';
 import PrinterSetupPage from './PrinterSetupPage';
@@ -14,28 +15,29 @@ import AccountingSyncPage from './AccountingSyncPage';
 // component that used to stand alone, so nothing about how any one
 // integration works has changed, only where it lives.
 export default function CredentialsPage() {
+  const { t } = useT();
   const [tab, setTab] = useState<'payments' | 'printer' | 'delivery' | 'hotel-systems' | 'accounting'>('payments');
   const isHotel = useIsHotel();
 
   const tabs: { key: typeof tab; label: string }[] = [
-    { key: 'payments', label: 'Payment Gateway' },
-    { key: 'printer', label: 'Receipt Printer' },
-    ...(isHotel ? [] : [{ key: 'delivery' as const, label: 'Delivery Platforms' }]),
-    ...(isHotel ? [{ key: 'hotel-systems' as const, label: 'External Hotel Systems' }] : []),
-    { key: 'accounting', label: 'Accounting Sync' },
+    { key: 'payments', label: t('Payment Gateway') },
+    { key: 'printer', label: t('Receipt Printer') },
+    ...(isHotel ? [] : [{ key: 'delivery' as const, label: t('Delivery Platforms') }]),
+    ...(isHotel ? [{ key: 'hotel-systems' as const, label: t('External Hotel Systems') }] : []),
+    { key: 'accounting', label: t('Accounting Sync') },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl text-ivory">Credentials & Integrations</h1>
+        <h1 className="font-display text-3xl text-ivory">{t('Credentials & Integrations')}</h1>
         <p className="mt-1 text-base text-ivory-dim">
-          Every API key, account connection, and gateway credential your business needs, in one place.
+          {t('Every API key, account connection, and gateway credential your business needs, in one place.')}
         </p>
       </div>
       <div className="flex flex-wrap gap-1.5 border-b border-ink-line">
-        {tabs.map((t) => (
-          <TabButton key={t.key} active={tab === t.key} onClick={() => setTab(t.key)}>{t.label}</TabButton>
+        {tabs.map((tabItem) => (
+          <TabButton key={tabItem.key} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)}>{tabItem.label}</TabButton>
         ))}
       </div>
       <div>

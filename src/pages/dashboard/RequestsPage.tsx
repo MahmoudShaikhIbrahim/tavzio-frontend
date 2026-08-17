@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import {
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems, recordManualPayment,
   type RequestRow, type CashPendingItem,
@@ -27,6 +28,7 @@ const REQUEST_STYLE = {
 
 export default function RequestsPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [claims, setClaims] = useState<LoyaltyClaim[]>([]);
@@ -103,25 +105,25 @@ export default function RequestsPage() {
 
   return (
     <div className="space-y-10">
-      <h1 className="font-display text-3xl text-ivory">Requests</h1>
+      <h1 className="font-display text-3xl text-ivory">{t('Requests')}</h1>
 
       {nothingPending ? (
-        <p className="text-lg text-ivory-dim">Nothing pending right now.</p>
+        <p className="text-lg text-ivory-dim">{t('Nothing pending right now.')}</p>
       ) : (
         <div className="space-y-3">
           {requests.map((r) => {
             const style = REQUEST_STYLE[r.request_type];
-            const label = r.request_type === 'custom' ? (r.custom_request_label || style.label) : style.label;
+            const label = r.request_type === 'custom' ? (r.custom_request_label || t(style.label)) : t(style.label);
             return (
               <div key={r.id} className={`flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
                 <span className={`text-xl font-medium ${style.text}`}>
-                  {label} — <span className="text-ivory">{r.table_label || 'No table'}</span>
+                  {label} — <span className="text-ivory">{r.table_label || t('No table')}</span>
                 </span>
                 <button type="button"
                   onClick={() => dismissRequest(businessId, r.id).then(reloadRequests)}
                   className="rounded-lg border-2 border-ivory-dim/40 px-4 py-2 text-lg text-ivory hover:bg-ivory/10"
                 >
-                  Dismiss
+                  {t('Dismiss')}
                 </button>
               </div>
             );
@@ -130,7 +132,7 @@ export default function RequestsPage() {
           {cashPending.map((item) => (
             <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
               <span className="text-xl font-medium text-warning">
-                Cash pending — <span className="text-ivory">{item.table_label || 'No table'}</span>
+                {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
                 <span className="text-ivory-dim"> ({item.quantity}× {item.item_name}, {((item.unit_price + item.addon_total) * item.quantity).toFixed(2)})</span>
               </span>
               <button type="button"
@@ -138,7 +140,7 @@ export default function RequestsPage() {
                 disabled={confirmingCash === item.id}
                 className="rounded-lg border-2 border-warning px-4 py-2 text-lg text-warning hover:bg-warning/10 disabled:opacity-50"
               >
-                {confirmingCash === item.id ? 'Confirming…' : 'Mark received'}
+                {confirmingCash === item.id ? t('Confirming…') : t('Mark received')}
               </button>
             </div>
           ))}
@@ -146,7 +148,7 @@ export default function RequestsPage() {
           {claims.map((c) => (
             <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">
               <span className="text-xl font-medium text-brass-bright">
-                Reward ready — <span className="text-ivory">{c.table_label || 'No table'}</span>
+                {t('Reward ready —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
                 {c.reward_description ? <span className="text-ivory-dim"> ({c.reward_description})</span> : ''}
               </span>
               {c.reward_type === 'manual' ? (
@@ -154,10 +156,10 @@ export default function RequestsPage() {
                   onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
                   className="rounded-lg border-2 border-brass px-4 py-2 text-lg text-brass hover:bg-brass/10"
                 >
-                  Mark applied
+                  {t('Mark applied')}
                 </button>
               ) : (
-                <span className="text-lg text-ivory-dim">Applies automatically at Pay Bill</span>
+                <span className="text-lg text-ivory-dim">{t('Applies automatically at Pay Bill')}</span>
               )}
             </div>
           ))}

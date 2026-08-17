@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getPaymentReconciliation, refundPaymentTransaction, downloadBusinessAuditReport, type PaymentTransaction, type UnverifiedManualPayment } from '../../lib/authApi';
 import { Section } from '../../components/ui';
 
@@ -7,6 +8,7 @@ const STATUS_COLOR: Record<string, string> = { completed: 'text-success', pendin
 
 export default function PaymentReconciliationPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [unverified, setUnverified] = useState<UnverifiedManualPayment[]>([]);
@@ -34,7 +36,7 @@ export default function PaymentReconciliationPage() {
 
   async function handleRefund(txnId: string) {
     if (!businessId) return;
-    const reason = prompt('Reason for this refund:');
+    const reason = prompt(t('Reason for this refund:'));
     if (!reason) return;
     try {
       await refundPaymentTransaction(businessId, txnId, undefined, reason);
@@ -52,15 +54,13 @@ export default function PaymentReconciliationPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl text-ivory">Bank Reconciliation</h1>
+        <h1 className="font-display text-3xl text-ivory">{t('Bank Reconciliation')}</h1>
         <p className="mt-1 text-base text-ivory-dim">
-          Matches what your payment gateway actually confirmed against manual folio charges that were marked
-          paid but never linked to a real transaction - use this to catch anything unaccounted for. For a
-          simple list of every payment (with refunds), see the <span className="text-ivory">Payments</span> tab instead.
+          {t('Matches what your payment gateway actually confirmed against manual folio charges that were marked paid but never linked to a real transaction - use this to catch anything unaccounted for. For a simple list of every payment (with refunds), see the')} <span className="text-ivory">{t('Payments')}</span> {t('tab instead.')}
         </p>
       </div>
 
-      <Section title="Audit Report" action={
+      <Section title={t('Audit Report')} action={
         <div className="flex items-center gap-2">
           <select
             value={auditYear}
@@ -76,34 +76,33 @@ export default function PaymentReconciliationPage() {
             disabled={generatingAudit}
             className="rounded-lg bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
           >
-            {generatingAudit ? 'Generating...' : 'Issue Audit Report'}
+            {generatingAudit ? t('Generating...') : t('Issue Audit Report')}
           </button>
         </div>
       }>
         <p className="text-base text-ivory-dim">
-          Every signed contract, billing receipt, and completed customer payment for the selected year, compiled
-          into one PDF - hand it straight to your accountant or the FTA, no manual reconciliation needed.
+          {t('Every signed contract, billing receipt, and completed customer payment for the selected year, compiled into one PDF - hand it straight to your accountant or the FTA, no manual reconciliation needed.')}
         </p>
       </Section>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-ink-line p-4">
-          <p className="text-sm text-ivory-dim">Gateway-confirmed</p>
+          <p className="text-sm text-ivory-dim">{t('Gateway-confirmed')}</p>
           <p className="mt-1 font-display text-xl text-success">AED {totalCompleted.toFixed(2)}</p>
         </div>
         <div className="rounded-lg border border-ink-line p-4">
-          <p className="text-sm text-ivory-dim">Refunded</p>
+          <p className="text-sm text-ivory-dim">{t('Refunded')}</p>
           <p className="mt-1 font-display text-xl text-warning">AED {totalRefunded.toFixed(2)}</p>
         </div>
         <div className="rounded-lg border border-danger/40 p-4">
-          <p className="text-sm text-ivory-dim">Unverified manual entries</p>
+          <p className="text-sm text-ivory-dim">{t('Unverified manual entries')}</p>
           <p className="mt-1 font-display text-xl text-danger">{unverified.length}</p>
         </div>
       </div>
 
       {unverified.length > 0 && (
-        <Section title="Unverified manual payments">
-          <p className="text-sm text-ivory-dim">Recorded by staff without a real gateway transaction behind them - cash, or something paid outside Tavzio entirely.</p>
+        <Section title={t('Unverified manual payments')}>
+          <p className="text-sm text-ivory-dim">{t('Recorded by staff without a real gateway transaction behind them - cash, or something paid outside Tavzio entirely.')}</p>
           <div className="space-y-2">
             {unverified.map((u) => (
               <div key={u.id} className="rounded-lg border border-danger/30 px-4 py-3 text-sm">
@@ -115,22 +114,22 @@ export default function PaymentReconciliationPage() {
         </Section>
       )}
 
-      <Section title="Gateway transactions">
+      <Section title={t('Gateway transactions')}>
         {loading && <p className="text-ivory-dim">Loading...</p>}
         <div className="space-y-2">
-          {transactions.map((t) => (
-            <div key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3">
+          {transactions.map((txn) => (
+            <div key={txn.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3">
               <div>
-                <p className="text-base text-ivory">{t.provider} · {t.transaction_type} · AED {t.amount_aed.toFixed(2)}</p>
-                <p className={`text-sm ${STATUS_COLOR[t.status]}`}>{t.status} · {t.context_type} · {new Date(t.created_at).toLocaleString()}</p>
-                {t.failure_reason && <p className="text-sm text-danger">{t.failure_reason}</p>}
+                <p className="text-base text-ivory">{txn.provider} · {txn.transaction_type} · AED {txn.amount_aed.toFixed(2)}</p>
+                <p className={`text-sm ${STATUS_COLOR[txn.status]}`}>{txn.status} · {txn.context_type} · {new Date(txn.created_at).toLocaleString()}</p>
+                {txn.failure_reason && <p className="text-sm text-danger">{txn.failure_reason}</p>}
               </div>
-              {t.status === 'completed' && t.transaction_type === 'charge' && (
-                <button type="button" onClick={() => handleRefund(t.id)} className="text-sm text-danger hover:underline">Refund</button>
+              {txn.status === 'completed' && txn.transaction_type === 'charge' && (
+                <button type="button" onClick={() => handleRefund(txn.id)} className="text-sm text-danger hover:underline">{t('Refund')}</button>
               )}
             </div>
           ))}
-          {!loading && transactions.length === 0 && <p className="text-ivory-dim">No gateway transactions yet.</p>}
+          {!loading && transactions.length === 0 && <p className="text-ivory-dim">{t('No gateway transactions yet.')}</p>}
         </div>
       </Section>
     </div>

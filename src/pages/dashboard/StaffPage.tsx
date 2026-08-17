@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { listStaff, inviteStaff, setStaffActive, setStaffSections, setStaffOutlets, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
@@ -7,6 +8,7 @@ import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 
 export default function StaffPage() {
   const { user } = useSession();
+  const { t } = useT();
   const businessId = user?.business_id;
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [name, setName] = useState('');
@@ -47,7 +49,7 @@ export default function StaffPage() {
   }
 
   async function handleResetPassword(userId: string) {
-    if (!confirm('Reset this account\'s password? They will be given a new temporary password and forced to set their own on next login.')) return;
+    if (!confirm(t("Reset this account's password? They will be given a new temporary password and forced to set their own on next login."))) return;
     const result = await resetAccountPassword(businessId!, userId);
     setResetResult(result);
   }
@@ -57,48 +59,47 @@ export default function StaffPage() {
       {resetResult && (
         <div className="rounded-lg border border-brass/40 bg-ink-soft p-4">
           <p className="text-base text-ivory">
-            New temporary password for <span className="text-brass">{resetResult.name}</span>:
+            {t('New temporary password for')} <span className="text-brass">{resetResult.name}</span>:
           </p>
           <p className="mt-1 select-all rounded bg-ink px-3 py-2 font-mono text-lg text-brass">{resetResult.tempPassword}</p>
           <p className="mt-2 text-sm text-ivory-dim">
-            Send this to them directly (not visible again after you leave this page). They'll be required to set
-            their own new password the moment they log in with it.
+            {t("Send this to them directly (not visible again after you leave this page). They'll be required to set their own new password the moment they log in with it.")}
           </p>
-          <button type="button" onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory">Dismiss</button>
+          <button type="button" onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory">{t('Dismiss')}</button>
         </div>
       )}
 
-      <Section title="Team">
+      <Section title={t('Team')}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {staff.map((s) => (
             <div key={s.id} className="rounded-lg border border-ink-line px-5 py-4 text-base">
               <div className="flex items-center justify-between">
                 <span className="text-ivory">
-                  {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? 'Owner' : s.role.replace('_', ' ')}</span>
-                  {!s.is_active && <span className="ml-2 text-base text-danger">deactivated</span>}
+                  {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</span>
+                  {!s.is_active && <span className="ml-2 text-base text-danger">{t('deactivated')}</span>}
                 </span>
               </div>
               {s.role === 'staff' && (
                 <p className="mt-1 text-sm text-ivory-dim">
                   {s.assigned_sections === null
-                    ? 'Sees everything'
+                    ? t('Sees everything')
                     : s.assigned_sections.length === 0
-                      ? 'No sections assigned yet'
-                      : s.assigned_sections.map((key) => SECTION_OPTIONS.find((o) => o.key === key)?.label || key).join(', ')}
+                      ? t('No sections assigned yet')
+                      : s.assigned_sections.map((key) => t(SECTION_OPTIONS.find((o) => o.key === key)?.label || key)).join(', ')}
                 </p>
               )}
               {isHotel && s.role === 'staff' && (
                 <p className="text-sm text-ivory-dim">
-                  Outlets: {s.assigned_outlet_ids === null
-                    ? 'Any outlet'
+                  {t('Outlets:')} {s.assigned_outlet_ids === null
+                    ? t('Any outlet')
                     : s.assigned_outlet_ids.length === 0
-                      ? 'None assigned yet'
+                      ? t('None assigned yet')
                       : s.assigned_outlet_ids.map((id) => outlets.find((o) => o.id === id)?.name || id).join(', ')}
                 </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory">
-                  Reset password
+                  {t('Reset password')}
                 </button>
                 {s.role === 'staff' && (
                   <>
@@ -109,20 +110,20 @@ export default function StaffPage() {
                       }}
                       className="text-sm text-ivory-dim hover:text-ivory"
                     >
-                      {s.is_active ? 'Deactivate' : 'Reactivate'}
+                      {s.is_active ? t('Deactivate') : t('Reactivate')}
                     </button>
                     <button type="button"
                       onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}
                       className="text-sm text-brass hover:underline"
                     >
-                      {editingSectionsFor === s.id ? 'Close' : 'Assign sections'}
+                      {editingSectionsFor === s.id ? t('Close') : t('Assign sections')}
                     </button>
                     {isHotel && (
                       <button type="button"
                         onClick={() => setEditingOutletsFor(editingOutletsFor === s.id ? null : s.id)}
                         className="text-sm text-brass hover:underline"
                       >
-                        {editingOutletsFor === s.id ? 'Close' : 'Assign outlets'}
+                        {editingOutletsFor === s.id ? t('Close') : t('Assign outlets')}
                       </button>
                     )}
                   </>
@@ -154,14 +155,12 @@ export default function StaffPage() {
         </div>
 
         <p className="text-base text-ivory-dim">
-          New staff sign in with their own email and password — no card
-          needed, since staff sign in through the website. The same
-          account can be open on as many devices at once as needed.
+          {t('New staff sign in with their own email and password — no card needed, since staff sign in through the website. The same account can be open on as many devices at once as needed.')}
         </p>
         <form onSubmit={handleInvite} className="flex gap-2.5 border-t border-ink-line pt-4">
-          <Field label="Name"><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-          <Field label="Email"><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
-          <div className="self-end"><PrimaryButton disabled={saving}>{saving ? 'Adding...' : 'Add staff'}</PrimaryButton></div>
+          <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+          <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
+          <div className="self-end"><PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add staff')}</PrimaryButton></div>
         </form>
       </Section>
 
@@ -174,6 +173,7 @@ export default function StaffPage() {
 // only useful to an owner if it turns into an actual report they can
 // read at a glance and hand to payroll.
 function ShiftReportSection({ businessId }: { businessId?: string }) {
+  const { t } = useT();
   const [shifts, setShifts] = useState<StaffShift[]>([]);
   const [from, setFrom] = useState(() => {
     const d = new Date();
@@ -191,7 +191,7 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
   if (!businessId) return null;
 
   const totalsByStaff = shifts.reduce<Record<string, { name: string; hours: number }>>((acc, s) => {
-    const name = s.profiles?.name || 'Unknown';
+    const name = s.profiles?.name || t('Unknown');
     if (!acc[s.staff_id]) acc[s.staff_id] = { name, hours: 0 };
     acc[s.staff_id].hours += s.hours || 0;
     return acc;
@@ -199,33 +199,33 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
 
   return (
     <Section
-      title="Time Clock"
+      title={t('Time Clock')}
       action={
         <div className="flex items-center gap-2">
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
-          <span className="text-sm text-ivory-dim">to</span>
+          <span className="text-sm text-ivory-dim">{t('to')}</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
         </div>
       }
     >
       <div className="grid gap-3 sm:grid-cols-3">
-        {Object.values(totalsByStaff).map((t) => (
-          <div key={t.name} className="rounded-lg border border-ink-line px-4 py-3">
-            <p className="text-base text-ivory">{t.name}</p>
-            <p className="text-sm text-brass">{t.hours.toFixed(1)} hrs</p>
+        {Object.values(totalsByStaff).map((staffTotal) => (
+          <div key={staffTotal.name} className="rounded-lg border border-ink-line px-4 py-3">
+            <p className="text-base text-ivory">{staffTotal.name}</p>
+            <p className="text-sm text-brass">{staffTotal.hours.toFixed(1)} hrs</p>
           </div>
         ))}
-        {Object.keys(totalsByStaff).length === 0 && <p className="text-ivory-dim">No shifts in this range.</p>}
+        {Object.keys(totalsByStaff).length === 0 && <p className="text-ivory-dim">{t('No shifts in this range.')}</p>}
       </div>
 
       <div className="space-y-2">
         {shifts.map((s) => (
           <div key={s.id} className="flex items-center justify-between text-sm text-ivory-dim">
-            <span>{s.profiles?.name || 'Unknown'}</span>
+            <span>{s.profiles?.name || t('Unknown')}</span>
             <span>
               {new Date(s.clock_in_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
               {' → '}
-              {s.clock_out_at ? new Date(s.clock_out_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : 'still clocked in'}
+              {s.clock_out_at ? new Date(s.clock_out_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : t('still clocked in')}
             </span>
             <span className="text-ivory">{s.hours != null ? `${s.hours.toFixed(2)} hrs` : '—'}</span>
           </div>
@@ -242,6 +242,7 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
 function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
   businessId: string; staffMember: StaffMember; onSaved: (updated: StaffMember) => void;
 }) {
+  const { t } = useT();
   const [selected, setSelected] = useState<string[]>(
     staffMember.assigned_sections ?? SECTION_OPTIONS.map((o) => o.key)
   );
@@ -273,22 +274,22 @@ function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
 
   return (
     <div className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
-      <p className="text-sm text-ivory-dim">Only checked sections will appear on this account's dashboard.</p>
+      <p className="text-sm text-ivory-dim">{t("Only checked sections will appear on this account's dashboard.")}</p>
       <div className="grid grid-cols-2 gap-1.5">
         {SECTION_OPTIONS.map((opt) => (
           <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
             <input type="checkbox" checked={selected.includes(opt.key)} onChange={() => toggle(opt.key)} className="accent-brass" />
-            {opt.label}
+            {t(opt.label)}
           </label>
         ))}
       </div>
       <div className="flex items-center gap-3">
         <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('Saving...') : t('Save')}
         </button>
         {staffMember.assigned_sections !== null && (
           <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
-            Remove restriction (sees everything)
+            {t('Remove restriction (sees everything)')}
           </button>
         )}
       </div>
@@ -305,6 +306,7 @@ function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
 function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
   businessId: string; staffMember: StaffMember; outlets: HotelOutlet[]; onSaved: (updated: StaffMember) => void;
 }) {
+  const { t } = useT();
   const [selected, setSelected] = useState<string[]>(
     staffMember.assigned_outlet_ids ?? outlets.map((o) => o.id)
   );
@@ -337,8 +339,7 @@ function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
   return (
     <div className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
       <p className="text-sm text-ivory-dim">
-        Only checked outlets can be selected when this account opens a till - e.g. a beach attendant checked only
-        for "Pool Bar" can never open the Lobby's till.
+        {t('Only checked outlets can be selected when this account opens a till - e.g. a beach attendant checked only for "Pool Bar" can never open the Lobby\'s till.')}
       </p>
       <div className="grid grid-cols-2 gap-1.5">
         {outlets.map((o) => (
@@ -347,15 +348,15 @@ function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
             {o.name}
           </label>
         ))}
-        {outlets.length === 0 && <p className="text-sm text-ivory-dim">No outlets set up yet - add some under F&B Outlets & Services first.</p>}
+        {outlets.length === 0 && <p className="text-sm text-ivory-dim">{t('No outlets set up yet - add some under F&B Outlets & Services first.')}</p>}
       </div>
       <div className="flex items-center gap-3">
         <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('Saving...') : t('Save')}
         </button>
         {staffMember.assigned_outlet_ids !== null && (
           <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
-            Remove restriction (any outlet)
+            {t('Remove restriction (any outlet)')}
           </button>
         )}
       </div>
