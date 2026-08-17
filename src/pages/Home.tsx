@@ -124,17 +124,6 @@ export default function Home() {
           <div className="mx-auto w-full max-w-sm lg:max-w-none">
             <div className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-brass/20">
               <img src="/brand/stand-front.jpg" alt="A Tavzio NFC card and stand on a restaurant table" className="w-full" />
-              {/* Ripple origin, positioned over where a guest's phone
-                  actually lands on the card - the one animated element
-                  on the page, looping ambiently, off entirely for anyone
-                  who's asked for reduced motion. */}
-              <span className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 motion-reduce:hidden">
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-tap-ripple rounded-full border border-brass-bright" />
-                  <span className="absolute inline-flex h-full w-full animate-tap-ripple rounded-full border border-brass-bright [animation-delay:0.55s]" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-brass-bright shadow-[0_0_12px_2px_rgba(212,175,120,0.55)]" />
-                </span>
-              </span>
             </div>
             <div className="mt-5 flex justify-center">
               <p className="rounded-full border border-ink-line bg-ink-soft px-5 py-2 font-mono text-xs text-ivory-dim">

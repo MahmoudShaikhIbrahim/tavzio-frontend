@@ -227,7 +227,11 @@ export interface AdminBusiness {
 
 export interface Contract {
   id: string;
-  business_id: string;
+  business_id: string | null;
+  client_name: string | null;
+  client_email: string | null;
+  client_business_name: string | null;
+  client_category: string | null;
   contract_number: string;
   start_date: string;
   end_date: string;
@@ -236,7 +240,7 @@ export interface Contract {
   system_fee_aed: number;
   card_price_aed: number;
   annual_total_aed: number;
-  status: 'draft' | 'sent' | 'signed' | 'active' | 'terminated' | 'expired';
+  status: 'draft' | 'sent' | 'signed' | 'paid' | 'active' | 'terminated' | 'expired';
   signed_snapshot_text: string | null;
   signed_by_name: string | null;
   signed_at: string | null;

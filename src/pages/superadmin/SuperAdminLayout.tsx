@@ -8,6 +8,7 @@ import { useTheme } from '../../lib/ThemeContext';
 
 const TABS = [
   { path: 'businesses', label: 'Businesses' },
+  { path: 'contracts', label: 'Contracts' },
   { path: 'organizations', label: 'Organizations' },
   { path: 'leads', label: 'Leads' },
   { path: 'messages', label: 'Messages' },

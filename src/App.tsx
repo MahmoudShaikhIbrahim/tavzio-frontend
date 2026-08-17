@@ -21,6 +21,8 @@ import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
 import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
 import AuditReportPage from './pages/superadmin/AuditReportPage';
 import OrganizationsPage from './pages/superadmin/OrganizationsPage';
+import ContractsListPage from './pages/superadmin/ContractsListPage';
+import CreateContractPage from './pages/superadmin/CreateContractPage';
 import OrgOwnerLayout from './pages/orgowner/OrgOwnerLayout';
 import OrgOverviewPage from './pages/orgowner/OrgOverviewPage';
 import OrgMenuPage from './pages/orgowner/OrgMenuPage';
@@ -101,6 +103,8 @@ export default function App() {
             <Route path="billing-settings" element={<BillingSettingsPage />} />
             <Route path="audit-report" element={<AuditReportPage />} />
             <Route path="organizations" element={<OrganizationsPage />} />
+            <Route path="contracts" element={<ContractsListPage />} />
+            <Route path="contracts/new" element={<CreateContractPage />} />
           </Route>
         </Route>
 

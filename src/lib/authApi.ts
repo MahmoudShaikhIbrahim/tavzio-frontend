@@ -1858,6 +1858,35 @@ export function generateContractReceipt(businessId: string, contractId: string) 
   return authFetch<BillingReceipt & { ziinaError?: string | null }>(`/api/businesses/${businessId}/contracts/${contractId}/receipts/next`, { method: 'POST' });
 }
 
+// --- Standalone contracts (Create Contract / onboarding flow) ---
+// A contract created here has no business yet - client details live on
+// the contract row itself until onboardContract links it to a real,
+// newly-created business.
+
+export function createStandaloneContract(payload: {
+  clientName: string; clientEmail: string; clientBusinessName: string; clientCategory: string;
+  startDate: string; paymentFrequency: 'monthly' | 'quarterly' | 'yearly'; planType?: 'connect' | 'full';
+  standsCount: number; systemFeeOverride?: number; cardPriceOverride?: number;
+}) {
+  return authFetch<Contract>('/api/contracts', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function listAllContracts() {
+  return authFetch<Contract[]>('/api/contracts');
+}
+
+export function previewStandaloneContract(contractId: string) {
+  return authFetch<{ text: string }>(`/api/contracts/${contractId}/preview`);
+}
+
+export function sendStandaloneContract(contractId: string) {
+  return authFetch<{ message: string }>(`/api/contracts/${contractId}/send`, { method: 'POST' });
+}
+
+export function onboardContract(contractId: string) {
+  return authFetch<{ business: AdminBusiness; contract: Contract }>(`/api/contracts/${contractId}/onboard`, { method: 'POST' });
+}
+
 // --- Inventory ---
 
 export function listSuppliers(businessId: string) {
