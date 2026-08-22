@@ -79,7 +79,6 @@ function ConnectionsSection({ businessId }: { businessId: string }) {
     reload();
   }
 
-  const connectedChannels = new Set(connections.map((c) => c.channel));
   const allChannels: ChannelConnection['channel'][] = ['booking_com', 'expedia', 'airbnb', 'agoda', 'other'];
 
   return (
