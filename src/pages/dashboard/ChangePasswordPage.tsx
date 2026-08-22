@@ -5,6 +5,7 @@ import { useSession } from '../../hooks/useSession';
 import { useDashboardLanguage } from '../../lib/i18n/DashboardLanguageContext';
 import { useT } from '../../hooks/useT';
 import { Section, Field, inputClass } from '../../components/ui';
+import PasswordField from '../../components/PasswordField';
 import { LANGUAGES } from '../../lib/i18n/types';
 
 export default function ChangePasswordPage({ forced = false }: { forced?: boolean }) {
@@ -130,13 +131,13 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
         ) : (
           <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
             <Field label={forced ? t('Current (temporary) password') : t('Current password')}>
-              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className={inputClass} />
+              <PasswordField value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
             </Field>
             <Field label={t('New password')}>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} className={inputClass} />
+              <PasswordField value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
             </Field>
             <Field label={t('Confirm new password')}>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={inputClass} />
+              <PasswordField value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
             </Field>
             {error && <p className="text-base text-danger">{error}</p>}
             <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
@@ -196,7 +197,7 @@ function ChangeEmailSection() {
       {done && <p className="text-base text-success">{t('Email updated to')} {done}.</p>}
       <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
         <Field label={t('Current password')}>
-          <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className={inputClass} />
+          <PasswordField value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
         </Field>
         <Field label={t('New email address')}>
           <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required className={inputClass} />

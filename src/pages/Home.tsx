@@ -29,21 +29,6 @@ const TAP_BECOMES = ['the menu.', 'the bill.', 'a loyalty stamp.', 'a room reque
 // Two plans, priced differently for a restaurant (per table) than a
 // hotel (per room) - reflects what each unit actually is in the two
 // setups, not a one-size-fits-all number.
-const PLANS = {
-  connect: {
-    name: 'Tavzio Connect',
-    tagline: 'The core platform, ready on day one.',
-    restaurant: { base: 300, perUnit: 20 },
-    hotel: { base: 1500, perUnit: 20 },
-  },
-  full: {
-    name: 'Tavzio Full',
-    tagline: 'Everything in Connect, plus the full operational suite.',
-    restaurant: { base: 800, perUnit: 20 },
-    hotel: { base: 2500, perUnit: 20 },
-  },
-} as const;
-
 // Ambient, not intrusive - cycles on its own, but never for someone who's
 // asked their system to reduce motion.
 function useTapCycle() {
@@ -61,9 +46,6 @@ export default function Home() {
   // should just match their own device's setting, live, never anything
   // tied to any logged-in account.
   const theme = useLiveSystemTheme();
-  const [exampleUnits, setExampleUnits] = useState(10);
-  const [pricingType, setPricingType] = useState<'restaurant' | 'hotel'>('restaurant');
-  const [pricingPlan, setPricingPlan] = useState<'connect' | 'full'>('connect');
   const tapIndex = useTapCycle();
 
   function scrollToPricing(e: React.MouseEvent) {
@@ -122,7 +104,7 @@ export default function Home() {
                 onClick={scrollToPricing}
                 className="text-sm font-medium text-ivory-dim transition-colors hover:text-ivory"
               >
-                See pricing →
+                Contact us for pricing →
               </a>
             </div>
           </div>
@@ -238,88 +220,11 @@ export default function Home() {
 
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Pricing</p>
           <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
-            Two plans, priced for what you actually run — a restaurant table or a hotel room. No setup contracts, no hidden costs.
+            Priced for what you actually run — a restaurant table or a hotel room. Tell us how to reach you and we'll
+            send over exact numbers for your setup.
           </p>
 
-          <div className="mt-8 flex justify-center">
-            <div className="inline-flex rounded-lg border border-ink-line bg-ink-soft p-1">
-              {(['restaurant', 'hotel'] as const).map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  onClick={() => setPricingType(t)}
-                  className={`rounded-md px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
-                    pricingType === t ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {(['connect', 'full'] as const).map((planKey) => {
-              const plan = PLANS[planKey];
-              const rates = plan[pricingType];
-              const unit = pricingType === 'restaurant' ? 'table' : 'room';
-              const selected = pricingPlan === planKey;
-              return (
-                <button
-                  type="button"
-                  key={planKey}
-                  onClick={() => setPricingPlan(planKey)}
-                  className={`relative rounded-xl border p-6 text-left transition-colors ${
-                    selected ? 'border-brass bg-ink-soft' : 'border-ink-line bg-ink-soft/60 hover:border-brass/40'
-                  }`}
-                >
-                  {planKey === 'full' && (
-                    <span className="absolute -top-2.5 right-6 rounded-full bg-brass px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink">Full suite</span>
-                  )}
-                  <p className="font-display text-xl text-ivory">{plan.name}</p>
-                  <p className="mt-2 font-mono text-4xl tabular-nums text-ivory">
-                    {rates.base}<span className="ml-1 text-base font-sans text-ivory-dim">AED / month</span>
-                  </p>
-                  <p className="mt-1 font-mono text-sm text-ivory-dim">+ {rates.perUnit} AED / {unit} / month</p>
-                  <p className="mt-3 text-sm text-ivory-dim">{plan.tagline}</p>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 rounded-xl border border-brass/30 bg-ink p-6">
-            <div className="flex items-center justify-between">
-              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Example — {PLANS[pricingPlan].name}</p>
-              <label className="flex items-center gap-2 text-sm text-ivory-dim capitalize">
-                {pricingType === 'restaurant' ? 'Tables' : 'Rooms'}
-                <input
-                  type="number"
-                  min={1}
-                  onFocus={(e) => e.target.select()}
-                  value={exampleUnits}
-                  onChange={(e) => setExampleUnits(Number(e.target.value))}
-                  className="w-16 rounded-lg border border-ink-line bg-ink-soft px-2 py-1 text-center text-ivory"
-                />
-              </label>
-            </div>
-            {(() => {
-              const rates = PLANS[pricingPlan][pricingType];
-              const units = Math.max(1, exampleUnits);
-              const unitLabel = pricingType === 'restaurant' ? 'table' : 'room';
-              return (
-                <>
-                  <div className="mt-3 space-y-1 font-mono text-sm text-ivory-dim">
-                    <div className="flex justify-between"><span className="font-sans">Base</span><span>{rates.base} AED</span></div>
-                    <div className="flex justify-between"><span className="font-sans">{units} {unitLabel}{units === 1 ? '' : 's'}</span><span>{units * rates.perUnit} AED</span></div>
-                  </div>
-                  <div className="mt-3 flex justify-between border-t border-ink-line pt-3 font-display text-lg text-ivory">
-                    <span>Total / month</span>
-                    <span className="font-mono text-brass">{rates.base + units * rates.perUnit} AED</span>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
+          <ContactUsForm />
         </div>
       </div>
 
@@ -402,6 +307,84 @@ function LeadForm() {
         className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
       >
         {submitting ? 'Sending...' : 'Get started'}
+      </button>
+    </form>
+  );
+}
+
+// Confirmed requirement: pricing numbers came off the homepage entirely
+// - this is the only way to actually reach anyone about pricing now.
+// Deliberately lighter than LeadForm above (no business type, no stand
+// count) since this is a "just tell me the price" inquiry, not a
+// signup - source: 'pricing_inquiry' is what keeps it distinguishable
+// from a real Get Started lead once it lands in the same Leads section
+// (see migration 0087 and LeadsPage.tsx).
+function ContactUsForm() {
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [preferredContactMethod, setPreferredContactMethod] = useState<'email' | 'phone'>('email');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await submitLead({ email, phone, source: 'pricing_inquiry', preferredContactMethod });
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit - please try again');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="mx-auto mt-8 max-w-sm rounded-xl border border-brass/30 bg-ink-soft p-6 text-center">
+        <p className="font-display text-lg text-ivory">Thanks — we've got it.</p>
+        <p className="mt-1 text-sm text-ivory-dim">
+          We'll reach out {preferredContactMethod === 'email' ? 'by email' : 'by phone'} shortly with pricing for your setup.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mx-auto mt-8 max-w-sm space-y-3 text-left">
+      <input
+        type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+      />
+      <input
+        type="tel" required placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+      />
+      <div>
+        <p className="mb-1.5 text-sm text-ivory-dim">How should we reach you?</p>
+        <div className="flex gap-2">
+          {(['email', 'phone'] as const).map((method) => (
+            <button
+              key={method}
+              type="button"
+              onClick={() => setPreferredContactMethod(method)}
+              className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium capitalize transition-colors ${
+                preferredContactMethod === method ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
+              }`}
+            >
+              {method}
+            </button>
+          ))}
+        </div>
+      </div>
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <button
+        type="submit" disabled={submitting}
+        className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        {submitting ? 'Sending...' : 'Contact us'}
       </button>
     </form>
   );

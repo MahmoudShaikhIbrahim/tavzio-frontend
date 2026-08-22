@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type TouchEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -140,7 +140,6 @@ function DashboardLayoutInner() {
   // the account's real saved layout once it loads, then updated
   // optimistically on every change and persisted via setMyNavLayout.
   const [navLayoutOverride, setNavLayoutOverride] = useState<{ hidden: string[]; order: string[] } | null | undefined>(undefined);
-  const [editingPath, setEditingPath] = useState<string | null>(null);
 
   // Auto-opens once per account, the first time tour_completed_at is
   // genuinely null (never shown, or explicitly reset via "Restart guide"
@@ -356,34 +355,16 @@ function DashboardLayoutInner() {
     persistLayout({ hidden, order: navLayout?.order ?? [] });
   }
 
-  // Double-click (desktop) and long-press (touch) both enter "move this
-  // tab" mode for the tapped item, without hijacking a normal single
-  // tap/click's navigation - a genuine double-click/long-press is a
-  // distinct browser event from a click, so this never adds a delay to
-  // ordinary navigation the way "wait to see if a second tap comes"
-  // would.
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFired = useRef(false);
-  function handleDoubleClick(e: ReactMouseEvent, path: string) {
-    e.preventDefault();
-    setEditingPath((cur) => (cur === path ? null : path));
-  }
-  function handleTouchStart(path: string) {
-    longPressFired.current = false;
-    longPressTimer.current = setTimeout(() => {
-      longPressFired.current = true;
-      setEditingPath((cur) => (cur === path ? null : path));
-    }, 500);
-  }
-  function handleTouchEnd(e: TouchEvent) {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    if (longPressFired.current) e.preventDefault();
-  }
-
-  // Closes the "move this tab" controls the moment the route changes -
-  // otherwise they'd stay open pointing at whatever tab was being
-  // edited even after navigating elsewhere.
-  useEffect(() => { setEditingPath(null); }, [location.pathname]);
+  // Real redesign, replacing the old double-click/long-press-per-tab
+  // popover approach entirely - that produced a small floating box that
+  // could land awkwardly depending on scroll position and tab width,
+  // and gave no clear signal you were "in an editing state" at all. One
+  // explicit toggle now enters a proper Customize mode for the whole
+  // bar at once: every tab shows its controls inline, in place, with a
+  // persistent banner making it unmistakable you're editing rather than
+  // just browsing.
+  const [customizing, setCustomizing] = useState(false);
+  useEffect(() => { setCustomizing(false); }, [location.pathname]);
 
   // Owner accounts start with a password the super admin set directly
   // and knows - force setting a real one before anything else in the
@@ -416,44 +397,69 @@ function DashboardLayoutInner() {
             >
               ?
             </button>
+            <button
+              type="button"
+              onClick={() => setCustomizing((v) => !v)}
+              title={t('Customize navigation')}
+              className={`flex h-7 w-7 items-center justify-center rounded-full border text-sm transition-all duration-150 active:scale-[0.9] ${
+                customizing ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:border-brass hover:text-brass'
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M2 4h8M2 8h5M2 12h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <circle cx="12.5" cy="4" r="1.6" stroke="currentColor" strokeWidth="1.4" />
+                <circle cx="9" cy="12" r="1.6" stroke="currentColor" strokeWidth="1.4" />
+              </svg>
+            </button>
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
             <button type="button" onClick={logout} className="hover:text-ivory">{t('Sign out')}</button>
           </div>
         </div>
+
+        {customizing && (
+          <div className="border-t border-brass/20 bg-brass/5 px-6 py-2.5">
+            <div className="mx-auto flex max-w-7xl items-center justify-between">
+              <p className="text-sm text-brass">{t('Customizing navigation - use the arrows to reorder, the × to hide. Changes save instantly.')}</p>
+              <button type="button" onClick={() => setCustomizing(false)} className="rounded-lg bg-brass px-3 py-1 text-sm font-medium text-ink hover:opacity-90">
+                {t('Done')}
+              </button>
+            </div>
+          </div>
+        )}
+
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
-          <div data-tour="nav-tabs" className="flex flex-1 items-center gap-1.5 overflow-x-auto">
+          <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-1.5">
             {visibleTabs.map((tab, i) => {
               const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
-              const isEditing = editingPath === tab.path;
+
+              if (customizing) {
+                return (
+                  <div key={tab.path} className="flex shrink-0 items-center gap-0.5 rounded-lg border border-ink-line bg-ink-soft py-1 pe-1 ps-3">
+                    <span className="pe-2 text-base text-ivory">{t(tab.label)}</span>
+                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
+                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
+                    <button type="button" onClick={() => hideItem(tab.path)} className="flex h-6 w-6 items-center justify-center rounded text-danger hover:bg-danger/10" aria-label="Hide tab">×</button>
+                  </div>
+                );
+              }
+
               return (
-                <div key={tab.path} className="relative shrink-0">
-                  <Link
-                    to={`/admin/dashboard/${tab.path}`}
-                    onDoubleClick={(e) => handleDoubleClick(e, tab.path)}
-                    onTouchStart={() => handleTouchStart(tab.path)}
-                    onTouchEnd={handleTouchEnd}
-                    className={`relative block border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
-                      isEditing ? 'border-brass/50 bg-ink-soft' :
-                      location.pathname.includes(tab.path)
-                        ? 'border-brass text-ivory'
-                        : 'border-transparent text-ivory-dim hover:text-ivory'
-                    }`}
-                  >
-                    {t(tab.label)}
-                    {count > 0 && !isEditing && (
-                      <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
-                        {count > 9 ? '9+' : count}
-                      </span>
-                    )}
-                  </Link>
-                  {isEditing && (
-                    <div className="absolute start-0 top-full z-30 mt-1 flex items-center gap-1 rounded-lg border border-brass/30 bg-ink-soft p-1 shadow-xl shadow-black/50">
-                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move left">‹</button>
-                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move right">›</button>
-                      <button type="button" onClick={() => hideItem(tab.path)} className="rounded px-2 py-1 text-sm text-danger hover:bg-danger/10" aria-label="Hide tab">{t('Hide')}</button>
-                    </div>
+                <Link
+                  key={tab.path}
+                  to={`/admin/dashboard/${tab.path}`}
+                  className={`relative block shrink-0 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                    location.pathname.includes(tab.path)
+                      ? 'border-brass text-ivory'
+                      : 'border-transparent text-ivory-dim hover:text-ivory'
+                  }`}
+                >
+                  {t(tab.label)}
+                  {count > 0 && (
+                    <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
+                      {count > 9 ? '9+' : count}
+                    </span>
                   )}
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -466,41 +472,40 @@ function DashboardLayoutInner() {
               }`}
             >
               {t('Settings')}
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${settingsOpen ? 'rotate-180' : ''}`}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${(settingsOpen || customizing) ? 'rotate-180' : ''}`}>
                 <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
-            {settingsOpen && (
+            {(settingsOpen || customizing) && (
               <div className="absolute end-0 top-full z-30 mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
-                <div className="grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2">
+                <div className={customizing ? 'max-h-[70vh] space-y-1 overflow-y-auto p-2' : 'grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2'}>
                   {visibleSettingsItems.map((tab, i) => {
-                    const isEditing = editingPath === tab.path;
-                    return (
-                      <div key={tab.path} className="relative">
-                        <Link
-                          to={`/admin/dashboard/${tab.path}`}
-                          onClick={() => !isEditing && setSettingsOpen(false)}
-                          onDoubleClick={(e) => handleDoubleClick(e, tab.path)}
-                          onTouchStart={() => handleTouchStart(tab.path)}
-                          onTouchEnd={handleTouchEnd}
-                          className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
-                            isEditing ? 'bg-brass/20 text-ivory' :
-                            location.pathname.includes(tab.path)
-                              ? 'bg-brass/10 text-brass'
-                              : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                          }`}
-                        >
-                          {t(tab.label)}
-                        </Link>
-                        {isEditing && (
-                          <div className="absolute start-0 top-full z-40 mt-1 flex items-center gap-1 rounded-lg border border-brass/30 bg-ink p-1 shadow-xl shadow-black/50">
-                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move left">‹</button>
-                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move right">›</button>
-                            <button type="button" onClick={() => hideItem(tab.path)} className="rounded px-2 py-1 text-sm text-danger hover:bg-danger/10">{t('Hide')}</button>
+                    if (customizing) {
+                      return (
+                        <div key={tab.path} className="flex items-center justify-between gap-2 rounded-lg border border-ink-line bg-ink py-1 pe-1 ps-3">
+                          <span className="text-base text-ivory">{t(tab.label)}</span>
+                          <div className="flex items-center gap-0.5">
+                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
+                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
+                            <button type="button" onClick={() => hideItem(tab.path)} className="flex h-6 w-6 items-center justify-center rounded text-danger hover:bg-danger/10" aria-label="Hide">×</button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <Link
+                        key={tab.path}
+                        to={`/admin/dashboard/${tab.path}`}
+                        onClick={() => setSettingsOpen(false)}
+                        className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                          location.pathname.includes(tab.path)
+                            ? 'bg-brass/10 text-brass'
+                            : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                        }`}
+                      >
+                        {t(tab.label)}
+                      </Link>
                     );
                   })}
                 </div>

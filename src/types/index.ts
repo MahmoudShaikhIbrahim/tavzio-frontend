@@ -488,12 +488,14 @@ export interface Lead {
   id: string;
   email: string;
   phone: string;
-  business_type: string;
+  business_type: string | null;
   stands_estimate: number;
   note: string;
   converted: boolean;
   converted_business_id: string | null;
   created_at: string;
+  source: 'get_started' | 'pricing_inquiry';
+  preferred_contact_method: 'email' | 'phone' | null;
 }
 
 export interface TillSession {

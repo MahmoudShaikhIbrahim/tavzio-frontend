@@ -246,9 +246,14 @@ export function submitCustomButtonRequest(slug: string, buttonId: string, tapEve
   });
 }
 
-// The marketing homepage's "Get Started" lead capture - no auth, this is
-// the top of the funnel, not customer/business data.
-export function submitLead(payload: { email: string; phone: string; businessType: string; standsEstimate: number; note?: string }) {
+// The marketing homepage's lead capture - no auth, this is the top of
+// the funnel, not customer/business data. Serves both the full "Get
+// Started" intake and the lighter "Contact us for pricing" form (see
+// migration 0087) - source distinguishes which one on the backend.
+export function submitLead(payload: {
+  email: string; phone: string; source?: 'get_started' | 'pricing_inquiry';
+  businessType?: string; standsEstimate?: number; preferredContactMethod?: 'email' | 'phone'; note?: string;
+}) {
   return request<{ message: string }>('/api/public/leads', {
     method: 'POST',
     body: JSON.stringify(payload),
