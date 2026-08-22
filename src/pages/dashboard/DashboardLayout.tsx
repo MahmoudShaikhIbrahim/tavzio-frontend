@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type TouchEvent } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -364,7 +364,7 @@ function DashboardLayoutInner() {
   // would.
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
-  function handleDoubleClick(e: MouseEvent, path: string) {
+  function handleDoubleClick(e: ReactMouseEvent, path: string) {
     e.preventDefault();
     setEditingPath((cur) => (cur === path ? null : path));
   }
