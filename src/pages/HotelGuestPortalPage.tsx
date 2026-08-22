@@ -3,6 +3,12 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { subscribeToRoomUpdates } from '../lib/supabaseClient';
 import { getIcon, getIconColor } from '../lib/iconLibrary';
+import { LINK_ORDER } from '../lib/linkMeta';
+import LinkButton from '../components/LinkButton';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import ThemeToggle from '../components/ThemeToggle';
+import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
+import type { BusinessLinks } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -34,7 +40,7 @@ interface GuestCustomButton {
 }
 
 interface PortalData {
-  business: { name: string; slug: string; logoUrl: string; links: Record<string, string>; theme: { customerBackground?: string; customerButton?: string } };
+  business: { name: string; slug: string; logoUrl: string; links: BusinessLinks; theme: { customerBackground?: string; customerButton?: string } };
   // null for a lobby/unassigned stand - no specific room to show.
   room: { id: string; roomNumber: string; roomType: string } | null;
   guest: { name: string; checkInDate: string; checkOutDate: string } | null;
@@ -74,10 +80,15 @@ interface TrackedRequest {
 
 type View = 'home' | 'roomService' | 'outlet' | 'myBill' | 'myRequests' | 'request' | 'reception' | 'feedback';
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Submitted', open: 'Submitted', in_progress: 'In progress',
-  done: 'Completed', resolved: 'Completed',
-};
+// Was a module-level object literal before - moved to a function since it
+// now needs t() from a language-aware component, which can't be called
+// outside one.
+function statusLabel(t: ReturnType<typeof useLanguage>['t'], status: string): string {
+  if (status === 'pending' || status === 'open') return t('statusSubmitted');
+  if (status === 'in_progress') return t('statusInProgress');
+  if (status === 'done' || status === 'resolved') return t('statusCompleted');
+  return status;
+}
 
 export default function HotelGuestPortalPage() {
   // roomId is present for an in-room stand, absent for a lobby/reception/
@@ -91,9 +102,6 @@ export default function HotelGuestPortalPage() {
   const [data, setData] = useState<PortalData | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>('home');
-  const [activeOutlet, setActiveOutlet] = useState<Outlet | null>(null);
-  const [activeRequestService, setActiveRequestService] = useState<GuestServiceOption | null>(null);
   const [paying, setPaying] = useState(false);
   const [payResult, setPayResult] = useState<'success' | 'failed' | null>(null);
 
@@ -159,24 +167,54 @@ export default function HotelGuestPortalPage() {
   }
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-ink"><div className="h-8 w-8 animate-pulse rounded-full border-2 border-brass/40" /></div>;
-  if (!data) return <div className="flex min-h-screen items-center justify-center bg-ink px-6 text-center text-ivory-dim">This portal isn't available right now.</div>;
+  if (!data || !slug) return <div className="flex min-h-screen items-center justify-center bg-ink px-6 text-center text-ivory-dim">This portal isn't available right now.</div>;
+
+  return (
+    <LanguageProvider slug={slug}>
+      <PortalContent
+        data={data}
+        outlets={outlets}
+        portalBase={portalBase}
+        payResult={payResult}
+        requests={requests}
+        onPayBill={handlePayBill}
+        paying={paying}
+        onReload={reload}
+      />
+    </LanguageProvider>
+  );
+}
+
+function PortalContent({ data, outlets, portalBase, payResult, requests, onPayBill, paying, onReload }: {
+  data: PortalData; outlets: Outlet[]; portalBase: string; payResult: 'success' | 'failed' | null;
+  requests: TrackedRequest[]; onPayBill: () => void; paying: boolean; onReload: () => void;
+}) {
+  const { t, isRtl } = useLanguage();
+  const [view, setView] = useState<View>('home');
+  const [activeOutlet, setActiveOutlet] = useState<Outlet | null>(null);
+  const [activeRequestService, setActiveRequestService] = useState<GuestServiceOption | null>(null);
 
   const themeVars = buildBusinessThemeVars(data.business.theme?.customerBackground, data.business.theme?.customerButton);
 
   return (
-    <div style={themeVars} className="min-h-screen bg-ink px-5 py-8">
+    <div style={themeVars} dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-ink px-5 py-8">
       <div className="mx-auto max-w-md space-y-5">
+        <div className="flex items-center justify-end gap-2">
+          <ThemeToggle />
+          <LanguageSwitcher />
+        </div>
+
         <Header data={data} />
 
         {payResult && (
           <div className={`rounded-lg border px-4 py-3 text-center text-sm ${payResult === 'success' ? 'border-success/40 bg-success/10 text-success' : 'border-danger/40 bg-danger/10 text-danger'}`}>
-            {payResult === 'success' ? 'Payment received - thank you.' : 'Payment was not completed. Please try again.'}
+            {payResult === 'success' ? t('paymentReceivedThankYou') : t('paymentNotCompletedRetry')}
           </div>
         )}
 
         {view !== 'home' && (
           <button type="button" onClick={() => { setView('home'); setActiveOutlet(null); setActiveRequestService(null); }} className="text-sm text-brass hover:underline">
-            ← Back
+            ← {t('back')}
           </button>
         )}
 
@@ -193,10 +231,10 @@ export default function HotelGuestPortalPage() {
         )}
 
         {view === 'outlet' && activeOutlet && (
-          <OutletOrderView portalBase={portalBase} outlet={activeOutlet} onDone={() => { setView('home'); reload(); }} />
+          <OutletOrderView portalBase={portalBase} outlet={activeOutlet} onDone={() => { setView('home'); onReload(); }} />
         )}
 
-        {view === 'myBill' && <MyBillView data={data} paying={paying} onPay={handlePayBill} />}
+        {view === 'myBill' && <MyBillView data={data} paying={paying} onPay={onPayBill} />}
 
         {view === 'myRequests' && <MyRequestsView requests={requests} />}
 
@@ -216,6 +254,7 @@ export default function HotelGuestPortalPage() {
 }
 
 function Header({ data }: { data: PortalData }) {
+  const { t } = useLanguage();
   return (
     <div className="text-center">
       {data.business.logoUrl && <img src={data.business.logoUrl} alt={data.business.name} className="mx-auto mb-3 h-14 w-14 rounded-full object-cover" />}
@@ -223,16 +262,16 @@ function Header({ data }: { data: PortalData }) {
       {data.room ? (
         data.guest ? (
           <p className="text-sm text-ivory-dim">
-            Welcome, {data.guest.name} · Room {data.room.roomNumber}
+            {t('hotelWelcome', { name: data.guest.name })} · {t('hotelRoom', { number: data.room.roomNumber })}
             {data.guest.checkInDate && data.guest.checkOutDate && (
               <> · {new Date(data.guest.checkInDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}–{new Date(data.guest.checkOutDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</>
             )}
           </p>
         ) : (
-          <p className="text-sm text-ivory-dim">Room {data.room.roomNumber}</p>
+          <p className="text-sm text-ivory-dim">{t('hotelRoom', { number: data.room.roomNumber })}</p>
         )
       ) : (
-        <p className="text-sm text-ivory-dim">Front Desk</p>
+        <p className="text-sm text-ivory-dim">{t('hotelFrontDesk')}</p>
       )}
     </div>
   );
@@ -242,40 +281,62 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
   data: PortalData; outlets: Outlet[]; portalBase: string; requestsCount: number;
   onSelectOutlet: (o: Outlet) => void; onNav: (v: View) => void; onRequestCategory: (service: GuestServiceOption) => void;
 }) {
+  const { t } = useLanguage();
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
+  // Real fix: Services used to be 7+ buttons stacked directly on the home
+  // screen. Reusing the same open/back pattern already built for custom
+  // button groups, just for the guestServices list specifically - one
+  // "Services" button on the home screen, tap it to see the full list.
+  const [showServices, setShowServices] = useState(false);
 
   if (openGroupId) {
     const group = data.customButtons.find((b) => b.id === openGroupId);
     const children = data.customButtons.filter((b) => b.parent_button_id === openGroupId);
     return (
       <div className="space-y-2">
-        <button type="button" onClick={() => setOpenGroupId(null)} className="text-sm text-brass hover:underline">&larr; {group?.label || 'Back'}</button>
+        <button type="button" onClick={() => setOpenGroupId(null)} className="text-sm text-brass hover:underline">&larr; {group?.label || t('back')}</button>
         {children.map((btn) => (
           <CustomButtonItem key={btn.id} btn={btn} portalBase={portalBase} onOpenGroup={setOpenGroupId} />
         ))}
-        {children.length === 0 && <p className="text-sm text-ivory-dim">Nothing here yet.</p>}
+        {children.length === 0 && <p className="text-sm text-ivory-dim">{t('nothingHereYet')}</p>}
       </div>
     );
   }
 
+  if (showServices) {
+    return (
+      <div className="space-y-2">
+        <button type="button" onClick={() => setShowServices(false)} className="text-sm text-brass hover:underline">&larr; {t('back')}</button>
+        {data.guestServices.map((s) => (
+          <button type="button" key={s.id} onClick={() => onRequestCategory(s)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+            {s.label}
+          </button>
+        ))}
+        {data.guestServices.length === 0 && <p className="text-sm text-ivory-dim">{t('noServicesConfigured')}</p>}
+      </div>
+    );
+  }
+
+  const enabledLinks = LINK_ORDER.filter((key) => data.business.links?.[key]?.enabled);
+
   return (
     <div className="space-y-5">
       <button type="button" onClick={() => onNav('myRequests')} className="flex w-full items-center justify-between rounded-xl border border-brass/30 bg-ink-soft px-4 py-3 text-left">
-        <span className="text-base text-ivory">My Requests</span>
-        {requestsCount > 0 && <span className="rounded-full bg-brass px-2 py-0.5 text-xs font-medium text-ink">{requestsCount} active</span>}
+        <span className="text-base text-ivory">{t('myRequests')}</span>
+        {requestsCount > 0 && <span className="rounded-full bg-brass px-2 py-0.5 text-xs font-medium text-ink">{requestsCount}</span>}
       </button>
 
       {data.folioBalance !== null && (
         <button type="button" onClick={() => onNav('myBill')} className="w-full rounded-xl border border-brass/30 bg-ink-soft p-4 text-center">
-          <p className="text-xs uppercase tracking-wide text-brass">My Bill</p>
+          <p className="text-xs uppercase tracking-wide text-brass">{t('myBill')}</p>
           <p className="mt-1 font-display text-2xl text-ivory">AED {data.folioBalance.toFixed(2)}</p>
-          <p className="mt-1 text-sm text-ivory-dim">Tap to view details and pay</p>
+          <p className="mt-1 text-sm text-ivory-dim">{t('tapToViewDetailsAndPay')}</p>
         </button>
       )}
 
       {outlets.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-wide text-brass">Order</p>
+          <p className="text-sm uppercase tracking-wide text-brass">{t('order')}</p>
           {outlets.map((o) => (
             <button type="button" key={o.id} onClick={() => onSelectOutlet(o)} className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left hover:border-brass">
               <span className="text-ivory">{outletIcon(o.outletType)} {o.name}</span>
@@ -286,12 +347,10 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
       )}
 
       <div className="space-y-2">
-        <p className="text-sm uppercase tracking-wide text-brass">Services</p>
-        {data.guestServices.map((s) => (
-          <button type="button" key={s.id} onClick={() => onRequestCategory(s)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
-            {s.label}
-          </button>
-        ))}
+        <button type="button" onClick={() => setShowServices(true)} className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
+          <span>{t('services')}</span>
+          <span className="text-ivory-dim">&rsaquo;</span>
+        </button>
         {/* Landing Page Buttons - same customization system as the
             restaurant-facing page, on the one page a hotel guest
             actually reaches, room-bound or not. Only top-level buttons
@@ -301,12 +360,29 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
           <CustomButtonItem key={btn.id} btn={btn} portalBase={portalBase} onOpenGroup={setOpenGroupId} />
         ))}
         <button type="button" onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
-          Reception
+          {t('reception')}
         </button>
         <button type="button" onClick={() => onNav('feedback')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
-          Feedback
+          {t('feedback')}
         </button>
       </div>
+
+      {enabledLinks.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm uppercase tracking-wide text-brass">{t('links')}</p>
+          {enabledLinks.map((key) => (
+            <LinkButton
+              key={key}
+              linkKey={key}
+              value={data.business.links[key].value}
+              icon={data.business.links[key].icon}
+              label={data.business.links[key].label}
+              imageUrl={data.business.links[key].imageUrl}
+              slug={data.business.slug}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -493,9 +569,10 @@ function OutletOrderView({ portalBase, outlet, onDone }: { portalBase: string; o
 }
 
 function MyBillView({ data, paying, onPay }: { data: PortalData; paying: boolean; onPay: () => void }) {
+  const { t } = useLanguage();
   return (
     <div className="space-y-4">
-      <p className="font-display text-xl text-ivory">My Bill</p>
+      <p className="font-display text-xl text-ivory">{t('myBill')}</p>
       <div className="space-y-2 rounded-lg border border-ink-line p-4">
         {data.charges.map((c) => (
           <div key={c.id} className="flex justify-between text-sm">
@@ -503,26 +580,26 @@ function MyBillView({ data, paying, onPay }: { data: PortalData; paying: boolean
             <span className={Number(c.amount_aed) < 0 ? 'text-success' : 'text-ivory'}>AED {Number(c.amount_aed).toFixed(2)}</span>
           </div>
         ))}
-        {data.charges.length === 0 && <p className="text-sm text-ivory-dim">No charges yet.</p>}
+        {data.charges.length === 0 && <p className="text-sm text-ivory-dim">{t('noChargesYet')}</p>}
       </div>
       {data.vatBreakdown && (
         <div className="space-y-1 rounded-lg border border-ink-line p-4 text-sm">
           <div className="flex justify-between text-ivory-dim">
-            <span>Subtotal (excl. VAT)</span>
+            <span>{t('subtotalExclVat')}</span>
             <span>AED {data.vatBreakdown.subtotalExVat.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-ivory-dim">
-            <span>VAT (5%)</span>
+            <span>{t('vatLabel')}</span>
             <span>AED {data.vatBreakdown.vatAmount.toFixed(2)}</span>
           </div>
         </div>
       )}
       <div className="rounded-xl border border-brass/30 bg-ink-soft p-4 text-center">
-        <p className="text-xs uppercase tracking-wide text-brass">Current balance</p>
+        <p className="text-xs uppercase tracking-wide text-brass">{t('currentBalance')}</p>
         <p className="mt-1 font-display text-2xl text-ivory">AED {(data.folioBalance ?? 0).toFixed(2)}</p>
         {(data.folioBalance ?? 0) > 0 && (
           <button type="button" onClick={onPay} disabled={paying} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
-            {paying ? 'Starting payment...' : 'Pay by card'}
+            {paying ? t('startingPayment') : t('payByCard')}
           </button>
         )}
       </div>
@@ -531,23 +608,51 @@ function MyBillView({ data, paying, onPay }: { data: PortalData; paying: boolean
 }
 
 function MyRequestsView({ requests }: { requests: TrackedRequest[] }) {
+  const { t } = useLanguage();
+  // Real fix: this used to render every request ever submitted, forever
+  // - completed ones never left the list, which is exactly what made the
+  // screen fill up with a wall of "Submitted"/"Completed" rows a guest
+  // had no reason to keep seeing. Active requests stay visible up top;
+  // completed ones collapse into a closed-by-default History section
+  // instead of disappearing entirely (a guest may still want to confirm
+  // something actually got done).
+  const active = requests.filter((r) => r.status !== 'done' && r.status !== 'resolved' && r.status !== 'completed');
+  const completed = requests.filter((r) => r.status === 'done' || r.status === 'resolved' || r.status === 'completed');
+  const [showHistory, setShowHistory] = useState(false);
+
   return (
     <div className="space-y-3">
-      <p className="font-display text-xl text-ivory">My Requests</p>
-      {requests.map((r) => (
+      <p className="font-display text-xl text-ivory">{t('myRequests')}</p>
+      {active.map((r) => (
         <div key={`${r.kind}-${r.id}`} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3">
           <span className="capitalize text-ivory">{r.label}</span>
-          <span className={`text-sm ${r.status === 'done' || r.status === 'resolved' ? 'text-success' : 'text-brass'}`}>
-            {STATUS_LABEL[r.status] || r.status}
-          </span>
+          <span className="text-sm text-brass">{statusLabel(t, r.status)}</span>
         </div>
       ))}
-      {requests.length === 0 && <p className="text-ivory-dim">Nothing submitted yet.</p>}
+      {active.length === 0 && <p className="text-ivory-dim">{t('nothingActiveRightNow')}</p>}
+      {completed.length > 0 && (
+        <div className="pt-2">
+          <button type="button" onClick={() => setShowHistory((v) => !v)} className="text-sm text-ivory-dim hover:text-ivory">
+            {t(showHistory ? 'hideCompleted' : 'showCompleted', { count: completed.length })}
+          </button>
+          {showHistory && (
+            <div className="mt-2 space-y-2">
+              {completed.map((r) => (
+                <div key={`${r.kind}-${r.id}`} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 opacity-60">
+                  <span className="capitalize text-ivory">{r.label}</span>
+                  <span className="text-sm text-success">{statusLabel(t, r.status)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function RequestFormView({ portalBase, service, onDone }: { portalBase: string; service: GuestServiceOption; onDone: () => void }) {
+  const { t } = useLanguage();
   const [option, setOption] = useState(service.options?.[0] || '');
   const [note, setNote] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -580,8 +685,8 @@ function RequestFormView({ portalBase, service, onDone }: { portalBase: string; 
   if (success) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-base text-success">Request sent - our team has been notified.</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <p className="text-base text-success">{t('requestSentConfirmation')}</p>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">{t('done')}</button>
       </div>
     );
   }
@@ -596,7 +701,7 @@ function RequestFormView({ portalBase, service, onDone }: { portalBase: string; 
       )}
       {service.routingType === 'towels' && (
         <div className="flex items-center gap-3">
-          <span className="text-sm text-ivory-dim">How many?</span>
+          <span className="text-sm text-ivory-dim">{t('howMany')}</span>
           <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">-</button>
           <span className="w-5 text-center text-ivory">{quantity}</span>
           <button type="button" onClick={() => setQuantity((q) => q + 1)} className="h-7 w-7 rounded border border-ink-line text-ivory-dim">+</button>
@@ -605,18 +710,19 @@ function RequestFormView({ portalBase, service, onDone }: { portalBase: string; 
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Any details? (optional)"
+        placeholder={t('anyDetailsOptional')}
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
       <button type="button" onClick={handleSubmit} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
-        {submitting ? 'Sending...' : 'Send Request'}
+        {submitting ? t('sending') : t('sendRequest')}
       </button>
     </div>
   );
 }
 
 function ReceptionView({ portalBase, onDone }: { portalBase: string; onDone: () => void }) {
+  const { t } = useLanguage();
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -639,31 +745,32 @@ function ReceptionView({ portalBase, onDone }: { portalBase: string; onDone: () 
   if (success) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-base text-success">Message sent - reception will respond shortly.</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <p className="text-base text-success">{t('messageSentConfirmation')}</p>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">{t('done')}</button>
       </div>
     );
   }
 
   return (
     <div className="space-y-3 rounded-lg border border-ink-line p-4">
-      <p className="font-display text-xl text-ivory">Reception</p>
-      <p className="text-sm text-ivory-dim">How can we help?</p>
+      <p className="font-display text-xl text-ivory">{t('reception')}</p>
+      <p className="text-sm text-ivory-dim">{t('howCanWeHelp')}</p>
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         rows={4}
-        placeholder="Type your message..."
+        placeholder={t('typeYourMessage')}
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
       <button type="button" onClick={handleSend} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
-        {submitting ? 'Sending...' : 'Send'}
+        {submitting ? t('sending') : t('send')}
       </button>
     </div>
   );
 }
 
 function FeedbackView({ portalBase, onDone }: { portalBase: string; onDone: () => void }) {
+  const { t } = useLanguage();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [contactMe, setContactMe] = useState(false);
@@ -687,15 +794,15 @@ function FeedbackView({ portalBase, onDone }: { portalBase: string; onDone: () =
   if (success) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-base text-success">Thank you for your feedback.</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">Done</button>
+        <p className="text-base text-success">{t('thankYouForFeedback')}</p>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink">{t('done')}</button>
       </div>
     );
   }
 
   return (
     <div className="space-y-3 rounded-lg border border-ink-line p-4">
-      <p className="font-display text-xl text-ivory">How was your stay?</p>
+      <p className="font-display text-xl text-ivory">{t('howWasYourStay')}</p>
       <div className="flex justify-center gap-1 text-3xl">
         {[1, 2, 3, 4, 5].map((n) => (
           <button type="button" key={n} onClick={() => setRating(n)} className={n <= rating ? 'text-brass' : 'text-ivory-dim/40'}>★</button>
@@ -705,15 +812,15 @@ function FeedbackView({ portalBase, onDone }: { portalBase: string; onDone: () =
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}
-        placeholder="What would you like to tell us?"
+        placeholder={t('whatWouldYouLikeToTellUs')}
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
       <label className="flex items-center gap-2 text-sm text-ivory">
         <input type="checkbox" checked={contactMe} onChange={(e) => setContactMe(e.target.checked)} className="accent-brass" />
-        I'd like someone from the hotel to contact me
+        {t('contactMeCheckbox')}
       </label>
       <button type="button" onClick={handleSubmit} disabled={submitting || rating === 0} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50">
-        {submitting ? 'Sending...' : 'Submit Feedback'}
+        {submitting ? t('sending') : t('submitFeedback')}
       </button>
     </div>
   );

@@ -107,4 +107,50 @@ export interface TranslationDict {
   processing: string;
   payAmount: string; // "Pay {total} AED"
   paymentSuccessful: string;
+
+  // Hotel guest portal
+  hotelWelcome: string; // "Welcome, {name}"
+  hotelRoom: string; // "Room {number}"
+  hotelFrontDesk: string;
+  myRequests: string;
+  myBill: string;
+  tapToViewDetailsAndPay: string;
+  order: string;
+  services: string;
+  noServicesConfigured: string;
+  reception: string;
+  feedback: string;
+  links: string;
+  nothingHereYet: string;
+  nothingActiveRightNow: string;
+  showCompleted: string; // "Show completed ({count})"
+  hideCompleted: string; // "Hide completed ({count})"
+  noChargesYet: string;
+  subtotalExclVat: string;
+  vatLabel: string;
+  currentBalance: string;
+  payByCard: string;
+  startingPayment: string;
+  howMany: string;
+  anyDetailsOptional: string;
+  sendRequest: string;
+  requestSentConfirmation: string;
+  done: string;
+  howCanWeHelp: string;
+  typeYourMessage: string;
+  send: string;
+  messageSentConfirmation: string;
+  howWasYourStay: string;
+  whatWouldYouLikeToTellUs: string;
+  contactMeCheckbox: string;
+  submitFeedback: string;
+  thankYouForFeedback: string;
+  statusSubmitted: string;
+  statusInProgress: string;
+  statusCompleted: string;
+  paymentReceivedThankYou: string;
+  paymentNotCompletedRetry: string;
+  thisPortalNotAvailable: string;
+  couldNotStartPayment: string;
+  couldNotStartPaymentRetry: string;
 }
