@@ -347,7 +347,6 @@ function DashboardLayoutInner() {
     const hidden = [...(navLayout?.hidden ?? []), path];
     const order = [...visibleTabs, ...visibleSettingsItems].map((i) => i.path).filter((p) => p !== path);
     persistLayout({ hidden, order });
-    setEditingPath(null);
   }
 
   function restoreItem(path: string) {
