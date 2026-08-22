@@ -15,6 +15,7 @@ const TABS = [
   { path: 'audit-report', label: 'Audit Report' },
   { path: 'billing-settings', label: 'Billing Settings' },
   { path: 'demo-settings', label: 'Demo Settings' },
+  { path: 'account', label: 'My Account' },
 ];
 
 export default function SuperAdminLayout() {

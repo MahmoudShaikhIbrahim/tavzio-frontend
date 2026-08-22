@@ -78,6 +78,13 @@ export function changePassword(currentPassword: string, newPassword: string) {
   });
 }
 
+export function changeMyEmail(currentPassword: string, newEmail: string) {
+  return authFetch<{ message: string; email: string }>('/api/auth/email', {
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, newEmail }),
+  });
+}
+
 export function listLeads() {
   return authFetch<Lead[]>('/api/leads');
 }
@@ -2145,6 +2152,21 @@ export function sendStandaloneContract(contractId: string) {
 
 export function onboardContract(contractId: string) {
   return authFetch<{ business: AdminBusiness; contract: Contract }>(`/api/contracts/${contractId}/onboard`, { method: 'POST' });
+}
+
+// Real, distinct operations - see contractController.js for why these
+// aren't one action with a flag. Terminate keeps the record and
+// triggers real account consequences (business suspended, client
+// notified per the actual contract clauses); delete only works on a
+// contract nobody ever signed.
+export function terminateContract(contractId: string, basis: 'non_payment' | 'material_breach' | 'client_convenience' | 'mutual_agreement', reason?: string) {
+  return authFetch<Contract & { businessSuspended: boolean }>(`/api/contracts/${contractId}/terminate`, {
+    method: 'POST',
+    body: JSON.stringify({ basis, reason }),
+  });
+}
+export function deleteContract(contractId: string) {
+  return authFetch<{ message: string }>(`/api/contracts/${contractId}`, { method: 'DELETE' });
 }
 
 // --- Inventory ---

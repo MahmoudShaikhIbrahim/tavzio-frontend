@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeContext';
 import Home from './pages/Home';
 import DemoPage from './pages/DemoPage';
+import { DashboardLanguageProvider } from './lib/i18n/DashboardLanguageContext';
 import TapHandler from './pages/TapHandler';
 import LandingPage from './pages/LandingPage';
 import MenuPage from './pages/MenuPage';
@@ -125,6 +126,12 @@ export default function App() {
             <Route path="contracts/new" element={<CreateContractPage />} />
             <Route path="digital-cards" element={<SuperAdminDigitalCardsPage />} />
             <Route path="digital-cards/:cardId" element={<SuperAdminCardEditorPage />} />
+            {/* Confirmed gap: super_admin had zero self-service account
+                page anywhere - reuses the same ChangePasswordPage every
+                other account type already uses for password/email/
+                language, rather than building a second, different page
+                for the exact same thing. */}
+            <Route path="account" element={<DashboardLanguageProvider><ChangePasswordPage /></DashboardLanguageProvider>} />
           </Route>
         </Route>
 

@@ -269,6 +269,10 @@ export interface Contract {
   signed_by_name: string | null;
   signed_at: string | null;
   created_at: string;
+  terminated_at?: string | null;
+  terminated_by?: string | null;
+  termination_reason?: string | null;
+  termination_basis?: 'non_payment' | 'material_breach' | 'client_convenience' | 'mutual_agreement' | null;
 }
 
 export interface DigitalCardAnalytics {

@@ -111,6 +111,12 @@ export default function Home() {
               >
                 Get started
               </a>
+              <Link
+                to="/demo"
+                className="rounded-lg border border-brass/40 px-6 py-3 font-medium text-brass transition-colors hover:bg-brass/10"
+              >
+                Try the demo
+              </Link>
               <a
                 href="#pricing"
                 onClick={scrollToPricing}

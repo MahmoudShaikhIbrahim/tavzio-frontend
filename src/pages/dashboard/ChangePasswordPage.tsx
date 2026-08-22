@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { changePassword, updateMyLanguage } from '../../lib/authApi';
+import { changePassword, changeMyEmail, updateMyLanguage } from '../../lib/authApi';
 import { useSession } from '../../hooks/useSession';
 import { useDashboardLanguage } from '../../lib/i18n/DashboardLanguageContext';
 import { useT } from '../../hooks/useT';
@@ -118,6 +118,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
           {languageError && <p className="text-sm text-danger">{languageError}</p>}
         </Section>
       )}
+      {!forced && <ChangeEmailSection />}
       <Section title={forced ? t('Set your own password') : t('Change password')}>
         {forced && (
           <p className="text-base text-ivory-dim">
@@ -153,5 +154,58 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
     <div className="flex min-h-screen items-center justify-center bg-ink px-5">
       <div className="w-full max-w-md">{content}</div>
     </div>
+  );
+}
+
+// Confirmed requirement: owner, staff, and super_admin all need this -
+// self-service only (verified by the account's own current password,
+// same discipline as password change above), so this doesn't let
+// anyone change someone else's email, including an owner changing a
+// staff member's. Reused by every page that renders ChangePasswordPage
+// (business dashboard settings, and the super_admin account page) since
+// it's defined once here rather than duplicated.
+function ChangeEmailSection() {
+  const { t } = useT();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSaving(true);
+    try {
+      const res = await changeMyEmail(currentPassword, newEmail);
+      setDone(res.email);
+      setCurrentPassword('');
+      setNewEmail('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update email');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Section title={t('Change email address')}>
+      <p className="text-sm text-ivory-dim">
+        {t('Updates the email you sign in with. Takes effect immediately - no confirmation link needed.')}
+      </p>
+      {done && <p className="text-base text-success">{t('Email updated to')} {done}.</p>}
+      <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+        <Field label={t('Current password')}>
+          <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className={inputClass} />
+        </Field>
+        <Field label={t('New email address')}>
+          <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required className={inputClass} />
+        </Field>
+        {error && <p className="text-base text-danger">{error}</p>}
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? t('Saving...') : t('Update email')}
+        </button>
+      </form>
+    </Section>
   );
 }

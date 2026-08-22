@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { listAllContracts, previewStandaloneContract, sendStandaloneContract, onboardContract } from '../../lib/authApi';
+import { listAllContracts, previewStandaloneContract, sendStandaloneContract, onboardContract, terminateContract, deleteContract } from '../../lib/authApi';
 import type { Contract } from '../../types';
 
 const STATUS_STYLES: Record<string, string> = {
@@ -13,12 +13,22 @@ const STATUS_STYLES: Record<string, string> = {
   expired: 'text-danger border-danger/40',
 };
 
+const TERMINATION_BASES: { value: 'non_payment' | 'material_breach' | 'client_convenience' | 'mutual_agreement'; label: string }[] = [
+  { value: 'non_payment', label: 'Non-payment (Section 3 - 30+ days overdue)' },
+  { value: 'material_breach', label: 'Material breach (Section 9 - 15 days uncured)' },
+  { value: 'client_convenience', label: 'Client convenience (Section 9 - 90 days notice)' },
+  { value: 'mutual_agreement', label: 'Mutual agreement' },
+];
+
 export default function ContractsListPage() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [terminatingId, setTerminatingId] = useState<string | null>(null);
+  const [terminationBasis, setTerminationBasis] = useState<typeof TERMINATION_BASES[number]['value']>('non_payment');
+  const [terminationReason, setTerminationReason] = useState('');
   const navigate = useNavigate();
 
   function reload() {
@@ -59,6 +69,42 @@ export default function ContractsListPage() {
       navigate(`/admin/super/businesses/${res.business.id}`);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Could not onboard this contract');
+      setBusyId(null);
+    }
+  }
+
+  // Real consequences, not just a status change - see contractController.js.
+  // Requiring a basis and (for anything except mutual_agreement) a
+  // reason keeps this traceable to an actual clause in the signed
+  // contract, not a free decision made outside of what the client agreed to.
+  async function handleTerminate(contract: Contract) {
+    const basisLabel = TERMINATION_BASES.find((b) => b.value === terminationBasis)?.label;
+    const confirmMsg = `Terminate ${contract.contract_number} on the basis of "${basisLabel}"? ${
+      contract.business_id ? 'This will immediately suspend their account and email them a termination notice.' : 'This contract has no linked account yet.'
+    } This cannot be undone.`;
+    if (!confirm(confirmMsg)) return;
+    setBusyId(contract.id);
+    try {
+      await terminateContract(contract.id, terminationBasis, terminationReason);
+      setTerminatingId(null);
+      setTerminationReason('');
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not terminate this contract');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(contract: Contract) {
+    if (!confirm(`Permanently delete ${contract.contract_number}? This only works because it was never signed - a signed contract can't be deleted, only terminated.`)) return;
+    setBusyId(contract.id);
+    try {
+      await deleteContract(contract.id);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not delete this contract');
+    } finally {
       setBusyId(null);
     }
   }
@@ -111,6 +157,16 @@ export default function ContractsListPage() {
                       {busyId === c.id ? 'Onboarding...' : 'Onboard'}
                     </button>
                   )}
+                  {['signed', 'paid', 'active'].includes(c.status) && (
+                    <button type="button" onClick={() => setTerminatingId(terminatingId === c.id ? null : c.id)} className="text-sm text-danger hover:underline">
+                      {terminatingId === c.id ? 'Cancel' : 'Terminate'}
+                    </button>
+                  )}
+                  {['draft', 'sent'].includes(c.status) && (
+                    <button type="button" disabled={busyId === c.id} onClick={() => handleDelete(c)} className="text-sm text-danger hover:underline disabled:opacity-50">
+                      Delete
+                    </button>
+                  )}
                   {c.business_id && (
                     <Link to={`/admin/super/businesses/${c.business_id}`} className="text-sm text-ivory-dim hover:text-ivory">
                       View business →
@@ -118,6 +174,41 @@ export default function ContractsListPage() {
                   )}
                 </div>
               </div>
+              {c.status === 'terminated' && c.termination_basis && (
+                <p className="mt-2 text-sm text-danger">
+                  Terminated ({TERMINATION_BASES.find((b) => b.value === c.termination_basis)?.label || c.termination_basis})
+                  {c.termination_reason && ` — ${c.termination_reason}`}
+                </p>
+              )}
+              {terminatingId === c.id && (
+                <div className="mt-3 space-y-3 rounded-lg border border-danger/30 bg-danger/5 p-4">
+                  <p className="text-sm text-ivory">
+                    Choose the contractual basis - this is recorded and, if this contract is linked to an account,{' '}
+                    {c.business_id ? 'that account will be suspended immediately and the owner emailed a termination notice.' : 'nothing else happens since no account is linked yet.'}
+                  </p>
+                  <select
+                    value={terminationBasis}
+                    onChange={(e) => setTerminationBasis(e.target.value as typeof terminationBasis)}
+                    className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory"
+                  >
+                    {TERMINATION_BASES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+                  </select>
+                  <input
+                    value={terminationReason}
+                    onChange={(e) => setTerminationReason(e.target.value)}
+                    placeholder="Reason (optional, included in the notice sent to the client)"
+                    className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+                  />
+                  <button
+                    type="button"
+                    disabled={busyId === c.id}
+                    onClick={() => handleTerminate(c)}
+                    className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-ivory hover:opacity-90 disabled:opacity-50"
+                  >
+                    {busyId === c.id ? 'Terminating...' : 'Confirm termination'}
+                  </button>
+                </div>
+              )}
               {previewingId === c.id && (
                 <pre className="mt-3 max-h-96 overflow-y-auto whitespace-pre-wrap rounded-lg bg-ink-soft p-4 text-sm text-ivory-dim">{previewText}</pre>
               )}
