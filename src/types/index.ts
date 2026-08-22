@@ -123,6 +123,18 @@ export interface BusinessFeatures {
   forecasting?: {
     enabled: boolean;
   };
+  payroll?: {
+    enabled: boolean;
+  };
+  accounting?: {
+    enabled: boolean;
+  };
+  channelManager?: {
+    enabled: boolean;
+  };
+  marketing?: {
+    enabled: boolean;
+  };
 }
 
 // Business appearance customization - "1 click, 1 color" for
@@ -245,6 +257,44 @@ export interface Contract {
   signed_by_name: string | null;
   signed_at: string | null;
   created_at: string;
+}
+
+export interface DigitalCardAnalytics {
+  view: number;
+  phone_click: number;
+  whatsapp_click: number;
+  email_click: number;
+  website_click: number;
+  social_click: number;
+  save_contact: number;
+  share: number;
+}
+
+export interface DigitalCard {
+  id: string;
+  business_id: string | null;
+  owner_user_id: string | null;
+  slug: string;
+  card_type: 'business' | 'person';
+  status: 'draft' | 'active' | 'inactive';
+  name: string;
+  title: string;
+  company: string;
+  description: string;
+  logo_url: string | null;
+  photo_url: string | null;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  website: string;
+  address: string;
+  location_url: string;
+  working_hours: string;
+  contact_visibility: Record<string, boolean>;
+  social_links: Record<string, { url: string; enabled: boolean }>;
+  design: { template?: string; primaryColor?: string; secondaryColor?: string; buttonStyle?: string };
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface Supplier {
@@ -970,4 +1020,227 @@ export interface InboxThread {
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
+}
+
+// --- Payroll ---
+
+export interface SalaryStructure {
+  id: string;
+  business_id: string;
+  staff_id: string;
+  pay_type: 'monthly' | 'hourly' | 'daily';
+  base_amount_aed: number;
+  housing_allowance_aed: number;
+  transport_allowance_aed: number;
+  other_allowances_aed: number;
+  effective_from: string;
+  effective_to: string | null;
+  profiles?: { name: string };
+}
+
+export interface PayrollRun {
+  id: string;
+  business_id: string;
+  period_start: string;
+  period_end: string;
+  status: 'draft' | 'approved' | 'paid' | 'cancelled';
+  total_gross_aed: number;
+  total_deductions_aed: number;
+  total_net_aed: number;
+  approved_by: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  payslips?: Payslip[];
+}
+
+export interface PayslipDeduction {
+  label: string;
+  amountAed: number;
+}
+
+export interface Payslip {
+  id: string;
+  payroll_run_id: string;
+  business_id: string;
+  staff_id: string;
+  base_amount_aed: number;
+  allowances_aed: number;
+  overtime_hours: number;
+  overtime_amount_aed: number;
+  tips_amount_aed: number;
+  gross_aed: number;
+  deductions: PayslipDeduction[];
+  total_deductions_aed: number;
+  net_aed: number;
+  created_at: string;
+  profiles?: { name: string };
+  payroll_runs?: { period_start: string; period_end: string; status: PayrollRun['status'] };
+}
+
+export interface WpsExport {
+  id: string;
+  payroll_run_id: string;
+  business_id: string;
+  file_format: 'sif';
+  generated_at: string;
+  generated_by: string | null;
+  sifContent?: string;
+  includedCount?: number;
+  excludedStaff?: { staffId: string; name: string; missingIban: boolean; missingLabourCard: boolean }[];
+}
+
+// --- Accounting ---
+
+export interface ChartAccount {
+  id: string;
+  business_id: string;
+  code: string;
+  name: string;
+  account_type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+  parent_account_id: string | null;
+  is_active: boolean;
+}
+
+export interface JournalEntryLine {
+  id?: string;
+  account_id: string;
+  debit_aed: number;
+  credit_aed: number;
+  memo: string;
+  chart_of_accounts?: { code: string; name: string };
+}
+
+export interface JournalEntry {
+  id: string;
+  business_id: string;
+  entry_date: string;
+  reference: string;
+  description: string;
+  source_type: string | null;
+  status: 'draft' | 'posted' | 'voided';
+  journal_entry_lines: JournalEntryLine[];
+}
+
+export interface TrialBalanceRow {
+  accountId: string;
+  code: string;
+  name: string;
+  accountType: string;
+  debitAed: number;
+  creditAed: number;
+}
+
+export interface TrialBalance {
+  asOf: string;
+  rows: TrialBalanceRow[];
+  totalDebits: number;
+  totalCredits: number;
+}
+
+export interface Vendor {
+  id: string;
+  business_id: string;
+  name: string;
+  contact_email: string;
+  contact_phone: string;
+  payment_terms_days: number;
+  is_active: boolean;
+}
+
+export interface ApBill {
+  id: string;
+  business_id: string;
+  vendor_id: string;
+  bill_number: string;
+  bill_date: string;
+  due_date: string;
+  amount_aed: number;
+  amount_paid_aed: number;
+  status: 'unpaid' | 'partial' | 'paid' | 'overdue' | 'voided';
+  vendors?: { name: string };
+}
+
+export interface ArInvoice {
+  id: string;
+  business_id: string;
+  customer_name: string;
+  customer_email: string;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  amount_aed: number;
+  amount_received_aed: number;
+  status: 'unpaid' | 'partial' | 'paid' | 'overdue' | 'voided';
+}
+
+// --- Channel manager ---
+
+export interface ChannelConnection {
+  id: string;
+  channel: 'booking_com' | 'expedia' | 'airbnb' | 'agoda' | 'other';
+  is_active: boolean;
+  last_synced_at: string | null;
+  last_sync_status: 'success' | 'partial' | 'failed' | null;
+  last_sync_error: string;
+  created_at: string;
+}
+
+export interface ChannelBooking {
+  id: string;
+  business_id: string;
+  channel_connection_id: string;
+  external_booking_ref: string;
+  guest_name: string;
+  guest_email: string;
+  room_type: string;
+  check_in: string;
+  check_out: string;
+  total_amount_aed: number;
+  status: 'received' | 'confirmed' | 'rejected' | 'cancelled';
+  received_at: string;
+  channel_connections?: { channel: ChannelConnection['channel'] };
+}
+
+// --- Marketing ---
+
+export interface MarketingTemplate {
+  id: string;
+  business_id: string;
+  name: string;
+  channel: 'email' | 'sms';
+  subject: string;
+  body: string;
+  category: 'general' | 'welcome' | 'birthday' | 'win_back' | 'review_request' | 'promotion';
+}
+
+export interface MarketingCampaign {
+  id: string;
+  business_id: string;
+  name: string;
+  channel: 'email' | 'sms';
+  subject: string;
+  body: string;
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'cancelled';
+  scheduled_for: string | null;
+  sent_at: string | null;
+  created_at: string;
+  recipientCount?: number;
+  suppressedCount?: number;
+  recipientsSent?: number;
+  recipientsFailed?: number;
+}
+
+export interface MarketingCampaignStats {
+  total: number;
+  byStatus: Record<string, number>;
+}
+
+export interface MarketingSuppression {
+  id: string;
+  business_id: string;
+  contact_value: string;
+  channel: 'email' | 'sms';
+  reason: string;
+  created_at: string;
 }

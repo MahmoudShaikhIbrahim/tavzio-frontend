@@ -35,7 +35,8 @@ interface GuestCustomButton {
 
 interface PortalData {
   business: { name: string; slug: string; logoUrl: string; links: Record<string, string>; theme: { customerBackground?: string; customerButton?: string } };
-  room: { id: string; roomNumber: string; roomType: string };
+  // null for a lobby/unassigned stand - no specific room to show.
+  room: { id: string; roomNumber: string; roomType: string } | null;
   guest: { name: string; checkInDate: string; checkOutDate: string } | null;
   folioId: string | null;
   folioBalance: number | null;
@@ -79,7 +80,13 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function HotelGuestPortalPage() {
-  const { slug, roomId } = useParams<{ slug: string; roomId: string }>();
+  // roomId is present for an in-room stand, absent for a lobby/reception/
+  // unassigned one - both now reach this same page (see resolveCardTap),
+  // and portalBase is the one place that decides which backend path to
+  // call, so every fetch and child component below just uses portalBase
+  // and never has to re-derive the room-vs-lobby distinction itself.
+  const { slug, roomId } = useParams<{ slug: string; roomId?: string }>();
+  const portalBase = slug ? (roomId ? `/hotel/${slug}/room/${roomId}` : `/hotel/${slug}/hotel-portal`) : '';
   const [searchParams] = useSearchParams();
   const [data, setData] = useState<PortalData | null>(null);
   const [outlets, setOutlets] = useState<Outlet[]>([]);
@@ -91,9 +98,15 @@ export default function HotelGuestPortalPage() {
   const [payResult, setPayResult] = useState<'success' | 'failed' | null>(null);
 
   function reload() {
-    if (!slug || !roomId) return;
-    fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}`).then((r) => r.json()).then(setData).finally(() => setLoading(false));
-    fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/outlets`).then((r) => r.json()).then(setOutlets).catch(() => {});
+    if (!slug) return;
+    fetch(`${BASE}/api/public${portalBase}`).then((r) => r.json()).then(setData).finally(() => setLoading(false));
+    // Ordering only exists for a room with a folio to charge it to - a
+    // lobby stand has no roomId, so this is skipped entirely rather than
+    // hitting a route that doesn't exist for that case (there is no
+    // /hotel-portal/outlets endpoint, deliberately - see publicRoutes.js).
+    if (roomId) {
+      fetch(`${BASE}/api/public${portalBase}/outlets`).then((r) => r.json()).then(setOutlets).catch(() => {});
+    }
   }
   useEffect(reload, [slug, roomId]);
 
@@ -104,8 +117,8 @@ export default function HotelGuestPortalPage() {
   // rest of the dashboard already uses for live updates elsewhere.
   const [requests, setRequests] = useState<TrackedRequest[]>([]);
   function refreshRequests() {
-    if (!slug || !roomId) return;
-    fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/my-requests`).then((r) => r.json()).then(setRequests).catch(() => {});
+    if (!slug) return;
+    fetch(`${BASE}/api/public${portalBase}/my-requests`).then((r) => r.json()).then(setRequests).catch(() => {});
   }
   useEffect(refreshRequests, [slug, roomId]);
   useEffect(() => {
@@ -118,7 +131,7 @@ export default function HotelGuestPortalPage() {
   useEffect(() => {
     const txnId = searchParams.get('folioPaymentTxnId');
     if (!txnId || !slug || !roomId) return;
-    fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/folio/confirm`, {
+    fetch(`${BASE}/api/public${portalBase}/folio/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transactionId: txnId }),
@@ -133,7 +146,7 @@ export default function HotelGuestPortalPage() {
     if (!slug || !roomId) return;
     setPaying(true);
     try {
-      const res = await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/folio/pay`, {
+      const res = await fetch(`${BASE}/api/public${portalBase}/folio/pay`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
       });
       const result = await res.json();
@@ -146,7 +159,7 @@ export default function HotelGuestPortalPage() {
   }
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-ink"><div className="h-8 w-8 animate-pulse rounded-full border-2 border-brass/40" /></div>;
-  if (!data) return <div className="flex min-h-screen items-center justify-center bg-ink px-6 text-center text-ivory-dim">This room isn't available right now.</div>;
+  if (!data) return <div className="flex min-h-screen items-center justify-center bg-ink px-6 text-center text-ivory-dim">This portal isn't available right now.</div>;
 
   const themeVars = buildBusinessThemeVars(data.business.theme?.customerBackground, data.business.theme?.customerButton);
 
@@ -171,6 +184,7 @@ export default function HotelGuestPortalPage() {
           <HomeView
             data={data}
             outlets={outlets}
+            portalBase={portalBase}
             requestsCount={requests.filter((r) => r.status !== 'done' && r.status !== 'resolved').length}
             onSelectOutlet={(o) => { setActiveOutlet(o); setView('outlet'); }}
             onNav={setView}
@@ -179,7 +193,7 @@ export default function HotelGuestPortalPage() {
         )}
 
         {view === 'outlet' && activeOutlet && (
-          <OutletOrderView slug={slug!} roomId={roomId!} outlet={activeOutlet} onDone={() => { setView('home'); reload(); }} />
+          <OutletOrderView portalBase={portalBase} outlet={activeOutlet} onDone={() => { setView('home'); reload(); }} />
         )}
 
         {view === 'myBill' && <MyBillView data={data} paying={paying} onPay={handlePayBill} />}
@@ -188,15 +202,14 @@ export default function HotelGuestPortalPage() {
 
         {view === 'request' && activeRequestService && (
           <RequestFormView
-            slug={slug!}
-            roomId={roomId!}
+            portalBase={portalBase}
             service={activeRequestService}
             onDone={() => setView('home')}
           />
         )}
 
-        {view === 'reception' && <ReceptionView slug={slug!} roomId={roomId!} onDone={() => setView('home')} />}
-        {view === 'feedback' && <FeedbackView slug={slug!} roomId={roomId!} onDone={() => setView('home')} />}
+        {view === 'reception' && <ReceptionView portalBase={portalBase} onDone={() => setView('home')} />}
+        {view === 'feedback' && <FeedbackView portalBase={portalBase} onDone={() => setView('home')} />}
       </div>
     </div>
   );
@@ -207,22 +220,26 @@ function Header({ data }: { data: PortalData }) {
     <div className="text-center">
       {data.business.logoUrl && <img src={data.business.logoUrl} alt={data.business.name} className="mx-auto mb-3 h-14 w-14 rounded-full object-cover" />}
       <p className="font-display text-2xl text-ivory">{data.business.name}</p>
-      {data.guest ? (
-        <p className="text-sm text-ivory-dim">
-          Welcome, {data.guest.name} · Room {data.room.roomNumber}
-          {data.guest.checkInDate && data.guest.checkOutDate && (
-            <> · {new Date(data.guest.checkInDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}–{new Date(data.guest.checkOutDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</>
-          )}
-        </p>
+      {data.room ? (
+        data.guest ? (
+          <p className="text-sm text-ivory-dim">
+            Welcome, {data.guest.name} · Room {data.room.roomNumber}
+            {data.guest.checkInDate && data.guest.checkOutDate && (
+              <> · {new Date(data.guest.checkInDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}–{new Date(data.guest.checkOutDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-ivory-dim">Room {data.room.roomNumber}</p>
+        )
       ) : (
-        <p className="text-sm text-ivory-dim">Room {data.room.roomNumber}</p>
+        <p className="text-sm text-ivory-dim">Front Desk</p>
       )}
     </div>
   );
 }
 
-function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onRequestCategory }: {
-  data: PortalData; outlets: Outlet[]; requestsCount: number;
+function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, onNav, onRequestCategory }: {
+  data: PortalData; outlets: Outlet[]; portalBase: string; requestsCount: number;
   onSelectOutlet: (o: Outlet) => void; onNav: (v: View) => void; onRequestCategory: (service: GuestServiceOption) => void;
 }) {
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
@@ -234,7 +251,7 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
       <div className="space-y-2">
         <button type="button" onClick={() => setOpenGroupId(null)} className="text-sm text-brass hover:underline">&larr; {group?.label || 'Back'}</button>
         {children.map((btn) => (
-          <CustomButtonItem key={btn.id} btn={btn} slug={data.business.slug} roomId={data.room.id} onOpenGroup={setOpenGroupId} />
+          <CustomButtonItem key={btn.id} btn={btn} portalBase={portalBase} onOpenGroup={setOpenGroupId} />
         ))}
         {children.length === 0 && <p className="text-sm text-ivory-dim">Nothing here yet.</p>}
       </div>
@@ -277,10 +294,11 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
         ))}
         {/* Landing Page Buttons - same customization system as the
             restaurant-facing page, on the one page a hotel guest
-            actually reaches. Only top-level buttons render directly; a
-            group's own children only appear once that group is opened. */}
+            actually reaches, room-bound or not. Only top-level buttons
+            render directly; a group's own children only appear once
+            that group is opened. */}
         {data.customButtons.filter((b) => !b.parent_button_id).map((btn) => (
-          <CustomButtonItem key={btn.id} btn={btn} slug={data.business.slug} roomId={data.room.id} onOpenGroup={setOpenGroupId} />
+          <CustomButtonItem key={btn.id} btn={btn} portalBase={portalBase} onOpenGroup={setOpenGroupId} />
         ))}
         <button type="button" onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass">
           Reception
@@ -293,8 +311,8 @@ function HomeView({ data, outlets, requestsCount, onSelectOutlet, onNav, onReque
   );
 }
 
-function CustomButtonItem({ btn, slug, roomId, onOpenGroup }: {
-  btn: GuestCustomButton; slug: string; roomId: string; onOpenGroup: (id: string) => void;
+function CustomButtonItem({ btn, portalBase, onOpenGroup }: {
+  btn: GuestCustomButton; portalBase: string; onOpenGroup: (id: string) => void;
 }) {
   const Icon = getIcon(btn.icon);
   const brandColor = getIconColor(btn.icon);
@@ -319,7 +337,7 @@ function CustomButtonItem({ btn, slug, roomId, onOpenGroup }: {
   }
 
   if (btn.button_type === 'notification') {
-    return <CustomNotificationButton btn={btn} slug={slug} roomId={roomId} iconEl={iconEl} />;
+    return <CustomNotificationButton btn={btn} portalBase={portalBase} iconEl={iconEl} />;
   }
 
   return (
@@ -331,12 +349,13 @@ function CustomButtonItem({ btn, slug, roomId, onOpenGroup }: {
 }
 
 // Notification-type custom buttons need somewhere to actually land for a
-// room-scoped guest, who has no tap-event the way the restaurant landing
-// page does - reuses the same room-scoped request endpoint Services
-// already uses, routed the same way submitGuestRequest already routes
-// housekeeping/maintenance destinations, so both button systems land in
-// the exact same real staff-facing queues either way.
-function CustomNotificationButton({ btn, slug, roomId, iconEl }: { btn: GuestCustomButton; slug: string; roomId: string; iconEl: ReactNode }) {
+// hotel guest, who has no tap-event the way the restaurant landing page
+// does - reuses the same request endpoint Services already uses (room-
+// scoped or the lobby variant, whichever portalBase points at), routed
+// the same way submitGuestRequest already routes housekeeping/maintenance
+// destinations, so both button systems land in the exact same real
+// staff-facing queues either way.
+function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCustomButton; portalBase: string; iconEl: ReactNode }) {
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   async function handleClick() {
@@ -345,7 +364,7 @@ function CustomNotificationButton({ btn, slug, roomId, iconEl }: { btn: GuestCus
       const requestType = btn.notification_destination === 'housekeeping_task' ? 'housekeeping'
         : btn.notification_destination === 'maintenance_ticket' ? 'maintenance'
         : 'other';
-      const res = await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/requests`, {
+      const res = await fetch(`${BASE}/api/public${portalBase}/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestType, note: btn.label }),
@@ -378,7 +397,7 @@ function outletIcon(type: Outlet['outletType']) {
   return { restaurant: '🍽', room_service: '🍽', bar: '🍸', pool: '🏊', breakfast: '🍳', other: '🛎' }[type] || '🛎';
 }
 
-function OutletOrderView({ slug, roomId, outlet, onDone }: { slug: string; roomId: string; outlet: Outlet; onDone: () => void }) {
+function OutletOrderView({ portalBase, outlet, onDone }: { portalBase: string; outlet: Outlet; onDone: () => void }) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -402,7 +421,7 @@ function OutletOrderView({ slug, roomId, outlet, onDone }: { slug: string; roomI
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/orders`, {
+      const res = await fetch(`${BASE}/api/public${portalBase}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -528,7 +547,7 @@ function MyRequestsView({ requests }: { requests: TrackedRequest[] }) {
   );
 }
 
-function RequestFormView({ slug, roomId, service, onDone }: { slug: string; roomId: string; service: GuestServiceOption; onDone: () => void }) {
+function RequestFormView({ portalBase, service, onDone }: { portalBase: string; service: GuestServiceOption; onDone: () => void }) {
   const [option, setOption] = useState(service.options?.[0] || '');
   const [note, setNote] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -540,7 +559,7 @@ function RequestFormView({ slug, roomId, service, onDone }: { slug: string; room
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/requests`, {
+      const res = await fetch(`${BASE}/api/public${portalBase}/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -597,7 +616,7 @@ function RequestFormView({ slug, roomId, service, onDone }: { slug: string; room
   );
 }
 
-function ReceptionView({ slug, roomId, onDone }: { slug: string; roomId: string; onDone: () => void }) {
+function ReceptionView({ portalBase, onDone }: { portalBase: string; onDone: () => void }) {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -606,7 +625,7 @@ function ReceptionView({ slug, roomId, onDone }: { slug: string; roomId: string;
     if (!message.trim()) return;
     setSubmitting(true);
     try {
-      await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/requests`, {
+      await fetch(`${BASE}/api/public${portalBase}/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestType: 'reception_message', note: message.trim() }),
@@ -644,7 +663,7 @@ function ReceptionView({ slug, roomId, onDone }: { slug: string; roomId: string;
   );
 }
 
-function FeedbackView({ slug, roomId, onDone }: { slug: string; roomId: string; onDone: () => void }) {
+function FeedbackView({ portalBase, onDone }: { portalBase: string; onDone: () => void }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [contactMe, setContactMe] = useState(false);
@@ -654,7 +673,7 @@ function FeedbackView({ slug, roomId, onDone }: { slug: string; roomId: string; 
   async function handleSubmit() {
     setSubmitting(true);
     try {
-      await fetch(`${BASE}/api/public/hotel/${slug}/room/${roomId}/requests`, {
+      await fetch(`${BASE}/api/public${portalBase}/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestType: 'feedback', note: `Rating: ${rating}/5${comment ? ' - ' + comment : ''}${contactMe ? ' [wants contact]' : ''}` }),

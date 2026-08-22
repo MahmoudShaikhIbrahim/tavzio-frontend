@@ -15,6 +15,10 @@ export default function BusinessProfilePage() {
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [tab, setTab] = useState<'profile' | 'appearance' | 'account'>('profile');
+  // Digital Business Card is fully built (Settings tab, super admin
+  // multi-card page, public /card/:slug page, QR/vCard, analytics) but
+  // hidden from the UI until Apple/Google Wallet is worth building -
+  // re-add 'digitalCard' to the tuple below and to TABS_UI to bring it back.
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);

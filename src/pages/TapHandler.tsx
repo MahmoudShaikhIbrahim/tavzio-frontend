@@ -29,9 +29,15 @@ export default function TapHandler() {
         }
 
         // Customer card - remember the tap token for this business's
-        // loyalty check-in, then go to the public landing page.
+        // loyalty check-in, then go to the public landing page. Real fix:
+        // String.replace('/', '') only strips the FIRST slash, so a hotel
+        // room redirect like "/business/room/abc123" produced the slug
+        // "business/room/abc123" instead of "business" - the session
+        // storage key never matched what any page actually looked up,
+        // silently breaking anything keyed off it. split('/')[1] takes
+        // just the slug segment regardless of how many segments follow.
         if (res.tapEventId && res.redirect) {
-          const slug = res.redirect.replace('/', '');
+          const slug = res.redirect.split('/')[1];
           sessionStorage.setItem(`tavzio_tap_${slug}`, String(res.tapEventId));
         }
         navigate(res.redirect);

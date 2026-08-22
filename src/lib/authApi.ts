@@ -15,6 +15,11 @@ import type {
   SalesForecast, BusinessBudget, BudgetVsActual,
   Lead, TillSession, FloorTable, WaitlistEntry,
   HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet, HotelBookingGroup,
+  DigitalCard, DigitalCardAnalytics,
+  SalaryStructure, PayrollRun, Payslip, PayslipDeduction, WpsExport,
+  ChartAccount, JournalEntry, JournalEntryLine, TrialBalance, Vendor, ApBill, ArInvoice,
+  ChannelConnection, ChannelBooking,
+  MarketingTemplate, MarketingCampaign, MarketingCampaignStats, MarketingSuppression,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -599,6 +604,47 @@ export function getBusiness(id: string) {
   return authFetch<AdminBusiness>(`/api/businesses/${id}`);
 }
 
+// --- Digital Business Card ---
+
+export function getBusinessDigitalCard(businessId: string) {
+  return authFetch<DigitalCard | null>(`/api/businesses/${businessId}/digital-card`);
+}
+
+export function createBusinessDigitalCard(businessId: string) {
+  return authFetch<DigitalCard>(`/api/businesses/${businessId}/digital-card`, { method: 'POST' });
+}
+
+export function updateBusinessDigitalCard(businessId: string, cardId: string, payload: Partial<DigitalCard>) {
+  return authFetch<DigitalCard>(`/api/businesses/${businessId}/digital-card/${cardId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getBusinessDigitalCardAnalytics(businessId: string, cardId: string) {
+  return authFetch<DigitalCardAnalytics>(`/api/businesses/${businessId}/digital-card/${cardId}/analytics`);
+}
+
+export function listSuperAdminDigitalCards() {
+  return authFetch<DigitalCard[]>('/api/super-admin/digital-cards');
+}
+
+export function createSuperAdminDigitalCard(payload: Partial<DigitalCard> & { name: string; cardType: 'business' | 'person' }) {
+  return authFetch<DigitalCard>('/api/super-admin/digital-cards', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updateSuperAdminDigitalCard(cardId: string, payload: Partial<DigitalCard>) {
+  return authFetch<DigitalCard>(`/api/super-admin/digital-cards/${cardId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteSuperAdminDigitalCard(cardId: string) {
+  return authFetch<{ message: string }>(`/api/super-admin/digital-cards/${cardId}`, { method: 'DELETE' });
+}
+
+export function getSuperAdminDigitalCardAnalytics(cardId: string) {
+  return authFetch<DigitalCardAnalytics>(`/api/super-admin/digital-cards/${cardId}/analytics`);
+}
+
 export function updateBusiness(id: string, payload: Partial<AdminBusiness>) {
   return authFetch<AdminBusiness>(`/api/businesses/${id}`, {
     method: 'PATCH',
@@ -771,6 +817,160 @@ export function setBudget(businessId: string, payload: { month: string; revenueB
 }
 export function getBudgetVsActual(businessId: string, month: string) {
   return authFetch<BudgetVsActual>(`/api/businesses/${businessId}/forecasting/budget-vs-actual?month=${month}`);
+}
+
+// --- Payroll ---
+
+export function listSalaryStructures(businessId: string) {
+  return authFetch<SalaryStructure[]>(`/api/businesses/${businessId}/payroll/salary-structures`);
+}
+export function setSalaryStructure(businessId: string, payload: {
+  staffId: string; payType: 'monthly' | 'hourly' | 'daily'; baseAmountAed: number;
+  housingAllowanceAed?: number; transportAllowanceAed?: number; otherAllowancesAed?: number;
+}) {
+  return authFetch<SalaryStructure>(`/api/businesses/${businessId}/payroll/salary-structures`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function listPayrollRuns(businessId: string) {
+  return authFetch<PayrollRun[]>(`/api/businesses/${businessId}/payroll/runs`);
+}
+export function createPayrollRun(businessId: string, periodStart: string, periodEnd: string) {
+  return authFetch<PayrollRun>(`/api/businesses/${businessId}/payroll/runs`, { method: 'POST', body: JSON.stringify({ periodStart, periodEnd }) });
+}
+export function listPayslipsForRun(businessId: string, runId: string) {
+  return authFetch<Payslip[]>(`/api/businesses/${businessId}/payroll/runs/${runId}/payslips`);
+}
+export function setPayslipDeductions(businessId: string, runId: string, payslipId: string, deductions: PayslipDeduction[]) {
+  return authFetch<Payslip>(`/api/businesses/${businessId}/payroll/runs/${runId}/deductions/${payslipId}`, { method: 'PATCH', body: JSON.stringify({ deductions }) });
+}
+export function approvePayrollRun(businessId: string, runId: string) {
+  return authFetch<PayrollRun>(`/api/businesses/${businessId}/payroll/runs/${runId}/approve`, { method: 'PATCH' });
+}
+export function markPayrollRunPaid(businessId: string, runId: string) {
+  return authFetch<PayrollRun>(`/api/businesses/${businessId}/payroll/runs/${runId}/mark-paid`, { method: 'PATCH' });
+}
+export function recordWpsExport(businessId: string, runId: string) {
+  return authFetch<WpsExport>(`/api/businesses/${businessId}/payroll/runs/${runId}/wps-export`, { method: 'POST' });
+}
+export function getMyPayslips(businessId: string) {
+  return authFetch<Payslip[]>(`/api/businesses/${businessId}/payroll/my-payslips`);
+}
+
+// --- Accounting ---
+
+export function listAccounts(businessId: string) {
+  return authFetch<ChartAccount[]>(`/api/businesses/${businessId}/accounting/accounts`);
+}
+export function createAccount(businessId: string, payload: { code: string; name: string; accountType: ChartAccount['account_type']; parentAccountId?: string | null }) {
+  return authFetch<ChartAccount>(`/api/businesses/${businessId}/accounting/accounts`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function seedDefaultAccounts(businessId: string) {
+  return authFetch<ChartAccount[]>(`/api/businesses/${businessId}/accounting/accounts/seed-defaults`, { method: 'POST' });
+}
+export function listJournalEntries(businessId: string, range?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+  if (range?.from) params.set('from', range.from);
+  if (range?.to) params.set('to', range.to);
+  const qs = params.toString();
+  return authFetch<JournalEntry[]>(`/api/businesses/${businessId}/accounting/journal-entries${qs ? `?${qs}` : ''}`);
+}
+export function createJournalEntry(businessId: string, payload: { entryDate?: string; reference?: string; description?: string; lines: JournalEntryLine[] }) {
+  return authFetch<JournalEntry>(`/api/businesses/${businessId}/accounting/journal-entries`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function postJournalEntry(businessId: string, entryId: string) {
+  return authFetch<JournalEntry>(`/api/businesses/${businessId}/accounting/journal-entries/${entryId}/post`, { method: 'PATCH' });
+}
+export function voidJournalEntry(businessId: string, entryId: string) {
+  return authFetch<JournalEntry>(`/api/businesses/${businessId}/accounting/journal-entries/${entryId}/void`, { method: 'PATCH' });
+}
+export function getTrialBalance(businessId: string, asOf?: string) {
+  return authFetch<TrialBalance>(`/api/businesses/${businessId}/accounting/trial-balance${asOf ? `?asOf=${asOf}` : ''}`);
+}
+export function listVendors(businessId: string) {
+  return authFetch<Vendor[]>(`/api/businesses/${businessId}/accounting/vendors`);
+}
+export function createVendor(businessId: string, payload: { name: string; contactEmail?: string; contactPhone?: string; paymentTermsDays?: number }) {
+  return authFetch<Vendor>(`/api/businesses/${businessId}/accounting/vendors`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function listApBills(businessId: string) {
+  return authFetch<ApBill[]>(`/api/businesses/${businessId}/accounting/ap-bills`);
+}
+export function createApBill(businessId: string, payload: { vendorId: string; billNumber?: string; billDate?: string; dueDate: string; amountAed: number }) {
+  return authFetch<ApBill>(`/api/businesses/${businessId}/accounting/ap-bills`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function recordApPayment(businessId: string, billId: string, amountPaidAed: number) {
+  return authFetch<ApBill>(`/api/businesses/${businessId}/accounting/ap-bills/${billId}/pay`, { method: 'PATCH', body: JSON.stringify({ amountPaidAed }) });
+}
+export function listArInvoices(businessId: string) {
+  return authFetch<ArInvoice[]>(`/api/businesses/${businessId}/accounting/ar-invoices`);
+}
+export function createArInvoice(businessId: string, payload: { customerName: string; customerEmail?: string; invoiceNumber?: string; invoiceDate?: string; dueDate: string; amountAed: number }) {
+  return authFetch<ArInvoice>(`/api/businesses/${businessId}/accounting/ar-invoices`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function recordArReceipt(businessId: string, invoiceId: string, amountReceivedAed: number) {
+  return authFetch<ArInvoice>(`/api/businesses/${businessId}/accounting/ar-invoices/${invoiceId}/receive`, { method: 'PATCH', body: JSON.stringify({ amountReceivedAed }) });
+}
+
+// --- Channel manager (hotel-only) ---
+
+export function listChannelConnections(businessId: string) {
+  return authFetch<ChannelConnection[]>(`/api/businesses/${businessId}/channel-manager/connections`);
+}
+export function upsertChannelConnection(businessId: string, channel: ChannelConnection['channel'], credentials: Record<string, string>) {
+  return authFetch<ChannelConnection>(`/api/businesses/${businessId}/channel-manager/connections/${channel}`, { method: 'PUT', body: JSON.stringify(credentials) });
+}
+export function disconnectChannel(businessId: string, channel: ChannelConnection['channel']) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/channel-manager/connections/${channel}`, { method: 'DELETE' });
+}
+export function pushRatesToChannel(businessId: string, payload: { channel: string; roomType: string; dates: { stayDate: string; rateAed: number; availableRooms: number }[] }) {
+  return authFetch<{ message: string; syncStatus: string }>(`/api/businesses/${businessId}/channel-manager/push-rates`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function listChannelBookings(businessId: string, status?: string) {
+  return authFetch<ChannelBooking[]>(`/api/businesses/${businessId}/channel-manager/bookings${status ? `?status=${status}` : ''}`);
+}
+export function confirmChannelBooking(businessId: string, bookingId: string) {
+  return authFetch<ChannelBooking>(`/api/businesses/${businessId}/channel-manager/bookings/${bookingId}/confirm`, { method: 'PATCH' });
+}
+export function rejectChannelBooking(businessId: string, bookingId: string) {
+  return authFetch<ChannelBooking>(`/api/businesses/${businessId}/channel-manager/bookings/${bookingId}/reject`, { method: 'PATCH' });
+}
+
+// --- Marketing ---
+
+export function listMarketingTemplates(businessId: string) {
+  return authFetch<MarketingTemplate[]>(`/api/businesses/${businessId}/marketing/templates`);
+}
+export function createMarketingTemplate(businessId: string, payload: { name: string; channel: 'email' | 'sms'; subject?: string; body: string; category?: MarketingTemplate['category'] }) {
+  return authFetch<MarketingTemplate>(`/api/businesses/${businessId}/marketing/templates`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function deleteMarketingTemplate(businessId: string, templateId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/marketing/templates/${templateId}`, { method: 'DELETE' });
+}
+export function listCampaigns(businessId: string) {
+  return authFetch<MarketingCampaign[]>(`/api/businesses/${businessId}/marketing/campaigns`);
+}
+export function createCampaign(businessId: string, payload: {
+  name: string; channel: 'email' | 'sms'; subject?: string; body: string; scheduledFor?: string | null;
+  audience: 'all_hotel_guests' | 'all_loyalty_members' | 'manual'; manualContacts?: { contactValue: string }[];
+}) {
+  return authFetch<MarketingCampaign>(`/api/businesses/${businessId}/marketing/campaigns`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function sendCampaign(businessId: string, campaignId: string) {
+  return authFetch<MarketingCampaign>(`/api/businesses/${businessId}/marketing/campaigns/${campaignId}/send`, { method: 'POST' });
+}
+export function cancelCampaign(businessId: string, campaignId: string) {
+  return authFetch<MarketingCampaign>(`/api/businesses/${businessId}/marketing/campaigns/${campaignId}/cancel`, { method: 'PATCH' });
+}
+export function getCampaignStats(businessId: string, campaignId: string) {
+  return authFetch<MarketingCampaignStats>(`/api/businesses/${businessId}/marketing/campaigns/${campaignId}/stats`);
+}
+export function listSuppressions(businessId: string) {
+  return authFetch<MarketingSuppression[]>(`/api/businesses/${businessId}/marketing/suppressions`);
+}
+export function addSuppression(businessId: string, payload: { contactValue: string; channel: 'email' | 'sms'; reason?: string }) {
+  return authFetch<MarketingSuppression>(`/api/businesses/${businessId}/marketing/suppressions`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function removeSuppression(businessId: string, suppressionId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/marketing/suppressions/${suppressionId}`, { method: 'DELETE' });
 }
 
 export function setStaffActive(businessId: string, userId: string, isActive: boolean) {

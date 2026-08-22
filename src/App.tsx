@@ -23,6 +23,8 @@ import AuditReportPage from './pages/superadmin/AuditReportPage';
 import OrganizationsPage from './pages/superadmin/OrganizationsPage';
 import ContractsListPage from './pages/superadmin/ContractsListPage';
 import CreateContractPage from './pages/superadmin/CreateContractPage';
+import SuperAdminDigitalCardsPage from './pages/superadmin/SuperAdminDigitalCardsPage';
+import SuperAdminCardEditorPage from './pages/superadmin/SuperAdminCardEditorPage';
 import OrgOwnerLayout from './pages/orgowner/OrgOwnerLayout';
 import OrgOverviewPage from './pages/orgowner/OrgOverviewPage';
 import OrgMenuPage from './pages/orgowner/OrgMenuPage';
@@ -64,10 +66,15 @@ import RatePlansPage from './pages/dashboard/RatePlansPage';
 import NightAuditPage from './pages/dashboard/NightAuditPage';
 import PosIntegrationPage from './pages/dashboard/PosIntegrationPage';
 import HRPage from './pages/dashboard/HRPage';
+import PayrollPage from './pages/dashboard/PayrollPage';
+import AccountingPage from './pages/dashboard/AccountingPage';
+import ChannelManagerPage from './pages/dashboard/ChannelManagerPage';
+import MarketingPage from './pages/dashboard/MarketingPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
 import ChangePasswordPage from './pages/dashboard/ChangePasswordPage';
 import SignContractPage from './pages/SignContractPage';
+import PublicCardPage from './pages/PublicCardPage';
 import HotelGuestPortalPage from './pages/HotelGuestPortalPage';
 
 export default function App() {
@@ -82,7 +89,14 @@ export default function App() {
 
         {/* Public, no-login contract signing - the "send in a minute" link */}
         <Route path="/sign/:token" element={<SignContractPage />} />
+        <Route path="/card/:slug" element={<PublicCardPage />} />
         <Route path="/:slug/room/:roomId" element={<HotelGuestPortalPage />} />
+        {/* Lobby/reception/unassigned hotel stands - same component,
+            useParams().roomId is simply undefined here, which
+            HotelGuestPortalPage's portalBase logic already treats as
+            "no room" rather than an error. See resolveCardTap for the
+            matching backend redirect. */}
+        <Route path="/:slug/hotel-portal" element={<HotelGuestPortalPage />} />
 
         {/* Real email/password login - the only owner/staff access path
             now (admin cards were removed), always available to super_admin
@@ -105,6 +119,8 @@ export default function App() {
             <Route path="organizations" element={<OrganizationsPage />} />
             <Route path="contracts" element={<ContractsListPage />} />
             <Route path="contracts/new" element={<CreateContractPage />} />
+            <Route path="digital-cards" element={<SuperAdminDigitalCardsPage />} />
+            <Route path="digital-cards/:cardId" element={<SuperAdminCardEditorPage />} />
           </Route>
         </Route>
 
@@ -157,6 +173,10 @@ export default function App() {
             <Route path="settings/night-audit" element={<NightAuditPage />} />
             <Route path="settings/pos-integration" element={<PosIntegrationPage />} />
             <Route path="settings/hr" element={<HRPage />} />
+            <Route path="settings/payroll" element={<PayrollPage />} />
+            <Route path="settings/accounting" element={<AccountingPage />} />
+            <Route path="settings/channel-manager" element={<ChannelManagerPage />} />
+            <Route path="settings/marketing" element={<MarketingPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />
             <Route path="settings/change-password" element={<ChangePasswordPage />} />

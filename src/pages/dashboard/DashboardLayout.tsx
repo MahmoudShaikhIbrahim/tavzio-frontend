@@ -40,6 +40,7 @@ const TABS = [
 const SETTINGS_ITEMS = [
   { path: 'settings/business-profile', label: 'Business Profile', ownerOnly: true, requires: null },
   { path: 'settings/credentials', label: 'Credentials & Integrations', ownerOnly: true, requires: null },
+  { path: 'settings/delivery', label: 'Delivery Platforms', ownerOnly: true, requires: null },
   { path: 'settings/contract', label: 'Contracts & Receipts', ownerOnly: true, requires: null },
   // Staff-only entry point - owners get this inline inside Business
   // Profile instead (see that page), and Business Profile itself is
@@ -52,6 +53,10 @@ const SETTINGS_ITEMS = [
   { path: 'settings/night-audit', label: 'Night Audit', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/pos-integration', label: 'POS Integration', ownerOnly: true, requires: 'ordering' as const },
   { path: 'settings/hr', label: 'HR', ownerOnly: true, requires: 'hr' as const },
+  { path: 'settings/payroll', label: 'Payroll', ownerOnly: true, requires: 'payroll' as const },
+  { path: 'settings/accounting', label: 'Accounting', ownerOnly: true, requires: 'accounting' as const },
+  { path: 'settings/channel-manager', label: 'Channel Manager', ownerOnly: true, requires: 'channelManager' as const },
+  { path: 'settings/marketing', label: 'Marketing', ownerOnly: true, requires: 'marketing' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
@@ -189,7 +194,7 @@ function DashboardLayoutInner() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | 'forecasting' | null) {
+  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | 'forecasting' | 'payroll' | 'accounting' | 'channelManager' | 'marketing' | null) {
     if (requires === 'hotel') return category === 'hotel';
     // Delivery platform integrations (Deliverect etc.) only make sense for
     // restaurants/cafés dispatching food off-site - a hotel has no
@@ -206,6 +211,12 @@ function DashboardLayoutInner() {
     if (requires === 'inventory') return features.inventory?.enabled;
     if (requires === 'hr') return !!features.hr?.enabled;
     if (requires === 'forecasting') return !!features.forecasting?.enabled;
+    if (requires === 'payroll') return !!features.payroll?.enabled;
+    if (requires === 'accounting') return !!features.accounting?.enabled;
+    // Channel manager is hotel-only, same rule as the 'hotel' branch above -
+    // combined with its own feature flag since it's off by default too.
+    if (requires === 'channelManager') return category === 'hotel' && !!features.channelManager?.enabled;
+    if (requires === 'marketing') return !!features.marketing?.enabled;
     return true;
   }
 
