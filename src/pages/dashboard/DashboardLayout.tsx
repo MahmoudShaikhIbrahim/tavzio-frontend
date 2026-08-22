@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, type NotificationCounts } from '../../lib/authApi';
+import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, type NotificationCounts } from '../../lib/authApi';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
 import ThemeToggle from '../../components/ThemeToggle';
@@ -13,6 +13,38 @@ import { useTheme } from '../../lib/ThemeContext';
 import { DashboardLanguageProvider } from '../../lib/i18n/DashboardLanguageContext';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import ChangePasswordPage from './ChangePasswordPage';
+import GuidedTour, { type TourStep } from '../../components/GuidedTour';
+import { updateMyTour } from '../../lib/authApi';
+
+// First real tour content, covering the navigation shell itself (the
+// thing everyone touches on every single login, regardless of role or
+// which modules their business has enabled). Deeper, page-specific
+// tours (e.g. walking through Orders or Payroll in detail) are a
+// natural next extension of this same GuidedTour engine, not a
+// separate system - just a different steps array passed to the same
+// component on whichever page needs it.
+const DASHBOARD_TOUR_STEPS: TourStep[] = [
+  {
+    selector: 'nav-tabs',
+    title: 'Your main tabs',
+    body: "The tabs you use most live here - which ones you see depends on what's enabled for your business. Double-click or long-press any tab to hide it or move it left/right.",
+  },
+  {
+    selector: 'settings-dropdown',
+    title: 'Everything else lives here',
+    body: 'Less frequent things - Menu, Staff, Payroll, Accounting, and more - are grouped under Settings so they never crowd your main tabs. Hidden tabs can also be restored from here.',
+  },
+  {
+    selector: 'account-switcher',
+    title: 'Switch accounts',
+    body: 'Manage more than one business? Switch between them here without signing out.',
+  },
+  {
+    selector: 'theme-toggle',
+    title: 'Light or dark',
+    body: 'Your theme preference is saved to your account - it follows you to any device you log in from.',
+  },
+];
 
 // Only what's actually checked constantly through a shift stays
 // top-level - everything else, however often it's used, lives in the
@@ -89,6 +121,13 @@ function DashboardLayoutInner() {
   const { t, isRtl } = useT();
   const location = useLocation();
   const isOwner = user?.role === 'business_owner';
+  // A staff account granted full_access (see migration 0083) sees and
+  // does everything an owner does - this is the one place the frontend
+  // nav needs to know that; every actual data access is separately
+  // re-enforced server-side (authorize(), current_role_name()), so this
+  // flag being wrong here would only ever hide/show a tab, never grant
+  // or deny real access to anything behind it.
+  const hasOwnerAccess = isOwner || !!user?.full_access;
   const [features, setFeatures] = useState<BusinessFeatures | null>(null);
   const [theme, setTheme] = useState<BusinessTheme | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -96,6 +135,30 @@ function DashboardLayoutInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const { setMode } = useTheme();
+  // Local override so a hide/reorder change reflects instantly without
+  // waiting on useSession's 20s cache to naturally refresh - synced from
+  // the account's real saved layout once it loads, then updated
+  // optimistically on every change and persisted via setMyNavLayout.
+  const [navLayoutOverride, setNavLayoutOverride] = useState<{ hidden: string[]; order: string[] } | null | undefined>(undefined);
+  const [editingPath, setEditingPath] = useState<string | null>(null);
+
+  // Auto-opens once per account, the first time tour_completed_at is
+  // genuinely null (never shown, or explicitly reset via "Restart guide"
+  // in Business Profile) - never re-triggers just because the profile
+  // re-fetches, since that would re-open the tour on every cache expiry.
+  const [showTour, setShowTour] = useState(false);
+  const [tourAutoShown, setTourAutoShown] = useState(false);
+  useEffect(() => {
+    if (user && user.tour_completed_at == null && !tourAutoShown) {
+      setShowTour(true);
+      setTourAutoShown(true);
+    }
+  }, [user?.id, user?.tour_completed_at, tourAutoShown]);
+
+  function closeTour() {
+    setShowTour(false);
+    updateMyTour(true).catch(() => {});
+  }
 
   // The account's own saved theme takes over the moment it loads - this
   // is what actually makes it "belong to the account" rather than the
@@ -222,15 +285,105 @@ function DashboardLayoutInner() {
 
   // A staff account with an explicit (non-null) assigned_sections list is
   // restricted to exactly those tabs, on top of every other gate above -
-  // owners and super_admin are never restricted this way, and a staff
-  // account left at the default (null) sees everything it otherwise
-  // would, exactly as before this existed.
-  const allowedSections = !isOwner && user?.role === 'staff' ? user.assigned_sections : null;
-  const visibleTabs = TABS.filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires) && (!allowedSections || allowedSections.includes(t.path)));
-  const visibleSettingsItems = SETTINGS_ITEMS
-    .filter((t) => (!t.ownerOnly || isOwner) && tabAllowed(t.requires))
+  // owners, super_admin, and full_access staff are never restricted this
+  // way, and a staff account left at the default (null) sees everything
+  // it otherwise would, exactly as before this existed.
+  const allowedSections = !hasOwnerAccess && user?.role === 'staff' ? user.assigned_sections : null;
+  const baseVisibleTabs = TABS.filter((t) => (!t.ownerOnly || hasOwnerAccess) && tabAllowed(t.requires) && (!allowedSections || allowedSections.includes(t.path)));
+  const baseVisibleSettingsItems = SETTINGS_ITEMS
+    .filter((t) => (!t.ownerOnly || hasOwnerAccess) && tabAllowed(t.requires))
     .filter((t) => t.path !== 'settings/change-password' || !isOwner);
+
+  // Per-person hide/reorder (see migration 0083's nav_layout) applies on
+  // top of every access gate above, never instead of it - a hidden tab
+  // is still access-checked first, so restoring it later can never leak
+  // something the account was never allowed to see in the first place.
+  const navLayout = navLayoutOverride === undefined ? user?.nav_layout ?? null : navLayoutOverride;
+  function applyLayout<T extends { path: string }>(items: T[]): T[] {
+    if (!navLayout) return items;
+    const visible = items.filter((i) => !navLayout.hidden.includes(i.path));
+    if (navLayout.order.length === 0) return visible;
+    const orderIndex = new Map(navLayout.order.map((p, i) => [p, i]));
+    return [...visible].sort((a, b) => {
+      const ai = orderIndex.has(a.path) ? orderIndex.get(a.path)! : Infinity;
+      const bi = orderIndex.has(b.path) ? orderIndex.get(b.path)! : Infinity;
+      return ai - bi;
+    });
+  }
+  const visibleTabs = applyLayout(baseVisibleTabs);
+  const visibleSettingsItems = applyLayout(baseVisibleSettingsItems);
+  const hiddenTabs = [...baseVisibleTabs, ...baseVisibleSettingsItems].filter((i) => navLayout?.hidden.includes(i.path));
   const isSettingsActive = visibleSettingsItems.some((t) => location.pathname.includes(t.path)) || location.pathname.includes('/settings');
+
+  // Persists via setMyNavLayout (self-service, see staffRoutes.js) and
+  // updates the local override immediately rather than waiting on a
+  // fresh /me fetch - reverts the override if the save actually fails,
+  // so the UI never silently drifts from what's really saved.
+  function persistLayout(next: { hidden: string[]; order: string[] }) {
+    const previous = navLayout;
+    setNavLayoutOverride(next);
+    if (user?.business_id && user?.id) {
+      setMyNavLayout(user.business_id, user.id, next).catch(() => setNavLayoutOverride(previous));
+    }
+  }
+
+  // Two independent reorder scopes, not one combined list - the top tab
+  // bar and the Settings dropdown grid are two different UI regions, so
+  // "move right" swapping a tab out of the bar and into the dropdown (or
+  // vice versa) would be a confusing recategorization, not a reorder.
+  // Both still persist into the same flat nav_layout.order array; only
+  // the swap itself stays scoped.
+  function moveItem(scope: typeof visibleTabs | typeof visibleSettingsItems, path: string, direction: -1 | 1) {
+    const scopePaths = scope.map((i) => i.path);
+    const idx = scopePaths.indexOf(path);
+    const swapIdx = idx + direction;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= scopePaths.length) return;
+    [scopePaths[idx], scopePaths[swapIdx]] = [scopePaths[swapIdx], scopePaths[idx]];
+    const otherScope = scope === visibleTabs ? visibleSettingsItems : visibleTabs;
+    const fullOrder = scope === visibleTabs ? [...scopePaths, ...otherScope.map((i) => i.path)] : [...otherScope.map((i) => i.path), ...scopePaths];
+    persistLayout({ hidden: navLayout?.hidden ?? [], order: fullOrder });
+  }
+
+  function hideItem(path: string) {
+    const hidden = [...(navLayout?.hidden ?? []), path];
+    const order = [...visibleTabs, ...visibleSettingsItems].map((i) => i.path).filter((p) => p !== path);
+    persistLayout({ hidden, order });
+    setEditingPath(null);
+  }
+
+  function restoreItem(path: string) {
+    const hidden = (navLayout?.hidden ?? []).filter((p) => p !== path);
+    persistLayout({ hidden, order: navLayout?.order ?? [] });
+  }
+
+  // Double-click (desktop) and long-press (touch) both enter "move this
+  // tab" mode for the tapped item, without hijacking a normal single
+  // tap/click's navigation - a genuine double-click/long-press is a
+  // distinct browser event from a click, so this never adds a delay to
+  // ordinary navigation the way "wait to see if a second tap comes"
+  // would.
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  function handleDoubleClick(e: MouseEvent, path: string) {
+    e.preventDefault();
+    setEditingPath((cur) => (cur === path ? null : path));
+  }
+  function handleTouchStart(path: string) {
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      setEditingPath((cur) => (cur === path ? null : path));
+    }, 500);
+  }
+  function handleTouchEnd(e: TouchEvent) {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    if (longPressFired.current) e.preventDefault();
+  }
+
+  // Closes the "move this tab" controls the moment the route changes -
+  // otherwise they'd stay open pointing at whatever tab was being
+  // edited even after navigating elsewhere.
+  useEffect(() => { setEditingPath(null); }, [location.pathname]);
 
   // Owner accounts start with a password the super admin set directly
   // and knows - force setting a real one before anything else in the
@@ -247,46 +400,68 @@ function DashboardLayoutInner() {
       dir={isRtl ? 'rtl' : 'ltr'}
       style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}
     >
+      {showTour && <GuidedTour steps={DASHBOARD_TOUR_STEPS} onDone={closeTour} onSkip={closeTour} />}
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <Logo className="h-9 w-auto" />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <ClockWidget />
-            <AccountSwitcher />
-            <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
+            <div data-tour="account-switcher"><AccountSwitcher /></div>
+            <div data-tour="theme-toggle"><ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} /></div>
+            <button
+              type="button"
+              onClick={() => setShowTour(true)}
+              title={t('Show guided tour')}
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-ink-line text-sm text-ivory-dim transition-all duration-150 hover:border-brass hover:text-brass active:scale-[0.9]"
+            >
+              ?
+            </button>
             <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
             <button type="button" onClick={logout} className="hover:text-ivory">{t('Sign out')}</button>
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
-          <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
-            {visibleTabs.map((tab) => {
+          <div data-tour="nav-tabs" className="flex flex-1 items-center gap-1.5 overflow-x-auto">
+            {visibleTabs.map((tab, i) => {
               const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
+              const isEditing = editingPath === tab.path;
               return (
-                <Link
-                  key={tab.path}
-                  to={`/admin/dashboard/${tab.path}`}
-                  className={`relative shrink-0 border-b-2 px-3 py-2.5 text-base ${
-                    location.pathname.includes(tab.path)
-                      ? 'border-brass text-ivory'
-                      : 'border-transparent text-ivory-dim hover:text-ivory'
-                  }`}
-                >
-                  {t(tab.label)}
-                  {count > 0 && (
-                    <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
-                      {count > 9 ? '9+' : count}
-                    </span>
+                <div key={tab.path} className="relative shrink-0">
+                  <Link
+                    to={`/admin/dashboard/${tab.path}`}
+                    onDoubleClick={(e) => handleDoubleClick(e, tab.path)}
+                    onTouchStart={() => handleTouchStart(tab.path)}
+                    onTouchEnd={handleTouchEnd}
+                    className={`relative block border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                      isEditing ? 'border-brass/50 bg-ink-soft' :
+                      location.pathname.includes(tab.path)
+                        ? 'border-brass text-ivory'
+                        : 'border-transparent text-ivory-dim hover:text-ivory'
+                    }`}
+                  >
+                    {t(tab.label)}
+                    {count > 0 && !isEditing && (
+                      <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
+                        {count > 9 ? '9+' : count}
+                      </span>
+                    )}
+                  </Link>
+                  {isEditing && (
+                    <div className="absolute start-0 top-full z-30 mt-1 flex items-center gap-1 rounded-lg border border-brass/30 bg-ink-soft p-1 shadow-xl shadow-black/50">
+                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move left">‹</button>
+                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move right">›</button>
+                      <button type="button" onClick={() => hideItem(tab.path)} className="rounded px-2 py-1 text-sm text-danger hover:bg-danger/10" aria-label="Hide tab">{t('Hide')}</button>
+                    </div>
                   )}
-                </Link>
+                </div>
               );
             })}
           </div>
 
-          <div ref={settingsRef} className="relative shrink-0">
+          <div ref={settingsRef} data-tour="settings-dropdown" className="relative shrink-0">
             <button type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-base ${
+              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
                 isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
               }`}
             >
@@ -299,21 +474,53 @@ function DashboardLayoutInner() {
             {settingsOpen && (
               <div className="absolute end-0 top-full z-30 mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
                 <div className="grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2">
-                  {visibleSettingsItems.map((tab) => (
-                    <Link
-                      key={tab.path}
-                      to={`/admin/dashboard/${tab.path}`}
-                      onClick={() => setSettingsOpen(false)}
-                      className={`rounded-lg px-3 py-2.5 text-base transition-colors ${
-                        location.pathname.includes(tab.path)
-                          ? 'bg-brass/10 text-brass'
-                          : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                      }`}
-                    >
-                      {t(tab.label)}
-                    </Link>
-                  ))}
+                  {visibleSettingsItems.map((tab, i) => {
+                    const isEditing = editingPath === tab.path;
+                    return (
+                      <div key={tab.path} className="relative">
+                        <Link
+                          to={`/admin/dashboard/${tab.path}`}
+                          onClick={() => !isEditing && setSettingsOpen(false)}
+                          onDoubleClick={(e) => handleDoubleClick(e, tab.path)}
+                          onTouchStart={() => handleTouchStart(tab.path)}
+                          onTouchEnd={handleTouchEnd}
+                          className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                            isEditing ? 'bg-brass/20 text-ivory' :
+                            location.pathname.includes(tab.path)
+                              ? 'bg-brass/10 text-brass'
+                              : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                          }`}
+                        >
+                          {t(tab.label)}
+                        </Link>
+                        {isEditing && (
+                          <div className="absolute start-0 top-full z-40 mt-1 flex items-center gap-1 rounded-lg border border-brass/30 bg-ink p-1 shadow-xl shadow-black/50">
+                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move left">‹</button>
+                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="rounded px-2 py-1 text-ivory-dim hover:text-ivory disabled:opacity-30" aria-label="Move right">›</button>
+                            <button type="button" onClick={() => hideItem(tab.path)} className="rounded px-2 py-1 text-sm text-danger hover:bg-danger/10">{t('Hide')}</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                {hiddenTabs.length > 0 && (
+                  <div className="border-t border-ink-line p-2">
+                    <p className="px-1 pb-1 text-sm text-ivory-dim">{t('Hidden - tap to restore')}</p>
+                    <div className="flex flex-wrap gap-1.5 px-1 pb-1">
+                      {hiddenTabs.map((tab) => (
+                        <button
+                          key={tab.path}
+                          type="button"
+                          onClick={() => restoreItem(tab.path)}
+                          className="rounded-full border border-ink-line px-2.5 py-1 text-sm text-ivory-dim hover:border-brass hover:text-ivory"
+                        >
+                          + {t(tab.label)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

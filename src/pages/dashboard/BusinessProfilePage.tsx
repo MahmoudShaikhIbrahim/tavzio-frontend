@@ -1,10 +1,10 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent, type CSSProperties } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { getBusiness, updateBusiness } from '../../lib/authApi';
+import { getBusiness, updateBusiness, updateMyTour } from '../../lib/authApi';
 import { uploadBusinessImage } from '../../lib/supabaseClient';
 import type { AdminBusiness } from '../../types';
-import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import ChangePasswordPage from './ChangePasswordPage';
 
@@ -45,7 +45,12 @@ export default function BusinessProfilePage() {
           own settings entry - personal account security and preference,
           not business configuration, so they belong alongside "who am I /
           how do I sign in" rather than mixed into the business's own profile. */}
-      {tab === 'account' && <ChangePasswordPage />}
+      {tab === 'account' && (
+        <div className="space-y-6">
+          <ChangePasswordPage />
+          <RestartGuideSection />
+        </div>
+      )}
     </div>
   );
 }
@@ -327,3 +332,37 @@ function AppearanceSection({ business, businessId, onSaved }: { business: AdminB
   );
 }
 
+// A staff member (or owner) who skipped the tour, or just wants to see
+// it from the beginning, gets a real way back to it - this is the
+// permanent home for that, confirmed as the right place: inside
+// Business Profile, not buried in a settings toggle nobody would think
+// to look for. Reloads the page on success rather than trying to
+// coordinate with DashboardLayout's tour state directly - the two
+// pages don't otherwise share any state, and a full reload guarantees
+// the dashboard re-fetches the account fresh (tour_completed_at now
+// null) and the tour genuinely restarts from step one.
+function RestartGuideSection() {
+  const { t } = useT();
+  const [restarting, setRestarting] = useState(false);
+
+  async function handleRestart() {
+    setRestarting(true);
+    try {
+      await updateMyTour(false);
+      window.location.href = '/admin/dashboard';
+    } catch {
+      setRestarting(false);
+    }
+  }
+
+  return (
+    <Section title={t('Guided Tour')}>
+      <p className="text-base text-ivory-dim">
+        {t('Skipped the guided tour, or want to see it again? Restart it here - it walks through the main navigation from the beginning. You can also reopen it anytime from the ? button next to your name.')}
+      </p>
+      <ActionButton onClick={handleRestart} loading={restarting}>
+        {t('Restart guide')}
+      </ActionButton>
+    </Section>
+  );
+}

@@ -26,11 +26,11 @@ const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 // --- Auth ---
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, turnstileToken?: string) {
   const res = await fetchWithTimeout(`${BASE}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, turnstileToken }),
   });
   const data = await safeJson(res);
   if (!res.ok) throw new Error(data.message || 'Login failed');
@@ -62,6 +62,15 @@ export function updateMyLanguage(language: string) {
   });
 }
 
+// completed=true on finishing or explicitly skipping the tour (both stop
+// it auto-opening again); completed=false is what "Restart guide" sends.
+export function updateMyTour(completed: boolean) {
+  return authFetch<{ id: string; tour_completed_at: string | null }>('/api/auth/tour', {
+    method: 'PATCH',
+    body: JSON.stringify({ completed }),
+  });
+}
+
 export function changePassword(currentPassword: string, newPassword: string) {
   return authFetch<{ message: string }>('/api/auth/change-password', {
     method: 'PATCH',
@@ -75,6 +84,38 @@ export function listLeads() {
 
 export function markLeadConverted(leadId: string, businessId?: string) {
   return authFetch<Lead>(`/api/leads/${leadId}`, { method: 'PATCH', body: JSON.stringify({ businessId }) });
+}
+
+// --- Demo Settings (super_admin) ---
+// Manages the independent menu backing the public /demo marketing page
+// - never linked to any real business's actual menu_items, so deleting
+// a real account later (e.g. Al Bait) can never break the demo.
+
+export interface DemoMenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price_aed: number;
+  image_url: string;
+  category: string;
+  sort_order: number;
+  enabled: boolean;
+}
+
+export function listDemoMenuItems() {
+  return authFetch<DemoMenuItem[]>('/api/admin/demo/menu-items');
+}
+export function createDemoMenuItem(payload: { name: string; description?: string; priceAed: number; imageUrl?: string; category?: string; sortOrder?: number }) {
+  return authFetch<DemoMenuItem>('/api/admin/demo/menu-items', { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateDemoMenuItem(itemId: string, payload: Partial<{ name: string; description: string; priceAed: number; imageUrl: string; category: string; sortOrder: number; enabled: boolean }>) {
+  return authFetch<DemoMenuItem>(`/api/admin/demo/menu-items/${itemId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteDemoMenuItem(itemId: string) {
+  return authFetch<{ message: string }>(`/api/admin/demo/menu-items/${itemId}`, { method: 'DELETE' });
+}
+export function importDemoMenuFromBusiness(businessId: string) {
+  return authFetch<{ message: string; items: DemoMenuItem[] }>('/api/admin/demo/menu-items/import', { method: 'POST', body: JSON.stringify({ businessId }) });
 }
 
 // --- Till sessions ---
@@ -995,6 +1036,25 @@ export function setStaffOutlets(businessId: string, userId: string, outletIds: s
   return authFetch<StaffMember>(`/api/businesses/${businessId}/staff/${userId}/outlets`, {
     method: 'PATCH',
     body: JSON.stringify({ outletIds }),
+  });
+}
+
+// Owner-equivalent access for a specific staff account - real,
+// server-enforced (see authorize()/current_role_name() on the backend),
+// not cosmetic.
+export function setStaffFullAccess(businessId: string, userId: string, fullAccess: boolean) {
+  return authFetch<{ id: string; name: string; full_access: boolean }>(`/api/businesses/${businessId}/staff/${userId}/full-access`, {
+    method: 'PATCH',
+    body: JSON.stringify({ fullAccess }),
+  });
+}
+
+// Self-service only - the backend enforces userId === the caller's own
+// id, so this is never used to set someone else's layout.
+export function setMyNavLayout(businessId: string, userId: string, layout: { hidden: string[]; order: string[] } | null) {
+  return authFetch<{ id: string; nav_layout: { hidden: string[]; order: string[] } | null }>(`/api/businesses/${businessId}/staff/${userId}/nav-layout`, {
+    method: 'PATCH',
+    body: JSON.stringify(layout ?? { hidden: null, order: null }),
   });
 }
 

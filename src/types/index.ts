@@ -213,6 +213,18 @@ export interface Profile {
   must_change_password: boolean;
   job_role?: string | null;
   assigned_sections?: string[] | null;
+  assigned_outlet_ids?: string[] | null;
+  // Owner-granted, staff-only - see migration 0083. When true, this
+  // account passes every owner-only check server-side, not just a UI
+  // hint - authorize() and current_role_name() both honor it directly.
+  full_access?: boolean;
+  // Per-person dashboard tab hide/reorder. null = default order,
+  // nothing hidden.
+  nav_layout?: { hidden: string[]; order: string[] } | null;
+  // NULL = tour not yet shown/completed - dashboard auto-opens it. Set
+  // once completed/skipped; "Restart guide" in Business Profile clears
+  // it back to null.
+  tour_completed_at?: string | null;
 }
 
 // The full business record as seen by an authenticated admin - a superset
@@ -641,6 +653,8 @@ export interface StaffMember {
   created_at: string;
   assigned_sections: string[] | null;
   assigned_outlet_ids: string[] | null;
+  full_access: boolean;
+  nav_layout: { hidden: string[]; order: string[] } | null;
 }
 
 export interface AnalyticsSummary {

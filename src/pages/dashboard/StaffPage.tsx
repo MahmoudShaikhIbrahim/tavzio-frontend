@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, setStaffActive, setStaffSections, setStaffOutlets, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
+import { listStaff, inviteStaff, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -54,6 +54,24 @@ export default function StaffPage() {
     setResetResult(result);
   }
 
+  // Granting is a real, server-enforced trust decision (this account
+  // will pass every owner-only check across the whole app - billing,
+  // contracts, deleting things, all of it) - confirmed explicitly every
+  // time, both directions, rather than a silent toggle.
+  async function handleToggleFullAccess(s: StaffMember) {
+    const next = !s.full_access;
+    const message = next
+      ? t('Give {name} full owner-equivalent access? They will be able to see and do everything you can, including billing, contracts, and staff management.').replace('{name}', s.name)
+      : t('Revoke full access from {name}? They will go back to only their assigned sections.').replace('{name}', s.name);
+    if (!confirm(message)) return;
+    setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, full_access: next } : m)));
+    try {
+      await setStaffFullAccess(businessId!, s.id, next);
+    } catch {
+      reload();
+    }
+  }
+
   return (
     <div className="space-y-10">
       {resetResult && (
@@ -77,9 +95,15 @@ export default function StaffPage() {
                 <span className="text-ivory">
                   {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</span>
                   {!s.is_active && <span className="ml-2 text-base text-danger">{t('deactivated')}</span>}
+                  {s.full_access && <span className="ml-2 rounded-full bg-brass/20 px-2 py-0.5 text-sm text-brass">{t('Full access')}</span>}
                 </span>
               </div>
-              {s.role === 'staff' && (
+              {s.role === 'staff' && s.full_access && (
+                <p className="mt-1 text-sm text-brass">
+                  {t('Owner-equivalent access - sees and does everything the owner can, regardless of assigned sections below.')}
+                </p>
+              )}
+              {s.role === 'staff' && !s.full_access && (
                 <p className="mt-1 text-sm text-ivory-dim">
                   {s.assigned_sections === null
                     ? t('Sees everything')
@@ -111,6 +135,12 @@ export default function StaffPage() {
                       className="text-sm text-ivory-dim hover:text-ivory"
                     >
                       {s.is_active ? t('Deactivate') : t('Reactivate')}
+                    </button>
+                    <button type="button"
+                      onClick={() => handleToggleFullAccess(s)}
+                      className={`text-sm hover:underline ${s.full_access ? 'text-danger' : 'text-brass'}`}
+                    >
+                      {s.full_access ? t('Revoke full access') : t('Grant full access')}
                     </button>
                     <button type="button"
                       onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}

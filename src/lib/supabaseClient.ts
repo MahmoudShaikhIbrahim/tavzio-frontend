@@ -150,6 +150,29 @@ export function subscribeToRoomUpdates(
   };
 }
 
+// Same pattern, for the public /demo page's two-panel loop: an order
+// placed on the ordering panel needs to appear on the kitchen display
+// panel "immediately" (confirmed requirement) - this is what makes that
+// genuinely real-time rather than a polling delay. Works fully
+// unauthenticated (the demo page never calls authorizeSupabase - there's
+// no login here), since demo_orders/demo_order_items both carry a
+// public "anyone can view" RLS policy specifically so Realtime, which
+// enforces RLS the same as a normal query, actually delivers events to
+// an anonymous visitor.
+export function subscribeToDemoOrders(sessionId: string, onChange: () => void) {
+  const filter = `session_id=eq.${sessionId}`;
+  const channel = client.channel(`demo-orders-${sessionId}-${Math.random().toString(36).slice(2)}`);
+  channel
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'demo_orders', filter }, () => onChange())
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'demo_orders', filter }, () => onChange())
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'demo_order_items' }, () => onChange())
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 // Uploads a logo or cover image to the `business-assets` bucket, under a
 // fixed path per business+kind (so re-uploading overwrites cleanly rather
 // than accumulating orphaned files), and returns its public URL.

@@ -4,6 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { login, getMe } from '../lib/authApi';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
 import Logo from '../components/Logo';
+import TurnstileWidget from '../components/TurnstileWidget';
 
 export default function AdminLogin() {
   // Same reasoning as the marketing homepage - nobody's logged in yet
@@ -15,6 +16,7 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
@@ -22,7 +24,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
     try {
-      await login(email, password);
+      await login(email, password, turnstileToken);
       const me = await getMe();
       navigate(me.role === 'super_admin' ? '/admin/super/businesses' : me.role === 'org_owner' ? '/admin/org' : '/admin/dashboard');
     } catch (err) {
@@ -71,6 +73,7 @@ export default function AdminLogin() {
             </button>
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
+          <TurnstileWidget onVerify={setTurnstileToken} />
           <button
             type="submit"
             disabled={loading}

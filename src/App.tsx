@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeContext';
 import Home from './pages/Home';
+import DemoPage from './pages/DemoPage';
 import TapHandler from './pages/TapHandler';
 import LandingPage from './pages/LandingPage';
 import MenuPage from './pages/MenuPage';
@@ -19,6 +20,7 @@ import LeadsPage from './pages/superadmin/LeadsPage';
 import BusinessDetail from './pages/superadmin/BusinessDetail';
 import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
 import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
+import DemoSettingsPage from './pages/superadmin/DemoSettingsPage';
 import AuditReportPage from './pages/superadmin/AuditReportPage';
 import OrganizationsPage from './pages/superadmin/OrganizationsPage';
 import ContractsListPage from './pages/superadmin/ContractsListPage';
@@ -83,6 +85,7 @@ export default function App() {
       <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/demo" element={<DemoPage />} />
 
         {/* This is the URL physically programmed onto NFC chips */}
         <Route path="/t/:cardUid" element={<TapHandler />} />
@@ -115,6 +118,7 @@ export default function App() {
             <Route path="businesses/:businessId" element={<BusinessDetail />} />
             <Route path="messages" element={<MessagesInboxPage />} />
             <Route path="billing-settings" element={<BillingSettingsPage />} />
+            <Route path="demo-settings" element={<DemoSettingsPage />} />
             <Route path="audit-report" element={<AuditReportPage />} />
             <Route path="organizations" element={<OrganizationsPage />} />
             <Route path="contracts" element={<ContractsListPage />} />
