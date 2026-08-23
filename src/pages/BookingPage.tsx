@@ -57,10 +57,10 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [foodTiming, setFoodTiming] = useState(0);
   const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [, setOtpSent] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [, setBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     getBusiness(slug).then(setBusiness).catch(() => {});
