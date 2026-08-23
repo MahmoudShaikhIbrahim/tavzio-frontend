@@ -101,6 +101,19 @@ export interface BusinessFeatures {
     submission: boolean;
     integration: boolean;
   };
+  // Deliberately a separate key from "booking" above (which gates the
+  // internal staff-facing bookings tab, unrelated) - the public online
+  // booking page's own config: on/off, whether it takes a food
+  // pre-order alongside the reservation, and the down payment rules.
+  onlineBooking?: {
+    enabled: boolean;
+    allowPreOrder: boolean;
+    downPayment: {
+      enabled: boolean;
+      mode?: 'full' | 'percentage' | 'fixed';
+      value?: number;
+    };
+  };
   loyalty: boolean;
   staffAccounts: boolean;
   // Tier 2 ingredient-level inventory - self-service, off by default.
@@ -926,6 +939,14 @@ export interface Service {
 
 export type BookingStatus = 'pending' | 'confirmed' | 'declined' | 'completed' | 'cancelled';
 
+export interface BookingItemRow {
+  id: string;
+  menu_item_id: string | null;
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+}
+
 export interface BookingRow {
   id: string;
   business_id: string;
@@ -944,6 +965,14 @@ export interface BookingRow {
   guest_name: string;
   created_by_staff_id: string | null;
   cards?: { label: string } | null;
+  customer_phone_verified: boolean;
+  food_ready_offset_minutes: number | null;
+  arrival_status: 'not_arrived' | 'arrived';
+  arrived_at: string | null;
+  arrived_via: 'staff' | 'customer_tap' | null;
+  down_payment_required_aed: number;
+  down_payment_status: 'not_required' | 'pending' | 'paid' | 'failed' | 'refunded';
+  booking_items?: BookingItemRow[];
 }
 
 // --- POS / booking-system integration ---

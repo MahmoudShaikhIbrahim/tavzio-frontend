@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listBookings, createBooking, updateBookingStatus, assignBookingTable, listFloorTables, getBusiness } from '../../lib/authApi';
+import { listBookings, createBooking, updateBookingStatus, assignBookingTable, confirmArrivalByStaff, listFloorTables, getBusiness } from '../../lib/authApi';
 import ExportButtons from '../../components/ExportButtons';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -164,6 +164,8 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
   booking: BookingRow; businessId: string; tables: FloorTable[]; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void;
 }) {
   const { t } = useT();
+  const [confirmingArrival, setConfirmingArrival] = useState(false);
+
   function setStatus(status: BookingStatus) {
     onBookingsChange((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status } : b)));
     updateBookingStatus(businessId, booking.id, status).catch(onChange);
@@ -173,7 +175,20 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
     assignBookingTable(businessId, booking.id, tableId || null).then(onChange).catch(onChange);
   }
 
+  async function handleConfirmArrival() {
+    setConfirmingArrival(true);
+    try {
+      await confirmArrivalByStaff(businessId, booking.id);
+      onChange();
+    } catch {
+      onChange();
+    } finally {
+      setConfirmingArrival(false);
+    }
+  }
+
   const title = booking.guest_name || booking.service_name || t('Booking');
+  const foodItems = booking.booking_items || [];
 
   return (
     <div className="rounded-lg border border-ink-line px-3.5 py-3 text-base">
@@ -189,10 +204,40 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
           </p>
           {booking.note && <p className="mt-1 text-base italic text-brass">{booking.note}</p>}
         </div>
-        <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[booking.status]}`}>
-          {t(STATUS_LABEL[booking.status])}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[booking.status]}`}>
+            {t(STATUS_LABEL[booking.status])}
+          </span>
+          {booking.status === 'confirmed' && (
+            <span className={`rounded-full border px-2.5 py-0.5 text-xs ${booking.arrival_status === 'arrived' ? 'border-success/50 text-success' : 'border-ink-line text-ivory-dim'}`}>
+              {booking.arrival_status === 'arrived' ? t('Arrived') : t('Not arrived')}
+            </span>
+          )}
+        </div>
       </div>
+
+      {foodItems.length > 0 && (
+        <div className="mt-2 rounded-lg border border-brass/30 bg-ink-soft px-3 py-2">
+          <p className="text-xs uppercase tracking-wide text-brass">{t('Pre-ordered food')}</p>
+          <p className="mt-1 text-sm text-ivory-dim">
+            {foodItems.map((i) => `${i.quantity}× ${i.item_name}`).join(', ')}
+            {booking.food_ready_offset_minutes !== null && (
+              booking.food_ready_offset_minutes === 0
+                ? ` · ${t('ready on arrival')}`
+                : ` · ${t('ready')} ${booking.food_ready_offset_minutes} ${t('min after arrival')}`
+            )}
+          </p>
+        </div>
+      )}
+
+      {booking.down_payment_status !== 'not_required' && (
+        <p className="mt-2 text-sm">
+          <span className="text-ivory-dim">{t('Down payment')}: </span>
+          <span className={booking.down_payment_status === 'paid' ? 'text-success' : booking.down_payment_status === 'failed' ? 'text-danger' : 'text-brass'}>
+            AED {booking.down_payment_required_aed.toFixed(2)} · {t(booking.down_payment_status)}
+          </span>
+        </p>
+      )}
 
       {tables.length > 0 && ['pending', 'confirmed'].includes(booking.status) && (
         <div className="mt-2 flex items-center gap-2 text-sm">
@@ -219,6 +264,15 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
             {t('Decline')}
           </button>
         </div>
+      )}
+      {booking.status === 'confirmed' && booking.arrival_status === 'not_arrived' && (
+        <button type="button"
+          onClick={handleConfirmArrival}
+          disabled={confirmingArrival}
+          className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+        >
+          {confirmingArrival ? t('Confirming...') : t("Confirm arrival - I see the guest")}
+        </button>
       )}
       {booking.status === 'confirmed' && (
         <button type="button"

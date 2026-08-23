@@ -1,6 +1,6 @@
 import type {
   Business, LoyaltyMembership, TapResponse, MenuCategory, MenuItem, OrderRow, CartLine,
-  OrderRequestType, Service, BookingRow, BillItem, PaymentRow, Receipt, LoyaltyCheckinResponse, LoyaltyClaim,
+  OrderRequestType, BillItem, PaymentRow, Receipt, LoyaltyCheckinResponse, LoyaltyClaim,
 } from '../types';
 import { getDeviceToken } from './session';
 import { getVisitorId } from './visitor';
@@ -159,22 +159,60 @@ export function submitOrder(
 // Call Waiter / Request Bill - no items, just a flagged quick request that
 // shows up on the same live Orders screen.
 
-export function getServices(slug: string) {
-  return request<{ services: Service[] }>(`/api/public/business/${slug}/services`);
+// Real replacement, not an addition: the old service-appointment
+// getServices/submitBooking (salon/spa style) used to live at these
+// exact paths - retired on the backend (see publicRoutes.js) since
+// this new flow supersedes it, confirmed via search these were only
+// ever called from BookingPage.tsx, which now calls these instead.
+export interface BookingConfig {
+  businessName: string;
+  allowPreOrder: boolean;
+  downPayment: { enabled: boolean; mode?: 'full' | 'percentage' | 'fixed'; value?: number };
+  menu: { id: string; name: string; price: number; description: string; image_url: string; menu_categories?: { name: string } | null }[];
+}
+export function getBookingConfig(slug: string) {
+  return request<BookingConfig>(`/api/public/business/${slug}/booking-config`);
 }
 
-export function submitBooking(
-  slug: string,
-  tapEventId: number,
-  serviceId: string,
-  requestedAt: string,
-  note: string,
-  contactPhone: string
-) {
-  return request<{ booking: BookingRow }>(`/api/public/business/${slug}/bookings`, {
-    method: 'POST',
-    body: JSON.stringify({ tapEventId, serviceId, requestedAt, note, contactPhone }),
+export function requestBookingOtp(slug: string, phone: string) {
+  return request<{ message: string }>(`/api/public/business/${slug}/booking-otp/request`, {
+    method: 'POST', body: JSON.stringify({ phone }),
   });
+}
+
+export function verifyBookingOtp(slug: string, phone: string, code: string) {
+  return request<{ message: string }>(`/api/public/business/${slug}/booking-otp/verify`, {
+    method: 'POST', body: JSON.stringify({ phone, code }),
+  });
+}
+
+export interface CreateBookingResponse {
+  booking: { id: string; status: string; down_payment_status: string };
+  paymentRequired: boolean;
+  redirectUrl?: string;
+  paymentId?: string;
+}
+export function submitPublicBooking(slug: string, payload: {
+  phone: string; guestName: string; partySize: number; requestedAt: string; note?: string;
+  items?: { menuItemId: string; quantity: number }[]; foodReadyOffsetMinutes?: number;
+}) {
+  return request<CreateBookingResponse>(`/api/public/business/${slug}/bookings`, {
+    method: 'POST', body: JSON.stringify(payload),
+  });
+}
+
+export function getBookingPaymentStatus(bookingId: string) {
+  return request<{ id: string; status: string; down_payment_status: string }>(`/api/public/bookings/${bookingId}/status`);
+}
+
+export interface BookingArrival {
+  id: string; guest_name: string; party_size: number; requested_at: string;
+}
+export function getBookingArrival(bookingId: string) {
+  return request<BookingArrival>(`/api/public/bookings/${bookingId}/arrival`);
+}
+export function confirmBookingArrival(bookingId: string) {
+  return request<{ id: string }>(`/api/public/bookings/${bookingId}/confirm-arrival`, { method: 'POST' });
 }
 
 export function getBill(slug: string, tapEventId: number, phone?: string) {

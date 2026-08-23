@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { login, getMe } from '../lib/authApi';
+import { login, getMe, completeInvite } from '../lib/authApi';
 import { setSession } from '../lib/session';
 import { getSupabase } from '../lib/supabaseClient';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
@@ -142,6 +142,16 @@ function SetPasswordForm({ mode, theme, onDone }: { mode: 'invite' | 'recovery';
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) throw new Error('Could not establish a session - try the invite link again');
       setSession(sessionData.session.access_token, undefined, sessionData.session.refresh_token);
+
+      // Real fix for a confirmed bug: without this, must_change_password
+      // stayed true forever after completing an invite this way, and
+      // every layout's forced-change gate would then try to render the
+      // standard change-password form next - which itself demands a
+      // "current password" this account never had (it authenticated via
+      // a single-use link, not a known existing password), an unwinnable
+      // dead end that crashed the org owner layout outright since it
+      // wasn't wrapped for that render path either (see OrgOwnerLayout.tsx).
+      await completeInvite();
 
       const me = await getMe();
       onDone(me.role === 'super_admin' ? '/admin/super/businesses' : me.role === 'org_owner' ? '/admin/org' : '/admin/dashboard');

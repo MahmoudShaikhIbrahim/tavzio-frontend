@@ -9,6 +9,7 @@ import TapHandler from './pages/TapHandler';
 import LandingPage from './pages/LandingPage';
 import MenuPage from './pages/MenuPage';
 import BookingPage from './pages/BookingPage';
+import BookingArrivalPage from './pages/BookingArrivalPage';
 import BillPage from './pages/BillPage';
 import NotFound from './pages/NotFound';
 import AdminLogin from './pages/AdminLogin';
@@ -78,6 +79,7 @@ import AccountingPage from './pages/dashboard/AccountingPage';
 import ChannelManagerPage from './pages/dashboard/ChannelManagerPage';
 import WarehousesPage from './pages/dashboard/WarehousesPage';
 import StockTransfersPage from './pages/dashboard/StockTransfersPage';
+import OnlineBookingSettingsPage from './pages/dashboard/OnlineBookingSettingsPage';
 import MarketingPage from './pages/dashboard/MarketingPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
@@ -239,6 +241,7 @@ export default function App() {
             <Route path="settings/channel-manager" element={<ChannelManagerPage />} />
             <Route path="settings/warehouses" element={<WarehousesPage />} />
             <Route path="settings/stock-transfers" element={<StockTransfersPage />} />
+            <Route path="settings/online-booking" element={<OnlineBookingSettingsPage />} />
             <Route path="settings/marketing" element={<MarketingPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />
@@ -249,6 +252,7 @@ export default function App() {
         {/* Public ordering/booking/payment - only reachable if the business has it enabled */}
         <Route path="/:slug/menu" element={<MenuPage />} />
         <Route path="/:slug/book" element={<BookingPage />} />
+        <Route path="/:slug/arrival/:bookingId" element={<BookingArrivalPage />} />
         <Route path="/:slug/pay" element={<BillPage />} />
 
         {/* Every business's public landing page, e.g. tavzio.com/bella-pizza */}

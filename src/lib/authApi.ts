@@ -43,6 +43,10 @@ export function getMe() {
   return authFetch<Profile>('/api/auth/me');
 }
 
+export function completeInvite() {
+  return authFetch<{ message: string }>('/api/auth/complete-invite', { method: 'POST' });
+}
+
 // Ties theme to the actual logged-in account, not just this browser -
 // switches to the account's own saved preference the moment they log in,
 // and follows them to any other device they use.
@@ -1644,6 +1648,9 @@ export function assignBookingTable(businessId: string, bookingId: string, tableI
     method: 'PATCH',
     body: JSON.stringify({ tableId }),
   });
+}
+export function confirmArrivalByStaff(businessId: string, bookingId: string) {
+  return authFetch<BookingRow>(`/api/businesses/${businessId}/bookings/${bookingId}/confirm-arrival`, { method: 'POST' });
 }
 export function createBooking(businessId: string, payload: {
   guestName: string; contactPhone?: string; partySize?: number; requestedAt: string; note?: string; tableId?: string | null;

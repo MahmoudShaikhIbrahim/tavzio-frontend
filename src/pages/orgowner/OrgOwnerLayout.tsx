@@ -3,6 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import Logo from '../../components/Logo';
 import AccountSwitcher from '../../components/AccountSwitcher';
 import ChangePasswordPage from '../dashboard/ChangePasswordPage';
+import { DashboardLanguageProvider } from '../../lib/i18n/DashboardLanguageContext';
 
 const TABS = [
   { path: 'overview', label: 'Overview' },
@@ -24,8 +25,25 @@ export default function OrgOwnerLayout() {
   // invited by super_admin starts on a temporary password exactly like
   // any other invited account, and needs the identical "set your own
   // before anything else is reachable" step, not a silently skipped one.
+  //
+  // Confirmed live bug, fixed here: ChangePasswordPage calls
+  // useDashboardLanguage(), which throws if there's no
+  // DashboardLanguageProvider above it in the tree - DashboardLayout
+  // (the business dashboard) already wraps its entire tree in one, but
+  // this org owner layout never did, since ChangePasswordPage was only
+  // ever rendered here for this one forced-gate case and that gap was
+  // never noticed until an org owner actually hit it. The uncaught
+  // throw unmounts the whole React tree with no error boundary to
+  // catch it, which is why this rendered as a blank page rather than
+  // a visible error - not a network failure, not a missing asset, a
+  // real render-time crash every org owner would hit on their very
+  // first login after being invited.
   if (user?.must_change_password) {
-    return <ChangePasswordPage forced />;
+    return (
+      <DashboardLanguageProvider>
+        <ChangePasswordPage forced />
+      </DashboardLanguageProvider>
+    );
   }
 
   return (
