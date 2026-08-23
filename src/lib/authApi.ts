@@ -20,6 +20,7 @@ import type {
   ChartAccount, JournalEntry, JournalEntryLine, TrialBalance, Vendor, ApBill, ArInvoice,
   ChannelConnection, ChannelBooking,
   MarketingTemplate, MarketingCampaign, MarketingCampaignStats, MarketingSuppression,
+  Warehouse, WarehouseStockLine, StockTransfer, PoAllocation, OrgPurchaseOrder,
 } from '../types';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -2197,6 +2198,76 @@ export function deleteIngredient(businessId: string, ingredientId: string) {
 
 export function adjustStock(businessId: string, ingredientId: string, payload: { changeQty: number; reason?: string; note?: string }) {
   return authFetch<Ingredient>(`/api/businesses/${businessId}/inventory/ingredients/${ingredientId}/adjust`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// --- Warehouses & stock transfers ---
+
+export function listWarehouses(businessId: string) {
+  return authFetch<Warehouse[]>(`/api/businesses/${businessId}/warehouses`);
+}
+export function createWarehouse(businessId: string, payload: { name: string; type?: string; address?: string }) {
+  return authFetch<Warehouse>(`/api/businesses/${businessId}/warehouses`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateWarehouse(businessId: string, warehouseId: string, payload: Partial<{ name: string; type: string; address: string }>) {
+  return authFetch<Warehouse>(`/api/businesses/${businessId}/warehouses/${warehouseId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteWarehouse(businessId: string, warehouseId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/warehouses/${warehouseId}`, { method: 'DELETE' });
+}
+export function getWarehouseStock(businessId: string, warehouseId: string) {
+  return authFetch<WarehouseStockLine[]>(`/api/businesses/${businessId}/warehouses/${warehouseId}/stock`);
+}
+
+export function listStockTransfers(businessId: string) {
+  return authFetch<StockTransfer[]>(`/api/businesses/${businessId}/stock-transfers`);
+}
+export function createStockTransfer(businessId: string, payload: { fromWarehouseId?: string | null; toWarehouseId: string; items: { ingredientId: string; quantity: number }[]; note?: string }) {
+  return authFetch<StockTransfer>(`/api/businesses/${businessId}/stock-transfers`, { method: 'POST', body: JSON.stringify(payload) });
+}
+export function approveStockTransfer(businessId: string, transferId: string) {
+  return authFetch<StockTransfer>(`/api/businesses/${businessId}/stock-transfers/${transferId}/approve`, { method: 'PATCH' });
+}
+export function shipStockTransfer(businessId: string, transferId: string) {
+  return authFetch<StockTransfer>(`/api/businesses/${businessId}/stock-transfers/${transferId}/ship`, { method: 'PATCH' });
+}
+export function receiveStockTransfer(businessId: string, transferId: string) {
+  return authFetch<StockTransfer>(`/api/businesses/${businessId}/stock-transfers/${transferId}/receive`, { method: 'PATCH' });
+}
+export function cancelStockTransfer(businessId: string, transferId: string) {
+  return authFetch<StockTransfer>(`/api/businesses/${businessId}/stock-transfers/${transferId}/cancel`, { method: 'PATCH' });
+}
+
+export function listPoAllocations(businessId: string, received?: boolean) {
+  const q = received !== undefined ? `?received=${received}` : '';
+  return authFetch<PoAllocation[]>(`/api/businesses/${businessId}/po-allocations${q}`);
+}
+export function receivePoAllocation(businessId: string, allocationId: string, payload: { ingredientId: string; warehouseId: string }) {
+  return authFetch<PoAllocation>(`/api/businesses/${businessId}/po-allocations/${allocationId}/receive`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// --- Organization supply chain (org_owner / super_admin) ---
+
+export function listOrgSuppliers() {
+  return authFetch<Supplier[]>('/api/organizations/suppliers');
+}
+export function createOrgSupplier(payload: { name: string; contactName?: string; phone?: string; email?: string }) {
+  return authFetch<Supplier>('/api/organizations/suppliers', { method: 'POST', body: JSON.stringify(payload) });
+}
+export function updateOrgSupplier(supplierId: string, payload: Partial<{ name: string; contactName: string; phone: string; email: string }>) {
+  return authFetch<Supplier>(`/api/organizations/suppliers/${supplierId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteOrgSupplier(supplierId: string) {
+  return authFetch<{ message: string }>(`/api/organizations/suppliers/${supplierId}`, { method: 'DELETE' });
+}
+
+export function listOrgPurchaseOrders() {
+  return authFetch<OrgPurchaseOrder[]>('/api/organizations/purchase-orders');
+}
+export function createOrgPurchaseOrder(payload: {
+  supplierId?: string | null;
+  items: { itemName: string; itemUnit?: string; quantity: number; unitCostAed: number; allocations?: { businessId: string; quantity: number }[] }[];
+}) {
+  return authFetch<OrgPurchaseOrder>('/api/organizations/purchase-orders', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export function recordWaste(businessId: string, ingredientId: string, payload: { quantity: number; wasteCategory: string; note?: string }) {

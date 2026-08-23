@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeContext';
 import Home from './pages/Home';
 import DemoPage from './pages/DemoPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import { DashboardLanguageProvider } from './lib/i18n/DashboardLanguageContext';
 import TapHandler from './pages/TapHandler';
 import LandingPage from './pages/LandingPage';
@@ -31,6 +32,8 @@ import SuperAdminCardEditorPage from './pages/superadmin/SuperAdminCardEditorPag
 import OrgOwnerLayout from './pages/orgowner/OrgOwnerLayout';
 import OrgOverviewPage from './pages/orgowner/OrgOverviewPage';
 import OrgMenuPage from './pages/orgowner/OrgMenuPage';
+import OrgSuppliersPage from './pages/orgowner/OrgSuppliersPage';
+import OrgPurchaseOrdersPage from './pages/orgowner/OrgPurchaseOrdersPage';
 
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
@@ -72,6 +75,8 @@ import HRPage from './pages/dashboard/HRPage';
 import PayrollPage from './pages/dashboard/PayrollPage';
 import AccountingPage from './pages/dashboard/AccountingPage';
 import ChannelManagerPage from './pages/dashboard/ChannelManagerPage';
+import WarehousesPage from './pages/dashboard/WarehousesPage';
+import StockTransfersPage from './pages/dashboard/StockTransfersPage';
 import MarketingPage from './pages/dashboard/MarketingPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
@@ -87,6 +92,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/demo" element={<DemoPage />} />
+        {/* Matches exactly what buildContractText already promises
+            every signed client - "tavzio.ae/legal" - not a path chosen
+            independently of that commitment. */}
+        <Route path="/legal" element={<PrivacyPolicyPage />} />
 
         {/* This is the URL physically programmed onto NFC chips */}
         <Route path="/t/:cardUid" element={<TapHandler />} />
@@ -141,6 +150,8 @@ export default function App() {
             <Route index element={<Navigate to="overview" replace />} />
             <Route path="overview" element={<OrgOverviewPage />} />
             <Route path="menu" element={<OrgMenuPage />} />
+            <Route path="suppliers" element={<OrgSuppliersPage />} />
+            <Route path="purchase-orders" element={<OrgPurchaseOrdersPage />} />
           </Route>
         </Route>
 
@@ -187,6 +198,8 @@ export default function App() {
             <Route path="settings/payroll" element={<PayrollPage />} />
             <Route path="settings/accounting" element={<AccountingPage />} />
             <Route path="settings/channel-manager" element={<ChannelManagerPage />} />
+            <Route path="settings/warehouses" element={<WarehousesPage />} />
+            <Route path="settings/stock-transfers" element={<StockTransfersPage />} />
             <Route path="settings/marketing" element={<MarketingPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
             <Route path="settings/contract" element={<ContractPage />} />

@@ -7,6 +7,8 @@ import ChangePasswordPage from '../dashboard/ChangePasswordPage';
 const TABS = [
   { path: 'overview', label: 'Overview' },
   { path: 'menu', label: 'Master Menu' },
+  { path: 'suppliers', label: 'Suppliers' },
+  { path: 'purchase-orders', label: 'Purchase Orders' },
 ];
 
 // Deliberately its own layout, not a mode of DashboardLayout - an

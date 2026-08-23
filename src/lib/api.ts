@@ -252,7 +252,8 @@ export function submitCustomButtonRequest(slug: string, buttonId: string, tapEve
 // migration 0087) - source distinguishes which one on the backend.
 export function submitLead(payload: {
   email: string; phone: string; source?: 'get_started' | 'pricing_inquiry';
-  businessType?: string; standsEstimate?: number; preferredContactMethod?: 'email' | 'phone'; note?: string;
+  businessName?: string; businessType?: string; standsEstimate?: number; currentPosSystem?: string;
+  preferredContactMethod?: 'email' | 'phone'; note?: string;
 }) {
   return request<{ message: string }>('/api/public/leads', {
     method: 'POST',

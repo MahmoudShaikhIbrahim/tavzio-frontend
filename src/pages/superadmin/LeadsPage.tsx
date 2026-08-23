@@ -75,6 +75,8 @@ export default function LeadsPage() {
           <div key={lead.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-line px-4 py-3">
             <div>
               <p className="text-base text-ivory">
+                {lead.source === 'get_started' && lead.business_name && <span className="font-medium">{lead.business_name}</span>}
+                {lead.source === 'get_started' && lead.business_name && ' · '}
                 {lead.email} · {lead.phone}{' '}
                 <span className={`ml-1 rounded-full border px-2 py-0.5 text-xs ${lead.source === 'pricing_inquiry' ? 'border-brass/40 text-brass' : 'border-ink-line text-ivory-dim'}`}>
                   {SOURCE_LABEL[lead.source]}
@@ -82,7 +84,7 @@ export default function LeadsPage() {
               </p>
               <p className="text-sm text-ivory-dim">
                 {lead.source === 'get_started'
-                  ? `${lead.business_type} · wants ~${lead.stands_estimate} stand${lead.stands_estimate === 1 ? '' : 's'}`
+                  ? `${lead.business_type} · wants ~${lead.stands_estimate} stand${lead.stands_estimate === 1 ? '' : 's'}${lead.current_pos_system ? ` · currently on ${lead.current_pos_system}` : ' · no POS yet'}`
                   : `Prefers to be contacted by ${lead.preferred_contact_method}`}
                 {' · '}{new Date(lead.created_at).toLocaleDateString()}
                 {lead.note && ` · "${lead.note}"`}

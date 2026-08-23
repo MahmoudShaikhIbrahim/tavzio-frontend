@@ -315,11 +315,97 @@ export interface DigitalCard {
 
 export interface Supplier {
   id: string;
-  business_id: string;
+  business_id: string | null;
+  organization_id?: string | null;
   name: string;
   contact_name: string;
   phone: string;
   email: string;
+}
+
+export interface Warehouse {
+  id: string;
+  name: string;
+  type: 'central' | 'kitchen' | 'dry_store' | 'cold_store' | 'general';
+  business_id: string | null;
+  organization_id: string | null;
+  address: string;
+  ingredient_stock?: { ingredient_id: string; quantity: number }[];
+}
+
+export interface WarehouseStockLine {
+  quantity: number;
+  ingredients: { id: string; name: string; unit: string; low_stock_threshold: number };
+}
+
+export interface StockTransferItem {
+  id: string;
+  ingredient_id: string;
+  quantity: number;
+  ingredients?: { name: string; unit: string };
+}
+
+export interface StockTransfer {
+  id: string;
+  from_warehouse_id: string | null;
+  to_warehouse_id: string;
+  status: 'requested' | 'approved' | 'in_transit' | 'received' | 'cancelled';
+  requested_by: string | null;
+  approved_by: string | null;
+  received_by: string | null;
+  requested_at: string;
+  approved_at: string | null;
+  received_at: string | null;
+  note: string;
+  stock_transfer_items?: StockTransferItem[];
+  from?: { id: string; name: string } | null;
+  to?: { id: string; name: string };
+}
+
+export interface PoAllocation {
+  id: string;
+  purchase_order_item_id: string;
+  business_id: string;
+  quantity: number;
+  received: boolean;
+  received_at: string | null;
+  received_into_warehouse_id: string | null;
+  ingredient_id: string | null;
+  purchase_order_items?: {
+    item_name: string;
+    item_unit: string;
+    quantity: number;
+    unit_cost_aed: number;
+    purchase_orders?: { ordered_at: string; suppliers?: { name: string } | null };
+  };
+}
+
+export interface OrgPurchaseOrderAllocation {
+  id: string;
+  business_id: string;
+  quantity: number;
+  received: boolean;
+  businesses?: { name: string };
+}
+
+export interface OrgPurchaseOrderItem {
+  id: string;
+  item_name: string;
+  item_unit: string;
+  quantity: number;
+  unit_cost_aed: number;
+  purchase_order_allocations?: OrgPurchaseOrderAllocation[];
+}
+
+export interface OrgPurchaseOrder {
+  id: string;
+  organization_id: string;
+  supplier_id: string | null;
+  status: 'pending' | 'received' | 'cancelled';
+  total_cost_aed: number;
+  ordered_at: string;
+  suppliers?: { name: string } | null;
+  purchase_order_items?: OrgPurchaseOrderItem[];
 }
 
 export interface Ingredient {
@@ -488,8 +574,10 @@ export interface Lead {
   id: string;
   email: string;
   phone: string;
+  business_name: string;
   business_type: string | null;
   stands_estimate: number;
+  current_pos_system: string;
   note: string;
   converted: boolean;
   converted_business_id: string | null;

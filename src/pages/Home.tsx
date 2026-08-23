@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Utensils, Star, Calendar, BarChart3, CreditCard } from 'lucide-react';
+import { Utensils, Star, Calendar, BarChart3, CreditCard, ShieldCheck, Ban, Building2 } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
 import { submitLead } from '../lib/api';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import Logo from '../components/Logo';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
@@ -41,6 +42,19 @@ function useTapCycle() {
   return index;
 }
 
+// Wraps any section in the real scroll-reveal from useScrollReveal -
+// defined once here so every section on the page gets the same
+// fade/slide-up treatment consistently, rather than each one wiring
+// the hook by hand.
+function RevealSection({ id, className, children }: { id?: string; className?: string; children: ReactNode }) {
+  const { ref, className: revealClass } = useScrollReveal<HTMLDivElement>();
+  return (
+    <div id={id} ref={ref} className={`${className || ''} ${revealClass}`}>
+      {children}
+    </div>
+  );
+}
+
 export default function Home() {
   // A new visitor here has no account, no stored preference - this
   // should just match their own device's setting, live, never anything
@@ -48,24 +62,34 @@ export default function Home() {
   const theme = useLiveSystemTheme();
   const tapIndex = useTapCycle();
 
-  function scrollToPricing(e: React.MouseEvent) {
+  function scrollToPricing(e: ReactMouseEvent) {
     e.preventDefault();
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   }
 
   return (
     <div data-theme={theme} className="min-h-screen bg-ink">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-ink-line px-8 py-5">
+      {/* Header - sticky, with real anchor navigation into sections
+          that actually exist on this page (not decorative nav items
+          pointing nowhere). */}
+      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-ink-line bg-ink/90 px-8 py-5 backdrop-blur">
         <div className="flex items-center gap-2">
           <Logo className="h-9 w-auto" />
         </div>
-        <Link
-          to="/admin/login"
-          className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
-        >
-          Sign In
-        </Link>
+        <nav className="hidden items-center gap-8 text-sm text-ivory-dim md:flex">
+          <a href="#solutions" className="transition-colors hover:text-ivory">Solutions</a>
+          <a href="#how-it-works" className="transition-colors hover:text-ivory">How it works</a>
+          <Link to="/demo" className="transition-colors hover:text-ivory">Demo</Link>
+          <a href="#pricing" onClick={scrollToPricing} className="transition-colors hover:text-ivory">Pricing</a>
+        </nav>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/admin/login"
+            className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
+          >
+            Sign In
+          </Link>
+        </div>
       </div>
 
       {/* Hero - the tap itself is the thesis, not a headline over a
@@ -122,11 +146,37 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Built for restaurants & hotels - real audience clarity right
+          after the hero, so a visitor immediately sees themselves in
+          one of the two, rather than reading five more sections before
+          finding out if this product even fits their kind of business. */}
+      <RevealSection id="solutions" className="border-b border-ink-line px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Built for</p>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+            <div className="rounded-2xl border border-ink-line bg-ink-soft p-8 transition-colors hover:border-brass/40">
+              <Utensils size={22} strokeWidth={1.75} className="text-brass" />
+              <p className="mt-4 font-display text-xl text-ivory">Restaurants & cafés</p>
+              <p className="mt-2 text-sm leading-relaxed text-ivory-dim">
+                Table ordering, Pay Bill with split-bill, loyalty stamps, and a live kitchen display — priced per table.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-ink-line bg-ink-soft p-8 transition-colors hover:border-brass/40">
+              <Building2 size={22} strokeWidth={1.75} className="text-brass" />
+              <p className="mt-4 font-display text-xl text-ivory">Hotels</p>
+              <p className="mt-2 text-sm leading-relaxed text-ivory-dim">
+                In-room requests, room service ordering charged straight to the folio, and a guest portal that replaces the printed directory — priced per room.
+              </p>
+            </div>
+          </div>
+        </div>
+      </RevealSection>
+
       {/* Your stand, on your tables - an editorial spread rather than a
           plain matched pair: one image leads at full weight, the second
           sits offset beneath it like a caption photo in a print layout,
           with a pull-quote standing in place of ordinary body copy. */}
-      <div className="border-b border-ink-line px-6 py-24">
+      <RevealSection className="border-b border-ink-line px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Your stand, on your tables</p>
           <div className="mt-12 grid gap-6 lg:grid-cols-[1.3fr_1fr] lg:items-end">
@@ -143,12 +193,12 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </RevealSection>
 
       {/* How it works - a genuine sequence (tap precedes connect
           precedes grow), so numbered steps earn their place here rather
           than decorating an unordered list. */}
-      <div className="border-b border-ink-line px-6 py-20">
+      <RevealSection id="how-it-works" className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">How it works</p>
           <div className="relative mt-12 grid gap-10 sm:grid-cols-3 sm:gap-6">
@@ -162,14 +212,14 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </div>
+      </RevealSection>
 
       {/* Features - an indexed list, not a grid of matched icon cards.
           The numbering ties back to the same editorial device used for
           "How it works" and the pricing example, so the page reads as
           one considered system rather than five separate templates
           bolted together. */}
-      <div className="border-b border-ink-line px-6 py-20">
+      <RevealSection className="border-b border-ink-line px-6 py-20">
         <div className="mx-auto max-w-3xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">What's built in</p>
           <div className="mt-12 divide-y divide-ink-line border-y border-ink-line">
@@ -187,7 +237,35 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </div>
+      </RevealSection>
+
+      {/* Why Tavzio - real, defensible facts about the product and
+          company itself, deliberately not performance stats (no
+          customers yet to measure "X% more tips" or "Y minutes saved"
+          from - claiming numbers like that without real data behind
+          them would be fabricating social proof). */}
+      <RevealSection className="border-b border-ink-line px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Why Tavzio</p>
+          <div className="mt-10 grid gap-8 sm:grid-cols-3">
+            <div className="text-center">
+              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><Ban size={18} strokeWidth={1.75} /></span>
+              <p className="mt-4 font-display text-lg text-ivory">No commission on orders</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">A flat subscription, not a cut of every sale. What your guests pay is what you keep.</p>
+            </div>
+            <div className="text-center">
+              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><Building2 size={18} strokeWidth={1.75} /></span>
+              <p className="mt-4 font-display text-lg text-ivory">Your own branded page</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">Not a shared marketplace app - guests land on your name, your logo, your menu.</p>
+            </div>
+            <div className="text-center">
+              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><ShieldCheck size={18} strokeWidth={1.75} /></span>
+              <p className="mt-4 font-display text-lg text-ivory">UAE-based, PDPL compliant</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">Built and run in the UAE, in line with Federal Decree-Law No. 45 of 2021. <Link to="/legal" className="text-brass hover:underline">Read our privacy policy →</Link></p>
+            </div>
+          </div>
+        </div>
+      </RevealSection>
 
       {/* Pricing, with a real worked example */}
       <div id="pricing" className="border-b border-ink-line px-6 py-20">
@@ -239,9 +317,14 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="px-6 py-10 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio — the tap is the interface</p>
-      </div>
+      <footer className="border-t border-ink-line px-6 py-10">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio — the tap is the interface</p>
+          <div className="flex items-center gap-5 text-sm text-ivory-dim">
+            <Link to="/legal" className="hover:text-ivory">Privacy Policy</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -249,8 +332,10 @@ export default function Home() {
 function LeadForm() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('restaurant');
   const [standsEstimate, setStandsEstimate] = useState(5);
+  const [currentPosSystem, setCurrentPosSystem] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -260,7 +345,7 @@ function LeadForm() {
     setError('');
     setSubmitting(true);
     try {
-      await submitLead({ email, phone, businessType, standsEstimate: Math.max(1, standsEstimate) });
+      await submitLead({ email, phone, businessName, businessType, standsEstimate: Math.max(1, standsEstimate), currentPosSystem });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit - please try again');
@@ -281,6 +366,10 @@ function LeadForm() {
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-3 text-left">
       <input
+        type="text" required placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+      />
+      <input
         type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
         className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
       />
@@ -294,6 +383,11 @@ function LeadForm() {
       >
         {CATEGORIES.map((c) => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
       </select>
+      <input
+        type="text" placeholder="Current POS system (or leave blank if you're new / have none yet)"
+        value={currentPosSystem} onChange={(e) => setCurrentPosSystem(e.target.value)}
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+      />
       <label className="block text-sm text-ivory-dim">
         How many stands do you think you'll need?
         <input

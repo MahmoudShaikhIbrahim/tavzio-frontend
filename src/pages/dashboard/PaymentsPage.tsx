@@ -75,7 +75,7 @@ const METHOD_LABEL: Record<string, string> = {
   manual_card_machine: 'Card machine',
 };
 
-function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow; businessId: string; onChange: () => void }) {
+export function PaymentRowItem({ payment, businessId, onChange }: { payment: PaymentRow; businessId: string; onChange: () => void }) {
   const { t } = useT();
   const [showRefund, setShowRefund] = useState(false);
   const [amount, setAmount] = useState(Number(payment.amount) + Number(payment.tip_amount));

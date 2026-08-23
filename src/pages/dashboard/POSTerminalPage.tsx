@@ -5,11 +5,12 @@ import { useT } from '../../hooks/useT';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions,
   listMenuCategories, listMenuItems, createPosOrder, confirmPosCardPayment, getBusiness, lookupFolioByRoom,
-  listHotelOutlets,
+  listHotelOutlets, listPayments,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
-import type { TillSession, MenuCategory, MenuItem } from '../../types';
+import type { TillSession, MenuCategory, MenuItem, PaymentRow } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import { PaymentRowItem } from './PaymentsPage';
 
 interface CartLine {
   menuItemId: string;
@@ -152,6 +153,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [cart, setCart] = useState<CartLine[]>([]);
   const [tableLabel, setTableLabel] = useState('Walk-in');
   const [showCloseTill, setShowCloseTill] = useState(false);
+  const [showRefunds, setShowRefunds] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState<{ total: number; method: string } | null>(null);
@@ -378,12 +380,29 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     return <CloseTillScreen businessId={businessId} till={till} onDone={onTillClosed} onCancel={() => setShowCloseTill(false)} />;
   }
 
+  if (showRefunds) {
+    return (
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
+          <button type="button" onClick={() => setShowRefunds(false)} className="text-sm text-brass hover:underline">{t('Back to selling')}</button>
+        </div>
+        <RefundsPanel businessId={businessId} />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
-          <button type="button" onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">{t('Close till')}</button>
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={() => setShowRefunds(true)} className="text-sm text-danger hover:underline">
+              {t('Refunds')}
+            </button>
+            <button type="button" onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">{t('Close till')}</button>
+          </div>
         </div>
         {(isOffline || queuedCount > 0) && (
           <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${isOffline ? 'border-danger/40 text-danger' : 'border-warning/40 text-warning'}`}>
@@ -567,6 +586,76 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         </div>
       </div>
     </div>
+  );
+}
+
+// Real requirement: staff needed to leave the POS terminal entirely and
+// go find the separate Payments admin page just to issue a refund for
+// the customer standing right in front of them at the counter. Reuses
+// the exact same PaymentRowItem component (and therefore the exact
+// same refund logic, gateway routing, and manual-payment blocking) the
+// Payments page already uses - one refund system, two entry points,
+// never two implementations that could drift apart.
+function RefundsPanel({ businessId }: { businessId: string }) {
+  const { t } = useT();
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | 'refundable' | 'refunded'>('refundable');
+
+  function reload() {
+    listPayments(businessId).then(setPayments).finally(() => setLoading(false));
+  }
+  useEffect(reload, [businessId]);
+
+  const filtered = payments
+    .filter((p) => {
+      if (filter === 'refundable') return p.status === 'completed' && !p.refunded && !p.provider?.startsWith('manual_');
+      if (filter === 'refunded') return p.refunded;
+      return true;
+    })
+    .filter((p) => {
+      if (!search.trim()) return true;
+      const total = (Number(p.amount) + Number(p.tip_amount)).toFixed(2);
+      return total.includes(search.trim()) || p.provider?.toLowerCase().includes(search.trim().toLowerCase());
+    });
+
+  return (
+    <Section title={t('Refunds')}>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('Search by amount or method...')}
+          className={`${inputClass} max-w-xs`}
+        />
+        <div className="flex gap-1.5">
+          {(['refundable', 'refunded', 'all'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`rounded-lg border px-3 py-1.5 text-sm capitalize transition-colors ${
+                filter === f ? 'border-danger bg-danger/10 text-danger' : 'border-ink-line text-ivory-dim hover:text-ivory'
+              }`}
+            >
+              {f === 'refundable' ? t('Refundable') : f === 'refunded' ? t('Refunded') : t('All')}
+            </button>
+          ))}
+        </div>
+      </div>
+      {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
+      <div className="space-y-2">
+        {filtered.map((payment) => (
+          <PaymentRowItem key={payment.id} payment={payment} businessId={businessId} onChange={reload} />
+        ))}
+        {!loading && filtered.length === 0 && (
+          <p className="text-ivory-dim">
+            {filter === 'refundable' ? t('No refundable payments right now.') : t('Nothing here yet.')}
+          </p>
+        )}
+      </div>
+    </Section>
   );
 }
 

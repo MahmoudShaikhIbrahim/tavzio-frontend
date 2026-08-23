@@ -88,6 +88,8 @@ const SETTINGS_ITEMS = [
   { path: 'settings/payroll', label: 'Payroll', ownerOnly: true, requires: 'payroll' as const },
   { path: 'settings/accounting', label: 'Accounting', ownerOnly: true, requires: 'accounting' as const },
   { path: 'settings/channel-manager', label: 'Channel Manager', ownerOnly: true, requires: 'channelManager' as const },
+  { path: 'settings/warehouses', label: 'Warehouses', ownerOnly: true, requires: 'inventory' as const },
+  { path: 'settings/stock-transfers', label: 'Stock Transfers', ownerOnly: false, requires: 'inventory' as const },
   { path: 'settings/marketing', label: 'Marketing', ownerOnly: true, requires: 'marketing' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
