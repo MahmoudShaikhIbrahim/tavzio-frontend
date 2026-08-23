@@ -429,17 +429,17 @@ function DashboardLayoutInner() {
         )}
 
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
-          <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-1.5">
+          <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-2.5">
             {visibleTabs.map((tab, i) => {
               const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
 
               if (customizing) {
                 return (
-                  <div key={tab.path} className="flex shrink-0 items-center gap-0.5 rounded-lg border border-ink-line bg-ink-soft py-1 pe-1 ps-3">
-                    <span className="pe-2 text-base text-ivory">{t(tab.label)}</span>
-                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
-                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
-                    <button type="button" onClick={() => hideItem(tab.path)} className="flex h-6 w-6 items-center justify-center rounded text-danger hover:bg-danger/10" aria-label="Hide tab">×</button>
+                  <div key={tab.path} className="flex shrink-0 items-center gap-2 rounded-lg border border-ink-line bg-ink-soft py-2.5 pe-2 ps-4">
+                    <span className="pe-1 text-base text-ivory">{t(tab.label)}</span>
+                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
+                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
+                    <button type="button" onClick={() => hideItem(tab.path)} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-danger hover:bg-danger/10" aria-label="Hide tab">×</button>
                   </div>
                 );
               }
@@ -484,12 +484,12 @@ function DashboardLayoutInner() {
                   {visibleSettingsItems.map((tab, i) => {
                     if (customizing) {
                       return (
-                        <div key={tab.path} className="flex items-center justify-between gap-2 rounded-lg border border-ink-line bg-ink py-1 pe-1 ps-3">
+                        <div key={tab.path} className="flex items-center justify-between gap-3 rounded-lg border border-ink-line bg-ink py-2.5 pe-2 ps-4">
                           <span className="text-base text-ivory">{t(tab.label)}</span>
-                          <div className="flex items-center gap-0.5">
-                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
-                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="flex h-6 w-6 items-center justify-center rounded text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
-                            <button type="button" onClick={() => hideItem(tab.path)} className="flex h-6 w-6 items-center justify-center rounded text-danger hover:bg-danger/10" aria-label="Hide">×</button>
+                          <div className="flex items-center gap-1.5">
+                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
+                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
+                            <button type="button" onClick={() => hideItem(tab.path)} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-danger hover:bg-danger/10" aria-label="Hide">×</button>
                           </div>
                         </div>
                       );

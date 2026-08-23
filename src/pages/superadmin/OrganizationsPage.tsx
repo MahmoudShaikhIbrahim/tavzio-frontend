@@ -112,8 +112,12 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
     setBusy(true);
     setInviteResult('');
     try {
-      await inviteOrgOwner(org.id, ownerName.trim(), ownerEmail.trim());
-      setInviteResult(`Invited ${ownerName} - they'll get an email to set their password.`);
+      const result = await inviteOrgOwner(org.id, ownerName.trim(), ownerEmail.trim());
+      setInviteResult(
+        result.resent
+          ? `${ownerName} was already invited - resent the invite email.`
+          : `Invited ${ownerName} - they'll get an email to set their password.`
+      );
       setOwnerName(''); setOwnerEmail('');
     } catch (err) {
       setInviteResult(err instanceof Error ? err.message : 'Could not invite owner');

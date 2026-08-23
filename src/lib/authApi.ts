@@ -1072,6 +1072,12 @@ export function resetAccountPassword(businessId: string, userId: string) {
   });
 }
 
+export function resendStaffInvite(businessId: string, userId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/staff/${userId}/resend-invite`, {
+    method: 'POST',
+  });
+}
+
 // super_admin only - matches how physical cards actually get programmed, in person
 export function issueAdminCard(businessId: string, userId: string, label = 'Admin card') {
   return authFetch<Card>(`/api/businesses/${businessId}/staff/${userId}/card`, {
@@ -1207,7 +1213,7 @@ export function setBusinessOrganization(businessId: string, organizationId: stri
   });
 }
 export function inviteOrgOwner(organizationId: string, name: string, email: string) {
-  return authFetch<{ id: string; name: string; email: string }>(`/api/organizations/${organizationId}/owner`, {
+  return authFetch<{ id: string; name: string; email: string; resent?: boolean }>(`/api/organizations/${organizationId}/owner`, {
     method: 'POST', body: JSON.stringify({ name, email }),
   });
 }

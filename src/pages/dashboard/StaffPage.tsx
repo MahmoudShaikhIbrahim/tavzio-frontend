@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
+import { listStaff, inviteStaff, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -14,7 +14,10 @@ export default function StaffPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
+  const [inviteError, setInviteError] = useState('');
   const [resetResult, setResetResult] = useState<{ name: string; tempPassword: string } | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState('');
   const [editingSectionsFor, setEditingSectionsFor] = useState<string | null>(null);
   const [editingOutletsFor, setEditingOutletsFor] = useState<string | null>(null);
   const [isHotel, setIsHotel] = useState(false);
@@ -39,19 +42,46 @@ export default function StaffPage() {
 
   if (!businessId) return null;
 
+  // Real fix for a confirmed bug: this had no try/catch at all - a
+  // real, common failure (email already registered, or Supabase's own
+  // outbound-email rate limit) threw uncaught, execution stopped
+  // before setSaving(false) ever ran, and the button was stuck on
+  // "Adding..." forever with the actual error only visible in the
+  // browser console, invisible to whoever was actually using the form.
   async function handleInvite(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await inviteStaff(businessId!, name, email);
-    setName(''); setEmail('');
-    setSaving(false);
-    reload();
+    setInviteError('');
+    try {
+      await inviteStaff(businessId!, name, email);
+      setName(''); setEmail('');
+      reload();
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Could not add this staff member');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleResetPassword(userId: string) {
     if (!confirm(t("Reset this account's password? They will be given a new temporary password and forced to set their own on next login."))) return;
     const result = await resetAccountPassword(businessId!, userId);
     setResetResult(result);
+  }
+
+  // For someone who never checked their first invite email - sends a
+  // fresh one via resendStaffInvite (Gmail API, never touches
+  // Supabase's own rate-limited mailer - see notifications.js).
+  async function handleResendInvite(userId: string) {
+    setResendingId(userId);
+    try {
+      await resendStaffInvite(businessId!, userId);
+      setResendMessage(t('Invite resent.'));
+    } catch (err) {
+      setResendMessage(err instanceof Error ? err.message : 'Could not resend invite');
+    } finally {
+      setResendingId(null);
+    }
   }
 
   // Granting is a real, server-enforced trust decision (this account
@@ -74,6 +104,12 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-10">
+      {resendMessage && (
+        <div className="rounded-lg border border-brass/40 bg-ink-soft px-4 py-3">
+          <p className="text-base text-ivory">{resendMessage}</p>
+          <button type="button" onClick={() => setResendMessage('')} className="mt-1 text-sm text-ivory-dim hover:text-ivory">{t('Dismiss')}</button>
+        </div>
+      )}
       {resetResult && (
         <div className="rounded-lg border border-brass/40 bg-ink-soft p-4">
           <p className="text-base text-ivory">
@@ -124,6 +160,9 @@ export default function StaffPage() {
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory">
                   {t('Reset password')}
+                </button>
+                <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">
+                  {resendingId === s.id ? t('Resending...') : t('Resend invite')}
                 </button>
                 {s.role === 'staff' && (
                   <>
@@ -192,6 +231,7 @@ export default function StaffPage() {
           <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
           <div className="self-end"><PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add staff')}</PrimaryButton></div>
         </form>
+        {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
       </Section>
 
       <ShiftReportSection businessId={businessId} />
