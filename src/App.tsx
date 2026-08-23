@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeContext';
 import Home from './pages/Home';
 import DemoPage from './pages/DemoPage';
@@ -85,10 +86,48 @@ import SignContractPage from './pages/SignContractPage';
 import PublicCardPage from './pages/PublicCardPage';
 import HotelGuestPortalPage from './pages/HotelGuestPortalPage';
 
+// See the comment where this is rendered in App() for the full
+// reasoning - this exists specifically because Supabase's redirect
+// allow-list can silently drop an invite/recovery token onto the
+// wrong page. Captured via a lazy useState initializer (runs
+// synchronously on first render, before any effect) for the same
+// reason AdminLogin.tsx's own hash-detection does the same thing:
+// supabase-js's own client auto-clears the hash from the URL shortly
+// after processing it, so this needs the value before that happens,
+// not a fresh read of window.location.hash later.
+function InviteHashRedirect() {
+  const [hash] = useState(() => window.location.hash);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const isInviteOrRecovery = hash.includes('type=invite') || hash.includes('type=recovery');
+    if (isInviteOrRecovery && window.location.pathname !== '/admin/login') {
+      navigate(`/admin/login${hash}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
+      {/* Real fix for a confirmed failure: Supabase's invite/recovery
+          link only honors the app's requested redirect path if that
+          exact path is in Supabase's own Redirect URLs allow-list -
+          if it's missing (or the allow-list entry is even slightly
+          off), Supabase silently falls back to Site URL instead,
+          dropping the person on the homepage with the real session
+          token still sitting in the URL hash, unprocessed, since
+          AdminLogin.tsx (the only place that ever looked for it) never
+          even mounts on that route. This runs on every single page
+          the app renders and catches that token regardless of where
+          Supabase actually lands someone, forwarding to the one page
+          that knows how to use it - so a misconfigured allow-list
+          degrades gracefully instead of silently losing the invite. */}
+      <InviteHashRedirect />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/demo" element={<DemoPage />} />
