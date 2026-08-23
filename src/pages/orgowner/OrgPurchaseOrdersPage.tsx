@@ -137,10 +137,10 @@ function NewOrgPoForm({ suppliers, businesses, onSaved }: {
         return (
           <div key={index} className="rounded-lg border border-ink-line/60 bg-ink-soft p-3">
             <div className="grid gap-2 sm:grid-cols-4">
-              <input placeholder="Item (e.g. Flour)" value={item.itemName} onChange={(e) => updateItem(index, { itemName: e.target.value })} className={inputClass} />
-              <input placeholder="Unit (kg, l...)" value={item.itemUnit} onChange={(e) => updateItem(index, { itemUnit: e.target.value })} className={inputClass} />
-              <input type="number" min={0.01} step="0.01" placeholder="Quantity" onFocus={(e) => e.target.select()} value={item.quantity} onChange={(e) => updateItem(index, { quantity: Number(e.target.value) })} className={inputClass} />
-              <input type="number" min={0} step="0.01" placeholder="Unit cost AED" onFocus={(e) => e.target.select()} value={item.unitCostAed} onChange={(e) => updateItem(index, { unitCostAed: Number(e.target.value) })} className={inputClass} />
+              <Field label="Item"><input placeholder="e.g. Flour" value={item.itemName} onChange={(e) => updateItem(index, { itemName: e.target.value })} className={inputClass} /></Field>
+              <Field label="Unit"><input placeholder="kg, l..." value={item.itemUnit} onChange={(e) => updateItem(index, { itemUnit: e.target.value })} className={inputClass} /></Field>
+              <Field label="Quantity"><input type="number" min={0.01} step="0.01" onFocus={(e) => e.target.select()} value={item.quantity} onChange={(e) => updateItem(index, { quantity: Number(e.target.value) })} className={inputClass} /></Field>
+              <Field label="Unit cost (AED)"><input type="number" min={0} step="0.01" onFocus={(e) => e.target.select()} value={item.unitCostAed} onChange={(e) => updateItem(index, { unitCostAed: Number(e.target.value) })} className={inputClass} /></Field>
             </div>
 
             <p className="mt-3 text-sm text-ivory-dim">Split across businesses ({allocatedTotal} / {item.quantity} allocated)</p>

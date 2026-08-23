@@ -255,12 +255,21 @@ function BookingPageContent({ slug }: { slug: string }) {
           <input type="tel" required placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)}
             className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-ivory placeholder:text-ivory-dim/60" />
           <div className="grid grid-cols-3 gap-3">
-            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)}
-              className="col-span-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-sm text-ivory" />
-            <input type="time" required value={time} onChange={(e) => setTime(e.target.value)}
-              className="col-span-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-sm text-ivory" />
-            <input type="number" min={1} required value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
-              placeholder="Guests" className="col-span-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-center text-sm text-ivory" />
+            <div className="col-span-1">
+              <label className="mb-1 block text-xs text-ivory-dim">Date</label>
+              <input type="date" required value={date} onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
+            </div>
+            <div className="col-span-1">
+              <label className="mb-1 block text-xs text-ivory-dim">Time</label>
+              <input type="time" required value={time} onChange={(e) => setTime(e.target.value)}
+                className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
+            </div>
+            <div className="col-span-1">
+              <label className="mb-1 block text-xs text-ivory-dim">Guests</label>
+              <input type="number" min={1} required value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
+                className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-center text-sm text-ivory" />
+            </div>
           </div>
           <textarea placeholder="Any special requests? (optional)" value={note} onChange={(e) => setNote(e.target.value)} rows={2}
             className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-ivory placeholder:text-ivory-dim/60" />

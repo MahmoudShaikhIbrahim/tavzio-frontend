@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
+import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -13,8 +13,11 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [inviteSections, setInviteSections] = useState<string[]>(SECTION_OPTIONS.map((o) => o.key));
+  const [restrictOnInvite, setRestrictOnInvite] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inviteError, setInviteError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [resetResult, setResetResult] = useState<{ name: string; tempPassword: string } | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState('');
@@ -53,13 +56,33 @@ export default function StaffPage() {
     setSaving(true);
     setInviteError('');
     try {
-      await inviteStaff(businessId!, name, email);
-      setName(''); setEmail('');
+      await inviteStaff(businessId!, name, email, restrictOnInvite ? inviteSections : null);
+      setName(''); setEmail(''); setRestrictOnInvite(false); setInviteSections(SECTION_OPTIONS.map((o) => o.key));
       reload();
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Could not add this staff member');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function toggleInviteSection(key: string) {
+    setInviteSections((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+
+  // Permanent removal, distinct from Deactivate above - confirmed
+  // explicitly since (unlike deactivating) this can't be undone from
+  // this account again; a new invite would be a brand new account.
+  async function handleDeleteStaff(s: StaffMember) {
+    if (!confirm(t('Permanently delete {name}\'s account? This cannot be undone - all their history stays on past records, but the account itself is gone. If you just want to block their access, use Deactivate instead.').replace('{name}', s.name))) return;
+    setDeletingId(s.id);
+    try {
+      await deleteStaffAccount(businessId!, s.id);
+      setStaff((prev) => prev.filter((m) => m.id !== s.id));
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : 'Could not delete this account');
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -176,6 +199,13 @@ export default function StaffPage() {
                       {s.is_active ? t('Deactivate') : t('Reactivate')}
                     </button>
                     <button type="button"
+                      disabled={deletingId === s.id}
+                      onClick={() => handleDeleteStaff(s)}
+                      className="text-sm text-danger hover:underline disabled:opacity-50"
+                    >
+                      {deletingId === s.id ? t('Deleting...') : t('Delete account')}
+                    </button>
+                    <button type="button"
                       onClick={() => handleToggleFullAccess(s)}
                       className={`text-sm hover:underline ${s.full_access ? 'text-danger' : 'text-brass'}`}
                     >
@@ -226,10 +256,26 @@ export default function StaffPage() {
         <p className="text-base text-ivory-dim">
           {t('New staff sign in with their own email and password — no card needed, since staff sign in through the website. The same account can be open on as many devices at once as needed.')}
         </p>
-        <form onSubmit={handleInvite} className="flex gap-2.5 border-t border-ink-line pt-4">
-          <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-          <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
-          <div className="self-end"><PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add staff')}</PrimaryButton></div>
+        <form onSubmit={handleInvite} className="space-y-3 border-t border-ink-line pt-4">
+          <div className="flex gap-2.5">
+            <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+            <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-ivory">
+            <input type="checkbox" checked={restrictOnInvite} onChange={(e) => setRestrictOnInvite(e.target.checked)} className="accent-brass" />
+            {t('Restrict which sections they can see, starting from their very first login')}
+          </label>
+          {restrictOnInvite && (
+            <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-ink-line bg-ink-soft p-3 sm:grid-cols-3">
+              {SECTION_OPTIONS.map((opt) => (
+                <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
+                  <input type="checkbox" checked={inviteSections.includes(opt.key)} onChange={() => toggleInviteSection(opt.key)} className="accent-brass" />
+                  {t(opt.label)}
+                </label>
+              ))}
+            </div>
+          )}
+          <PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add staff')}</PrimaryButton>
         </form>
         {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
       </Section>

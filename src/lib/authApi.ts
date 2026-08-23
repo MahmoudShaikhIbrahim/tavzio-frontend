@@ -746,10 +746,16 @@ export function listStaff(businessId: string) {
   return authFetch<StaffMember[]>(`/api/businesses/${businessId}/staff`);
 }
 
-export function inviteStaff(businessId: string, name: string, email: string) {
+export function inviteStaff(businessId: string, name: string, email: string, sections?: string[] | null) {
   return authFetch<StaffMember>(`/api/businesses/${businessId}/staff`, {
     method: 'POST',
-    body: JSON.stringify({ name, email }),
+    body: JSON.stringify({ name, email, sections: sections ?? null }),
+  });
+}
+
+export function deleteStaffAccount(businessId: string, userId: string) {
+  return authFetch<{ message: string; id: string }>(`/api/businesses/${businessId}/staff/${userId}`, {
+    method: 'DELETE',
   });
 }
 
