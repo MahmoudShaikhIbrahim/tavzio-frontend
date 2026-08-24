@@ -36,9 +36,16 @@ export default function BookingsPage() {
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [showOnlineSettings, setShowOnlineSettings] = useState(false);
 
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
   function reload() {
-    if (businessId) listBookings(businessId).then(setBookings);
-    if (businessId) listFloorTables(businessId).then(setTables).catch(() => setTables([]));
+    if (!businessId) return;
+    setLoadError('');
+    listBookings(businessId)
+      .then((rows) => { setBookings(rows); setLoaded(true); })
+      .catch((err) => { setLoadError(err instanceof Error ? err.message : 'Could not load bookings'); setLoaded(true); });
+    listFloorTables(businessId).then(setTables).catch(() => setTables([]));
   }
 
   useEffect(reload, [businessId]);
@@ -83,6 +90,12 @@ export default function BookingsPage() {
 
       {showNewBooking && (
         <NewBookingForm businessId={businessId} tables={tables} onDone={() => { setShowNewBooking(false); reload(); }} />
+      )}
+
+      {!loaded && <p className="text-ivory-dim">{t('Loading...')}</p>}
+      {loadError && <p className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger">{loadError}</p>}
+      {loaded && !loadError && bookings.length === 0 && (
+        <p className="text-ivory-dim">{t('No bookings yet - manual and online bookings will both show up here as they come in.')}</p>
       )}
 
       <Group title={t('Needs a response')} bookings={pending} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} />
