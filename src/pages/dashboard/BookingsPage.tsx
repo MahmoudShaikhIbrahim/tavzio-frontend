@@ -98,7 +98,7 @@ export default function BookingsPage() {
         <p className="text-ivory-dim">{t('No bookings yet - manual and online bookings will both show up here as they come in.')}</p>
       )}
 
-      <Group title={t('Needs a response')} bookings={pending} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} />
+      <Group title={t('Needs a response')} bookings={pending} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} urgent />
       <Group title={t('Upcoming')} bookings={upcoming} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} />
       <Group title={t('History')} bookings={past.slice(0, 10)} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} />
     </div>
@@ -169,13 +169,16 @@ function NewBookingForm({ businessId, tables, onDone }: { businessId: string; ta
   );
 }
 
-function Group({ title, bookings, businessId, tables, onBookingsChange, onChange }: {
-  title: string; bookings: BookingRow[]; businessId: string; tables: FloorTable[]; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void;
+function Group({ title, bookings, businessId, tables, onBookingsChange, onChange, urgent }: {
+  title: string; bookings: BookingRow[]; businessId: string; tables: FloorTable[]; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void; urgent?: boolean;
 }) {
   if (bookings.length === 0) return null;
   return (
     <div>
-      <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim">{title}</h2>
+      <div className="mb-3 flex items-center gap-2.5">
+        <h2 className={`font-mono text-[11px] uppercase tracking-wider ${urgent ? 'text-brass' : 'text-ivory-dim'}`}>{title}</h2>
+        {urgent && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brass px-1.5 text-[11px] font-medium text-ink">{bookings.length}</span>}
+      </div>
       <div className="space-y-4">
         {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} tables={tables} onBookingsChange={onBookingsChange} onChange={onChange} />)}
       </div>
@@ -214,7 +217,13 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
   const foodItems = booking.booking_items || [];
 
   return (
-    <div className="rounded-lg border border-ink-line px-3.5 py-3 text-base">
+    <div className="pro-panel overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+      {/* Same device already used on Kitchen tickets for "this needs
+          attention" - a real colored strip, not a new pattern invented
+          just for this page, so the whole dashboard signals urgency the
+          same way wherever it shows up. */}
+      <div className={`h-1.5 ${booking.status === 'pending' ? 'bg-brass' : 'bg-ink-line'}`} />
+      <div className="p-4 text-base">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-ivory">
@@ -227,8 +236,8 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
           </p>
           {booking.note && <p className="mt-1 text-base italic text-brass">{booking.note}</p>}
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className={`rounded-full border px-2.5 py-0.5 text-sm ${STATUS_STYLE[booking.status]}`}>
+        <div className="flex flex-col items-end gap-1.5">
+          <span className={`rounded-full border px-3 py-1 text-sm font-medium ${STATUS_STYLE[booking.status]}`}>
             {t(STATUS_LABEL[booking.status])}
           </span>
           {booking.status === 'confirmed' && (
@@ -240,7 +249,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       </div>
 
       {foodItems.length > 0 && (
-        <div className="mt-2 rounded-lg border border-brass/30 bg-ink-soft px-3 py-2">
+        <div className="mt-3 rounded-lg border border-brass/30 bg-ink px-3 py-2.5">
           <p className="text-xs uppercase tracking-wide text-brass">{t('Pre-ordered food')}</p>
           <p className="mt-1 text-sm text-ivory-dim">
             {foodItems.map((i) => `${i.quantity}× ${i.item_name}`).join(', ')}
@@ -254,7 +263,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       )}
 
       {booking.down_payment_status !== 'not_required' && (
-        <p className="mt-2 text-sm">
+        <p className="mt-3 text-sm">
           <span className="text-ivory-dim">{t('Down payment')}: </span>
           <span className={booking.down_payment_status === 'paid' ? 'text-success' : booking.down_payment_status === 'failed' ? 'text-danger' : 'text-brass'}>
             AED {booking.down_payment_required_aed.toFixed(2)} · {t(booking.down_payment_status)}
@@ -263,7 +272,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       )}
 
       {tables.length > 0 && ['pending', 'confirmed'].includes(booking.status) && (
-        <div className="mt-2 flex items-center gap-2 text-sm">
+        <div className="mt-3 flex items-center gap-2 text-sm">
           <span className="text-ivory-dim">{t('Table:')}</span>
           <select value={booking.table_id || ''} onChange={(e) => setTable(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory">
             <option value="">{t('Not assigned')}</option>
@@ -273,16 +282,16 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       )}
 
       {booking.status === 'pending' && (
-        <div className="mt-2.5 flex gap-2">
+        <div className="mt-3.5 flex gap-2">
           <button type="button"
             onClick={() => setStatus('confirmed')}
-            className="flex-1 rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90"
+            className="flex-1 rounded-lg bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90"
           >
             {t('Confirm')}
           </button>
           <button type="button"
             onClick={() => setStatus('declined')}
-            className="rounded-lg border border-danger/40 px-3 py-2 text-base text-danger hover:bg-danger/10"
+            className="rounded-lg border border-danger/40 px-4 py-3 text-base text-danger hover:bg-danger/10"
           >
             {t('Decline')}
           </button>
@@ -292,7 +301,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
         <button type="button"
           onClick={handleConfirmArrival}
           disabled={confirmingArrival}
-          className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+          className="mt-3.5 w-full rounded-lg border border-brass/40 px-3 py-3 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
         >
           {confirmingArrival ? t('Confirming...') : t("Confirm arrival - I see the guest")}
         </button>
@@ -300,11 +309,12 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       {booking.status === 'confirmed' && (
         <button type="button"
           onClick={() => setStatus('completed')}
-          className="mt-2.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10"
+          className="mt-3.5 w-full rounded-lg border border-brass/40 px-3 py-3 text-base text-brass hover:bg-brass/10"
         >
           {t('Mark completed')}
         </button>
       )}
+      </div>
     </div>
   );
 }

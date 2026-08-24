@@ -432,10 +432,10 @@ function DashboardLayoutInner() {
         </div>
 
         {customizing && (
-          <div className="border-t border-brass/20 bg-brass/5 px-6 py-2.5">
+          <div className="pro-panel border-t border-brass/20 bg-brass/5 px-6 py-3">
             <div className="mx-auto flex max-w-7xl items-center justify-between">
               <p className="text-sm text-brass">{t('Customizing navigation - use the arrows to reorder, the × to hide. Changes save instantly.')}</p>
-              <button type="button" onClick={() => setCustomizing(false)} className="rounded-lg bg-brass px-3 py-1 text-sm font-medium text-ink hover:opacity-90">
+              <button type="button" onClick={() => setCustomizing(false)} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
                 {t('Done')}
               </button>
             </div>
@@ -449,7 +449,7 @@ function DashboardLayoutInner() {
 
               if (customizing) {
                 return (
-                  <div key={tab.path} className="flex shrink-0 items-center gap-2 rounded-lg border border-ink-line bg-ink-soft py-2.5 pe-2 ps-4">
+                  <div key={tab.path} className="pro-panel flex shrink-0 items-center gap-2 rounded-lg border border-ink-line bg-ink-soft py-2.5 pe-2 ps-4">
                     <span className="pe-1 text-base text-ivory">{t(tab.label)}</span>
                     <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
                     <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
@@ -492,13 +492,19 @@ function DashboardLayoutInner() {
               </svg>
             </button>
 
+            {/* Same .pro-panel depth as every other functional panel in
+                this dashboard (POS ticket, Kitchen tickets, Bookings
+                rows, Requests alerts, Orders receipts) - one visual
+                language for "this is a real, elevated surface" across
+                the whole app, this dropdown included, not a one-off
+                shadow value that happened to be here before. */}
             {(settingsOpen || customizing) && (
-              <div className="absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
-                <div className={customizing ? 'max-h-[70vh] space-y-1 overflow-y-auto p-2' : 'grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2'}>
+              <div className="pro-panel absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft">
+                <div className={customizing ? 'max-h-[70vh] space-y-1.5 overflow-y-auto p-2.5' : 'grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5'}>
                   {visibleSettingsItems.map((tab, i) => {
                     if (customizing) {
                       return (
-                        <div key={tab.path} className="flex items-center justify-between gap-3 rounded-lg border border-ink-line bg-ink py-2.5 pe-2 ps-4">
+                        <div key={tab.path} className="pro-panel flex items-center justify-between gap-3 rounded-lg border border-ink-line bg-ink py-2.5 pe-2 ps-4">
                           <span className="text-base text-ivory">{t(tab.label)}</span>
                           <div className="flex items-center gap-1.5">
                             <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
@@ -525,7 +531,7 @@ function DashboardLayoutInner() {
                   })}
                 </div>
                 {hiddenTabs.length > 0 && (
-                  <div className="border-t border-ink-line p-2">
+                  <div className="border-t border-ink-line p-2.5">
                     <p className="px-1 pb-1 text-sm text-ivory-dim">{t('Hidden - tap to restore')}</p>
                     <div className="flex flex-wrap gap-1.5 px-1 pb-1">
                       {hiddenTabs.map((tab) => (
@@ -533,7 +539,7 @@ function DashboardLayoutInner() {
                           key={tab.path}
                           type="button"
                           onClick={() => restoreItem(tab.path)}
-                          className="rounded-full border border-ink-line px-2.5 py-1 text-sm text-ivory-dim hover:border-brass hover:text-ivory"
+                          className="rounded-full border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:border-brass hover:text-ivory"
                         >
                           + {t(tab.label)}
                         </button>

@@ -910,6 +910,7 @@ export interface OrderRow {
   business_id: string;
   card_id: string | null;
   table_label: string;
+  order_type: 'dine_in' | 'walk_in' | 'pickup' | 'delivery';
   status: OrderStatus;
   ready_ack: boolean;
   request_type: OrderRequestType;

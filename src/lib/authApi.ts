@@ -151,7 +151,7 @@ export function listTillSessions(businessId: string) {
 // --- POS terminal orders ---
 
 export function createPosOrder(businessId: string, payload: {
-  tableLabel: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; paymentMethod: 'cash' | 'card' | 'card_online' | 'other'; chargeToFolioId?: string;
+  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; paymentMethod: 'cash' | 'card' | 'card_online' | 'other'; chargeToFolioId?: string;
   discountType?: 'percentage' | 'fixed'; discountValue?: number; discountReason?: string;
 }) {
   return authFetch<{ order: OrderRow; items: OrderItemRow[]; redirectUrl?: string; transactionId?: string; awaitingPayment?: boolean }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });

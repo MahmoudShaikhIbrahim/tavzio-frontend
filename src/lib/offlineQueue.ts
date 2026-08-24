@@ -24,12 +24,15 @@ export interface QueuedPosOrder {
   localId: string;
   businessId: string;
   tableLabel: string;
+  orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery';
+  note?: string;
   items: { menuItemId: string; quantity: number }[];
-  // card_online is included here only for type compatibility with the
-  // checkout payload shape - it can never actually reach this queue in
-  // practice (handled by an early return before the offline-catch path
-  // in POSTerminalPage), since a real gateway charge has nothing to
-  // retry against once back online.
+  // card_online can no longer reach this queue via any path - the POS
+  // Terminal page removed the button that produced it entirely (it
+  // redirected the whole terminal to a hosted checkout page, which
+  // never made sense for a staff-operated physical counter). Kept in
+  // this union only so an already-queued order from before that change
+  // still type-checks and can still flush normally on its next sync.
   paymentMethod: 'cash' | 'card' | 'card_online' | 'other';
   queuedAt: string;
 }
@@ -65,6 +68,8 @@ export async function flushQueue(): Promise<{ synced: number; remaining: number 
     try {
       await createPosOrder(order.businessId, {
         tableLabel: order.tableLabel,
+        orderType: order.orderType,
+        note: order.note,
         items: order.items,
         paymentMethod: order.paymentMethod,
       });

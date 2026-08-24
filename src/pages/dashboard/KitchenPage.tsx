@@ -132,11 +132,11 @@ export default function KitchenPage() {
 
       {stations.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setStationFilter('all')} className={`rounded-full border px-3 py-1 text-sm ${stationFilter === 'all' ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim'}`}>
+          <button type="button" onClick={() => setStationFilter('all')} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${stationFilter === 'all' ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'}`}>
             {t('All stations')}
           </button>
           {stations.map((s) => (
-            <button type="button" key={s} onClick={() => setStationFilter(s)} className={`rounded-full border px-3 py-1 text-sm ${stationFilter === s ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim'}`}>
+            <button type="button" key={s} onClick={() => setStationFilter(s)} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${stationFilter === s ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'}`}>
               {s}
             </button>
           ))}
@@ -147,11 +147,11 @@ export default function KitchenPage() {
         <p className="text-base text-ivory-dim">{t('No pending orders right now.')}</p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {visibleOrders
           .map((order) => {
           const minutes = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
-          const borderColor = minutes >= RED_AFTER_MINUTES ? 'border-danger' : minutes >= AMBER_AFTER_MINUTES ? 'border-warning' : 'border-ink-line';
+          const urgency = minutes >= RED_AFTER_MINUTES ? 'danger' : minutes >= AMBER_AFTER_MINUTES ? 'warning' : null;
           const allFiredItems = order.order_items.filter((i) => !i.voided && i.course_status !== 'held');
           const firedItems = stationFilter === 'all' ? allFiredItems : allFiredItems.filter((i) => i.station === stationFilter);
           // Not shown in detail (a held course's items are deliberately
@@ -159,45 +159,57 @@ export default function KitchenPage() {
           // for which course, so the kitchen can pace itself.
           const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
           return (
-            <div key={order.id} className={`rounded-xl border-2 bg-ink-soft p-4 transition-colors ${borderColor}`}>
-              <div className="flex items-center justify-between">
-                <p className="font-display text-xl text-ivory">{order.table_label || t('No table')}</p>
-                <div className="flex items-center gap-2">
-                  {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('Preparing')}</span>}
-                  <TicketAge createdAt={order.created_at} />
-                </div>
-              </div>
-              <div className="mt-3 space-y-2 text-lg">
-                {firedItems.map((item) => (
-                  <div key={item.id} className="text-ivory-dim">
-                    <span className="text-ivory">{item.quantity}×</span> {item.item_name}
-                    {item.station && <span className="ml-1.5 text-xs uppercase tracking-wide text-brass/60">{item.station}</span>}
-                    {item.addons.length > 0 && (
-                      <span className="block text-sm text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
-                    )}
-                    {item.note && <span className="block text-sm italic">— {item.note}</span>}
+            <div key={order.id} className="pro-panel overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+              {/* A colored top strip reads faster than a thin border at
+                  the distance a KDS screen is actually viewed from
+                  across a kitchen - the same real convention commercial
+                  kitchen displays (Toast, Square, Lightspeed) already
+                  use to signal an aging ticket, just implemented here
+                  with a genuine block of color instead of a 2px line. */}
+              <div className={`h-1.5 ${urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-xl text-ivory">{order.table_label || t('No table')}</p>
+                  <div className="flex items-center gap-2">
+                    {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-2.5 py-1 text-xs font-medium text-brass">{t('Preparing')}</span>}
+                    <TicketAge createdAt={order.created_at} />
                   </div>
-                ))}
-              </div>
-              {heldCourses.length > 0 && (
-                <p className="mt-2 text-sm text-brass/70">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
-              )}
-              {order.note && <p className="mt-2 text-sm italic text-brass">{t('Note:')} {order.note}</p>}
-              <div className="mt-4 flex gap-2">
-                {order.status === 'pending' && (
-                  <button type="button"
-                    onClick={() => handleStart(order.id)}
-                    className="flex-1 rounded-lg border border-brass/40 px-3 py-2.5 text-base font-medium text-brass hover:bg-brass/10"
-                  >
-                    {t('Start')}
-                  </button>
+                </div>
+                <div className="mt-4 space-y-2.5 text-lg">
+                  {firedItems.map((item) => (
+                    <div key={item.id} className="flex gap-2.5">
+                      <span className="flex h-7 min-w-7 items-center justify-center rounded-md bg-ink px-1.5 font-mono text-sm text-brass">{item.quantity}×</span>
+                      <div className="text-ivory-dim">
+                        <span className="text-ivory">{item.item_name}</span>
+                        {item.station && <span className="ml-1.5 text-xs uppercase tracking-wide text-brass/60">{item.station}</span>}
+                        {item.addons.length > 0 && (
+                          <span className="block text-sm text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
+                        )}
+                        {item.note && <span className="block text-sm italic">— {item.note}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {heldCourses.length > 0 && (
+                  <p className="mt-3 rounded-lg bg-ink px-3 py-2 text-sm text-brass/70">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
                 )}
-                <button type="button"
-                  onClick={() => handleMarkReady(order.id)}
-                  className="flex-1 rounded-lg bg-brass px-3 py-2.5 text-base font-medium text-ink hover:opacity-90"
-                >
-                  {t('Mark ready')}
-                </button>
+                {order.note && <p className="mt-3 rounded-lg border border-brass/30 bg-brass/5 px-3 py-2 text-sm italic text-brass">{t('Note:')} {order.note}</p>}
+                <div className="mt-4 flex gap-2">
+                  {order.status === 'pending' && (
+                    <button type="button"
+                      onClick={() => handleStart(order.id)}
+                      className="flex-1 rounded-lg border border-brass/40 px-3 py-3.5 text-base font-medium text-brass hover:bg-brass/10"
+                    >
+                      {t('Start')}
+                    </button>
+                  )}
+                  <button type="button"
+                    onClick={() => handleMarkReady(order.id)}
+                    className="flex-1 rounded-lg bg-brass px-3 py-3.5 text-base font-medium text-ink hover:opacity-90"
+                  >
+                    {t('Mark ready')}
+                  </button>
+                </div>
               </div>
             </div>
           );

@@ -115,13 +115,13 @@ export default function RequestsPage() {
             const style = REQUEST_STYLE[r.request_type];
             const label = r.request_type === 'custom' ? (r.custom_request_label || t(style.label)) : t(style.label);
             return (
-              <div key={r.id} className={`flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
+              <div key={r.id} className={`pro-panel flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
                 <span className={`text-xl font-medium ${style.text}`}>
                   {label} — <span className="text-ivory">{r.table_label || t('No table')}</span>
                 </span>
                 <button type="button"
                   onClick={() => dismissRequest(businessId, r.id).then(reloadRequests)}
-                  className="rounded-lg border-2 border-ivory-dim/40 px-4 py-2 text-lg text-ivory hover:bg-ivory/10"
+                  className="rounded-lg border-2 border-ivory-dim/40 px-5 py-3 text-lg text-ivory hover:bg-ivory/10"
                 >
                   {t('Dismiss')}
                 </button>
@@ -130,7 +130,7 @@ export default function RequestsPage() {
           })}
 
           {cashPending.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
+            <div key={item.id} className="pro-panel flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
               <span className="text-xl font-medium text-warning">
                 {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
                 <span className="text-ivory-dim"> ({item.quantity}× {item.item_name}, {((item.unit_price + item.addon_total) * item.quantity).toFixed(2)})</span>
@@ -138,7 +138,7 @@ export default function RequestsPage() {
               <button type="button"
                 onClick={() => handleConfirmCash(item)}
                 disabled={confirmingCash === item.id}
-                className="rounded-lg border-2 border-warning px-4 py-2 text-lg text-warning hover:bg-warning/10 disabled:opacity-50"
+                className="rounded-lg border-2 border-warning px-5 py-3 text-lg text-warning hover:bg-warning/10 disabled:opacity-50"
               >
                 {confirmingCash === item.id ? t('Confirming…') : t('Mark received')}
               </button>
@@ -146,7 +146,7 @@ export default function RequestsPage() {
           ))}
 
           {claims.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">
+            <div key={c.id} className="pro-panel flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">
               <span className="text-xl font-medium text-brass-bright">
                 {t('Reward ready —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
                 {c.reward_description ? <span className="text-ivory-dim"> ({c.reward_description})</span> : ''}
@@ -154,7 +154,7 @@ export default function RequestsPage() {
               {c.reward_type === 'manual' ? (
                 <button type="button"
                   onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
-                  className="rounded-lg border-2 border-brass px-4 py-2 text-lg text-brass hover:bg-brass/10"
+                  className="rounded-lg border-2 border-brass px-5 py-3 text-lg text-brass hover:bg-brass/10"
                 >
                   {t('Mark applied')}
                 </button>

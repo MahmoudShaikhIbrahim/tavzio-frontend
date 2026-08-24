@@ -18,9 +18,9 @@ const PRESS_FEEDBACK = 'transition-transform duration-100 active:scale-[0.97]';
 export const inputClass =
   'w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass transition-colors duration-150';
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
-    <label className="block">
+    <label className={`block ${className || ''}`}>
       <span className="mb-2 block text-base text-ivory-dim">{label}</span>
       {children}
     </label>

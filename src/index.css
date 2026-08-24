@@ -176,3 +176,25 @@
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Pro-panel - the working-tool counterpart to .card-elevated above.
+   Real depth (same layered-shadow technique), but deliberately calmer:
+   no hover-lift, no luxury motion. This is for a static functional
+   panel someone reads all day (a POS ticket, a kitchen ticket, a
+   booking row) - it should look considered, not perform for a mouse
+   hover it will basically never receive on a touchscreen terminal.
+   Distinct on purpose from the marketing/.btn-luxury register used on
+   Home.tsx and the admin login page - a cashier hammering "Charge -
+   Cash" two hundred times a day needs instant, unambiguous feedback,
+   not a slow letter-spacing animation. */
+.pro-panel {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 8px 20px -6px rgba(0, 0, 0, 0.3);
+}
+[data-theme='light'] .pro-panel {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 8px 20px -6px rgba(0, 0, 0, 0.08);
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Banknote, CreditCard, UtensilsCrossed, RotateCcw, Lock, Minus, Plus } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
@@ -145,13 +146,30 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
   );
 }
 
+// Matches the terminology real POS systems use (Toast, Square, Clover
+// all split Dine-in / Takeout / Delivery the same way) - Walk-in is
+// kept as its own 4th type here on top of that, since it covers a case
+// those don't split out on its own: a counter sale handed over
+// immediately, with no table and no name/phone worth collecting at all.
+const ORDER_TYPE_LABELS: Record<'dine_in' | 'walk_in' | 'pickup' | 'delivery', string> = {
+  dine_in: 'Dine-in', walk_in: 'Walk-in', pickup: 'Pickup', delivery: 'Delivery',
+};
+const ORDER_TYPE_FIELD_LABEL: Record<'dine_in' | 'walk_in' | 'pickup' | 'delivery', string> = {
+  dine_in: 'Table number', walk_in: 'Name (optional)', pickup: 'Name / phone', delivery: 'Name / phone',
+};
+const ORDER_TYPE_PLACEHOLDER: Record<'dine_in' | 'walk_in' | 'pickup' | 'delivery', string> = {
+  dine_in: 'e.g. Table 5', walk_in: 'Leave blank to auto-number', pickup: 'e.g. Sara, 050 123 4567', delivery: 'e.g. Ahmed, 050 123 4567',
+};
+
 function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string; till: TillSession; onTillClosed: () => void }) {
   const { t } = useT();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [tableLabel, setTableLabel] = useState('Walk-in');
+  const [orderType, setOrderType] = useState<'dine_in' | 'walk_in' | 'pickup' | 'delivery'>('walk_in');
+  const [tableLabel, setTableLabel] = useState('');
+  const [orderNote, setOrderNote] = useState('');
   const [showCloseTill, setShowCloseTill] = useState(false);
   const [showRefunds, setShowRefunds] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -278,7 +296,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
 
   function resetCartState() {
     setCart([]);
-    setTableLabel('Walk-in');
+    setOrderType('walk_in');
+    setTableLabel('');
+    setOrderNote('');
     setRoomFolio(null);
     setRoomNumber('');
     setDiscountType('');
@@ -286,37 +306,19 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     setDiscountReason('');
   }
 
-  async function handleCharge(paymentMethod: 'cash' | 'card' | 'card_online' | 'other') {
+  async function handleCharge(paymentMethod: 'cash' | 'card' | 'other') {
     if (cart.length === 0) return;
     if (discountType && !discountReason.trim()) { setError('Enter a reason for the discount/comp'); return; }
     setCheckingOut(true);
     setError('');
     const payload = {
-      tableLabel,
+      tableLabel: tableLabel.trim() || undefined,
+      orderType,
+      note: orderNote,
       items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
       paymentMethod,
       ...(discountType ? { discountType, discountValue, discountReason } : {}),
     };
-
-    // card_online is a real gateway charge - it can't be queued offline
-    // (there's no gateway to reach), and it redirects to a hosted
-    // payment page rather than confirming immediately like every other
-    // method does.
-    if (paymentMethod === 'card_online') {
-      try {
-        const result = await createPosOrder(businessId, payload);
-        if (result.redirectUrl) {
-          window.location.href = result.redirectUrl;
-          return;
-        }
-        setError('Could not start online payment');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not start online payment');
-      } finally {
-        setCheckingOut(false);
-      }
-      return;
-    }
 
     try {
       if (!navigator.onLine) throw new Error('offline');
@@ -327,7 +329,13 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       // Genuinely offline (or the request failed to even reach the
       // server) - never block the sale over it. Save it locally and
       // keep going; it syncs for real the moment connectivity returns.
-      queueOrder({ businessId, ...payload });
+      // No server reachable here to auto-number the label (that fix
+      // only applies to the online path above) - falls back to the
+      // plain type name, same as the old default behavior, since a
+      // rare offline-only label collision is a real tradeoff against
+      // never blocking a sale over connectivity, not worth solving
+      // with a client-side counter that couldn't be trustworthy anyway.
+      queueOrder({ businessId, ...payload, tableLabel: payload.tableLabel || ORDER_TYPE_LABELS[orderType] });
       setQueuedCount(getQueue().length);
       setConfirmed({ total: cartTotal, method: `${paymentMethod} (saved offline - will sync)` });
       resetCartState();
@@ -393,15 +401,17 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       <div>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-5 flex items-center justify-between border-b border-ink-line pb-4">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
-          <div className="flex items-center gap-4">
-            <button type="button" onClick={() => setShowRefunds(true)} className="text-sm text-danger hover:underline">
-              {t('Refunds')}
+          <div className="flex items-center gap-5">
+            <button type="button" onClick={() => setShowRefunds(true)} className="flex items-center gap-1.5 text-sm text-danger hover:underline">
+              <RotateCcw size={15} strokeWidth={2} />{t('Refunds')}
             </button>
-            <button type="button" onClick={() => setShowCloseTill(true)} className="text-sm text-brass hover:underline">{t('Close till')}</button>
+            <button type="button" onClick={() => setShowCloseTill(true)} className="flex items-center gap-1.5 text-sm text-brass hover:underline">
+              <Lock size={15} strokeWidth={2} />{t('Close till')}
+            </button>
           </div>
         </div>
         {(isOffline || queuedCount > 0) && (
@@ -411,23 +421,31 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               : `${t('Syncing')} ${queuedCount} ${t('order(s) saved while offline...')}`}
           </div>
         )}
-        <div className="flex gap-2 overflow-x-auto border-b border-ink-line pb-2">
+        {/* Bigger touch targets throughout this page on purpose - real
+            terminals get tapped on a touchscreen, not clicked with a
+            mouse, and get tapped hundreds of times a shift. Active
+            state gets real elevation (matches .card-elevated's shadow
+            language) instead of a flat color fill, so the current
+            category reads as physically raised, not just recolored. */}
+        <div className="flex gap-2.5 overflow-x-auto pb-2">
           {categories.map((c) => (
             <button type="button"
               key={c.id}
               onClick={() => setActiveCategory(c.id)}
-              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm ${activeCategory === c.id ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
+              className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
+                activeCategory === c.id ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
+              }`}
             >
               {c.name}
             </button>
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
           {visibleItems.map((item) => (
             <button type="button"
               key={item.id}
               onClick={() => addToCart(item)}
-              className="overflow-hidden rounded-lg border border-ink-line text-left hover:border-brass"
+              className="card-elevated overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-colors hover:border-brass/50"
             >
               {/* Photo recognition matters at the counter - a busy
                   cashier reads a picture far faster than a name, which is
@@ -435,15 +453,15 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
                   to a plain tile only if this item genuinely has no
                   photo uploaded yet. */}
               {item.image_url ? (
-                <img src={item.image_url} alt={item.name} className="h-20 w-full object-cover sm:h-24" loading="lazy" />
+                <img src={item.image_url} alt={item.name} className="h-24 w-full object-cover sm:h-28" loading="lazy" />
               ) : (
-                <div className="flex h-20 w-full items-center justify-center bg-ink-soft text-ivory-dim/40 sm:h-24">
-                  <span className="text-2xl">🍽</span>
+                <div className="flex h-24 w-full items-center justify-center bg-ink text-ivory-dim/30 sm:h-28">
+                  <UtensilsCrossed size={26} strokeWidth={1.5} />
                 </div>
               )}
-              <div className="p-2.5">
+              <div className="p-3">
                 <p className="text-sm text-ivory line-clamp-1">{item.name}</p>
-                <p className="text-sm text-brass">AED {item.price.toFixed(2)}</p>
+                <p className="mt-0.5 text-sm font-medium text-brass">AED {item.price.toFixed(2)}</p>
               </div>
             </button>
           ))}
@@ -451,20 +469,70 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         </div>
       </div>
 
-      <div className="rounded-xl border border-ink-line p-4">
-        <Field label={t('Table / order label')}>
-          <input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} className={inputClass} placeholder="Walk-in, Phone #3, Table 5..." />
-        </Field>
-        <div className="mt-4 max-h-96 space-y-1.5 overflow-y-auto">
+      <div className="pro-panel divide-y divide-ink-line rounded-xl border border-ink-line bg-ink-soft">
+        <div className="p-4">
+          <Field label={t('Order type')}>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(['dine_in', 'walk_in', 'pickup', 'delivery'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setOrderType(type)}
+                  className={`rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors ${
+                    orderType === type ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
+                  }`}
+                >
+                  {t(ORDER_TYPE_LABELS[type])}
+                </button>
+              ))}
+            </div>
+          </Field>
+          {/* Real fix for a confirmed bug: this used to default to the
+              literal string "Walk-in" every time, and the Orders page
+              groups tickets by this exact string - so every walk-in order
+              rung up in a day collapsed into one shared bucket unless
+              staff manually retyped something unique each time. Left
+              blank now, the server auto-numbers it ("Walk-in #7") against
+              today's real count for this business - never collides again,
+              even across multiple POS terminals ringing up orders at
+              once - while still overridable with a real name/phone/table
+              number when that's useful. */}
+          <Field label={t(ORDER_TYPE_FIELD_LABEL[orderType])} className="mt-3">
+            <input
+              value={tableLabel}
+              onChange={(e) => setTableLabel(e.target.value)}
+              className={inputClass}
+              placeholder={t(ORDER_TYPE_PLACEHOLDER[orderType])}
+            />
+          </Field>
+          {/* Already fully supported server-side (orders.note + a per-item
+              note on order_items) - this input was simply never added
+              here before now. */}
+          <Field label={t('Notes (kitchen-visible)')} className="mt-3">
+            <textarea
+              value={orderNote}
+              onChange={(e) => setOrderNote(e.target.value)}
+              rows={2}
+              placeholder={t('e.g. no onions, allergy, extra spicy...')}
+              className={`${inputClass} resize-none`}
+            />
+          </Field>
+        </div>
+
+        <div className="max-h-96 space-y-2.5 overflow-y-auto p-4">
           {cart.map((line) => (
-            <div key={line.menuItemId} className="space-y-1 border-b border-ink-line/50 pb-1.5">
+            <div key={line.menuItemId} className="space-y-1.5 border-b border-ink-line/50 pb-2.5 last:border-0 last:pb-0">
               <div className="flex items-center justify-between gap-2 text-base">
                 <span className="text-ivory">{line.name}</span>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">-</button>
+                <div className="flex items-center gap-2.5">
+                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory">
+                    <Minus size={14} strokeWidth={2.25} />
+                  </button>
                   <span className="w-5 text-center text-ivory">{line.quantity}</span>
-                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">+</button>
-                  <span className="w-16 text-right text-brass">{(line.price * line.quantity).toFixed(2)}</span>
+                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory">
+                    <Plus size={14} strokeWidth={2.25} />
+                  </button>
+                  <span className="w-16 text-right font-medium text-brass">{(line.price * line.quantity).toFixed(2)}</span>
                 </div>
               </div>
               {/* Optional - leaving this on "Fire now" (the default) fires
@@ -485,7 +553,8 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           ))}
           {cart.length === 0 && <p className="text-ivory-dim">{t('Cart is empty.')}</p>}
         </div>
-        <div className="mt-4 space-y-2 rounded-lg border border-ink-line p-3">
+
+        <div className="space-y-2 p-4">
           <div className="flex items-center gap-2">
             <select
               value={discountType}
@@ -518,7 +587,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           )}
         </div>
 
-        <div className="mt-3 space-y-1 border-t border-ink-line pt-3">
+        <div className="space-y-1 p-4">
           {discountAmount > 0 && (
             <>
               <div className="flex justify-between text-sm text-ivory-dim">
@@ -531,57 +600,63 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               </div>
             </>
           )}
-          <div className="flex justify-between text-lg">
+          <div className="flex items-baseline justify-between">
             <span className="text-ivory">{t('Total')}</span>
-            <span className="text-brass">AED {cartTotal.toFixed(2)}</span>
+            <span className="font-display text-2xl text-brass">AED {cartTotal.toFixed(2)}</span>
           </div>
+          {error && <p className="mt-2 text-base text-danger">{error}</p>}
         </div>
-        {error && <p className="mt-2 text-base text-danger">{error}</p>}
 
         {isHotel && (
-          <div className="mt-4 rounded-lg border border-brass/30 bg-ink-soft p-3">
-            <p className="mb-2 text-sm text-ivory">{t('Charge to Room')}</p>
-            {roomFolio ? (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-ivory">Room {roomFolio.roomNumber}{roomFolio.guestName ? ` · ${roomFolio.guestName}` : ''}</span>
-                <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">{t('Change')}</button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  value={roomNumber}
-                  onChange={(e) => setRoomNumber(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRoomLookup()}
-                  placeholder={t('Room number')}
-                  className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
-                />
-                <button type="button" onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
-                  {lookingUpRoom ? t('Looking up...') : t('Find')}
-                </button>
-              </div>
-            )}
-            {roomLookupError && <p className="mt-1 text-sm text-danger">{roomLookupError}</p>}
+          <div className="p-4">
+            <div className="rounded-lg border border-brass/30 bg-ink p-3">
+              <p className="mb-2 text-sm text-ivory">{t('Charge to Room')}</p>
+              {roomFolio ? (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-ivory">Room {roomFolio.roomNumber}{roomFolio.guestName ? ` · ${roomFolio.guestName}` : ''}</span>
+                  <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">{t('Change')}</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={roomNumber}
+                    onChange={(e) => setRoomNumber(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRoomLookup()}
+                    placeholder={t('Room number')}
+                    className="flex-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory"
+                  />
+                  <button type="button" onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+                    {lookingUpRoom ? t('Looking up...') : t('Find')}
+                  </button>
+                </div>
+              )}
+              {roomLookupError && <p className="mt-1 text-sm text-danger">{roomLookupError}</p>}
+            </div>
           </div>
         )}
 
-        <div className="mt-4 space-y-2">
+        {/* Payment actions - real weight hierarchy instead of three
+            visually similar buttons: Cash is genuinely the most common
+            path at a physical counter, so it's the one filled/bold
+            action; Card and Charge-to-Room are equally valid but
+            secondary. Icons here are a real scanning aid for a cashier
+            moving fast, not decoration - a staff member recognizes the
+            banknote/card shape faster than reading the word. */}
+        <div className="space-y-2 p-4">
           {isHotel && (
             <button type="button"
               onClick={handleChargeToRoom}
               disabled={checkingOut || cart.length === 0 || !roomFolio}
-              className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50"
             >
               {t('Charge to Room')}{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
-          <button type="button" onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-            {t('Charge - Cash')}
+          <button type="button" onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            <Banknote size={18} strokeWidth={2} />{t('Charge - Cash')}
           </button>
-          <button type="button" onClick={() => handleCharge('card')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
-            {t('Charge - Card (external machine)')}
-          </button>
-          <button type="button" onClick={() => handleCharge('card_online')} disabled={checkingOut || cart.length === 0} className="w-full rounded-lg border border-brass/40 px-4 py-3 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
-            {t('Charge - Card online (real gateway)')}
+          <button type="button" onClick={() => handleCharge('card')} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
+            <CreditCard size={18} strokeWidth={2} />{t('Charge - Card (external machine)')}
           </button>
         </div>
       </div>

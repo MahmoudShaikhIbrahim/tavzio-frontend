@@ -228,27 +228,27 @@ export default function OrdersPage() {
       {hasAttentionItems && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {readyUnacked.map((o) => (
-            <div key={o.id} className="rounded-xl border border-success/50 bg-success/10 p-4">
+            <div key={o.id} className="pro-panel rounded-xl border border-success/50 bg-success/10 p-4">
               <p className="text-base font-medium text-success">
                 {t('Ready —')} <span className="text-ivory">{o.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-2 text-base text-success hover:bg-success/10">
+              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-3 text-base text-success hover:bg-success/10">
                 {t('Dismiss')}
               </button>
             </div>
           ))}
           {requests.map((r) => (
-            <div key={r.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
+            <div key={r.id} className="pro-panel rounded-xl border border-brass/50 bg-brass/10 p-4">
               <p className="text-base font-medium text-brass">
                 {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')} — <span className="text-ivory">{r.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10">
+              <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-3 text-base text-brass hover:bg-brass/10">
                 {t('Dismiss')}
               </button>
             </div>
           ))}
           {cashPending.map((item) => (
-            <div key={item.id} className="rounded-xl border border-warning/50 bg-warning/10 p-4">
+            <div key={item.id} className="pro-panel rounded-xl border border-warning/50 bg-warning/10 p-4">
               <p className="text-base font-medium text-warning">
                 {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
               </p>
@@ -257,13 +257,13 @@ export default function OrdersPage() {
             </div>
           ))}
           {claims.map((c) => (
-            <div key={c.id} className="rounded-xl border border-brass/50 bg-brass/10 p-4">
+            <div key={c.id} className="pro-panel rounded-xl border border-brass/50 bg-brass/10 p-4">
               <p className="text-base font-medium text-brass">
                 {t('Loyalty reward —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
               </p>
               <button type="button"
                 onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
-                className="mt-3 w-full rounded-lg border border-brass px-3 py-2 text-base text-brass hover:bg-brass/10"
+                className="mt-3 w-full rounded-lg border border-brass px-3 py-3 text-base text-brass hover:bg-brass/10"
               >
                 {t('Mark redeemed')}
               </button>
@@ -407,7 +407,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-ink-line p-4">
+    <div className="pro-panel w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-xl text-ivory">{table}</h2>
@@ -421,7 +421,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               <button type="button"
                 onClick={handleMarkCompleted}
                 disabled={completing}
-                className="rounded-lg border border-brass/40 px-3 py-1.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+                className="rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
               >
                 {completing ? t('Completing...') : t('Mark completed')}
               </button>
@@ -429,7 +429,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
             <button type="button"
               onClick={handleClearTable}
               disabled={clearing}
-              className="rounded-lg border border-danger/40 px-2.5 py-1 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
             >
               {clearing ? t('Clearing...') : t('Clear table')}
             </button>
@@ -439,7 +439,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
       <div className="space-y-3 text-lg">
         {heldByCourse.size > 0 && (
-          <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink-soft p-2.5">
+          <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
             {[...heldByCourse.entries()].map(([course, entries]) => {
               const count = entries.reduce((s, e) => s + e.count, 0);
               return (
@@ -448,7 +448,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                   <button type="button"
                     onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
                     disabled={firing === course}
-                    className="rounded-lg bg-brass px-3 py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                    className="rounded-lg bg-brass px-3 py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
                   >
                     {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
                   </button>
@@ -459,16 +459,19 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
         )}
         {allItems.map(({ item, order }) => (
           <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
-            <div>
-              <span className="text-ivory">{item.quantity}×</span> {item.item_name}
-              {item.course_status === 'held' && (
-                <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
-              )}
-              {item.cash_pending && (
-                <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
-              )}
-              {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
-              {item.note && <span className="block italic">— {item.note}</span>}
+            <div className="flex gap-2.5">
+              <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
+              <div>
+                <span className="text-ivory">{item.item_name}</span>
+                {item.course_status === 'held' && (
+                  <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
+                )}
+                {item.cash_pending && (
+                  <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
+                )}
+                {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
+                {item.note && <span className="block italic">— {item.note}</span>}
+              </div>
             </div>
             <button type="button"
               onClick={() => {
