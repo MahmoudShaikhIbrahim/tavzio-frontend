@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Utensils, Star, Calendar, BarChart3, CreditCard, ShieldCheck, Ban, Building2 } from 'lucide-react';
+import { Utensils, Star, Calendar, BarChart3, CreditCard, ShieldCheck, Ban, Building2, Menu, X, ArrowRight } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
 import { submitLead } from '../lib/api';
 import { useScrollReveal } from '../hooks/useScrollReveal';
@@ -55,15 +55,139 @@ function RevealSection({ id, className, children }: { id?: string; className?: s
   );
 }
 
+// Real scroll tracking for the header's scale-down - a simple boolean
+// past a small threshold (not a continuous 0-1 value tied to scroll
+// position), because a slow, elegant transition reads as one deliberate
+// state change on a real CSS transition duration, not a scrubbed
+// animation that jitters with every pixel of scroll.
+function useScrolledPast(threshold: number) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > threshold);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [threshold]);
+  return scrolled;
+}
+
+// One definition for the luxury button treatment (see .btn-luxury in
+// index.css) so every primary CTA on the page - hero, lead form,
+// pricing form - shares the exact same hover behavior instead of each
+// one hand-rolling the label/arrow markup slightly differently.
+function PrimaryLink({ to, href, onClick, type, disabled, className, children }: {
+  to?: string; href?: string; onClick?: (e: ReactMouseEvent) => void; type?: 'button' | 'submit';
+  disabled?: boolean; className?: string; children: ReactNode;
+}) {
+  const content = (
+    <>
+      <span className="btn-luxury-label">{children}</span>
+      <span className="btn-luxury-arrow"><ArrowRight size={16} strokeWidth={2} /></span>
+    </>
+  );
+  const cls = `btn-luxury inline-flex items-center gap-2 bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 ${className || ''}`;
+  if (to) return <Link to={to} onClick={onClick} className={cls}>{content}</Link>;
+  if (href) return <a href={href} onClick={onClick} className={cls}>{content}</a>;
+  return <button type={type || 'button'} onClick={onClick} disabled={disabled} className={cls}>{content}</button>;
+}
+
+// Real mobile menu - there wasn't one before (the old nav was simply
+// `hidden md:flex`, meaning it just disappeared below md with nothing
+// replacing it). Full-height panel, ease-in entrance as specifically
+// asked for (distinct from ease-brass used everywhere else - this one
+// specific interaction genuinely calls for gathering momentum on the
+// way in), and each link laid out as a real two-column typographic
+// row (mono index number + large serif link) rather than a plain
+// stacked list, echoing the same numbered-editorial device already
+// used for "How it works" and the feature list further down the page.
+const MOBILE_LINKS = [
+  { n: '01', label: 'Solutions', href: '#solutions' },
+  { n: '02', label: 'How it works', href: '#how-it-works' },
+  { n: '03', label: 'Demo', to: '/demo' },
+  { n: '04', label: 'Pricing', href: '#pricing', isPricing: true },
+];
+
+function MobileMenu({ open, onClose, onPricingClick }: { open: boolean; onClose: () => void; onPricingClick: (e: ReactMouseEvent) => void }) {
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open, onClose]);
+
+  return (
+    <div className={`fixed inset-0 z-modal md:hidden ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/60 transition-opacity duration-500 ease-in ${open ? 'opacity-100' : 'opacity-0'}`}
+      />
+      <div
+        className={`absolute inset-y-0 end-0 flex h-full w-[min(420px,88vw)] flex-col border-s border-ink-line bg-ink px-8 pb-10 pt-8 shadow-2xl transition-transform duration-500 ease-in ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Menu</span>
+          <button type="button" onClick={onClose} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory">
+            <X size={22} strokeWidth={1.75} />
+          </button>
+        </div>
+
+        <nav className="mt-12 flex flex-1 flex-col divide-y divide-ink-line border-y border-ink-line">
+          {MOBILE_LINKS.map((link) => {
+            const row = (
+              <>
+                <span className="font-mono text-xs text-brass/60">{link.n}</span>
+                <span className="font-display text-2xl text-ivory">{link.label}</span>
+              </>
+            );
+            const rowClass = 'grid grid-cols-[2.5rem_1fr] items-center gap-4 py-5 transition-colors hover:bg-ink-soft/40';
+            if (link.to) return <Link key={link.n} to={link.to} onClick={onClose} className={rowClass}>{row}</Link>;
+            return (
+              <a
+                key={link.n}
+                href={link.href}
+                onClick={link.isPricing ? (e) => { onPricingClick(e); onClose(); } : onClose}
+                className={rowClass}
+              >
+                {row}
+              </a>
+            );
+          })}
+        </nav>
+
+        <Link
+          to="/admin/login"
+          onClick={onClose}
+          className="mt-8 rounded-lg border border-brass/40 px-4 py-3 text-center font-medium text-brass transition-colors hover:bg-brass/10"
+        >
+          Sign In
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   // A new visitor here has no account, no stored preference - this
   // should just match their own device's setting, live, never anything
   // tied to any logged-in account.
   const theme = useLiveSystemTheme();
   const tapIndex = useTapCycle();
+  const scrolled = useScrolledPast(24);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function scrollToPricing(e: ReactMouseEvent) {
     e.preventDefault();
+    setMobileMenuOpen(false);
     document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
   }
 
@@ -71,12 +195,20 @@ export default function Home() {
     <div data-theme={theme} className="min-h-screen bg-ink">
       {/* Header - sticky, with real anchor navigation into sections
           that actually exist on this page (not decorative nav items
-          pointing nowhere). */}
-      <div className="sticky top-0 z-sticky flex items-center justify-between border-b border-ink-line bg-ink/90 px-8 py-5 backdrop-blur">
+          pointing nowhere). Generous padding and wide item spacing at
+          rest, then a slow (700ms), deliberate scale-down + padding
+          tighten once the visitor actually starts reading - never
+          instant, never scrubbed to scroll position pixel-by-pixel,
+          just one considered state change. */}
+      <div
+        className={`sticky top-0 z-sticky flex origin-top items-center justify-between border-b border-ink-line bg-ink/90 backdrop-blur transition-all duration-700 ease-brass ${
+          scrolled ? 'scale-[0.97] px-6 py-3 sm:px-10 lg:px-14' : 'px-6 py-6 sm:px-10 sm:py-7 lg:px-16'
+        }`}
+      >
         <div className="flex items-center gap-2">
           <Logo className="h-9 w-auto" />
         </div>
-        <nav className="hidden items-center gap-8 text-sm text-ivory-dim md:flex">
+        <nav className="hidden items-center gap-12 text-sm text-ivory-dim md:flex">
           <a href="#solutions" className="transition-colors hover:text-ivory">Solutions</a>
           <a href="#how-it-works" className="transition-colors hover:text-ivory">How it works</a>
           <Link to="/demo" className="transition-colors hover:text-ivory">Demo</Link>
@@ -85,12 +217,22 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <Link
             to="/admin/login"
-            className="rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10"
+            className="hidden rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10 md:inline-block"
           >
             Sign In
           </Link>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory md:hidden"
+          >
+            <Menu size={22} strokeWidth={1.75} />
+          </button>
         </div>
       </div>
+
+      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} onPricingClick={scrollToPricing} />
 
       {/* Hero - the tap itself is the thesis, not a headline over a
           generic gradient. Real product photography with a live ripple
@@ -126,12 +268,7 @@ export default function Home() {
               program, a room request — replacing the staff you'd otherwise need to run each one by hand.
             </p>
             <div className="mt-9 flex animate-hero-rise flex-wrap items-center justify-center gap-5 [animation-delay:240ms] lg:justify-start">
-              <a
-                href="#get-started"
-                className="rounded-lg bg-brass px-6 py-3 font-medium text-ink transition-transform duration-150 ease-brass hover:-translate-y-0.5 hover:opacity-90"
-              >
-                Get started
-              </a>
+              <PrimaryLink href="#get-started">Get started</PrimaryLink>
               <Link
                 to="/demo"
                 className="rounded-lg border border-brass/40 px-6 py-3 font-medium text-brass transition-colors hover:bg-brass/10"
@@ -169,21 +306,25 @@ export default function Home() {
           after the hero, so a visitor immediately sees themselves in
           one of the two, rather than reading five more sections before
           finding out if this product even fits their kind of business. */}
-      <RevealSection id="solutions" className="border-b border-ink-line px-6 py-20">
+      <RevealSection id="solutions" className="border-b border-ink-line px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Built for</p>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-2xl border border-ink-line bg-ink-soft p-8 transition-colors hover:border-brass/40">
+          <div className="mt-12 grid gap-8 sm:grid-cols-2">
+            <div className="card-elevated rounded-2xl border border-ink-line bg-ink-soft p-10">
               <Utensils size={22} strokeWidth={1.75} className="text-brass" />
-              <p className="mt-4 font-display text-xl text-ivory">Restaurants & cafés</p>
-              <p className="mt-2 text-sm leading-relaxed text-ivory-dim">
+              <p className="mt-5 font-display text-xl text-ivory">Restaurants & cafés</p>
+              <p className="mt-4 text-sm leading-relaxed text-ivory-dim">
                 Table ordering, Pay Bill with split-bill, loyalty stamps, and a live kitchen display — priced per table.
               </p>
             </div>
-            <div className="rounded-2xl border border-ink-line bg-ink-soft p-8 transition-colors hover:border-brass/40">
+            {/* Distinct offset position, not a matched pair - the same
+                editorial device already used for the stand photography
+                further down, applied here too so the asymmetry reads
+                as a system, not a one-off. */}
+            <div className="card-elevated rounded-2xl border border-ink-line bg-ink-soft p-10 sm:mt-12">
               <Building2 size={22} strokeWidth={1.75} className="text-brass" />
-              <p className="mt-4 font-display text-xl text-ivory">Hotels</p>
-              <p className="mt-2 text-sm leading-relaxed text-ivory-dim">
+              <p className="mt-5 font-display text-xl text-ivory">Hotels</p>
+              <p className="mt-4 text-sm leading-relaxed text-ivory-dim">
                 In-room requests, room service ordering charged straight to the folio, and a guest portal that replaces the printed directory — priced per room.
               </p>
             </div>
@@ -263,24 +404,29 @@ export default function Home() {
           customers yet to measure "X% more tips" or "Y minutes saved"
           from - claiming numbers like that without real data behind
           them would be fabricating social proof). */}
-      <RevealSection className="border-b border-ink-line px-6 py-20">
+      <RevealSection className="border-b border-ink-line px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Why Tavzio</p>
-          <div className="mt-10 grid gap-8 sm:grid-cols-3">
+          <div className="mt-14 grid gap-10 sm:grid-cols-3">
             <div className="text-center">
               <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><Ban size={18} strokeWidth={1.75} /></span>
-              <p className="mt-4 font-display text-lg text-ivory">No commission on orders</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">A flat subscription, not a cut of every sale. What your guests pay is what you keep.</p>
+              <p className="mt-5 font-display text-lg text-ivory">No commission on orders</p>
+              <p className="mt-3 text-sm leading-relaxed text-ivory-dim">A flat subscription, not a cut of every sale. What your guests pay is what you keep.</p>
             </div>
-            <div className="text-center">
+            {/* Stepped offset - the same asymmetric rhythm used on
+                "Built for" above, so a visitor's eye reads this whole
+                page as one considered editorial system rather than
+                three separate sections that happen to share a color
+                palette. */}
+            <div className="text-center sm:mt-10">
               <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><Building2 size={18} strokeWidth={1.75} /></span>
-              <p className="mt-4 font-display text-lg text-ivory">Your own branded page</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">Not a shared marketplace app - guests land on your name, your logo, your menu.</p>
+              <p className="mt-5 font-display text-lg text-ivory">Your own branded page</p>
+              <p className="mt-3 text-sm leading-relaxed text-ivory-dim">Not a shared marketplace app - guests land on your name, your logo, your menu.</p>
             </div>
-            <div className="text-center">
+            <div className="text-center sm:mt-20">
               <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><ShieldCheck size={18} strokeWidth={1.75} /></span>
-              <p className="mt-4 font-display text-lg text-ivory">UAE-based, PDPL compliant</p>
-              <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">Built and run in the UAE, in line with Federal Decree-Law No. 45 of 2021. <Link to="/legal" className="text-brass hover:underline">Read our privacy policy →</Link></p>
+              <p className="mt-5 font-display text-lg text-ivory">UAE-based, PDPL compliant</p>
+              <p className="mt-3 text-sm leading-relaxed text-ivory-dim">Built and run in the UAE, in line with Federal Decree-Law No. 45 of 2021. <Link to="/legal" className="text-brass hover:underline">Read our privacy policy →</Link></p>
             </div>
           </div>
         </div>
@@ -291,7 +437,7 @@ export default function Home() {
         <div className="mx-auto max-w-4xl">
           {/* Why the price is what it is, before showing the numbers themselves */}
           <div className="mb-14 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-xl border border-brass/30 bg-ink-soft p-6">
+            <div className="card-elevated rounded-xl border border-brass/30 bg-ink-soft p-6">
               <p className="font-display text-lg text-brass">Tavzio means fewer employees</p>
               <p className="mt-3 text-sm leading-relaxed text-ivory-dim">
                 Traditional restaurant and hotel software helps you manage staff. Tavzio replaces the need for a lot of them —
@@ -301,7 +447,7 @@ export default function Home() {
                 The real saving isn't the subscription — it's the salaries, visas, and training you no longer need to pay for.
               </p>
             </div>
-            <div className="rounded-xl border border-ink-line bg-ink-soft p-6">
+            <div className="card-elevated rounded-xl border border-ink-line bg-ink-soft p-6">
               <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">The operational savings chain</p>
               <div className="mt-4 space-y-2 text-sm text-ivory-dim">
                 <div className="rounded-lg border border-ink-line px-3 py-2">Less payroll & salaries</div>
@@ -325,11 +471,13 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Lead capture */}
-      <div id="get-started" className="border-b border-ink-line px-6 py-24">
-        <div className="mx-auto max-w-md text-center">
+      {/* Lead capture - an isolated, framed zone rather than a plain
+          section flowing into the footer, so the single most important
+          conversion moment on the page reads as its own clean space. */}
+      <div id="get-started" className="border-b border-ink-line px-6 py-32">
+        <div className="card-elevated mx-auto max-w-md rounded-2xl border border-brass/30 bg-ink-soft p-10 text-center">
           <p className="font-display text-3xl text-ivory">Get started</p>
-          <p className="mt-3 text-sm leading-relaxed text-ivory-dim">
+          <p className="mt-4 text-sm leading-relaxed text-ivory-dim">
             Tell us a bit about your business — we'll reach out to set everything up personally.
           </p>
           <LeadForm />
@@ -415,12 +563,9 @@ function LeadForm() {
         />
       </label>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <button
-        type="submit" disabled={submitting}
-        className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
+      <PrimaryLink type="submit" disabled={submitting} className="w-full justify-center">
         {submitting ? 'Sending...' : 'Get started'}
-      </button>
+      </PrimaryLink>
     </form>
   );
 }
@@ -493,12 +638,9 @@ function ContactUsForm() {
         </div>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <button
-        type="submit" disabled={submitting}
-        className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
+      <PrimaryLink type="submit" disabled={submitting} className="w-full justify-center">
         {submitting ? 'Sending...' : 'Contact us'}
-      </button>
+      </PrimaryLink>
     </form>
   );
 }

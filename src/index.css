@@ -97,3 +97,85 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Luxury button treatment - shape, size, and micro-movement only, zero
+   color changes (colors stay exactly whatever Tailwind classes are
+   already on the element - bg-brass, text-brass, border-brass/40, etc).
+   Sharp-to-soft border-radius and letter-spacing aren't animatable via
+   Tailwind's utility classes alone (no built-in transition for radius
+   or tracking), so this is real hand-written CSS rather than a
+   className soup - exactly what a hover state this specific should be.
+   Apply .btn-luxury to any button/link, and wrap the label text in
+   .btn-luxury-label plus an .btn-luxury-arrow child for the slide-in
+   arrow icon. Both effects run on the same 0.4s ease-in-out, so the
+   radius softening and the letter-spacing widening read as one
+   unified gesture instead of two competing timings. */
+.btn-luxury {
+  border-radius: 0.25rem;
+  transition: border-radius 0.4s ease-in-out, transform 0.4s ease-in-out;
+}
+.btn-luxury:hover {
+  border-radius: 9999px;
+}
+.btn-luxury-label {
+  display: inline-block;
+  letter-spacing: 0.01em;
+  transition: letter-spacing 0.4s ease-in-out;
+}
+.btn-luxury:hover .btn-luxury-label {
+  letter-spacing: 0.05em;
+}
+.btn-luxury-arrow {
+  display: inline-flex;
+  transition: transform 0.4s ease-in-out;
+}
+.btn-luxury:hover .btn-luxury-arrow {
+  transform: translateX(4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-luxury, .btn-luxury-label, .btn-luxury-arrow {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Layered card depth - structure only, no color changes. Two shadows
+   stacked (a tight, close one for the card's own edge and a soft, far
+   one for ambient depth) is the real technique behind cards reading as
+   "floating on different physical planes" rather than Tailwind's
+   single-layer shadow-2xl, which flattens everything to one distance.
+   Border stays the crisp 1px border-ink-line already used everywhere
+   else in this app - untouched, just paired with real elevation for
+   once instead of a flat card with a border and nothing behind it. */
+.card-elevated {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    0 12px 32px -8px rgba(0, 0, 0, 0.35),
+    0 32px 64px -24px rgba(0, 0, 0, 0.30);
+  transition: transform 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
+}
+.card-elevated:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.22),
+    0 20px 40px -8px rgba(0, 0, 0, 0.4),
+    0 40px 80px -24px rgba(0, 0, 0, 0.35);
+}
+[data-theme='light'] .card-elevated {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 12px 32px -8px rgba(0, 0, 0, 0.10),
+    0 32px 64px -24px rgba(0, 0, 0, 0.08);
+}
+[data-theme='light'] .card-elevated:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.07),
+    0 20px 40px -8px rgba(0, 0, 0, 0.12),
+    0 40px 80px -24px rgba(0, 0, 0, 0.1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-elevated {
+    transition: none;
+  }
+}

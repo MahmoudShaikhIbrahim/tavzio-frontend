@@ -102,6 +102,14 @@ const SETTINGS_ITEMS = [
   { path: 'forecasting', label: 'Forecasting & Budgeting', ownerOnly: true, requires: 'forecasting' as const },
   { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const },
   { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
+  // Appears/disappears per-account, not per-business - see is_org_owner
+  // (migration 0098). Deliberately ownerOnly: false: org duty was never
+  // tied to full business-owner access, so a regular staff member
+  // appointed to run the org sees these the same as the owner would.
+  { path: 'org/overview', label: 'Organization', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/menu', label: 'Org Menu', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/suppliers', label: 'Org Suppliers', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/purchase-orders', label: 'Org Purchase Orders', ownerOnly: false, requires: 'orgOwner' as const },
 ];
 
 export default function DashboardLayout() {
@@ -256,7 +264,7 @@ function DashboardLayoutInner() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | 'forecasting' | 'payroll' | 'accounting' | 'channelManager' | 'marketing' | null) {
+  function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | 'forecasting' | 'payroll' | 'accounting' | 'channelManager' | 'marketing' | 'orgOwner' | null) {
     if (requires === 'hotel') return category === 'hotel';
     // Delivery platform integrations (Deliverect etc.) only make sense for
     // restaurants/cafés dispatching food off-site - a hotel has no
@@ -266,6 +274,14 @@ function DashboardLayoutInner() {
       if (category === 'hotel') return false;
       return !!features && (features.ordering.menuView || features.ordering.submission);
     }
+    // Independent of every business feature flag above - this business
+    // may have no ordering/booking/inventory enabled at all and still
+    // be part of an organization. Gated purely on the account's own
+    // is_org_owner capability (see migration 0098), not on role or
+    // hasOwnerAccess - a regular staff member appointed to run the org
+    // sees these tabs the same as the owner would, since org duties
+    // were never tied to full business-owner access in the first place.
+    if (requires === 'orgOwner') return !!user?.is_org_owner;
     if (!requires || !features) return !requires;
     if (requires === 'ordering') return features.ordering.menuView || features.ordering.submission;
     if (requires === 'booking') return features.booking.menuView || features.booking.submission || !!features.onlineBooking?.enabled;

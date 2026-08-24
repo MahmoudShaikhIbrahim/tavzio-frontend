@@ -231,6 +231,10 @@ export interface Profile {
   // account passes every owner-only check server-side, not just a UI
   // hint - authorize() and current_role_name() both honor it directly.
   full_access?: boolean;
+  // Org-management capability layered on top of role - not a role swap.
+  // See migration 0098, same pattern as full_access above but for
+  // multi-location org duties instead of owner-equivalence.
+  is_org_owner?: boolean;
   // Per-person dashboard tab hide/reorder. null = default order,
   // nothing hidden.
   nav_layout?: { hidden: string[]; order: string[] } | null;
@@ -763,6 +767,7 @@ export interface StaffMember {
   full_access: boolean;
   nav_layout: { hidden: string[]; order: string[] } | null;
   organization_id: string | null;
+  is_org_owner: boolean;
 }
 
 export interface AnalyticsSummary {

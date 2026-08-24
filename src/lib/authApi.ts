@@ -785,6 +785,13 @@ export function leaveOrganization(businessId: string) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/organization`, { method: 'DELETE' });
 }
 
+export function setOrgOwnerStatus(businessId: string, userId: string, isOrgOwner: boolean) {
+  return authFetch<StaffMember>(`/api/businesses/${businessId}/organization/owner/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isOrgOwner }),
+  });
+}
+
 // getMyOpenShift returns null (a bare 204/empty-body-shaped response) when
 // nothing's open - authFetch<StaffShift | null> models that honestly
 // rather than pretending there's always a shift object.

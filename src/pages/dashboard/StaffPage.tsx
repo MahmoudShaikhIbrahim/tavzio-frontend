@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
+import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -26,6 +26,7 @@ export default function StaffPage() {
   const [resendMessage, setResendMessage] = useState('');
   const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
   const [togglingFullAccessId, setTogglingFullAccessId] = useState<string | null>(null);
+  const [togglingOrgOwnerId, setTogglingOrgOwnerId] = useState<string | null>(null);
   const [editingSectionsFor, setEditingSectionsFor] = useState<string | null>(null);
   const [editingOutletsFor, setEditingOutletsFor] = useState<string | null>(null);
   const [isHotel, setIsHotel] = useState(false);
@@ -212,6 +213,33 @@ export default function StaffPage() {
     }
   }
 
+  // Real, separate action from Delete - the actual gap the old
+  // role-swap design had no answer for: reassigning org management used
+  // to mean deleting the whole account just to take away the org piece.
+  // Works on any role (including the owner's own row) since is_org_owner
+  // is a capability layered on top of role, not tied to a specific one -
+  // see migration 0098. Backend re-runs the same "don't strand the org"
+  // check leaveOrganization uses, so revoking the last org owner is
+  // blocked the same way unlinking the last business is.
+  async function handleToggleOrgOwner(s: StaffMember) {
+    if (togglingOrgOwnerId === s.id) return;
+    const next = !s.is_org_owner;
+    const message = next
+      ? t('Give {name} org-management access? They will manage the shared menu, suppliers, and consolidated reporting for every location in this organization.').replace('{name}', s.name)
+      : t('Remove org-management access from {name}? Their regular account stays exactly as it is - only the org piece goes away.').replace('{name}', s.name);
+    if (!(await confirm({ title: next ? t('Grant org owner?') : t('Revoke org owner?'), message, danger: !next }))) return;
+    setTogglingOrgOwnerId(s.id);
+    try {
+      await setOrgOwnerStatus(businessId!, s.id, next);
+      reload();
+      getBusinessOrganization(businessId!).then(setOrganization).catch(() => {});
+    } catch (err) {
+      setLeaveOrgError(err instanceof Error ? err.message : 'Could not update org owner status');
+    } finally {
+      setTogglingOrgOwnerId(null);
+    }
+  }
+
   // Self-service unlink - only ever touches this business's own link to
   // the org, same as appointing an org owner only ever touched this
   // business. Blocked server-side (see leaveOrganization/
@@ -275,6 +303,7 @@ export default function StaffPage() {
                   {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</span>
                   {!s.is_active && <span className="ml-2 text-base text-danger">{t('deactivated')}</span>}
                   {s.full_access && <span className="ml-2 rounded-full bg-brass/20 px-2 py-0.5 text-sm text-brass">{t('Full access')}</span>}
+                  {s.is_org_owner && <span className="ml-2 rounded-full bg-brass/20 px-2 py-0.5 text-sm text-brass">{t('Org Owner')}</span>}
                 </span>
               </div>
               {s.role === 'staff' && s.full_access && (
@@ -282,7 +311,7 @@ export default function StaffPage() {
                   {t('Owner-equivalent access - sees and does everything the owner can, regardless of assigned sections below.')}
                 </p>
               )}
-              {s.role === 'org_owner' && (
+              {(s.role === 'org_owner' || s.is_org_owner) && (
                 <p className="mt-1 text-sm text-brass">
                   {t('Manages the multi-location organization this business belongs to - shared menu, suppliers, and consolidated reporting across every linked location.')}
                 </p>
@@ -312,6 +341,15 @@ export default function StaffPage() {
                 <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">
                   {resendingId === s.id ? t('Resending...') : t('Resend invite')}
                 </button>
+                {organization && (
+                  <button type="button"
+                    disabled={togglingOrgOwnerId === s.id}
+                    onClick={() => handleToggleOrgOwner(s)}
+                    className={`text-sm hover:underline disabled:opacity-50 ${s.is_org_owner ? 'text-danger' : 'text-brass'}`}
+                  >
+                    {togglingOrgOwnerId === s.id ? t('Updating...') : s.is_org_owner ? t('Revoke org owner') : t('Make org owner')}
+                  </button>
+                )}
                 {(s.role === 'staff' || s.role === 'org_owner') && (
                   <>
                     <button type="button"
@@ -439,7 +477,7 @@ export default function StaffPage() {
         {showAppointForm && (
           <OrgOwnerAppointForm
             businessId={businessId}
-            existingStaff={staff.filter((s) => s.role === 'staff')}
+            existingStaff={staff.filter((s) => (s.role === 'staff' || s.role === 'business_owner') && !s.is_org_owner)}
             hasOrganization={!!organization}
             onAppointed={() => {
               setShowAppointForm(false);

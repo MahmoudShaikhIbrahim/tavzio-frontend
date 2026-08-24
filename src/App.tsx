@@ -203,6 +203,16 @@ export default function App() {
             <Route path="forecasting" element={<ForecastingPage />} />
             <Route path="staff" element={<StaffPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            {/* Same components the standalone /admin/org portal uses -
+                self-contained (call getMyOrganization() themselves via
+                requireOrgOwner, now is_org_owner-aware), no layout
+                dependency, so reusing them here needed zero changes to
+                the page components themselves. See DashboardLayout's
+                SETTINGS_ITEMS 'orgOwner' entries for the nav gating. */}
+            <Route path="org/overview" element={<OrgOverviewPage />} />
+            <Route path="org/menu" element={<OrgMenuPage />} />
+            <Route path="org/suppliers" element={<OrgSuppliersPage />} />
+            <Route path="org/purchase-orders" element={<OrgPurchaseOrdersPage />} />
             <Route path="settings/business-profile" element={<BusinessProfilePage />} />
             <Route path="settings/pay-bill" element={<PayBillSetupPage />} />
             <Route path="settings/printer" element={<PrinterSetupPage />} />
