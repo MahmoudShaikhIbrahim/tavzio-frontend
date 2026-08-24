@@ -714,11 +714,13 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
               />
             </div>
           ))}
-          <button type="button" onClick={() => setItems((prev) => [...prev, { ingredientId: '', quantity: '', unitCostAed: '' }])} className="text-sm text-brass hover:underline">
-            {t('+ Add item')}
-          </button>
+          <div className="flex flex-wrap items-center gap-4">
+            <button type="button" onClick={() => setItems((prev) => [...prev, { ingredientId: '', quantity: '', unitCostAed: '' }])} className="text-sm text-brass hover:underline">
+              {t('+ Add item')}
+            </button>
+            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Create order')}</button>
+          </div>
           {error && <p className="text-base text-danger">{error}</p>}
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Create order')}</button>
         </form>
       )}
       <div className="space-y-3">
