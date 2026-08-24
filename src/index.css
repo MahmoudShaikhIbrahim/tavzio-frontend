@@ -112,11 +112,8 @@
    radius softening and the letter-spacing widening read as one
    unified gesture instead of two competing timings. */
 .btn-luxury {
-  border-radius: 0.25rem;
-  transition: border-radius 0.4s ease-in-out, transform 0.4s ease-in-out;
-}
-.btn-luxury:hover {
   border-radius: 9999px;
+  transition: transform 0.4s ease-in-out;
 }
 .btn-luxury-label {
   display: inline-block;

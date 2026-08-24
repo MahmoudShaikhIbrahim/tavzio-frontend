@@ -205,9 +205,9 @@ export default function Home() {
           scrolled ? 'scale-[0.97] px-6 py-3 sm:px-10 lg:px-14' : 'px-6 py-6 sm:px-10 sm:py-7 lg:px-16'
         }`}
       >
-        <div className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2">
           <Logo className="h-9 w-auto" />
-        </div>
+        </a>
         <nav className="hidden items-center gap-12 text-sm text-ivory-dim md:flex">
           <a href="#solutions" className="transition-colors hover:text-ivory">Solutions</a>
           <a href="#how-it-works" className="transition-colors hover:text-ivory">How it works</a>
@@ -271,7 +271,7 @@ export default function Home() {
               <PrimaryLink href="#get-started">Get started</PrimaryLink>
               <Link
                 to="/demo"
-                className="rounded-lg border border-brass/40 px-6 py-3 font-medium text-brass transition-colors hover:bg-brass/10"
+                className="rounded-full border border-brass/40 px-6 py-3 font-medium text-brass transition-colors hover:bg-brass/10"
               >
                 Try the demo
               </Link>
@@ -285,11 +285,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-sm animate-hero-rise [animation-delay:120ms] lg:max-w-none" style={{ perspective: '1200px' }}>
-            <div
-              className="relative overflow-hidden rounded-2xl shadow-2xl shadow-black/50 ring-1 ring-brass/20 transition-transform duration-500 ease-brass hover:[transform:rotateY(0deg)_rotateX(0deg)] motion-reduce:!transform-none"
-              style={{ transform: 'rotateY(-6deg) rotateX(3deg)', transformStyle: 'preserve-3d' }}
-            >
+          <div className="mx-auto w-full max-w-sm animate-hero-rise [animation-delay:120ms] lg:max-w-none">
+            <div className="card-elevated relative overflow-hidden rounded-2xl ring-1 ring-brass/20">
               <div className="pointer-events-none absolute -inset-6 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_40%,rgba(184,146,90,0.35),transparent)] blur-2xl" />
               <img src="/brand/stand-front.jpg" alt="A Tavzio NFC card and stand on a restaurant table" className="w-full" />
             </div>
