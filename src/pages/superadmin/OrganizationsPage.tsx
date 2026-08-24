@@ -81,7 +81,7 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
   const [ownerEmail, setOwnerEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [inviteResult, setInviteResult] = useState('');
-  const [deleteError, setDeleteError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const linkedIds = new Set((org.businesses || []).map((b) => b.id));
   const unlinkedBusinesses = allBusinesses.filter((b) => !linkedIds.has(b.id));
@@ -89,10 +89,13 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
   async function handleLink() {
     if (!linkBusinessId) return;
     setBusy(true);
+    setActionError('');
     try {
       await setBusinessOrganization(linkBusinessId, org.id);
       setLinkBusinessId('');
       onChange();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not link this business');
     } finally {
       setBusy(false);
     }
@@ -105,9 +108,12 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
       confirmLabel: 'Unlink',
     }))) return;
     setBusy(true);
+    setActionError('');
     try {
       await setBusinessOrganization(businessId, null);
       onChange();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not unlink this location');
     } finally {
       setBusy(false);
     }
@@ -123,12 +129,12 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
       danger: true,
     }))) return;
     setBusy(true);
-    setDeleteError('');
+    setActionError('');
     try {
       await deleteOrganization(org.id);
       onChange();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Could not delete organization');
+      setActionError(err instanceof Error ? err.message : 'Could not delete organization');
     } finally {
       setBusy(false);
     }
@@ -174,7 +180,7 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
           </button>
         </div>
       </div>
-      {deleteError && <p className="mt-1 text-sm text-danger">{deleteError}</p>}
+      {actionError && <p className="mt-1 text-sm text-danger">{actionError}</p>}
 
       {expanded && (
         <div className="mt-4 space-y-4 border-t border-ink-line pt-4">
