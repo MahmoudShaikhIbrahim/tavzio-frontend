@@ -26,8 +26,15 @@ export default function StaffPage() {
   const [isHotel, setIsHotel] = useState(false);
   const [outlets, setOutlets] = useState<HotelOutlet[]>([]);
 
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState('');
+
   function reload() {
-    if (businessId) listStaff(businessId).then(setStaff);
+    if (!businessId) return;
+    setLoadError('');
+    listStaff(businessId)
+      .then((rows) => { setStaff(rows); setLoaded(true); })
+      .catch((err) => { setLoadError(err instanceof Error ? err.message : 'Could not load staff'); setLoaded(true); });
   }
 
   useEffect(reload, [businessId]);
@@ -147,6 +154,11 @@ export default function StaffPage() {
       )}
 
       <Section title={t('Team')}>
+        {!loaded && <p className="text-ivory-dim">{t('Loading...')}</p>}
+        {loadError && <p className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger">{loadError}</p>}
+        {loaded && !loadError && staff.length === 0 && (
+          <p className="text-ivory-dim">{t('No team members found - something is wrong, since your own owner account should always show up here.')}</p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {staff.map((s) => (
             <div key={s.id} className="rounded-lg border border-ink-line px-5 py-4 text-base">
