@@ -111,9 +111,23 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
           <span className="ms-2 inline-block rounded-full border border-ink-line px-2 py-0.5 text-xs text-ivory-dim">{methodLabel}</span>
         </span>
         <div className="flex flex-wrap items-center gap-2">
+          {payment.tableLabel && (
+            <span className="rounded-full border border-brass/40 px-2 py-0.5 text-sm text-brass">
+              {t('{table} paid').replace('{table}', payment.tableLabel)}
+            </span>
+          )}
           <span className="text-ivory">
             {(Number(payment.amount) + Number(payment.tip_amount)).toFixed(2)} AED{payment.tip_amount > 0 && ` (incl. ${payment.tip_amount} tip)`}
           </span>
+          {payment.remainingAed !== null && (
+            payment.remainingAed > 0 ? (
+              <span className="rounded-full border border-warning/40 px-2 py-0.5 text-sm text-warning">
+                {t('{amount} AED left').replace('{amount}', payment.remainingAed.toFixed(2))}
+              </span>
+            ) : (
+              <span className="rounded-full border border-success/40 px-2 py-0.5 text-sm text-success">{t('Fully paid')}</span>
+            )
+          )}
           {payment.refunded ? (
             <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">{t('Refunded')} {payment.refund_amount}</span>
           ) : !isManual ? (

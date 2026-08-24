@@ -205,6 +205,12 @@ export function getBookingPaymentStatus(bookingId: string) {
   return request<{ id: string; status: string; down_payment_status: string }>(`/api/public/bookings/${bookingId}/status`);
 }
 
+export function cancelPublicBooking(bookingId: string, phone: string) {
+  return request<{ id: string; status: string }>(`/api/public/bookings/${bookingId}/cancel`, {
+    method: 'POST', body: JSON.stringify({ phone }),
+  });
+}
+
 export interface BookingArrival {
   id: string; guest_name: string; party_size: number; requested_at: string;
 }

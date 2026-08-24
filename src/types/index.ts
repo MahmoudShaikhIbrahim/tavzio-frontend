@@ -1060,6 +1060,10 @@ export interface PaymentRow {
   refunded_by: string | null;
   tap_refund_id: string;
   created_at: string;
+  // Added server-side in listPayments - which table this payment came
+  // from, and what's still unpaid on that same table right now.
+  tableLabel: string | null;
+  remainingAed: number | null;
 }
 
 // --- Digital receipt (English only, per explicit decision) ---

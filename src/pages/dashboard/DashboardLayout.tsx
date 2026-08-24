@@ -54,6 +54,7 @@ const TABS = [
   { path: 'requests', label: 'Requests', ownerOnly: false, requires: 'ordering' as const, badge: 'requests' as const, badge2: null },
   { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: 'kitchen' as const, badge2: null },
   { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const, badge: null, badge2: null },
   // Floor plan / table layout is a restaurant-only concept - a hotel with
   // ordering enabled (for its Room Service / outlet POS) still shouldn't
   // see a "Tables" tab, since it has rooms, not tables.
@@ -88,15 +89,12 @@ const SETTINGS_ITEMS = [
   { path: 'settings/payroll', label: 'Payroll', ownerOnly: true, requires: 'payroll' as const },
   { path: 'settings/accounting', label: 'Accounting', ownerOnly: true, requires: 'accounting' as const },
   { path: 'settings/channel-manager', label: 'Channel Manager', ownerOnly: true, requires: 'channelManager' as const },
-  { path: 'settings/warehouses', label: 'Warehouses', ownerOnly: true, requires: 'inventory' as const },
-  { path: 'settings/stock-transfers', label: 'Stock Transfers', ownerOnly: false, requires: 'inventory' as const },
   { path: 'settings/marketing', label: 'Marketing', ownerOnly: true, requires: 'marketing' as const },
   { path: 'settings/landing-buttons', label: 'Landing Page Buttons', ownerOnly: true, requires: null },
   { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
   { path: 'settings/cards', label: 'Cards', ownerOnly: false, requires: null },
   { path: 'settings/notifications', label: 'Notifications', ownerOnly: false, requires: null },
-  { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const },
   { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const },
   { path: 'features', label: 'Features', ownerOnly: false, requires: null },
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
@@ -270,7 +268,7 @@ function DashboardLayoutInner() {
     }
     if (!requires || !features) return !requires;
     if (requires === 'ordering') return features.ordering.menuView || features.ordering.submission;
-    if (requires === 'booking') return features.booking.menuView || features.booking.submission;
+    if (requires === 'booking') return features.booking.menuView || features.booking.submission || !!features.onlineBooking?.enabled;
     if (requires === 'staffAccounts') return features.staffAccounts;
     if (requires === 'inventory') return features.inventory?.enabled;
     if (requires === 'hr') return !!features.hr?.enabled;

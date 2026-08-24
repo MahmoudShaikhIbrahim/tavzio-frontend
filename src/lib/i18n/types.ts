@@ -153,4 +153,47 @@ export interface TranslationDict {
   thisPortalNotAvailable: string;
   couldNotStartPayment: string;
   couldNotStartPaymentRetry: string;
+
+  // Online table booking (new flow - distinct from the old service-appointment "booking*" keys above)
+  tbNotAvailable: string;
+  tbNotAvailableDesc: string;
+  tbConfirmingPayment: string;
+  tbOnlyTakesAMoment: string;
+  tbPaymentFailed: string;
+  tbTableNotReserved: string;
+  tbTryAgain: string;
+  tbRequestSent: string;
+  tbWillConfirm: string; // "{business} will confirm your table shortly."
+  tbFoodOrderNoted: string;
+  tbTapStand: string;
+  tbVerifyNumber: string;
+  tbCodeSentTo: string; // "We sent a 6-digit code to {phone}."
+  tbEnterCode: string;
+  tbConfirming: string;
+  tbConfirmBooking: string;
+  tbResendCode: string;
+  tbBookATable: string;
+  tbYourName: string;
+  tbDate: string;
+  tbTime: string;
+  tbGuests: string;
+  tbSpecialRequests: string;
+  tbPreOrderFood: string;
+  tbPreOrderFoodDesc: string;
+  tbAdd: string;
+  tbTotal: string;
+  tbWhenReady: string;
+  tbReadyOnArrival: string;
+  tbReady5: string;
+  tbReady10: string;
+  tbReady15: string;
+  tbFullPaymentRequired: string;
+  tbPercentDownPayment: string; // "A {percent}% down payment is required to confirm this booking."
+  tbFixedDownPayment: string; // "A AED {amount} down payment is required to confirm this booking."
+  tbSendingCode: string;
+  tbSendVerificationCode: string;
+  tbCancelBooking: string;
+  tbCancelling: string;
+  tbBookingCancelled: string;
+  tbBookingCancelledDesc: string;
 }

@@ -7,9 +7,15 @@ import {
   getMenuItemFoodCost, getActualFoodCost,
   listSuppliers, createSupplier,
   listPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
+  listWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, getWarehouseStock,
+  listStockTransfers, createStockTransfer, approveStockTransfer, shipStockTransfer,
+  receiveStockTransfer, cancelStockTransfer, listPoAllocations, receivePoAllocation,
 } from '../../lib/authApi';
-import type { Ingredient, Supplier, PurchaseOrder, LowStockIngredient, InventoryValuation, WasteReport, FoodCostReport, ActualFoodCostReport } from '../../types';
-import { Section, Field, inputClass } from '../../components/ui';
+import type {
+  Ingredient, Supplier, PurchaseOrder, LowStockIngredient, InventoryValuation, WasteReport, FoodCostReport, ActualFoodCostReport,
+  Warehouse, WarehouseStockLine, StockTransfer, PoAllocation,
+} from '../../types';
+import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 
 const UNITS = ['g', 'kg', 'ml', 'l', 'piece'];
 const WASTE_CATEGORIES = [
@@ -24,20 +30,21 @@ export default function InventoryPage() {
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
-  const [tab, setTab] = useState<'ingredients' | 'suppliers' | 'purchase-orders' | 'reorder' | 'waste' | 'food-cost'>('ingredients');
+  const [tab, setTab] = useState<'ingredients' | 'suppliers' | 'purchase-orders' | 'reorder' | 'waste' | 'food-cost' | 'warehouses' | 'stock-transfers'>('ingredients');
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
 
   const tabLabels: Record<typeof tab, string> = {
     ingredients: 'Ingredients', suppliers: 'Suppliers', 'purchase-orders': 'Purchase Orders',
     reorder: 'Reorder & valuation', waste: 'Waste', 'food-cost': 'Food Cost',
+    warehouses: 'Warehouses', 'stock-transfers': 'Stock Transfers',
   };
 
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Inventory')}</h1>
       <div className="flex flex-wrap gap-2 border-b border-ink-line">
-        {(['ingredients', 'reorder', 'waste', 'food-cost', 'suppliers', 'purchase-orders'] as const).map((tabKey) => (
+        {(['ingredients', 'reorder', 'waste', 'food-cost', 'warehouses', 'stock-transfers', 'suppliers', 'purchase-orders'] as const).map((tabKey) => (
           <button type="button"
             key={tabKey}
             onClick={() => setTab(tabKey)}
@@ -53,6 +60,8 @@ export default function InventoryPage() {
       {tab === 'reorder' && <ReorderTab businessId={businessId} />}
       {tab === 'waste' && <WasteTab businessId={businessId} />}
       {tab === 'food-cost' && <FoodCostTab businessId={businessId} />}
+      {tab === 'warehouses' && <WarehousesTab businessId={businessId} />}
+      {tab === 'stock-transfers' && <StockTransfersTab businessId={businessId} />}
     </div>
   );
 }
@@ -775,5 +784,412 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
         {orders.length === 0 && <p className="text-ivory-dim">{t('No purchase orders yet.')}</p>}
       </div>
     </Section>
+  );
+}
+
+// =========================================================================
+// Warehouses tab - merged in from what used to be a separate page/route.
+// Separate storage locations for this business (main kitchen, walk-in
+// freezer, dry store, etc). Stock still totals the same across all of
+// them for existing low-stock alerts and reports.
+// =========================================================================
+const WAREHOUSE_TYPE_LABEL: Record<string, string> = {
+  central: 'Central',
+  kitchen: 'Kitchen',
+  dry_store: 'Dry store',
+  cold_store: 'Cold store',
+  general: 'General',
+};
+
+function WarehousesTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [viewingStockFor, setViewingStockFor] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  function reload() {
+    listWarehouses(businessId).then(setWarehouses).finally(() => setLoading(false));
+  }
+  useEffect(reload, [businessId]);
+
+  async function handleDelete(warehouseId: string) {
+    if (!confirm(t('Delete this warehouse? Only possible if it has no stock left in it.'))) return;
+    try {
+      await deleteWarehouse(businessId, warehouseId);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not delete');
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-base text-ivory-dim">
+        {t('Separate storage locations for this business - a main kitchen, a walk-in freezer, a dry store, or anything else you track stock in individually. Stock still totals the same across all of them for your existing low-stock alerts and reports.')}
+      </p>
+
+      <Section title={t('Your locations')} action={<ActionButton onClick={() => setAdding((v) => !v)}>{adding ? t('Cancel') : t('Add warehouse')}</ActionButton>}>
+        {adding && <AddWarehouseForm businessId={businessId} onSaved={() => { setAdding(false); reload(); }} />}
+        {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
+        <div className="space-y-2">
+          {warehouses.map((w) => (
+            <div key={w.id}>
+              {editingId === w.id ? (
+                <EditWarehouseForm
+                  businessId={businessId}
+                  warehouse={w}
+                  onSaved={() => { setEditingId(null); reload(); }}
+                  onCancel={() => setEditingId(null)}
+                />
+              ) : (
+                <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3">
+                  <div>
+                    <p className="text-base text-ivory">{w.name}</p>
+                    <p className="text-sm text-ivory-dim">{WAREHOUSE_TYPE_LABEL[w.type] || w.type}{w.address && ` · ${w.address}`}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => setViewingStockFor(viewingStockFor === w.id ? null : w.id)} className="text-sm text-brass hover:underline">
+                      {viewingStockFor === w.id ? t('Hide stock') : t('View stock')}
+                    </button>
+                    <button type="button" onClick={() => setEditingId(w.id)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
+                    <button type="button" onClick={() => handleDelete(w.id)} className="text-sm text-danger hover:underline">{t('Delete')}</button>
+                  </div>
+                </div>
+              )}
+              {viewingStockFor === w.id && <WarehouseStockList businessId={businessId} warehouseId={w.id} />}
+            </div>
+          ))}
+          {!loading && warehouses.length === 0 && <p className="text-ivory-dim">{t('No warehouses yet - everything is tracked as one combined total until you add one.')}</p>}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function WarehouseStockList({ businessId, warehouseId }: { businessId: string; warehouseId: string }) {
+  const { t } = useT();
+  const [lines, setLines] = useState<WarehouseStockLine[] | null>(null);
+
+  useEffect(() => {
+    getWarehouseStock(businessId, warehouseId).then(setLines);
+  }, [businessId, warehouseId]);
+
+  return (
+    <div className="mt-2 rounded-lg border border-ink-line/60 bg-ink-soft/40 p-3">
+      {!lines && <p className="text-sm text-ivory-dim">{t('Loading...')}</p>}
+      {lines && lines.length === 0 && <p className="text-sm text-ivory-dim">{t('Nothing stocked here yet.')}</p>}
+      {lines && lines.length > 0 && (
+        <div className="space-y-1">
+          {lines.map((line, i) => (
+            <div key={i} className="flex justify-between text-sm">
+              <span className="text-ivory">{line.ingredients.name}</span>
+              <span className={Number(line.quantity) <= Number(line.ingredients.low_stock_threshold) && line.ingredients.low_stock_threshold > 0 ? 'text-warning' : 'text-ivory-dim'}>
+                {line.quantity} {line.ingredients.unit}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EditWarehouseForm({ businessId, warehouse, onSaved, onCancel }: {
+  businessId: string; warehouse: Warehouse; onSaved: () => void; onCancel: () => void;
+}) {
+  const { t } = useT();
+  const [name, setName] = useState(warehouse.name);
+  const [type, setType] = useState(warehouse.type);
+  const [address, setAddress] = useState(warehouse.address);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    if (!name) { setError('Name is required'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await updateWarehouse(businessId, warehouse.id, { name, type, address });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-brass/30 bg-ink-soft p-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label={t('Name')}><input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Type')}>
+          <select value={type} onChange={(e) => setType(e.target.value as Warehouse['type'])} className={inputClass}>
+            {Object.entries(WAREHOUSE_TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="mt-2">
+        <Field label={t('Address (optional)')}><input value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} /></Field>
+      </div>
+      <div className="mt-3 flex gap-2">
+        <PrimaryButton onClick={handleSave} loading={saving} type="button">{t('Save')}</PrimaryButton>
+        <ActionButton onClick={onCancel} type="button">{t('Cancel')}</ActionButton>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+    </div>
+  );
+}
+
+function AddWarehouseForm({ businessId, onSaved }: { businessId: string; onSaved: () => void }) {
+  const { t } = useT();
+  const [name, setName] = useState('');
+  const [type, setType] = useState('general');
+  const [address, setAddress] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    if (!name) { setError('Name is required'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await createWarehouse(businessId, { name, type, address });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-ink-line p-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label={t('Name')}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Walk-in freezer" className={inputClass} /></Field>
+        <Field label={t('Type')}>
+          <select value={type} onChange={(e) => setType(e.target.value)} className={inputClass}>
+            {Object.entries(WAREHOUSE_TYPE_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="mt-2">
+        <Field label={t('Address (optional)')}><input value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} /></Field>
+      </div>
+      <div className="mt-3">
+        <PrimaryButton onClick={handleSave} loading={saving} type="button">{t('Add warehouse')}</PrimaryButton>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+    </div>
+  );
+}
+
+// =========================================================================
+// Stock Transfers tab - merged in from what used to be a separate
+// page/route. Move stock between this business's own warehouses, and
+// receive whatever it's been allocated from an organization-level
+// purchase order (see poAllocationController.js).
+// =========================================================================
+const TRANSFER_STATUS_STYLE: Record<string, string> = {
+  requested: 'border-ink-line text-ivory-dim',
+  approved: 'border-brass/40 text-brass',
+  in_transit: 'border-brass/40 text-brass',
+  received: 'border-success/40 text-success',
+  cancelled: 'border-danger/40 text-danger',
+};
+
+function StockTransfersTab({ businessId }: { businessId: string }) {
+  const { t } = useT();
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [transferIngredients, setTransferIngredients] = useState<Ingredient[]>([]);
+  const [transfers, setTransfers] = useState<StockTransfer[]>([]);
+  const [allocations, setAllocations] = useState<PoAllocation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showNewTransfer, setShowNewTransfer] = useState(false);
+
+  function reload() {
+    Promise.all([
+      listWarehouses(businessId),
+      listIngredients(businessId),
+      listStockTransfers(businessId),
+      listPoAllocations(businessId, false),
+    ]).then(([w, i, tr, alloc]) => {
+      setWarehouses(w);
+      setTransferIngredients(i);
+      setTransfers(tr);
+      setAllocations(alloc);
+    }).finally(() => setLoading(false));
+  }
+  useEffect(reload, [businessId]);
+
+  async function handleAction(action: (bId: string, id: string) => Promise<unknown>, transferId: string) {
+    try {
+      await action(businessId, transferId);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Action failed');
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-base text-ivory-dim">
+        {t('Move stock between your own warehouses, and receive whatever this business has been allocated from an organization-level purchase order.')}
+      </p>
+
+      {allocations.length > 0 && (
+        <Section title={t('Incoming from your organization')}>
+          <p className="text-sm text-ivory-dim">
+            {t("Your share of a purchase order placed at the organization level - pick which of your own ingredients and warehouses each one restocks.")}
+          </p>
+          <div className="space-y-2">
+            {allocations.map((a) => (
+              <PoAllocationRow key={a.id} allocation={a} businessId={businessId} ingredients={transferIngredients} warehouses={warehouses} onReceived={reload} />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <Section title={t('Transfers between your warehouses')} action={<ActionButton onClick={() => setShowNewTransfer((v) => !v)}>{showNewTransfer ? t('Cancel') : t('New transfer')}</ActionButton>}>
+        {showNewTransfer && (
+          <NewTransferForm businessId={businessId} warehouses={warehouses} ingredients={transferIngredients} onSaved={() => { setShowNewTransfer(false); reload(); }} />
+        )}
+        {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
+        <div className="space-y-2">
+          {transfers.map((tr) => (
+            <div key={tr.id} className="rounded-lg border border-ink-line px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-base text-ivory">
+                  {tr.from?.name || t('New delivery')} → {tr.to?.name}
+                  <span className={`ms-2 rounded-full border px-2 py-0.5 text-xs ${TRANSFER_STATUS_STYLE[tr.status]}`}>{tr.status.replace('_', ' ')}</span>
+                </p>
+                <div className="flex items-center gap-3">
+                  {tr.status === 'requested' && <button type="button" onClick={() => handleAction(approveStockTransfer, tr.id)} className="text-sm text-brass hover:underline">{t('Approve')}</button>}
+                  {tr.status === 'approved' && tr.from_warehouse_id && <button type="button" onClick={() => handleAction(shipStockTransfer, tr.id)} className="text-sm text-brass hover:underline">{t('Mark shipped')}</button>}
+                  {(tr.status === 'in_transit' || (tr.status === 'approved' && !tr.from_warehouse_id)) && <button type="button" onClick={() => handleAction(receiveStockTransfer, tr.id)} className="text-sm text-success hover:underline">{t('Mark received')}</button>}
+                  {(tr.status === 'requested' || tr.status === 'approved') && <button type="button" onClick={() => handleAction(cancelStockTransfer, tr.id)} className="text-sm text-danger hover:underline">{t('Cancel')}</button>}
+                </div>
+              </div>
+              <p className="mt-1 text-sm text-ivory-dim">
+                {(tr.stock_transfer_items || []).map((i) => `${i.quantity} ${i.ingredients?.unit || ''} ${i.ingredients?.name || ''}`).join(', ')}
+              </p>
+            </div>
+          ))}
+          {!loading && transfers.length === 0 && <p className="text-ivory-dim">{t('No transfers yet.')}</p>}
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function PoAllocationRow({ allocation, businessId, ingredients, warehouses, onReceived }: {
+  allocation: PoAllocation; businessId: string; ingredients: Ingredient[]; warehouses: Warehouse[]; onReceived: () => void;
+}) {
+  const { t } = useT();
+  const [ingredientId, setIngredientId] = useState(allocation.ingredient_id || '');
+  const [warehouseId, setWarehouseId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleReceive() {
+    if (!ingredientId || !warehouseId) { setError('Pick which ingredient and warehouse this restocks'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await receivePoAllocation(businessId, allocation.id, { ingredientId, warehouseId });
+      onReceived();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not receive');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const item = allocation.purchase_order_items;
+  return (
+    <div className="rounded-lg border border-brass/30 bg-ink-soft p-4">
+      <p className="text-base text-ivory">
+        {allocation.quantity} {item?.item_unit} {item?.item_name}
+        {item?.purchase_orders?.suppliers?.name && <span className="text-ivory-dim"> · {item.purchase_orders.suppliers.name}</span>}
+      </p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <select value={ingredientId} onChange={(e) => setIngredientId(e.target.value)} className={inputClass}>
+          <option value="">{t('Restocks which ingredient?')}</option>
+          {ingredients.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+        </select>
+        <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className={inputClass}>
+          <option value="">{t('Into which warehouse?')}</option>
+          {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+        </select>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-3">
+        <PrimaryButton onClick={handleReceive} loading={saving} type="button">{t('Mark received')}</PrimaryButton>
+      </div>
+    </div>
+  );
+}
+
+function NewTransferForm({ businessId, warehouses, ingredients, onSaved }: {
+  businessId: string; warehouses: Warehouse[]; ingredients: Ingredient[]; onSaved: () => void;
+}) {
+  const { t } = useT();
+  const [fromId, setFromId] = useState('');
+  const [toId, setToId] = useState('');
+  const [ingredientId, setIngredientId] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    if (!toId || !ingredientId) { setError('Destination warehouse and an ingredient are required'); return; }
+    if (fromId && fromId === toId) { setError('Source and destination must be different'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await createStockTransfer(businessId, {
+        fromWarehouseId: fromId || null,
+        toWarehouseId: toId,
+        items: [{ ingredientId, quantity }],
+      });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create transfer');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-ink-line p-4">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Field label={t('From (leave blank for a fresh delivery)')}>
+          <select value={fromId} onChange={(e) => setFromId(e.target.value)} className={inputClass}>
+            <option value="">{t('No source - new delivery')}</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </Field>
+        <Field label={t('To')}>
+          <select value={toId} onChange={(e) => setToId(e.target.value)} className={inputClass}>
+            <option value="">{t('Select...')}</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </Field>
+        <Field label={t('Ingredient')}>
+          <select value={ingredientId} onChange={(e) => setIngredientId(e.target.value)} className={inputClass}>
+            <option value="">{t('Select...')}</option>
+            {ingredients.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+          </select>
+        </Field>
+        <Field label={t('Quantity')}>
+          <input type="number" min={0.01} step="0.01" onFocus={(e) => e.target.select()} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={inputClass} />
+        </Field>
+      </div>
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-3">
+        <PrimaryButton onClick={handleSave} loading={saving} type="button">{t('Create transfer')}</PrimaryButton>
+      </div>
+    </div>
   );
 }

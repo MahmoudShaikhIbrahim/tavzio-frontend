@@ -77,8 +77,6 @@ import HRPage from './pages/dashboard/HRPage';
 import PayrollPage from './pages/dashboard/PayrollPage';
 import AccountingPage from './pages/dashboard/AccountingPage';
 import ChannelManagerPage from './pages/dashboard/ChannelManagerPage';
-import WarehousesPage from './pages/dashboard/WarehousesPage';
-import StockTransfersPage from './pages/dashboard/StockTransfersPage';
 import MarketingPage from './pages/dashboard/MarketingPage';
 import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
 import ContractPage from './pages/dashboard/ContractPage';
@@ -238,8 +236,8 @@ export default function App() {
             <Route path="settings/payroll" element={<PayrollPage />} />
             <Route path="settings/accounting" element={<AccountingPage />} />
             <Route path="settings/channel-manager" element={<ChannelManagerPage />} />
-            <Route path="settings/warehouses" element={<WarehousesPage />} />
-            <Route path="settings/stock-transfers" element={<StockTransfersPage />} />
+            <Route path="settings/warehouses" element={<Navigate to="../inventory" replace />} />
+            <Route path="settings/stock-transfers" element={<Navigate to="../inventory" replace />} />
             <Route path="settings/online-booking" element={<Navigate to="../bookings" replace />} />
             <Route path="settings/marketing" element={<MarketingPage />} />
             <Route path="reconciliation" element={<PaymentReconciliationPage />} />
