@@ -43,7 +43,7 @@ export default function AccountSwitcher() {
         Switch account ▾
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-lg border border-ink-line bg-ink-soft p-1.5 shadow-lg">
+        <div className="absolute right-0 top-full z-dropdown mt-1 w-56 rounded-lg border border-ink-line bg-ink-soft p-1.5 shadow-lg">
           {links.map((link) => (
             <button
               type="button"

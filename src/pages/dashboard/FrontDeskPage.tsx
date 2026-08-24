@@ -13,6 +13,7 @@ import {
 } from '../../lib/authApi';
 import type { HotelRoom, HotelGuest, HotelReservation, HotelFolio, Card, HotelBookingGroup } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function FrontDeskPage() {
   const { user } = useSession();
@@ -54,6 +55,7 @@ export default function FrontDeskPage() {
 
 function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOpenFolio: (id: string) => void }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [reservations, setReservations] = useState<HotelReservation[]>([]);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [showNew, setShowNew] = useState(false);
@@ -89,7 +91,7 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
   }
 
   async function handleNoShow(reservationId: string) {
-    if (!confirm('Mark this reservation as a no-show?')) return;
+    if (!(await confirm({ title: t('Mark as no-show?'), message: t('Mark this reservation as a no-show?'), confirmLabel: t('Mark no-show'), danger: true }))) return;
     try {
       await markReservationNoShow(businessId, reservationId);
       reload();
@@ -354,6 +356,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
 
 function RoomsTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -390,7 +393,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleUnlink(cardId: string) {
-    if (!confirm(t('Disconnect this stand from the room? Tapping it will go back to the normal landing page until reconnected.'))) return;
+    if (!(await confirm({ title: t('Disconnect stand?'), message: t('Disconnect this stand from the room? Tapping it will go back to the normal landing page until reconnected.'), confirmLabel: t('Disconnect'), danger: true }))) return;
     await updateCard(businessId, cardId, { roomId: null });
     reload();
   }
@@ -594,6 +597,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
   splitConfirmOpen: boolean; onConfirmSplit: (companyName: string) => void; onCancelSplit: () => void;
 }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [splitCompanyName, setSplitCompanyName] = useState('');
   const [chargeDesc, setChargeDesc] = useState('');
   const [chargeAmount, setChargeAmount] = useState(0);
@@ -615,7 +619,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
   }
 
   async function handleDeleteCharge(chargeId: string) {
-    if (!confirm('Delete this charge? The guest will no longer be billed for it.')) return;
+    if (!(await confirm({ title: t('Delete charge?'), message: t('Delete this charge? The guest will no longer be billed for it.'), confirmLabel: t('Delete'), danger: true }))) return;
     await deleteFolioCharge(businessId, folio.id, chargeId);
     onReload();
   }
@@ -1055,6 +1059,7 @@ function TourismDirhamTab({ businessId }: { businessId: string }) {
 
 function BookingGroupsTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [groups, setGroups] = useState<HotelBookingGroup[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [groupName, setGroupName] = useState('');
@@ -1080,7 +1085,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(g: HotelBookingGroup) {
-    if (!confirm(`${t('Delete "')}${g.group_name}${t('"? Its reservations stay as they are, just no longer grouped together.')}`)) return;
+    if (!(await confirm({ title: t('Delete group?'), message: `${t('Delete "')}${g.group_name}${t('"? Its reservations stay as they are, just no longer grouped together.')}`, confirmLabel: t('Delete'), danger: true }))) return;
     await deleteBookingGroup(businessId, g.id);
     reload();
   }

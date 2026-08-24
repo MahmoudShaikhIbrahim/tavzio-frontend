@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { listOrgSuppliers, createOrgSupplier, updateOrgSupplier, deleteOrgSupplier } from '../../lib/authApi';
 import type { Supplier } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 // Confirmed design: one real supplier record shared across every
 // member business, instead of each business separately re-entering
 // the same real-world vendor's contact details.
 export default function OrgSuppliersPage() {
+  const confirm = useConfirm();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -18,7 +20,7 @@ export default function OrgSuppliersPage() {
   useEffect(reload, []);
 
   async function handleDelete(id: string) {
-    if (!confirm('Remove this supplier from the organization?')) return;
+    if (!(await confirm({ title: 'Remove supplier?', message: 'Remove this supplier from the organization?', confirmLabel: 'Remove', danger: true }))) return;
     try {
       await deleteOrgSupplier(id);
       reload();

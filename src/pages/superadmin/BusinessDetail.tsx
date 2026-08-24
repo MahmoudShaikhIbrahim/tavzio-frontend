@@ -10,8 +10,10 @@ import {
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { Field, inputClass } from '../../components/ui';
 import type { AdminBusiness, Card, BillingReceipt, BillingReceiptLineItem, Contract } from '../../types';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function BusinessDetail() {
+  const confirm = useConfirm();
   const { businessId } = useParams<{ businessId: string }>();
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -72,8 +74,8 @@ export default function BusinessDetail() {
           <ActionButton
             danger
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete ${business.name}? This cannot be undone.`)) {
+            onClick={async () => {
+              if (await confirm({ title: 'Delete business?', message: `Delete ${business.name}? This cannot be undone.`, confirmLabel: 'Delete', danger: true })) {
                 withBusy(() => deleteBusiness(businessId).then(() => { window.location.href = '/admin/super/businesses'; }));
               }
             }}
@@ -217,13 +219,14 @@ const BUSINESS_TYPES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clini
 // onboarding everywhere except here, since changing it is a structural
 // operation with real consequences, not a normal profile edit.
 function BusinessTypeEditor({ business, businessId, onSaved }: { business: AdminBusiness; businessId: string; onSaved: (b: AdminBusiness) => void }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(business.category);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     if (value === business.category) { setEditing(false); return; }
-    if (!confirm(`Change Business Type from "${business.category}" to "${value}"? This changes which features and dashboard this business gets.`)) return;
+    if (!(await confirm({ title: 'Change business type?', message: `Change Business Type from "${business.category}" to "${value}"? This changes which features and dashboard this business gets.`, danger: true }))) return;
     setSaving(true);
     try {
       const updated = await updateBusiness(businessId, { category: value } as Partial<AdminBusiness>);
@@ -260,11 +263,12 @@ function BusinessTypeEditor({ business, businessId, onSaved }: { business: Admin
 // only password-changing capability that existed before was for a
 // user changing their own password while already logged in.
 function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness; businessId: string }) {
+  const confirm = useConfirm();
   const [result, setResult] = useState<{ name: string; tempPassword: string } | null>(null);
   const [resetting, setResetting] = useState(false);
 
   async function handleReset() {
-    if (!confirm(`Reset the owner's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`)) return;
+    if (!(await confirm({ title: 'Reset password?', message: `Reset the owner's password for ${business.name}? They'll get a new temporary password and must set their own on next login.`, confirmLabel: 'Reset password' }))) return;
     setResetting(true);
     try {
       const res = await resetAccountPassword(businessId, business.owner);
@@ -292,11 +296,12 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
 }
 
 function AdminCardIssue({ business, businessId }: { business: AdminBusiness; businessId: string }) {
+  const confirm = useConfirm();
   const [issued, setIssued] = useState<Card | null>(null);
   const [issuing, setIssuing] = useState(false);
 
   async function handleIssue() {
-    if (!confirm(`Issue a fresh admin login card for ${business.name}'s admin account? Any old admin card stops working immediately, and they'll be signed out everywhere.`)) return;
+    if (!(await confirm({ title: 'Issue new admin card?', message: `Issue a fresh admin login card for ${business.name}'s admin account? Any old admin card stops working immediately, and they'll be signed out everywhere.`, danger: true }))) return;
     setIssuing(true);
     try {
       const card = await issueAdminCard(businessId, business.owner);
@@ -730,10 +735,11 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
 }
 
 function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt; businessId: string; onChange: () => void }) {
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   async function handleVoid() {
-    if (!confirm(`Delete receipt ${receipt.receipt_number}? This can't be undone.`)) return;
+    if (!(await confirm({ title: 'Delete receipt?', message: `Delete receipt ${receipt.receipt_number}? This can't be undone.`, confirmLabel: 'Delete', danger: true }))) return;
     setBusy(true);
     await voidReceipt(businessId, receipt.id);
     setBusy(false);
@@ -799,6 +805,7 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
 function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
   card: Card; cards: Card[]; businessId: string; onCardsChange: (c: Card[]) => void; onChange: () => void;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(card.label);
   const [copied, setCopied] = useState(false);
@@ -853,8 +860,8 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
           <option value="disabled">disabled</option>
         </select>
         <button type="button"
-          onClick={() => {
-            if (confirm(`Permanently delete this card? If the physical chip still exists, it will stop working entirely - only do this for a genuinely broken or lost card.`)) {
+          onClick={async () => {
+            if (await confirm({ title: 'Delete card?', message: `Permanently delete this card? If the physical chip still exists, it will stop working entirely - only do this for a genuinely broken or lost card.`, confirmLabel: 'Delete', danger: true })) {
               onCardsChange(cards.filter((c) => c.id !== card.id));
               deleteCard(businessId, card.id).catch(onChange);
             }

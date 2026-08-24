@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { listAllContracts, previewStandaloneContract, sendStandaloneContract, onboardContract, terminateContract, deleteContract } from '../../lib/authApi';
 import type { Contract } from '../../types';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const STATUS_STYLES: Record<string, string> = {
   draft: 'text-ivory-dim border-ink-line',
@@ -21,6 +22,7 @@ const TERMINATION_BASES: { value: 'non_payment' | 'material_breach' | 'client_co
 ];
 
 export default function ContractsListPage() {
+  const confirm = useConfirm();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function ContractsListPage() {
   }
 
   async function handleOnboard(contract: Contract) {
-    if (!confirm(`Onboard ${contract.client_business_name}? This creates their Tavzio account and emails them a link to set their password.`)) return;
+    if (!(await confirm({ title: 'Onboard business?', message: `Onboard ${contract.client_business_name}? This creates their Tavzio account and emails them a link to set their password.`, confirmLabel: 'Onboard' }))) return;
     setBusyId(contract.id);
     try {
       const res = await onboardContract(contract.id);
@@ -82,7 +84,7 @@ export default function ContractsListPage() {
     const confirmMsg = `Terminate ${contract.contract_number} on the basis of "${basisLabel}"? ${
       contract.business_id ? 'This will immediately suspend their account and email them a termination notice.' : 'This contract has no linked account yet.'
     } This cannot be undone.`;
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirm({ title: 'Terminate contract?', message: confirmMsg, confirmLabel: 'Terminate', danger: true }))) return;
     setBusyId(contract.id);
     try {
       await terminateContract(contract.id, terminationBasis, terminationReason);
@@ -97,7 +99,7 @@ export default function ContractsListPage() {
   }
 
   async function handleDelete(contract: Contract) {
-    if (!confirm(`Permanently delete ${contract.contract_number}? This only works because it was never signed - a signed contract can't be deleted, only terminated.`)) return;
+    if (!(await confirm({ title: 'Delete contract?', message: `Permanently delete ${contract.contract_number}? This only works because it was never signed - a signed contract can't be deleted, only terminated.`, confirmLabel: 'Delete', danger: true }))) return;
     setBusyId(contract.id);
     try {
       await deleteContract(contract.id);

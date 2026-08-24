@@ -3,10 +3,12 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listExternalHotelSystems, connectExternalHotelSystem, disconnectExternalHotelSystem, type ExternalHotelSystem } from '../../lib/authApi';
 import { Section } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const ROLE_LABEL: Record<string, string> = { channel_manager: 'Channel Manager', pos: 'Hotel POS', pms: 'Hotel PMS' };
 
 export default function ExternalHotelSystemsPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -46,7 +48,7 @@ export default function ExternalHotelSystemsPage() {
 
   async function handleDisconnect(provider: string) {
     if (!businessId) return;
-    if (!confirm('Disconnect this integration? You can reconnect any time.')) return;
+    if (!(await confirm({ title: 'Disconnect integration?', message: 'Disconnect this integration? You can reconnect any time.', confirmLabel: 'Disconnect' }))) return;
     setBusyProvider(provider);
     try {
       await disconnectExternalHotelSystem(businessId, provider);

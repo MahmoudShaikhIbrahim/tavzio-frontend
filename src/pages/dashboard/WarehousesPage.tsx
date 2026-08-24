@@ -4,6 +4,7 @@ import { useT } from '../../hooks/useT';
 import { listWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, getWarehouseStock } from '../../lib/authApi';
 import type { Warehouse, WarehouseStockLine } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const TYPE_LABEL: Record<string, string> = {
   central: 'Central',
@@ -14,6 +15,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function WarehousesPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -30,7 +32,7 @@ export default function WarehousesPage() {
 
   async function handleDelete(warehouseId: string) {
     if (!businessId) return;
-    if (!confirm(t('Delete this warehouse? Only possible if it has no stock left in it.'))) return;
+    if (!(await confirm({ title: t('Delete warehouse?'), message: t('Delete this warehouse? Only possible if it has no stock left in it.'), confirmLabel: t('Delete'), danger: true }))) return;
     try {
       await deleteWarehouse(businessId, warehouseId);
       reload();

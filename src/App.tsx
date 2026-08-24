@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './lib/ThemeContext';
+import { ConfirmDialogProvider } from './components/ConfirmDialog';
 import Home from './pages/Home';
 import DemoPage from './pages/DemoPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
@@ -112,6 +113,7 @@ function InviteHashRedirect() {
 export default function App() {
   return (
     <ThemeProvider>
+      <ConfirmDialogProvider>
       <BrowserRouter>
       {/* Real fix for a confirmed failure: Supabase's invite/recovery
           link only honors the app's requested redirect path if that
@@ -258,6 +260,7 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </BrowserRouter>
+      </ConfirmDialogProvider>
     </ThemeProvider>
   );
 }

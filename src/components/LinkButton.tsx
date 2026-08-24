@@ -38,9 +38,8 @@ export default function LinkButton({ linkKey, value, icon, label, imageUrl, slug
       onClick={() => {
         if (eventType) logEvent(slug, eventType).catch(() => {});
       }}
-      className="group flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-4 py-3.5
-                 text-ivory transition-colors duration-150 hover:border-brass/60 active:bg-ink
-                 active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)]"
+      className="group flex items-center gap-3 border-b border-ink-line/60 py-3.5
+                 text-ivory-dim transition-colors duration-150 last:border-b-0 hover:text-ivory active:opacity-70"
     >
       {imageUrl ? (
         <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">

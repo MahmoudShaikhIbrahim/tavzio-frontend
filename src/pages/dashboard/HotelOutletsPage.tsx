@@ -4,6 +4,7 @@ import { useT } from '../../hooks/useT';
 import { listHotelOutlets, createHotelOutlet, updateHotelOutlet, deleteHotelOutlet, setHotelOutletItems, listMenuItems } from '../../lib/authApi';
 import type { HotelOutlet, MenuItem } from '../../types';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const OUTLET_TYPES = [
   { value: 'room_service', label: 'Room Service' },
@@ -15,6 +16,7 @@ const OUTLET_TYPES = [
 ];
 
 export default function HotelOutletsPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -55,7 +57,7 @@ export default function HotelOutletsPage() {
   }
 
   async function handleDelete(outlet: HotelOutlet) {
-    if (!confirm(`${t('Delete')} "${outlet.name}"? ${t('Guests will no longer be able to order from it.')}`)) return;
+    if (!(await confirm({ title: t('Delete outlet?'), message: `${t('Delete')} "${outlet.name}"? ${t('Guests will no longer be able to order from it.')}`, confirmLabel: t('Delete'), danger: true }))) return;
     await deleteHotelOutlet(businessId!, outlet.id);
     reload();
   }

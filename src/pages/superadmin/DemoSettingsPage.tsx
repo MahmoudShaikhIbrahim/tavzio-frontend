@@ -5,6 +5,7 @@ import {
 } from '../../lib/authApi';
 import type { AdminBusiness } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 // Manages the independent menu backing the public /demo page. Confirmed
 // requirement: this is deliberately NOT a live link to any real
@@ -12,6 +13,7 @@ import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../c
 // values in once. Deleting the real account later never touches what's
 // here.
 export default function DemoSettingsPage() {
+  const confirm = useConfirm();
   const [items, setItems] = useState<DemoMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -50,7 +52,7 @@ export default function DemoSettingsPage() {
   }
 
   async function handleDelete(itemId: string) {
-    if (!confirm('Remove this item from the demo menu?')) return;
+    if (!(await confirm({ title: 'Remove item?', message: 'Remove this item from the demo menu?', confirmLabel: 'Remove', danger: true }))) return;
     setItems((prev) => prev.filter((i) => i.id !== itemId));
     await deleteDemoMenuItem(itemId).catch(reload);
   }

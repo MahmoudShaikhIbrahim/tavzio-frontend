@@ -522,7 +522,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       )}
 
       {showCheckout && (
-        <div className="fixed inset-0 z-20 flex items-end bg-black/60" onClick={() => !submitting && setShowCheckout(false)}>
+        <div className="fixed inset-0 z-sticky flex items-end bg-black/60" onClick={() => !submitting && setShowCheckout(false)}>
           <div className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
             <p className="font-display text-lg text-ivory">Pay to send your order</p>
             <p className="mt-1 text-sm text-ivory-dim">This business requires payment before your order reaches the kitchen.</p>
@@ -583,7 +583,7 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
   const lineTotal = (item.price + addonTotal) * quantity;
 
   return (
-    <div className="fixed inset-0 z-10 flex items-end bg-black/60" onClick={onClose}>
+    <div className="fixed inset-0 z-dropdown flex items-end bg-black/60" onClick={onClose}>
       <div
         className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
         onClick={(e) => e.stopPropagation()}

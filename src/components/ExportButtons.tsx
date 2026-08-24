@@ -22,8 +22,8 @@ export default function ExportButtons({ businessId, kind }: { businessId: string
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute end-0 z-20 mt-1.5 w-64 space-y-2 rounded-lg border border-ink-line bg-ink-soft p-3 shadow-xl">
+          <div className="fixed inset-0 z-dropdown" onClick={() => setOpen(false)} />
+          <div className="absolute end-0 z-sticky mt-1.5 w-64 space-y-2 rounded-lg border border-ink-line bg-ink-soft p-3 shadow-xl">
             <p className="text-sm text-ivory-dim">Leave blank for everything</p>
             <div className="flex gap-2">
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-1/2 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />

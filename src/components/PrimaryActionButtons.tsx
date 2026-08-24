@@ -12,8 +12,8 @@ interface Props {
 }
 
 const buttonClass =
-  'group flex w-full items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-4 py-3.5 ' +
-  'text-start text-ivory transition-colors duration-150 hover:border-brass/60 active:bg-ink ' +
+  'group flex w-full items-center gap-3 rounded-xl border border-brass/30 bg-ink-soft px-4 py-3.5 ' +
+  'text-start text-ivory transition-colors duration-150 hover:border-brass active:bg-ink ' +
   'active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)] disabled:opacity-50';
 
 const iconWrapClass = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass';

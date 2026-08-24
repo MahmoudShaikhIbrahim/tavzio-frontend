@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
-  listOrganizations, createOrganization, setBusinessOrganization, inviteOrgOwner,
+  listOrganizations, createOrganization, deleteOrganization, setBusinessOrganization, inviteOrgOwner,
   listBusinesses, type Organization,
 } from '../../lib/authApi';
 import type { AdminBusiness } from '../../types';
 import { Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function OrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -74,11 +75,13 @@ export default function OrganizationsPage() {
 function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: {
   org: Organization; allBusinesses: AdminBusiness[]; expanded: boolean; onToggle: () => void; onChange: () => void;
 }) {
+  const confirm = useConfirm();
   const [linkBusinessId, setLinkBusinessId] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [inviteResult, setInviteResult] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   const linkedIds = new Set((org.businesses || []).map((b) => b.id));
   const unlinkedBusinesses = allBusinesses.filter((b) => !linkedIds.has(b.id));
@@ -96,11 +99,36 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
   }
 
   async function handleUnlink(businessId: string) {
-    if (!confirm('Unlink this location from the organization? It keeps its own menu as-is, just stops receiving future publishes.')) return;
+    if (!(await confirm({
+      title: 'Unlink this location?',
+      message: 'Unlink this location from the organization? It keeps its own menu as-is, just stops receiving future publishes.',
+      confirmLabel: 'Unlink',
+    }))) return;
     setBusy(true);
     try {
       await setBusinessOrganization(businessId, null);
       onChange();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const locationCount = (org.businesses || []).length;
+
+  async function handleDelete() {
+    if (!(await confirm({
+      title: 'Delete organization?',
+      message: `Permanently delete "${org.name}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    }))) return;
+    setBusy(true);
+    setDeleteError('');
+    try {
+      await deleteOrganization(org.id);
+      onChange();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Could not delete organization');
     } finally {
       setBusy(false);
     }
@@ -131,10 +159,22 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
       <div className="flex items-center justify-between">
         <div>
           <p className="text-base text-ivory">{org.name}</p>
-          <p className="text-sm text-ivory-dim">{(org.businesses || []).length} location(s)</p>
+          <p className="text-sm text-ivory-dim">{locationCount} location(s)</p>
         </div>
-        <button type="button" onClick={onToggle} className="text-sm text-brass hover:underline">{expanded ? 'Close' : 'Manage'}</button>
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={onToggle} className="text-sm text-brass hover:underline">{expanded ? 'Close' : 'Manage'}</button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={busy || locationCount > 0}
+            title={locationCount > 0 ? 'Unlink every location first' : undefined}
+            className="text-sm text-danger hover:underline disabled:opacity-40 disabled:hover:no-underline"
+          >
+            Delete
+          </button>
+        </div>
       </div>
+      {deleteError && <p className="mt-1 text-sm text-danger">{deleteError}</p>}
 
       {expanded && (
         <div className="mt-4 space-y-4 border-t border-ink-line pt-4">

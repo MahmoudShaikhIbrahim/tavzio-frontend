@@ -11,6 +11,7 @@ import {
 import { uploadStaffDocumentFile, getStaffDocumentUrl } from '../../lib/supabaseClient';
 import type { StaffMember, AdminBusiness, StaffSchedule, LaborCostReport } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const DOC_TYPES = ['Emirates ID', 'Passport', 'Visa', 'Labor Card', 'Employment Contract', 'Other'];
 
@@ -86,6 +87,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 function DocumentsTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [documents, setDocuments] = useState<StaffDocument[]>([]);
   const [staffId, setStaffId] = useState('');
@@ -129,7 +131,7 @@ function DocumentsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(doc: StaffDocument) {
-    if (!confirm(`${t('Delete')} "${doc.label || doc.doc_type}"? ${t("This can't be undone.")}`)) return;
+    if (!(await confirm({ title: t('Delete document?'), message: `${t('Delete')} "${doc.label || doc.doc_type}"? ${t("This can't be undone.")}`, confirmLabel: t('Delete'), danger: true }))) return;
     await deleteStaffDocument(businessId, doc.id);
     reload();
   }
@@ -270,6 +272,7 @@ function CommissionTab({ businessId }: { businessId: string }) {
 
 function SchedulingTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [schedules, setSchedules] = useState<StaffSchedule[]>([]);
   const [totalHours, setTotalHours] = useState(0);
@@ -314,7 +317,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('Remove this scheduled shift?'))) return;
+    if (!(await confirm({ title: t('Remove shift?'), message: t('Remove this scheduled shift?'), confirmLabel: t('Remove'), danger: true }))) return;
     await deleteSchedule(businessId, id);
     reload();
   }

@@ -3,8 +3,10 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { getCurrentBusinessDate, getNightAuditPreview, runNightAudit, listNightAudits, type NightAudit, type NightAuditPreview } from '../../lib/authApi';
 import { Section } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function NightAuditPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -26,7 +28,7 @@ export default function NightAuditPage() {
     if (!businessId) return;
     const parts = [`${t('Run night audit for')} ${businessDate}? ${t('This closes out the day - occupancy, revenue, and arrivals/departures get locked in.')}`];
     if (preview?.noShowCandidateCount) parts.push(`${preview.noShowCandidateCount} ${t('unarrived confirmed reservation(s) will be marked no-show.')}`);
-    if (!confirm(parts.join('\n\n'))) return;
+    if (!(await confirm({ title: t('Run night audit?'), message: parts.join('\n\n'), confirmLabel: t('Run audit') }))) return;
     setRunning(true);
     setError('');
     try {

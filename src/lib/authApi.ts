@@ -759,6 +759,32 @@ export function deleteStaffAccount(businessId: string, userId: string) {
   });
 }
 
+// --- Self-service organizations (multi-location) ---
+
+export interface BusinessOrganization {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+export function getBusinessOrganization(businessId: string) {
+  return authFetch<BusinessOrganization | null>(`/api/businesses/${businessId}/organization`);
+}
+
+export function appointOrgOwner(
+  businessId: string,
+  payload: { name: string; email: string; orgName?: string } | { staffId: string; orgName?: string }
+) {
+  return authFetch<StaffMember>(`/api/businesses/${businessId}/organization/owner`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function leaveOrganization(businessId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/organization`, { method: 'DELETE' });
+}
+
 // getMyOpenShift returns null (a bare 204/empty-body-shaped response) when
 // nothing's open - authFetch<StaffShift | null> models that honestly
 // rather than pretending there's always a shift object.
@@ -1216,6 +1242,9 @@ export function listOrganizations() {
 }
 export function createOrganization(name: string) {
   return authFetch<Organization>('/api/organizations', { method: 'POST', body: JSON.stringify({ name }) });
+}
+export function deleteOrganization(organizationId: string) {
+  return authFetch<{ message: string; id: string }>(`/api/organizations/${organizationId}`, { method: 'DELETE' });
 }
 export function setBusinessOrganization(businessId: string, organizationId: string | null) {
   return authFetch<{ id: string }>(`/api/organizations/businesses/${businessId}/organization`, {

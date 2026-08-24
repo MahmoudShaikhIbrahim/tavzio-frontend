@@ -3,11 +3,13 @@ import {
   listSuperAdminDigitalCards, createSuperAdminDigitalCard, updateSuperAdminDigitalCard, deleteSuperAdminDigitalCard,
 } from '../../lib/authApi';
 import type { DigitalCard } from '../../types';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 const SITE = window.location.origin;
 
 export default function SuperAdminDigitalCardsPage() {
+  const confirm = useConfirm();
   const [cards, setCards] = useState<DigitalCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -33,7 +35,7 @@ export default function SuperAdminDigitalCardsPage() {
   }
 
   async function handleDelete(card: DigitalCard) {
-    if (!confirm(`Delete "${card.name}"? This can't be undone.`)) return;
+    if (!(await confirm({ title: 'Delete card?', message: `Delete "${card.name}"? This can't be undone.`, confirmLabel: 'Delete', danger: true }))) return;
     await deleteSuperAdminDigitalCard(card.id);
     reload();
   }

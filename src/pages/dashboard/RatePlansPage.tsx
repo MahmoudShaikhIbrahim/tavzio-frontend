@@ -8,6 +8,7 @@ import {
   getOccupancyForecast, type OccupancyForecast,
 } from '../../lib/authApi';
 import { Section, Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 // Matches the actual database constraint on hotel_rate_plans.rate_type -
 // confirmed against the migration, not guessed.
@@ -23,6 +24,7 @@ function spacedWord(t: (text: string) => string, raw: string) {
 }
 
 export default function RatePlansPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -190,7 +192,7 @@ function PricingRulesSection({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t('Remove this pricing rule?'))) return;
+    if (!(await confirm({ title: t('Remove pricing rule?'), message: t('Remove this pricing rule?'), confirmLabel: t('Remove'), danger: true }))) return;
     await deletePricingRule(businessId, id);
     reload();
   }

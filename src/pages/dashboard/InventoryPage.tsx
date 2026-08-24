@@ -16,6 +16,7 @@ import type {
   Warehouse, WarehouseStockLine, StockTransfer, PoAllocation,
 } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const UNITS = ['g', 'kg', 'ml', 'l', 'piece'];
 const WASTE_CATEGORIES = [
@@ -68,6 +69,7 @@ export default function InventoryPage() {
 
 function IngredientsTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -111,7 +113,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`${t('Delete')} "${name}"? ${t("This can't be undone.")}`)) return;
+    if (!(await confirm({ title: t('Delete ingredient?'), message: `${t('Delete')} "${name}"? ${t("This can't be undone.")}`, confirmLabel: t('Delete'), danger: true }))) return;
     setError('');
     try {
       await deleteIngredient(businessId, id);
@@ -805,6 +807,7 @@ const WAREHOUSE_TYPE_LABEL: Record<string, string> = {
 
 function WarehousesTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -817,7 +820,7 @@ function WarehousesTab({ businessId }: { businessId: string }) {
   useEffect(reload, [businessId]);
 
   async function handleDelete(warehouseId: string) {
-    if (!confirm(t('Delete this warehouse? Only possible if it has no stock left in it.'))) return;
+    if (!(await confirm({ title: t('Delete warehouse?'), message: t('Delete this warehouse? Only possible if it has no stock left in it.'), confirmLabel: t('Delete'), danger: true }))) return;
     try {
       await deleteWarehouse(businessId, warehouseId);
       reload();

@@ -754,7 +754,7 @@ export interface Card {
 export interface StaffMember {
   id: string;
   name: string;
-  role: 'business_owner' | 'staff';
+  role: 'business_owner' | 'staff' | 'org_owner';
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -762,6 +762,7 @@ export interface StaffMember {
   assigned_outlet_ids: string[] | null;
   full_access: boolean;
   nav_layout: { hidden: string[]; order: string[] } | null;
+  organization_id: string | null;
 }
 
 export interface AnalyticsSummary {

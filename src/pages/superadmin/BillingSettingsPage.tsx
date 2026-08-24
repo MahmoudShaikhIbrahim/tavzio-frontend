@@ -3,12 +3,14 @@ import { getReceiptBranding, updateReceiptBranding, registerZiinaWebhook } from 
 import { uploadBusinessFile } from '../../lib/supabaseClient';
 import { Field, Section, inputClass } from '../../components/ui';
 import type { ReceiptBranding } from '../../types';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 // Reuses the existing business-assets bucket under a fixed "platform"
 // path - super_admin already has write access anywhere in that bucket
 // (confirmed against the real storage policy), so no new bucket or
 // migration is needed for this.
 export default function BillingSettingsPage() {
+  const confirm = useConfirm();
   const [branding, setBranding] = useState<ReceiptBranding | null>(null);
   const [legalName, setLegalName] = useState('');
   const [issuerTrn, setIssuerTrn] = useState('');
@@ -48,9 +50,12 @@ export default function BillingSettingsPage() {
   }
 
   async function handleRegisterWebhook() {
-    if (!confirm(
-      "This points Ziina's account-wide webhook at Tavzio. Since Scripzio shares the same Ziina account, this OVERWRITES whatever webhook is currently registered - Tavzio will then forward anything that isn't its own back to Scripzio automatically. Only run this once, when first setting this up. Continue?"
-    )) return;
+    if (!(await confirm({
+      title: 'Register webhook?',
+      message: "This points Ziina's account-wide webhook at Tavzio. Since Scripzio shares the same Ziina account, this OVERWRITES whatever webhook is currently registered - Tavzio will then forward anything that isn't its own back to Scripzio automatically. Only run this once, when first setting this up. Continue?",
+      confirmLabel: 'Register',
+      danger: true,
+    }))) return;
     setRegistering(true);
     setRegisterResult('');
     try {

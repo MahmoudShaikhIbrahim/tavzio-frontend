@@ -40,6 +40,17 @@ export default {
       animation: {
         'tap-ripple': 'tap-ripple 1.1s cubic-bezier(0.22, 1, 0.36, 1) 1',
       },
+      // Real semantic scale (found missing during the design audit -
+      // every stacking value across the app was a standalone number
+      // like z-10/z-40 with no documented relationship to any other).
+      // Use these names going forward instead of arbitrary numbers.
+      zIndex: {
+        dropdown: '10',
+        sticky: '20',
+        'modal-backdrop': '30',
+        modal: '40',
+        toast: '50',
+      },
     },
   },
   plugins: [],

@@ -5,8 +5,10 @@ import {
   type Organization, type OrgMenuCategory,
 } from '../../lib/authApi';
 import { Section, Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function OrgMenuPage() {
+  const confirm = useConfirm();
   const [org, setOrg] = useState<Organization | null>(null);
   const [categories, setCategories] = useState<OrgMenuCategory[]>([]);
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -41,7 +43,7 @@ export default function OrgMenuPage() {
   }
 
   async function handleDeleteItem(itemId: string) {
-    if (!confirm('Remove this item from the master menu? Locations that already published it keep their own copy.')) return;
+    if (!(await confirm({ title: 'Remove item?', message: 'Remove this item from the master menu? Locations that already published it keep their own copy.', confirmLabel: 'Remove', danger: true }))) return;
     await deleteOrgMenuItem(itemId);
     reload();
   }

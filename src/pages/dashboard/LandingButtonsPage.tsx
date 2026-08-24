@@ -13,6 +13,7 @@ import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
 import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function LandingButtonsPage() {
   const { user } = useSession();
@@ -66,6 +67,7 @@ const ROUTING_TYPE_LABELS: Record<string, string> = {
 // NFC portal) that has its own separate button set.
 function GuestPortalServicesSection({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [services, setServices] = useState<HotelGuestServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -90,7 +92,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
   }
 
   async function handleDelete(id: string, label: string) {
-    if (!confirm(`${t('Remove')} "${label}" ${t('from the guest portal?')}`)) return;
+    if (!(await confirm({ title: t('Remove item?'), message: `${t('Remove')} "${label}" ${t('from the guest portal?')}`, confirmLabel: t('Remove'), danger: true }))) return;
     await deleteGuestService(businessId, id);
     reload();
   }

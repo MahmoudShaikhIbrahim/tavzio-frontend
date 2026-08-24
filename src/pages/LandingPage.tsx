@@ -87,7 +87,7 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
       {/* Deliberately OUTSIDE the cover's overflow-hidden box - the switcher
           just sits visually in the same spot via absolute positioning
           against the page itself, but its dropdown is never clipped now. */}
-      <div className="absolute end-4 top-4 z-10 flex items-center gap-2">
+      <div className="absolute end-4 top-4 z-dropdown flex items-center gap-2">
         <ThemeToggle />
         <LanguageSwitcher />
       </div>

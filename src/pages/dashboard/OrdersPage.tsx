@@ -13,6 +13,7 @@ import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../.
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
 import ExportButtons from '../../components/ExportButtons';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   // listOrders filters awaiting_payment out server-side - this view never
@@ -39,6 +40,7 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
 const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export default function OrdersPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const navigate = useNavigate();
@@ -366,7 +368,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
   async function handleClearTable() {
     if (!cardId) return;
-    if (!confirm(`${t('Clear')} ${table}? ${t('This voids everything currently unpaid at this table.')}`)) return;
+    if (!(await confirm({ title: t('Clear table?'), message: `${t('Clear')} ${table}? ${t('This voids everything currently unpaid at this table.')}`, confirmLabel: t('Clear'), danger: true }))) return;
     setClearing(true);
     // Matches the backend's own rule exactly: skip only an order that's
     // genuinely fully paid already (that belongs to Mark Completed). An
@@ -565,7 +567,7 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
+    <div className="fixed inset-0 z-toast flex items-center justify-center bg-ink/80 p-4">
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-ink-line bg-ink p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">{t('Record payment')}</h2>

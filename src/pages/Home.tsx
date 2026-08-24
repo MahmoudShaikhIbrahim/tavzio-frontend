@@ -72,7 +72,7 @@ export default function Home() {
       {/* Header - sticky, with real anchor navigation into sections
           that actually exist on this page (not decorative nav items
           pointing nowhere). */}
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-ink-line bg-ink/90 px-8 py-5 backdrop-blur">
+      <div className="sticky top-0 z-modal flex items-center justify-between border-b border-ink-line bg-ink/90 px-8 py-5 backdrop-blur">
         <div className="flex items-center gap-2">
           <Logo className="h-9 w-auto" />
         </div>

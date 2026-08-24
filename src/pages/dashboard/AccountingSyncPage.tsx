@@ -4,8 +4,10 @@ import { useT } from '../../hooks/useT';
 import { useSearchParams } from 'react-router-dom';
 import { getZohoBooksConnectUrl, getZohoBooksStatus, disconnectZohoBooks, syncZohoBooksReceipts } from '../../lib/authApi';
 import { Section } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function AccountingSyncPage() {
+  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -44,7 +46,7 @@ export default function AccountingSyncPage() {
 
   async function handleDisconnect() {
     if (!businessId) return;
-    if (!confirm(t('Disconnect Zoho Books? Already-synced bills stay in your Zoho account.'))) return;
+    if (!(await confirm({ title: t('Disconnect Zoho Books?'), message: t('Disconnect Zoho Books? Already-synced bills stay in your Zoho account.'), confirmLabel: t('Disconnect') }))) return;
     await disconnectZohoBooks(businessId);
     reload();
   }
