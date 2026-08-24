@@ -43,7 +43,7 @@ export function getSupabase() {
 // for each. Returns an unsubscribe function - always call it on unmount.
 export function subscribeToBusinessTable(
   businessId: string,
-  table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims' | 'housekeeping_tasks' | 'maintenance_tickets' | 'guest_service_requests',
+  table: 'events' | 'loyalty_memberships' | 'loyalty_transactions' | 'cards' | 'orders' | 'order_items' | 'bookings' | 'payments' | 'custom_buttons' | 'support_messages' | 'loyalty_reward_claims' | 'housekeeping_tasks' | 'maintenance_tickets' | 'guest_service_requests' | 'profiles',
   onChange: (row: Record<string, unknown>) => void
 ) {
   // Deliberately a unique name per call, not just business+table - a

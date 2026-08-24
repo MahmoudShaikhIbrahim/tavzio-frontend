@@ -5,6 +5,7 @@ import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaff
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 
 export default function StaffPage() {
   const { user } = useSession();
@@ -38,6 +39,19 @@ export default function StaffPage() {
   }
 
   useEffect(reload, [businessId]);
+
+  // Live-updates the Team list on any staff/owner profile change for this
+  // business - a newly invited account, a role/section change made from
+  // another tab, a deactivate/reactivate - without waiting for a manual
+  // page reload. Full refetch on each event rather than merging the
+  // changed row in by hand: listStaff's response shape (assigned_sections,
+  // assigned_outlet_ids, full_access, etc.) is exactly what this page
+  // already renders from, so reusing it here can't drift out of sync
+  // with what a manual reload would show.
+  useEffect(() => {
+    if (!businessId) return;
+    return subscribeToBusinessTable(businessId, 'profiles', reload);
+  }, [businessId]);
 
   // Outlet assignment is hotel-only (confirmed: restaurants may get this
   // later, not yet) - the outlet list only ever gets fetched when it
