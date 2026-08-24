@@ -211,6 +211,20 @@ export function cancelPublicBooking(bookingId: string, phone: string) {
   });
 }
 
+export interface MyBooking {
+  id: string; guest_name: string; party_size: number; requested_at: string;
+  note: string; status: string; down_payment_status: string;
+}
+export function listMyBookings(slug: string, phone: string) {
+  return request<MyBooking[]>(`/api/public/business/${slug}/my-bookings?phone=${encodeURIComponent(phone)}`);
+}
+
+export function reschedulePublicBooking(bookingId: string, phone: string, requestedAt: string, partySize?: number) {
+  return request<MyBooking>(`/api/public/bookings/${bookingId}/reschedule`, {
+    method: 'PATCH', body: JSON.stringify({ phone, requestedAt, partySize }),
+  });
+}
+
 export interface BookingArrival {
   id: string; guest_name: string; party_size: number; requested_at: string;
 }

@@ -196,4 +196,14 @@ export interface TranslationDict {
   tbCancelling: string;
   tbBookingCancelled: string;
   tbBookingCancelledDesc: string;
+  tbManageBooking: string;
+  tbManageBookingPrompt: string;
+  tbManageBookingLink: string;
+  tbYourBookings: string;
+  tbNoUpcomingBookings: string;
+  tbReschedule: string;
+  tbSaveChanges: string;
+  tbCancelEdit: string;
+  tbStatusConfirmed: string;
+  tbStatusPending: string;
 }

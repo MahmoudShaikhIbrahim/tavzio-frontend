@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
   getBookingConfig, requestBookingOtp, verifyBookingOtp, submitPublicBooking, cancelPublicBooking,
+  listMyBookings, reschedulePublicBooking, type MyBooking,
   getBookingPaymentStatus, getBusiness, type BookingConfig,
 } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
@@ -23,7 +24,7 @@ const FOOD_TIMING_OPTIONS = [
   { value: 15, labelKey: 'tbReady15' as const },
 ];
 
-type Step = 'loading' | 'notAvailable' | 'form' | 'otp' | 'submitting' | 'confirmed' | 'paymentPending' | 'paymentFailed';
+type Step = 'loading' | 'notAvailable' | 'form' | 'otp' | 'submitting' | 'confirmed' | 'paymentPending' | 'paymentFailed' | 'managePhone' | 'manageOtp' | 'manageList';
 
 interface CartLine { menuItemId: string; name: string; price: number; quantity: number }
 
@@ -60,6 +61,11 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelled, setCancelled] = useState(false);
+  const [managePhone, setManagePhone] = useState('');
+  const [manageOtp, setManageOtp] = useState('');
+  const [myBookings, setMyBookings] = useState<MyBooking[]>([]);
+  const [rescheduling, setRescheduling] = useState<string | null>(null);
+  const [manageBusy, setManageBusy] = useState(false);
 
   useEffect(() => {
     getBusiness(slug).then(setBusiness).catch(() => {});
@@ -164,6 +170,63 @@ function BookingPageContent({ slug }: { slug: string }) {
     }
   }
 
+  async function handleRequestManageOtp(e: FormEvent) {
+    e.preventDefault();
+    if (!managePhone.trim()) return;
+    setManageBusy(true);
+    setError('');
+    try {
+      await requestBookingOtp(slug, managePhone.trim());
+      setStep('manageOtp');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send verification code');
+    } finally {
+      setManageBusy(false);
+    }
+  }
+
+  async function handleVerifyManageOtp(e: FormEvent) {
+    e.preventDefault();
+    setManageBusy(true);
+    setError('');
+    try {
+      await verifyBookingOtp(slug, managePhone.trim(), manageOtp);
+      const bookings = await listMyBookings(slug, managePhone.trim());
+      setMyBookings(bookings);
+      setStep('manageList');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Incorrect code');
+    } finally {
+      setManageBusy(false);
+    }
+  }
+
+  async function handleCancelFromList(id: string) {
+    setManageBusy(true);
+    try {
+      await cancelPublicBooking(id, managePhone.trim());
+      setMyBookings((prev) => prev.filter((b) => b.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not cancel this booking');
+    } finally {
+      setManageBusy(false);
+    }
+  }
+
+  async function handleReschedule(id: string, newDate: string, newTime: string, newPartySize: number) {
+    setManageBusy(true);
+    setError('');
+    try {
+      const updated = await reschedulePublicBooking(id, managePhone.trim(), `${newDate}T${newTime}:00`, newPartySize);
+      setMyBookings((prev) => prev.map((b) => (b.id === id ? { ...b, requested_at: updated.requested_at, party_size: updated.party_size } : b)));
+      setRescheduling(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not reschedule this booking');
+    } finally {
+      setManageBusy(false);
+    }
+  }
+
   const themeStyle = buildBusinessThemeVars(business?.theme?.customerBackground, business?.theme?.customerButton);
 
   if (step === 'loading') return <LoadingShell />;
@@ -263,7 +326,89 @@ function BookingPageContent({ slug }: { slug: string }) {
     );
   }
 
-  // step === 'form'
+  if (step === 'managePhone') {
+    return (
+      <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
+        <div className="mx-auto max-w-md px-6 pt-14 pb-16">
+          <button type="button" onClick={() => setStep('form')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <div className="mt-6 rounded-xl border border-brass/30 bg-ink-soft p-5">
+            <p className="font-mono text-[11px] uppercase tracking-wider text-brass">{t('tbManageBooking')}</p>
+            <p className="mt-2 text-sm text-ivory-dim">{t('tbManageBookingPrompt')}</p>
+            <form onSubmit={handleRequestManageOtp} className="mt-3 space-y-3">
+              <input
+                type="tel" inputMode="tel" required placeholder={t('phoneNumber')}
+                value={managePhone} onChange={(e) => setManagePhone(e.target.value)}
+                className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
+              />
+              {error && <p className="text-sm text-danger">{error}</p>}
+              <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50">
+                {manageBusy ? t('tbSendingCode') : t('tbSendVerificationCode')}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'manageOtp') {
+    return (
+      <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
+        <div className="mx-auto max-w-md px-6 pt-14 pb-16">
+          <button type="button" onClick={() => setStep('managePhone')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <h1 className="mt-3 font-display text-2xl text-ivory">{t('tbVerifyNumber')}</h1>
+          <p className="mt-1 text-sm text-ivory-dim">{t('tbCodeSentTo', { phone: managePhone })}</p>
+          <form onSubmit={handleVerifyManageOtp} className="mt-6 space-y-3">
+            <input
+              type="text" inputMode="numeric" maxLength={6} required placeholder={t('tbEnterCode')}
+              autoComplete="one-time-code"
+              value={manageOtp} onChange={(e) => setManageOtp(e.target.value.replace(/\D/g, ''))}
+              className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-3 text-center text-2xl tracking-[0.3em] text-ivory placeholder:text-base placeholder:tracking-normal placeholder:text-ivory-dim/60"
+            />
+            {error && <p className="text-sm text-danger">{error}</p>}
+            <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50">
+              {manageBusy ? t('tbConfirming') : t('tbConfirmBooking')}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'manageList') {
+    return (
+      <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
+        <div className="mx-auto max-w-md px-6 pt-14 pb-16">
+          <button type="button" onClick={() => setStep('form')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <h1 className="mt-3 font-display text-2xl text-ivory">{t('tbYourBookings')}</h1>
+          {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+          <div className="mt-4 space-y-3">
+            {myBookings.length === 0 && <p className="text-sm text-ivory-dim">{t('tbNoUpcomingBookings')}</p>}
+            {myBookings.map((b) => (
+              <div key={b.id} className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+                <p className="text-ivory">{new Date(b.requested_at).toLocaleString()}</p>
+                <p className="text-sm text-ivory-dim">{t('tbGuests')}: {b.party_size} · {t(b.status === 'confirmed' ? 'tbStatusConfirmed' : 'tbStatusPending')}</p>
+                {rescheduling === b.id ? (
+                  <RescheduleForm booking={b} busy={manageBusy} onCancel={() => setRescheduling(null)} onSave={handleReschedule} />
+                ) : (
+                  <div className="mt-3 flex gap-3">
+                    <button type="button" disabled={manageBusy} onClick={() => setRescheduling(b.id)} className="text-sm text-brass hover:underline disabled:opacity-50">
+                      {t('tbReschedule')}
+                    </button>
+                    <button type="button" disabled={manageBusy} onClick={() => handleCancelFromList(b.id)} className="text-sm text-danger hover:underline disabled:opacity-50">
+                      {t('tbCancelBooking')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
       <div className="mx-auto max-w-md px-6 pt-14 pb-16">
@@ -272,6 +417,9 @@ function BookingPageContent({ slug }: { slug: string }) {
           <LanguageSwitcher />
         </div>
         {config?.businessName && <p className="mt-1 text-sm text-brass">{config.businessName}</p>}
+        <button type="button" onClick={() => { setError(''); setStep('managePhone'); }} className="mt-3 text-sm text-ivory-dim underline decoration-ink-line hover:text-ivory">
+          {t('tbManageBookingLink')}
+        </button>
 
         <form onSubmit={handleSendOtp} className="mt-6 space-y-3">
           <input type="text" required placeholder={t('tbYourName')} value={guestName} onChange={(e) => setGuestName(e.target.value)}
@@ -376,6 +524,38 @@ function LoadingShell() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-ink">
       <div className="h-10 w-10 animate-pulse rounded-full border-2 border-brass/40" />
+    </div>
+  );
+}
+
+function RescheduleForm({ booking, busy, onCancel, onSave }: {
+  booking: MyBooking; busy: boolean; onCancel: () => void;
+  onSave: (id: string, date: string, time: string, partySize: number) => void;
+}) {
+  const { t } = useLanguage();
+  const current = new Date(booking.requested_at);
+  const [date, setDate] = useState(current.toISOString().slice(0, 10));
+  const [time, setTime] = useState(current.toTimeString().slice(0, 5));
+  const [partySize, setPartySize] = useState(booking.party_size);
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-ink-line pt-3">
+      <div className="grid grid-cols-3 gap-2">
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+          className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory [color-scheme:dark]" />
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
+          className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory [color-scheme:dark]" />
+        <input type="number" min={1} value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
+          className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-center text-sm text-ivory" />
+      </div>
+      <div className="flex gap-3">
+        <button type="button" disabled={busy} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+          {busy ? t('tbConfirming') : t('tbSaveChanges')}
+        </button>
+        <button type="button" disabled={busy} onClick={onCancel} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">
+          {t('tbCancelEdit')}
+        </button>
+      </div>
     </div>
   );
 }
