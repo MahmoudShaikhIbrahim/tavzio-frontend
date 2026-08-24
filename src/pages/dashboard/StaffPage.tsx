@@ -3,7 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
-import { SECTION_OPTIONS } from '../../lib/dashboardSections';
+import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 
@@ -14,7 +14,7 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [inviteSections, setInviteSections] = useState<string[]>(SECTION_OPTIONS.map((o) => o.key));
+  const [inviteSections, setInviteSections] = useState<string[]>(sectionOptionsFor(false).map((o) => o.key));
   const [restrictOnInvite, setRestrictOnInvite] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inviteError, setInviteError] = useState('');
@@ -22,6 +22,8 @@ export default function StaffPage() {
   const [resetResult, setResetResult] = useState<{ name: string; tempPassword: string } | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState('');
+  const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
+  const [togglingFullAccessId, setTogglingFullAccessId] = useState<string | null>(null);
   const [editingSectionsFor, setEditingSectionsFor] = useState<string | null>(null);
   const [editingOutletsFor, setEditingOutletsFor] = useState<string | null>(null);
   const [isHotel, setIsHotel] = useState(false);
@@ -59,8 +61,16 @@ export default function StaffPage() {
   useEffect(() => {
     if (!businessId) return;
     getBusiness(businessId).then((b) => {
-      setIsHotel(b.category === 'hotel');
-      if (b.category === 'hotel') listHotelOutlets(businessId).then(setOutlets);
+      const hotel = b.category === 'hotel';
+      setIsHotel(hotel);
+      // Re-sync the invite form's default (all-selected) set to the
+      // business's real category - without this, a hotel would keep the
+      // restaurant-scoped default (set at mount, before this fetch
+      // resolves) for the brief window before this effect runs, and
+      // "Restrict sections" would offer Tables while quietly missing
+      // Front Desk/Housekeeping.
+      setInviteSections(sectionOptionsFor(hotel).map((o) => o.key));
+      if (hotel) listHotelOutlets(businessId).then(setOutlets);
     }).catch(() => {});
   }, [businessId]);
 
@@ -78,7 +88,7 @@ export default function StaffPage() {
     setInviteError('');
     try {
       await inviteStaff(businessId!, name, email, restrictOnInvite ? inviteSections : null);
-      setName(''); setEmail(''); setRestrictOnInvite(false); setInviteSections(SECTION_OPTIONS.map((o) => o.key));
+      setName(''); setEmail(''); setRestrictOnInvite(false); setInviteSections(sectionOptionsFor(isHotel).map((o) => o.key));
       reload();
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Could not add this staff member');
@@ -132,17 +142,47 @@ export default function StaffPage() {
   // will pass every owner-only check across the whole app - billing,
   // contracts, deleting things, all of it) - confirmed explicitly every
   // time, both directions, rather than a silent toggle.
+  //
+  // Real fix for a confirmed bug: this had no in-flight guard at all -
+  // unlike every other action button on this page (delete, resend,
+  // deactivate now), nothing disabled the button or gave any feedback
+  // while the PATCH was in the air, so a person unsure whether their
+  // click registered would click again - firing a second overlapping
+  // PATCH with the SAME `next` value computed from the same stale `s`,
+  // which can flip the account back to where it started once both
+  // responses land, depending on which one wins the race. The confirm()
+  // dialog blocks the UI thread, so it can't be what's producing repeat
+  // requests - only a second real click after the first one returns can.
   async function handleToggleFullAccess(s: StaffMember) {
+    if (togglingFullAccessId === s.id) return;
     const next = !s.full_access;
     const message = next
       ? t('Give {name} full owner-equivalent access? They will be able to see and do everything you can, including billing, contracts, and staff management.').replace('{name}', s.name)
       : t('Revoke full access from {name}? They will go back to only their assigned sections.').replace('{name}', s.name);
     if (!confirm(message)) return;
+    setTogglingFullAccessId(s.id);
     setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, full_access: next } : m)));
     try {
       await setStaffFullAccess(businessId!, s.id, next);
     } catch {
       reload();
+    } finally {
+      setTogglingFullAccessId(null);
+    }
+  }
+
+  // Same missing-guard bug as full-access above, same fix.
+  async function handleToggleActive(s: StaffMember) {
+    if (togglingActiveId === s.id) return;
+    const next = !s.is_active;
+    setTogglingActiveId(s.id);
+    setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, is_active: next } : m)));
+    try {
+      await setStaffActive(businessId!, s.id, next);
+    } catch {
+      reload();
+    } finally {
+      setTogglingActiveId(null);
     }
   }
 
@@ -216,13 +256,11 @@ export default function StaffPage() {
                 {s.role === 'staff' && (
                   <>
                     <button type="button"
-                      onClick={() => {
-                        setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, is_active: !m.is_active } : m)));
-                        setStaffActive(businessId, s.id, !s.is_active).catch(reload);
-                      }}
-                      className="text-sm text-ivory-dim hover:text-ivory"
+                      disabled={togglingActiveId === s.id}
+                      onClick={() => handleToggleActive(s)}
+                      className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50"
                     >
-                      {s.is_active ? t('Deactivate') : t('Reactivate')}
+                      {togglingActiveId === s.id ? t('Updating...') : s.is_active ? t('Deactivate') : t('Reactivate')}
                     </button>
                     <button type="button"
                       disabled={deletingId === s.id}
@@ -232,10 +270,11 @@ export default function StaffPage() {
                       {deletingId === s.id ? t('Deleting...') : t('Delete account')}
                     </button>
                     <button type="button"
+                      disabled={togglingFullAccessId === s.id}
                       onClick={() => handleToggleFullAccess(s)}
-                      className={`text-sm hover:underline ${s.full_access ? 'text-danger' : 'text-brass'}`}
+                      className={`text-sm hover:underline disabled:opacity-50 ${s.full_access ? 'text-danger' : 'text-brass'}`}
                     >
-                      {s.full_access ? t('Revoke full access') : t('Grant full access')}
+                      {togglingFullAccessId === s.id ? t('Updating...') : s.full_access ? t('Revoke full access') : t('Grant full access')}
                     </button>
                     <button type="button"
                       onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}
@@ -258,6 +297,7 @@ export default function StaffPage() {
                 <SectionAssignmentForm
                   businessId={businessId}
                   staffMember={s}
+                  isHotel={isHotel}
                   onSaved={(updated) => {
                     setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, assigned_sections: updated.assigned_sections } : m)));
                     setEditingSectionsFor(null);
@@ -293,7 +333,7 @@ export default function StaffPage() {
           </label>
           {restrictOnInvite && (
             <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-ink-line bg-ink-soft p-3 sm:grid-cols-3">
-              {SECTION_OPTIONS.map((opt) => (
+              {sectionOptionsFor(isHotel).map((opt) => (
                 <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
                   <input type="checkbox" checked={inviteSections.includes(opt.key)} onChange={() => toggleInviteSection(opt.key)} className="accent-brass" />
                   {t(opt.label)}
@@ -381,12 +421,12 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
 // everything - opening this form for the first time starts every box
 // checked, so simply closing without changing anything leaves that
 // account exactly as unrestricted as it was.
-function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
-  businessId: string; staffMember: StaffMember; onSaved: (updated: StaffMember) => void;
+function SectionAssignmentForm({ businessId, staffMember, isHotel, onSaved }: {
+  businessId: string; staffMember: StaffMember; isHotel: boolean; onSaved: (updated: StaffMember) => void;
 }) {
   const { t } = useT();
   const [selected, setSelected] = useState<string[]>(
-    staffMember.assigned_sections ?? SECTION_OPTIONS.map((o) => o.key)
+    staffMember.assigned_sections ?? sectionOptionsFor(isHotel).map((o) => o.key)
   );
   const [saving, setSaving] = useState(false);
 
@@ -418,7 +458,7 @@ function SectionAssignmentForm({ businessId, staffMember, onSaved }: {
     <div className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
       <p className="text-sm text-ivory-dim">{t("Only checked sections will appear on this account's dashboard.")}</p>
       <div className="grid grid-cols-2 gap-1.5">
-        {SECTION_OPTIONS.map((opt) => (
+        {sectionOptionsFor(isHotel).map((opt) => (
           <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
             <input type="checkbox" checked={selected.includes(opt.key)} onChange={() => toggle(opt.key)} className="accent-brass" />
             {t(opt.label)}
