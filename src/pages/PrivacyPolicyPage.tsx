@@ -207,7 +207,7 @@ export default function PrivacyPolicyPage() {
           opened by the "Contents" button in the header, tapping a
           section jumps and closes the sheet. */}
       {tocOpen && (
-        <div className="fixed inset-0 z-toast lg:hidden">
+        <div className="fixed inset-0 z-modal lg:hidden">
           <button type="button" aria-label="Close" onClick={() => setTocOpen(false)} className="absolute inset-0 bg-black/70" />
           <div className="absolute inset-x-0 bottom-0 max-h-[75vh] overflow-y-auto rounded-t-2xl border-t border-brass/30 bg-ink-soft p-5">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink-line" />

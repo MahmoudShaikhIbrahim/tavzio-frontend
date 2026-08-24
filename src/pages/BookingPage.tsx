@@ -7,6 +7,7 @@ import {
 } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import type { Business } from '../types';
+import { Check } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 
@@ -273,15 +274,15 @@ function BookingPageContent({ slug }: { slug: string }) {
     }
     return (
       <Shell isRtl={isRtl}>
-        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-brass">
-          <span className="font-display text-2xl text-brass">✓</span>
+        <div className="flex h-16 w-16 animate-confirm-pop items-center justify-center rounded-full border-2 border-brass bg-brass/10 motion-reduce:animate-none">
+          <Check size={28} strokeWidth={2.5} className="text-brass" />
         </div>
-        <p className="font-display text-xl text-ivory">{t('tbRequestSent')}</p>
-        <p className="max-w-xs text-sm text-ivory-dim">
+        <p className="mt-1 animate-hero-rise font-display text-xl text-ivory [animation-delay:150ms] motion-reduce:animate-none">{t('tbRequestSent')}</p>
+        <p className="max-w-xs animate-hero-rise text-sm text-ivory-dim [animation-delay:220ms] motion-reduce:animate-none">
           {t('tbWillConfirm', { business: config?.businessName || '' })}
           {cart.length > 0 && ` ${t('tbFoodOrderNoted')}`}
         </p>
-        <div className="mt-3 rounded-lg border border-brass/30 bg-ink-soft px-4 py-3 text-sm text-ivory-dim">
+        <div className="mt-3 animate-hero-rise rounded-lg border border-brass/30 bg-ink-soft px-4 py-3 text-sm text-ivory-dim [animation-delay:290ms] motion-reduce:animate-none">
           {t('tbTapStand')}
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}

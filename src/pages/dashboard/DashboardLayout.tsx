@@ -477,7 +477,7 @@ function DashboardLayoutInner() {
             </button>
 
             {(settingsOpen || customizing) && (
-              <div className="absolute end-0 top-full z-modal-backdrop mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
+              <div className="absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
                 <div className={customizing ? 'max-h-[70vh] space-y-1 overflow-y-auto p-2' : 'grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2'}>
                   {visibleSettingsItems.map((tab, i) => {
                     if (customizing) {

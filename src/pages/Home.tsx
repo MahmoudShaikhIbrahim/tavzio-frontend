@@ -72,7 +72,7 @@ export default function Home() {
       {/* Header - sticky, with real anchor navigation into sections
           that actually exist on this page (not decorative nav items
           pointing nowhere). */}
-      <div className="sticky top-0 z-modal flex items-center justify-between border-b border-ink-line bg-ink/90 px-8 py-5 backdrop-blur">
+      <div className="sticky top-0 z-sticky flex items-center justify-between border-b border-ink-line bg-ink/90 px-8 py-5 backdrop-blur">
         <div className="flex items-center gap-2">
           <Logo className="h-9 w-auto" />
         </div>
@@ -95,25 +95,40 @@ export default function Home() {
       {/* Hero - the tap itself is the thesis, not a headline over a
           generic gradient. Real product photography with a live ripple
           at the exact point a guest's finger lands, and a caption that
-          cycles through what that single tap actually becomes. */}
+          cycles through what that single tap actually becomes.
+
+          The one real risk spent here: the photo gets genuine dimension
+          (a static perspective tilt + layered brass glow, not a flat
+          card) and every element rises into place once on load - real
+          choreography, not a loop. The eyebrow's pulsing dot is the one
+          continuous motion, and it earns that: it's a live-status
+          signal ("this is a running product"), the same legitimate
+          convention as any live indicator, not the ambient decoration
+          that didn't hold up last time. */}
       <div className="relative overflow-hidden border-b border-ink-line">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_50%_0%,rgba(184,146,90,0.10),transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_60%_at_82%_35%,rgba(184,146,90,0.08),transparent)]" />
         <div className="relative mx-auto grid max-w-6xl gap-16 px-6 py-20 sm:py-28 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-12">
           <div className="text-center lg:text-left">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">For restaurants & hotels in the UAE</p>
-            <h1 className="mt-5 font-display text-[2.75rem] leading-[1.06] text-ivory sm:text-6xl">
+            <p className="inline-flex animate-hero-rise items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-brass">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute h-1.5 w-1.5 animate-live-pulse rounded-full bg-brass motion-reduce:animate-none" />
+              </span>
+              For restaurants & hotels in the UAE
+            </p>
+            <h1 className="mt-5 animate-hero-rise font-display text-[2.75rem] leading-[1.06] text-ivory [animation-delay:80ms] sm:text-6xl">
               One tap.
               <br />
               Every guest <em className="not-italic text-brass">touchpoint.</em>
             </h1>
-            <p className="mx-auto mt-6 max-w-md text-[15px] leading-relaxed text-ivory-dim lg:mx-0">
+            <p className="mx-auto mt-6 max-w-md animate-hero-rise text-[15px] leading-relaxed text-ivory-dim [animation-delay:160ms] lg:mx-0">
               A single brass card on the table or the nightstand becomes a live menu, a bill, a loyalty
               program, a room request — replacing the staff you'd otherwise need to run each one by hand.
             </p>
-            <div className="mt-9 flex flex-wrap items-center justify-center gap-5 lg:justify-start">
+            <div className="mt-9 flex animate-hero-rise flex-wrap items-center justify-center gap-5 [animation-delay:240ms] lg:justify-start">
               <a
                 href="#get-started"
-                className="rounded-lg bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90"
+                className="rounded-lg bg-brass px-6 py-3 font-medium text-ink transition-transform duration-150 ease-brass hover:-translate-y-0.5 hover:opacity-90"
               >
                 Get started
               </a>
@@ -133,8 +148,12 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-sm lg:max-w-none">
-            <div className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-brass/20">
+          <div className="mx-auto w-full max-w-sm animate-hero-rise [animation-delay:120ms] lg:max-w-none" style={{ perspective: '1200px' }}>
+            <div
+              className="relative overflow-hidden rounded-2xl shadow-2xl shadow-black/50 ring-1 ring-brass/20 transition-transform duration-500 ease-brass hover:[transform:rotateY(0deg)_rotateX(0deg)] motion-reduce:!transform-none"
+              style={{ transform: 'rotateY(-6deg) rotateX(3deg)', transformStyle: 'preserve-3d' }}
+            >
+              <div className="pointer-events-none absolute -inset-6 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_40%,rgba(184,146,90,0.35),transparent)] blur-2xl" />
               <img src="/brand/stand-front.jpg" alt="A Tavzio NFC card and stand on a restaurant table" className="w-full" />
             </div>
             <div className="mt-5 flex justify-center">

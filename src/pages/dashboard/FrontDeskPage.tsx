@@ -747,7 +747,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
           <>
             <p className="mt-5 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">{t('Actions')}</p>
             <div className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <form onSubmit={handleAddCharge} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink p-4">
+              <form onSubmit={handleAddCharge} className="flex flex-col gap-2.5 rounded-xl border border-ink-line bg-ink p-4">
                 <div>
                   <p className="text-sm font-medium text-ivory">{t('Add charge')}</p>
                   <p className="text-xs text-ivory-dim/70">{t('Bill the guest for something extra (room service, minibar, damage, etc.)')}</p>
@@ -756,7 +756,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
                 <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Add charge')}</button>
               </form>
-              <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink p-4">
+              <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-success/25 bg-ink p-4">
                 <div>
                   <p className="text-sm font-medium text-ivory">{t('Record payment')}</p>
                   <p className="text-xs text-ivory-dim/70">{t('Log money already collected - cash, card machine, any method')}</p>
@@ -764,7 +764,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
                 <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">{t('Record payment')}</button>
               </form>
-              <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-success/60 bg-ink p-4">
+              <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-success/25 bg-ink p-4">
                 <div>
                   <p className="text-sm font-medium text-ivory">{t('Record deposit')}</p>
                   <p className="text-xs text-ivory-dim/70">{t('Log an advance or security deposit held against the stay')}</p>
@@ -772,7 +772,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
                 <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">{t('Record deposit')}</button>
               </form>
-              <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-danger/60 bg-ink p-4">
+              <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-danger/25 bg-ink p-4">
                 <div>
                   <p className="text-sm font-medium text-ivory">{t('Issue refund')}</p>
                   <p className="text-xs text-ivory-dim/70">{t('Send money back to the guest - increases the balance owed')}</p>
@@ -781,7 +781,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder={t('Reason (required)')} className={inputClass} />
                 <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">{t('Issue refund')}</button>
               </form>
-              <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line border-l-4 border-l-ivory-dim/40 bg-ink p-4">
+              <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line bg-ink p-4">
                 <div>
                   <p className="text-sm font-medium text-ivory">{t('Manual adjustment')}</p>
                   <p className="text-xs text-ivory-dim/70">{t('Correct an error - positive adds to the balance, negative credits it')}</p>

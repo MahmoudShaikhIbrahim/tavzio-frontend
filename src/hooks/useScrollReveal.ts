@@ -33,5 +33,5 @@ export function useScrollReveal<T extends HTMLElement>() {
     return () => observer.disconnect();
   }, []);
 
-  return { ref, className: `transition-all duration-700 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}` };
+  return { ref, className: `transition-all duration-700 ease-brass ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}` };
 }

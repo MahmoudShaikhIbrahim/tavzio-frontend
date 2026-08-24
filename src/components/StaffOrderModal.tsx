@@ -62,7 +62,7 @@ export default function StaffOrderModal({ businessId, onClose, onPlaced }: {
   const selectedCard = cards.find((c) => c.id === selectedCardId);
 
   return (
-    <div className="fixed inset-0 z-sticky flex items-center justify-center bg-ink/80 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-ink/80 p-4" onClick={onClose}>
       <div
         className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-ink-line bg-ink-soft p-5"
         onClick={(e) => e.stopPropagation()}

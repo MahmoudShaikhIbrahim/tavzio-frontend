@@ -24,7 +24,6 @@ function spacedWord(t: (text: string) => string, raw: string) {
 }
 
 export default function RatePlansPage() {
-  const confirm = useConfirm();
   const { user } = useSession();
   const { t } = useT();
   const businessId = user?.business_id;
@@ -159,6 +158,7 @@ function RateCalendarSection({ businessId, plans }: { businessId: string; plans:
 
 function PricingRulesSection({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [rules, setRules] = useState<HotelPricingRule[]>([]);
   const [forecast, setForecast] = useState<OccupancyForecast | null>(null);
   const [showAdd, setShowAdd] = useState(false);

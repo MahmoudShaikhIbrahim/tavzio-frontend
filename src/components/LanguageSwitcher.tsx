@@ -21,7 +21,7 @@ export default function LanguageSwitcher() {
       {open && (
         <>
           <div className="fixed inset-0 z-dropdown" onClick={() => setOpen(false)} />
-          <div className="absolute end-0 z-sticky mt-1.5 w-40 overflow-hidden rounded-lg border border-ink-line bg-ink-soft shadow-xl">
+          <div className="absolute end-0 z-dropdown mt-1.5 w-40 overflow-hidden rounded-lg border border-ink-line bg-ink-soft shadow-xl">
             {LANGUAGES.map((l) => (
               <button type="button"
                 key={l.code}
