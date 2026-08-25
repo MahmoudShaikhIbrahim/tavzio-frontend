@@ -14,6 +14,36 @@ const STATUS_STYLES: Record<string, string> = {
   expired: 'text-danger border-danger/40',
 };
 
+// Real fix for a confirmed gap: 'signed' and 'paid' used to render
+// identically (same green badge, same plain word) - a super admin
+// scanning this list at a glance had no way to tell a contract that's
+// only been signed (Tavzio is still waiting on real money) apart from
+// one that's genuinely settled. 'signed' now gets its own real
+// two-tone label; everything else keeps the plain badge, since there's
+// no equivalent payment-status distinction to make for draft/sent/
+// terminated/expired.
+export function ContractStatusLabel({ status }: { status: string }) {
+  if (status === 'signed') {
+    return (
+      <span className="inline-flex overflow-hidden rounded-full border border-ink-line text-xs">
+        <span className="bg-success/15 px-2 py-0.5 text-success">Signed</span>
+        <span className="bg-danger/15 px-2 py-0.5 text-danger">No Payment</span>
+      </span>
+    );
+  }
+  if (status === 'paid' || status === 'active') {
+    return (
+      <span className="inline-flex overflow-hidden rounded-full border border-success/40 text-xs">
+        <span className="bg-success/15 px-2 py-0.5 text-success">Signed</span>
+        <span className="bg-success/15 px-2 py-0.5 text-success">Paid</span>
+      </span>
+    );
+  }
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLES[status] || 'text-ivory-dim border-ink-line'}`}>{status}</span>
+  );
+}
+
 const TERMINATION_BASES: { value: 'non_payment' | 'material_breach' | 'client_convenience' | 'mutual_agreement'; label: string }[] = [
   { value: 'non_payment', label: 'Non-payment (Section 3 - 30+ days overdue)' },
   { value: 'material_breach', label: 'Material breach (Section 9 - 15 days uncured)' },
@@ -140,7 +170,7 @@ export default function ContractsListPage() {
                   </p>
                   <p className="text-sm text-ivory-dim">
                     {c.client_name} · {c.client_email} · {c.start_date} → {c.end_date} · {c.payment_frequency} · AED {c.annual_total_aed.toFixed(2)}/yr ·{' '}
-                    <span className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLES[c.status] || 'text-ivory-dim border-ink-line'}`}>{c.status}</span>
+                    <ContractStatusLabel status={c.status} />
                     {c.signed_by_name && ` · signed by ${c.signed_by_name}`}
                     {c.business_id && ' · onboarded'}
                   </p>

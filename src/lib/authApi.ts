@@ -2277,6 +2277,14 @@ export function createSupplier(businessId: string, payload: { name: string; cont
   return authFetch<Supplier>(`/api/businesses/${businessId}/inventory/suppliers`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export function updateSupplier(businessId: string, supplierId: string, payload: { name?: string; contactName?: string; phone?: string; email?: string }) {
+  return authFetch<Supplier>(`/api/businesses/${businessId}/inventory/suppliers/${supplierId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteSupplier(businessId: string, supplierId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/inventory/suppliers/${supplierId}`, { method: 'DELETE' });
+}
+
 export function listIngredients(businessId: string) {
   return authFetch<Ingredient[]>(`/api/businesses/${businessId}/inventory/ingredients`);
 }

@@ -5,7 +5,7 @@ import {
   listIngredients, createIngredient, updateIngredient, deleteIngredient, adjustStock,
   recordWaste, getWasteReport, getLowStock, getInventoryValuation,
   getMenuItemFoodCost, getActualFoodCost,
-  listSuppliers, createSupplier,
+  listSuppliers, createSupplier, updateSupplier, deleteSupplier,
   listPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
   listWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, getWarehouseStock,
   listStockTransfers, createStockTransfer, approveStockTransfer, shipStockTransfer,
@@ -575,10 +575,16 @@ function FoodCostTab({ businessId }: { businessId: string }) {
 
 function SuppliersTab({ businessId }: { businessId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [saving, setSaving] = useState(false);
 
   function reload() {
     listSuppliers(businessId).then(setSuppliers);
@@ -593,6 +599,35 @@ function SuppliersTab({ businessId }: { businessId: string }) {
     reload();
   }
 
+  function startEdit(s: Supplier) {
+    setEditingId(s.id);
+    setEditName(s.name);
+    setEditPhone(s.phone || '');
+    setEditEmail(s.email || '');
+  }
+
+  async function handleSaveEdit(id: string) {
+    if (!editName.trim()) return;
+    setSaving(true);
+    try {
+      await updateSupplier(businessId, id, { name: editName, phone: editPhone, email: editEmail });
+      setEditingId(null);
+      reload();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(s: Supplier) {
+    if (!(await confirm({
+      title: t('Remove this supplier?'),
+      message: t('Remove {name}? Past purchase orders that used this supplier keep their own record either way.').replace('{name}', s.name),
+      confirmLabel: t('Remove'),
+    }))) return;
+    await deleteSupplier(businessId, s.id);
+    reload();
+  }
+
   return (
     <Section title={t('Suppliers')}>
       <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
@@ -604,8 +639,28 @@ function SuppliersTab({ businessId }: { businessId: string }) {
       <div className="grid gap-3 sm:grid-cols-2">
         {suppliers.map((s) => (
           <div key={s.id} className="rounded-xl border border-ink-line bg-ink-soft/40 px-4 py-3 transition-colors hover:border-brass/40">
-            <p className="text-base text-ivory">{s.name}</p>
-            <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
+            {editingId === s.id ? (
+              <div className="space-y-2">
+                <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t('Name')} className={inputClass} />
+                <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={t('Phone')} className={inputClass} />
+                <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder={t('Email')} className={inputClass} />
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => handleSaveEdit(s.id)} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+                    {saving ? t('Saving...') : t('Save')}
+                  </button>
+                  <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-base text-ivory">{s.name}</p>
+                <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
+                <div className="mt-2 flex gap-3">
+                  <button type="button" onClick={() => startEdit(s)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
+                  <button type="button" onClick={() => handleDelete(s)} className="text-sm text-danger hover:underline">{t('Delete')}</button>
+                </div>
+              </>
+            )}
           </div>
         ))}
         {suppliers.length === 0 && <p className="text-ivory-dim">{t('No suppliers yet.')}</p>}

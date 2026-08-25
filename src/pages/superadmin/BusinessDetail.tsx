@@ -8,6 +8,7 @@ import {
   createContract, sendContract, listContracts, previewContract, generateContractReceipt, resetAccountPassword, issueAdminCard,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { ContractStatusLabel } from './ContractsListPage';
 import { Field, inputClass } from '../../components/ui';
 import type { AdminBusiness, Card, BillingReceipt, BillingReceiptLineItem, Contract } from '../../types';
 import { useConfirm } from '../../components/ConfirmDialog';
@@ -387,7 +388,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
                 <p className="text-base font-medium text-ivory">{c.contract_number}</p>
                 <p className="text-sm text-ivory-dim">
                   {c.start_date} → {c.end_date} · {c.payment_frequency} · AED {c.annual_total_aed.toFixed(2)}/yr ·{' '}
-                  <span className={c.status === 'signed' || c.status === 'paid' || c.status === 'active' ? 'text-success' : 'text-ivory-dim'}>{c.status}</span>
+                  <ContractStatusLabel status={c.status} />
                   {c.signed_by_name && ` · signed by ${c.signed_by_name}`}
                 </p>
               </div>

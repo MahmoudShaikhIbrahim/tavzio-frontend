@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search } from 'lucide-react';
+import { isCloseMatch } from '../../lib/fuzzyMatch';
 import PaymentModal from '../../components/PaymentModal';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -157,7 +158,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [showRefunds, setShowRefunds] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState('');
-  const [confirmed, setConfirmed] = useState<{ total: number; method: string } | null>(null);
+  const [confirmed, setConfirmed] = useState<{ total: number; headline: string; detail: string } | null>(null);
   const [pendingPayment, setPendingPayment] = useState<{ items: { id: string; orderId: string; name: string; unitPrice: number; addonTotal: number; quantity: number }[] } | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(getQueue().length);
@@ -276,12 +277,23 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       ? Math.min(cartSubtotal, Math.max(0, discountValue))
       : 0;
   const cartTotal = Math.max(0, cartSubtotal - discountAmount);
-  const visibleItems = itemSearchQuery.trim()
+  const exactSearchResults = itemSearchQuery.trim()
     ? items.filter((i) => {
         const q = itemSearchQuery.trim().toLowerCase();
         return (!outletItemIds || outletItemIds.has(i.id)) && (i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q));
       })
+    : null;
+  // Real fallback: a genuine typo ("chiken sandwish") shouldn't return
+  // nothing just because it isn't a literal substring match - falls
+  // back to fuzzy name matching only when the exact search truly found
+  // nothing, never overriding a real match.
+  const fuzzySearchResults = itemSearchQuery.trim() && exactSearchResults?.length === 0
+    ? items.filter((i) => (!outletItemIds || outletItemIds.has(i.id)) && i.name.split(/\s+/).some((word) => isCloseMatch(itemSearchQuery, word)))
+    : [];
+  const visibleItems = itemSearchQuery.trim()
+    ? (exactSearchResults!.length > 0 ? exactSearchResults! : fuzzySearchResults)
     : items.filter((i) => i.category_id === activeCategory && (!outletItemIds || outletItemIds.has(i.id)));
+  const isFuzzyFallback = itemSearchQuery.trim() && exactSearchResults?.length === 0 && fuzzySearchResults.length > 0;
 
   function resetCartState() {
     setCart([]);
@@ -324,7 +336,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           items: result.items.map((i) => ({ id: i.id, orderId: result.order.id, name: i.item_name, unitPrice: i.unit_price, addonTotal: i.addon_total, quantity: i.quantity })),
         });
       } else {
-        setConfirmed({ total: cartTotal, method: 'sent to kitchen' });
+        setConfirmed({ total: cartTotal, headline: t('Order sent to kitchen'), detail: t('Not yet paid') });
       }
       resetCartState();
     } catch {
@@ -337,7 +349,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       // payable once back online, same as any other unpaid order.
       queueOrder({ businessId, ...payload, tableLabel: payload.tableLabel || ORDER_TYPE_LABELS[orderType] });
       setQueuedCount(getQueue().length);
-      setConfirmed({ total: cartTotal, method: 'saved offline - will sync' });
+      setConfirmed({ total: cartTotal, headline: t('Order saved offline'), detail: t('Will sync once back online - not yet paid') });
       resetCartState();
     } finally {
       setCheckingOut(false);
@@ -359,7 +371,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         chargeToFolioId: roomFolio.folioId,
         ...(discountType ? { discountType, discountValue, discountReason } : {}),
       });
-      setConfirmed({ total: cartTotal, method: `charged to Room ${roomFolio.roomNumber}` });
+      setConfirmed({ total: cartTotal, headline: t('Charged to room'), detail: `${t('Room')} ${roomFolio.roomNumber}` });
       resetCartState();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not charge to room');
@@ -378,7 +390,8 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   // says the same thing without stopping anyone.
   useEffect(() => {
     if (!confirmed) return;
-    const timer = setTimeout(() => setConfirmed(null), 2500);
+    const duration = confirmed.headline === t('Payment received') ? 4500 : 2500;
+    const timer = setTimeout(() => setConfirmed(null), duration);
     return () => clearTimeout(timer);
   }, [confirmed]);
 
@@ -405,11 +418,13 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           underneath, and clears itself on the timer set above. */}
       {confirmed && (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-toast flex justify-center sm:inset-x-auto sm:end-6">
-          <div className="flex items-center gap-3 rounded-xl border border-success/40 bg-ink-soft px-5 py-3 shadow-lg pointer-events-auto motion-safe:animate-hero-rise">
+          <div className={`flex items-center gap-3 rounded-xl border px-5 py-3 shadow-lg pointer-events-auto motion-safe:animate-hero-rise ${
+            confirmed.headline === t('Payment received') ? 'border-success bg-success/15' : 'border-success/40 bg-ink-soft'
+          }`}>
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">✓</span>
             <div>
-              <p className="text-sm font-medium text-ivory">{t('Order sent to kitchen')}</p>
-              <p className="text-xs text-ivory-dim">AED {confirmed.total.toFixed(2)} · {t('paid by')} {confirmed.method}</p>
+              <p className="text-sm font-medium text-ivory">{confirmed.headline}</p>
+              <p className="text-xs text-ivory-dim">AED {confirmed.total.toFixed(2)} · {confirmed.detail}</p>
             </div>
           </div>
         </div>
@@ -446,6 +461,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             className="w-full rounded-lg border border-ink-line bg-ink-soft py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
           />
         </div>
+        {isFuzzyFallback && (
+          <p className="mb-3 -mt-1.5 text-xs text-brass">{t('No exact match - showing close results for')} "{itemSearchQuery}"</p>
+        )}
         {/* Bigger touch targets throughout this page on purpose - real
             terminals get tapped on a touchscreen, not clicked with a
             mouse, and get tapped hundreds of times a shift. Active
@@ -692,7 +710,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           businessId={businessId}
           items={pendingPayment.items}
           onClose={() => setPendingPayment(null)}
-          onDone={() => { setPendingPayment(null); setConfirmed({ total: cartTotal, method: 'paid' }); }}
+          onDone={() => { setPendingPayment(null); setConfirmed({ total: cartTotal, headline: t('Payment received'), detail: t('Paid in full') }); }}
         />
       )}
       {showXReport && (

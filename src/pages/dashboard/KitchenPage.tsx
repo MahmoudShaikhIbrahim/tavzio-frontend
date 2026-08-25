@@ -183,30 +183,30 @@ export default function KitchenPage() {
                   with a genuine block of color instead of a 2px line. */}
               <div className={`h-1 ${urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
               <div className="p-2.5">
-                <div className="flex items-center justify-between">
+                <div className="space-y-1.5 text-sm">
+                  {firedItems.map((item) => (
+                    <div key={item.id} className="flex gap-1.5">
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded bg-ink px-1 font-mono text-xs text-brass">{item.quantity}×</span>
+                      <div className="text-ivory-dim">
+                        <span className="font-medium text-ivory">{item.item_name}</span>
+                        {item.station && <span className="ml-1 text-[10px] uppercase tracking-wide text-brass">{item.station}</span>}
+                        {item.addons.length > 0 && (
+                          <span className="block text-xs text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>
+                        )}
+                        {item.note && <span className="block text-xs italic text-ivory">— {item.note}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 flex items-center justify-between border-t border-ink-line pt-2">
                   <p className="font-display text-base text-ivory">{order.table_label || t('No table')}</p>
                   <div className="flex items-center gap-1.5">
                     {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-[10px] font-medium text-brass">{t('Preparing')}</span>}
                     <TicketAge createdAt={order.created_at} />
                   </div>
                 </div>
-                <div className="mt-2 space-y-1.5 text-sm">
-                  {firedItems.map((item) => (
-                    <div key={item.id} className="flex gap-1.5">
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded bg-ink px-1 font-mono text-xs text-brass">{item.quantity}×</span>
-                      <div className="text-ivory-dim">
-                        <span className="text-ivory">{item.item_name}</span>
-                        {item.station && <span className="ml-1 text-[10px] uppercase tracking-wide text-brass/60">{item.station}</span>}
-                        {item.addons.length > 0 && (
-                          <span className="block text-xs text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
-                        )}
-                        {item.note && <span className="block text-xs italic">— {item.note}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
                 {heldCourses.length > 0 && (
-                  <p className="mt-2 rounded bg-ink px-2 py-1 text-xs text-brass/70">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
+                  <p className="mt-2 rounded bg-ink px-2 py-1 text-xs text-brass">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
                 )}
                 {order.note && <p className="mt-2 rounded border border-brass/30 bg-brass/5 px-2 py-1 text-xs italic text-brass">{t('Note:')} {order.note}</p>}
                 <div className="mt-2.5 flex gap-1.5">

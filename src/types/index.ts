@@ -264,6 +264,15 @@ export interface AdminBusiness {
   trn: string;
   tourism_dirham_rate_aed: number;
   created_at: string;
+  contractCountdown: {
+    contractNumber: string;
+    paymentFrequency: 'monthly' | 'quarterly' | 'yearly';
+    nextBillingDate: string;
+    daysToBilling: number;
+    endDate: string;
+    daysToExpiry: number;
+    expiryWarningDays: number;
+  } | null;
 }
 
 export interface Contract {

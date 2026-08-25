@@ -409,7 +409,64 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
   return (
     <div className="w-full max-w-xs rounded-xl border border-ink-line bg-ink-soft p-3">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="space-y-2 text-sm">
+        {heldByCourse.size > 0 && (
+          <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
+            {[...heldByCourse.entries()].map(([course, entries]) => {
+              const count = entries.reduce((s, e) => s + e.count, 0);
+              return (
+                <div key={course} className="flex items-center justify-between text-sm">
+                  <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
+                  <button type="button"
+                    onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
+                    disabled={firing === course}
+                    className="rounded-lg bg-brass px-3 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                  >
+                    {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {allItems.map(({ item, order }) => (
+          <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
+            <div className="flex gap-2.5">
+              <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
+              <div>
+                <span className="font-medium text-ivory">{item.item_name}</span>
+                {item.course_status === 'held' && (
+                  <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
+                )}
+                {item.cash_pending && (
+                  <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
+                )}
+                {item.addons.length > 0 && <span className="block text-base text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>}
+                {item.note && <span className="block italic text-ivory">— {item.note}</span>}
+              </div>
+            </div>
+            <button type="button"
+              onClick={() => {
+                onOrdersChange((prev) =>
+                  prev.map((o) =>
+                    o.id === order.id
+                      ? { ...o, order_items: o.order_items.map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
+                      : o
+                  )
+                );
+                voidOrderItem(businessId, order.id, item.id).catch(onChange);
+              }}
+              className="shrink-0 text-base text-danger hover:underline"
+              title={t('Delete just this item')}
+            >
+              {t('Delete')}
+            </button>
+          </div>
+        ))}
+        {allItems.length === 0 && <p className="text-base italic text-ivory-dim">{t('All items deleted')}</p>}
+      </div>
+
+      <div className="mb-3 mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-3">
         <div>
           <h2 className="font-display text-base text-ivory">{table}</h2>
           <p className="text-sm text-ivory-dim">
@@ -436,63 +493,6 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
             </button>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2 text-sm">
-        {heldByCourse.size > 0 && (
-          <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
-            {[...heldByCourse.entries()].map(([course, entries]) => {
-              const count = entries.reduce((s, e) => s + e.count, 0);
-              return (
-                <div key={course} className="flex items-center justify-between text-sm">
-                  <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
-                  <button type="button"
-                    onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
-                    disabled={firing === course}
-                    className="rounded-lg bg-brass px-3 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
-                  >
-                    {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {allItems.map(({ item, order }) => (
-          <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
-            <div className="flex gap-2.5">
-              <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
-              <div>
-                <span className="text-ivory">{item.item_name}</span>
-                {item.course_status === 'held' && (
-                  <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
-                )}
-                {item.cash_pending && (
-                  <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
-                )}
-                {item.addons.length > 0 && <span className="block text-base text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>}
-                {item.note && <span className="block italic">— {item.note}</span>}
-              </div>
-            </div>
-            <button type="button"
-              onClick={() => {
-                onOrdersChange((prev) =>
-                  prev.map((o) =>
-                    o.id === order.id
-                      ? { ...o, order_items: o.order_items.map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
-                      : o
-                  )
-                );
-                voidOrderItem(businessId, order.id, item.id).catch(onChange);
-              }}
-              className="shrink-0 text-base text-danger hover:underline"
-              title={t('Delete just this item')}
-            >
-              {t('Delete')}
-            </button>
-          </div>
-        ))}
-        {allItems.length === 0 && <p className="text-base italic text-ivory-dim">{t('All items deleted')}</p>}
       </div>
 
       {notes.length > 0 && (

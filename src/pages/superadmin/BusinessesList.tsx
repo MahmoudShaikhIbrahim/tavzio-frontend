@@ -25,12 +25,6 @@ export default function BusinessesList() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ivory">Businesses</h1>
-        <Link
-          to="/admin/super/businesses/new"
-          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
-        >
-          + Onboard a business
-        </Link>
       </div>
 
       <input
@@ -51,14 +45,15 @@ export default function BusinessesList() {
               <th className="px-4 py-3 font-medium">Slug</th>
               <th className="px-4 py-3 font-medium">Category</th>
               <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Contract countdown</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={4} className="px-4 py-6 text-center text-ivory-dim">Loading...</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-ivory-dim">Loading...</td></tr>
             )}
             {!loading && businesses.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-6 text-center text-ivory-dim">No businesses yet.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-ivory-dim">No businesses yet.</td></tr>
             )}
             {businesses.map((b) => (
               <tr key={b.id} className="border-t border-ink-line hover:bg-ink-soft/50">
@@ -73,6 +68,20 @@ export default function BusinessesList() {
                   <span className={`rounded-full border px-2.5 py-0.5 text-sm capitalize ${STATUS_STYLES[b.status]}`}>
                     {b.status}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-sm">
+                  {b.contractCountdown ? (
+                    <div className="space-y-0.5">
+                      <p className={b.contractCountdown.daysToBilling <= 3 ? 'font-medium text-warning' : 'text-ivory-dim'}>
+                        Next invoice: {b.contractCountdown.daysToBilling <= 0 ? 'due today' : `${b.contractCountdown.daysToBilling}d`}
+                      </p>
+                      <p className={b.contractCountdown.daysToExpiry <= b.contractCountdown.expiryWarningDays ? 'font-medium text-danger' : 'text-ivory-dim'}>
+                        Contract ends: {b.contractCountdown.daysToExpiry <= 0 ? 'today' : `${b.contractCountdown.daysToExpiry}d`}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-ivory-dim/70">No active contract</span>
+                  )}
                 </td>
               </tr>
             ))}

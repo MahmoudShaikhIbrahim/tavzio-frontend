@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { findClosestMatch } from '../lib/fuzzyMatch';
 
 interface PaletteItem {
   path: string;
@@ -46,6 +47,14 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
     ? items.filter((i) => t(i.label).toLowerCase().includes(query.trim().toLowerCase()))
     : items;
 
+  // Real "did you mean" - only computed when there's a genuine typo
+  // situation (a real query with zero substring matches), and only
+  // ever suggests something that's actually close, never a random
+  // guess dressed up as a suggestion.
+  const suggestion = query.trim() && results.length === 0
+    ? findClosestMatch(query, items, (i) => t(i.label))
+    : null;
+
   function go(item: PaletteItem) {
     onNavigate?.(item.path);
     navigate(`/admin/dashboard/${item.path}`);
@@ -55,7 +64,11 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex((i) => Math.min(i + 1, results.length - 1)); }
     if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((i) => Math.max(i - 1, 0)); }
-    if (e.key === 'Enter' && results[activeIndex]) { e.preventDefault(); go(results[activeIndex]); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (results[activeIndex]) go(results[activeIndex]);
+      else if (suggestion) go(suggestion);
+    }
   }
 
   return (
@@ -88,7 +101,18 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
               />
             </div>
             <div className="max-h-[50vh] overflow-y-auto p-2">
-              {results.length === 0 && <p className="px-3 py-6 text-center text-sm text-ivory-dim">{t('No matching pages.')}</p>}
+              {results.length === 0 && !suggestion && <p className="px-3 py-6 text-center text-sm text-ivory-dim">{t('No matching pages.')}</p>}
+              {results.length === 0 && suggestion && (
+                <button
+                  type="button"
+                  onClick={() => go(suggestion)}
+                  className="block w-full rounded-lg px-3 py-3 text-start text-base text-ivory hover:bg-ink"
+                >
+                  <span className="text-ivory-dim">{t('Did you mean')} </span>
+                  <span className="font-medium text-brass">{t(suggestion.label)}</span>
+                  <span className="text-ivory-dim">?</span>
+                </button>
+              )}
               {results.map((item, i) => (
                 <button
                   type="button"
