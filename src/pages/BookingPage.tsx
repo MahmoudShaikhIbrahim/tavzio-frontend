@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import {
   getBookingConfig, requestBookingOtp, verifyBookingOtp, submitPublicBooking, cancelPublicBooking,
   listMyBookings, reschedulePublicBooking, type MyBooking,
@@ -52,6 +53,7 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [partySize, setPartySize] = useState(2);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [foodSearchQuery, setFoodSearchQuery] = useState('');
   const [note, setNote] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [foodTiming, setFoodTiming] = useState(0);
@@ -430,13 +432,34 @@ function BookingPageContent({ slug }: { slug: string }) {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbDate')}</label>
-              <input type="date" required value={date} onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
+              <div className="relative">
+                <input type="date" required value={date} onChange={(e) => setDate(e.target.value)}
+                  className="relative z-10 w-full rounded-lg border border-ink-line bg-transparent px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
+                {/* Real fix for a confirmed bug: iOS Safari renders a
+                    genuinely empty <input type="date"> with no visible
+                    placeholder text at all - not a color issue, the
+                    native picker chrome itself just doesn't show
+                    anything until a value exists. pointer-events-none so
+                    taps still reach the real input underneath and open
+                    the native picker normally. */}
+                {!date && (
+                  <span className="pointer-events-none absolute inset-0 z-0 flex items-center rounded-lg bg-ink-soft px-3 text-sm text-ivory-dim/70">
+                    {t('tbSelectDate')}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbTime')}</label>
-              <input type="time" required value={time} onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
+              <div className="relative">
+                <input type="time" required value={time} onChange={(e) => setTime(e.target.value)}
+                  className="relative z-10 w-full rounded-lg border border-ink-line bg-transparent px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
+                {!time && (
+                  <span className="pointer-events-none absolute inset-0 z-0 flex items-center rounded-lg bg-ink-soft px-3 text-sm text-ivory-dim/70">
+                    {t('tbSelectTime')}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbGuests')}</label>
@@ -451,8 +474,24 @@ function BookingPageContent({ slug }: { slug: string }) {
             <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
               <p className="font-display text-lg text-ivory">{t('tbPreOrderFood')}</p>
               <p className="mt-0.5 text-xs text-ivory-dim">{t('tbPreOrderFoodDesc')}</p>
+              <div className="relative mt-3">
+                <Search size={15} strokeWidth={2} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ivory-dim" />
+                <input
+                  type="search"
+                  value={foodSearchQuery}
+                  onChange={(e) => setFoodSearchQuery(e.target.value)}
+                  placeholder={t('menuSearchPlaceholder')}
+                  className="w-full rounded-lg border border-ink-line bg-ink py-2 ps-8 pe-3 text-sm text-ivory placeholder:text-ivory-dim/60"
+                />
+              </div>
               <div className="mt-3 space-y-2">
-                {config.menu.map((item) => {
+                {config.menu
+                  .filter((item) => {
+                    const q = foodSearchQuery.trim().toLowerCase();
+                    if (!q) return true;
+                    return item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
+                  })
+                  .map((item) => {
                   const line = cart.find((l) => l.menuItemId === item.id);
                   return (
                     <div key={item.id} className="flex items-center justify-between gap-2">

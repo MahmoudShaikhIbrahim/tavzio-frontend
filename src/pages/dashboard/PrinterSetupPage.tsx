@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { getPrinterIntegration, listAvailablePrinters, upsertPrinterIntegration } from '../../lib/authApi';
+import { getPrinterIntegration, listAvailablePrinters, upsertPrinterIntegration, listKitchenStationPrinters, upsertKitchenStationPrinter, deleteKitchenStationPrinter, type KitchenStationPrinter } from '../../lib/authApi';
 import type { PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
@@ -133,6 +133,98 @@ function PrinterSetup({ businessId }: { businessId: string }) {
           {saving ? t('Saving...') : t('Save')}
         </button>
       </div>
+
+      {enabled && (
+        <KitchenStationPrinters businessId={businessId} printers={printers} />
+      )}
     </Section>
+  );
+}
+
+// Real, station-routed KOT printing - a real gap this closes against a
+// single receipt-only printer. Reuses the exact same PrintNode account
+// and printer list above (one restaurant, several physical printers,
+// all under one account) - no separate API key or re-fetch needed here.
+function KitchenStationPrinters({ businessId, printers }: {
+  businessId: string; printers: { id: number; name: string; description: string; state: string }[];
+}) {
+  const { t } = useT();
+  const [mappings, setMappings] = useState<KitchenStationPrinter[]>([]);
+  const [station, setStation] = useState('');
+  const [printerId, setPrinterId] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function reload() {
+    listKitchenStationPrinters(businessId).then(setMappings).catch(() => {});
+  }
+  useEffect(reload, [businessId]);
+
+  async function handleAdd() {
+    if (!station.trim() || !printerId) return;
+    setSaving(true);
+    setError('');
+    try {
+      const printerName = printers.find((p) => String(p.id) === printerId)?.name || '';
+      await upsertKitchenStationPrinter(businessId, station.trim(), printerId, printerName);
+      setStation('');
+      setPrinterId('');
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save this mapping');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemove(id: string) {
+    await deleteKitchenStationPrinter(businessId, id);
+    reload();
+  }
+
+  return (
+    <div className="max-w-lg space-y-4 rounded-xl border border-ink-line p-5">
+      <div>
+        <p className="text-base text-ivory">{t('Kitchen station printers')}</p>
+        <p className="mt-1 text-sm text-ivory-dim">
+          {t('Route kitchen tickets by station - e.g. Grill orders print at the grill printer, Bar orders at the bar printer. Station names must match exactly what\'s set on each menu item. A station with no printer mapped still shows normally on the Kitchen screen - it just won\'t also print a paper ticket.')}
+        </p>
+      </div>
+
+      {mappings.length > 0 && (
+        <div className="space-y-1.5">
+          {mappings.map((m) => (
+            <div key={m.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+              <span className="text-ivory">{m.station} <span className="text-ivory-dim">→ {m.printer_name || m.printer_id}</span></span>
+              <button type="button" onClick={() => handleRemove(m.id)} className="text-danger hover:underline">{t('Remove')}</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {printers.length === 0 ? (
+        <p className="text-sm text-ivory-dim">{t('Refresh printers above first, then come back to map a station.')}</p>
+      ) : (
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex-1">
+            <Field label={t('Station')}>
+              <input value={station} onChange={(e) => setStation(e.target.value)} placeholder={t('e.g. Grill')} className={inputClass} />
+            </Field>
+          </div>
+          <div className="flex-1">
+            <Field label={t('Printer')}>
+              <select value={printerId} onChange={(e) => setPrinterId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory">
+                <option value="">{t('Select...')}</option>
+                {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </Field>
+          </div>
+          <button type="button" onClick={handleAdd} disabled={saving || !station.trim() || !printerId} className="rounded-lg border border-brass/40 px-4 py-2.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
+            {saving ? t('Adding...') : t('Add')}
+          </button>
+        </div>
+      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
+    </div>
   );
 }

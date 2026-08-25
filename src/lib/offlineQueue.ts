@@ -27,13 +27,6 @@ export interface QueuedPosOrder {
   orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery';
   note?: string;
   items: { menuItemId: string; quantity: number }[];
-  // card_online can no longer reach this queue via any path - the POS
-  // Terminal page removed the button that produced it entirely (it
-  // redirected the whole terminal to a hosted checkout page, which
-  // never made sense for a staff-operated physical counter). Kept in
-  // this union only so an already-queued order from before that change
-  // still type-checks and can still flush normally on its next sync.
-  paymentMethod: 'cash' | 'card' | 'card_online' | 'other';
   queuedAt: string;
 }
 
@@ -71,7 +64,6 @@ export async function flushQueue(): Promise<{ synced: number; remaining: number 
         orderType: order.orderType,
         note: order.note,
         items: order.items,
-        paymentMethod: order.paymentMethod,
       });
       synced += 1;
       saveQueue(getQueue().filter((q) => q.localId !== order.localId));

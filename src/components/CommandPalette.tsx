@@ -1,0 +1,110 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+interface PaletteItem {
+  path: string;
+  label: string;
+}
+
+// Real "type any page name" search, not a filter box - opens over
+// everything (Cmd/Ctrl+K, the universal convention for exactly this),
+// searches every reachable destination at once (main tabs + every
+// Settings sub-page), and jumps straight there on Enter or a click.
+// Only ever receives items already filtered through the same
+// tabAllowed() visibility rules the real nav uses, so this never
+// surfaces a page the current account can't actually reach.
+export default function CommandPalette({ items, t }: { items: PaletteItem[]; t: (s: string) => string }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setOpen((v) => !v);
+      }
+      if (e.key === 'Escape') setOpen(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setQuery('');
+      setActiveIndex(0);
+      // Autofocus needs a tick - the input doesn't exist in the DOM yet
+      // in the same render pass that flips `open` to true.
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [open]);
+
+  const results = query.trim()
+    ? items.filter((i) => t(i.label).toLowerCase().includes(query.trim().toLowerCase()))
+    : items;
+
+  function go(item: PaletteItem) {
+    navigate(`/admin/dashboard/${item.path}`);
+    setOpen(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex((i) => Math.min(i + 1, results.length - 1)); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((i) => Math.max(i - 1, 0)); }
+    if (e.key === 'Enter' && results[activeIndex]) { e.preventDefault(); go(results[activeIndex]); }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/40 hover:text-ivory"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+        {t('Search pages...')}
+        <span className="ml-1 rounded border border-ink-line px-1.5 py-0.5 font-mono text-[10px] text-ivory-dim/70">⌘K</span>
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-modal flex items-start justify-center bg-ink/80 px-4 pt-[12vh]" onClick={() => setOpen(false)}>
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-2xl border border-ink-line bg-ink-soft shadow-2xl shadow-black/50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2.5 border-b border-ink-line px-4 py-3.5">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-ivory-dim"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
+                onKeyDown={handleKeyDown}
+                placeholder={t('Type a page name...')}
+                className="w-full bg-transparent text-base text-ivory placeholder:text-ivory-dim/60 focus:outline-none"
+              />
+            </div>
+            <div className="max-h-[50vh] overflow-y-auto p-2">
+              {results.length === 0 && <p className="px-3 py-6 text-center text-sm text-ivory-dim">{t('No matching pages.')}</p>}
+              {results.map((item, i) => (
+                <button
+                  type="button"
+                  key={item.path}
+                  onClick={() => go(item)}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  className={`block w-full rounded-lg px-3 py-2.5 text-start text-base transition-colors ${
+                    i === activeIndex ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
+                  }`}
+                >
+                  {t(item.label)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

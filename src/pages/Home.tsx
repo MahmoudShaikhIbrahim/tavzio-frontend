@@ -258,7 +258,7 @@ export default function Home() {
               </span>
               For restaurants & hotels in the UAE
             </p>
-            <h1 className="mt-5 animate-hero-rise font-display text-[2.75rem] leading-[1.06] text-ivory [animation-delay:80ms] sm:text-6xl">
+            <h1 className="mt-5 animate-hero-rise font-display text-[2.75rem] leading-[1.06] text-ivory [animation-delay:80ms] sm:text-6xl lg:text-[5.5rem] xl:text-[6.75rem]">
               One tap.
               <br />
               Every guest <em className="not-italic text-brass">touchpoint.</em>
@@ -298,6 +298,23 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Editorial statement - a real pause between the hero and the
+          solutions grid, not filler. Designed first in Figma (see the
+          brand-token setup and section-by-section build in that file)
+          before being translated here - same mixed regular/italic type
+          treatment, same real content, no functional interactivity
+          needed so the translation is a direct one-to-one port. */}
+      <RevealSection className="border-b border-ink-line px-6 py-24">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">The point</p>
+          <p className="mx-auto mt-7 max-w-3xl font-display text-3xl leading-[1.35] text-ivory sm:text-4xl">
+            The best technology in hospitality is the kind a guest never has to think about —{' '}
+            <em className="font-light italic text-ivory">it just works.</em>
+          </p>
+          <p className="mt-6 text-sm text-ivory-dim">Built for restaurants and hotels across the UAE.</p>
+        </div>
+      </RevealSection>
 
       {/* Built for restaurants & hotels - real audience clarity right
           after the hero, so a visitor immediately sees themselves in

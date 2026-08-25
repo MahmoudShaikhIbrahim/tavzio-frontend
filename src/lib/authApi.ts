@@ -83,6 +83,20 @@ export function changePassword(currentPassword: string, newPassword: string) {
   });
 }
 
+export function setMyPin(pin: string, currentPin?: string) {
+  return authFetch<{ message: string }>('/api/auth/pin', {
+    method: 'POST',
+    body: JSON.stringify({ pin, currentPin }),
+  });
+}
+
+export function verifyMyPin(pin: string) {
+  return authFetch<{ verified: true }>('/api/auth/pin/verify', {
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  });
+}
+
 export function changeMyEmail(currentPassword: string, newEmail: string) {
   return authFetch<{ message: string; email: string }>('/api/auth/email', {
     method: 'PATCH',
@@ -144,6 +158,14 @@ export function closeTill(businessId: string, tillId: string, countedCashAed: nu
   return authFetch<TillSession>(`/api/businesses/${businessId}/till/${tillId}/close`, { method: 'POST', body: JSON.stringify({ countedCashAed, notes }) });
 }
 
+export interface XReport {
+  tillId: string; staffId: string; openedAt: string; openingFloatAed: number;
+  cashSalesTotal: number; cardSalesTotal: number; expectedCashAed: number; generatedAt: string;
+}
+export function getXReport(businessId: string, tillId: string) {
+  return authFetch<XReport>(`/api/businesses/${businessId}/till/${tillId}/x-report`);
+}
+
 export function listTillSessions(businessId: string) {
   return authFetch<TillSession[]>(`/api/businesses/${businessId}/till`);
 }
@@ -151,14 +173,10 @@ export function listTillSessions(businessId: string) {
 // --- POS terminal orders ---
 
 export function createPosOrder(businessId: string, payload: {
-  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; paymentMethod: 'cash' | 'card' | 'card_online' | 'other'; chargeToFolioId?: string;
+  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; chargeToFolioId?: string;
   discountType?: 'percentage' | 'fixed'; discountValue?: number; discountReason?: string;
 }) {
-  return authFetch<{ order: OrderRow; items: OrderItemRow[]; redirectUrl?: string; transactionId?: string; awaitingPayment?: boolean }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });
-}
-
-export function confirmPosCardPayment(businessId: string, transactionId: string) {
-  return authFetch<{ status: string; order?: OrderRow }>(`/api/businesses/${businessId}/orders/pos/confirm-card-payment`, { method: 'POST', body: JSON.stringify({ transactionId }) });
+  return authFetch<{ order: OrderRow; items: OrderItemRow[] }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export function fireCourse(businessId: string, orderId: string, course: string) {
@@ -1760,6 +1778,26 @@ export function getPrinterStatus(businessId: string) {
   );
 }
 
+// --- Kitchen ticket printing (station-routed) ---
+
+export interface KitchenStationPrinter {
+  id: string; business_id: string; station: string; printer_id: string; printer_name: string; created_at: string;
+}
+export function listKitchenStationPrinters(businessId: string) {
+  return authFetch<KitchenStationPrinter[]>(`/api/businesses/${businessId}/kitchen-station-printers`);
+}
+export function upsertKitchenStationPrinter(businessId: string, station: string, printerId: string, printerName: string) {
+  return authFetch<KitchenStationPrinter>(`/api/businesses/${businessId}/kitchen-station-printers`, {
+    method: 'PUT', body: JSON.stringify({ station, printerId, printerName }),
+  });
+}
+export function deleteKitchenStationPrinter(businessId: string, id: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/kitchen-station-printers/${id}`, { method: 'DELETE' });
+}
+export function reprintKitchenTicket(businessId: string, orderId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/orders/${orderId}/reprint-ticket`, { method: 'POST' });
+}
+
 // --- Table Receipts (no Pay Bill needed) ---
 
 export interface TableWithUnpaid {
@@ -1876,11 +1914,15 @@ export function voidOrder(businessId: string, orderId: string, reason?: string) 
   });
 }
 
-export function recordManualPayment(businessId: string, orderId: string, itemIds: string[], method: 'card_machine' | 'cash') {
-  return authFetch<{ amount: number; itemCount: number; method: string }>(
+export function recordManualPayment(businessId: string, orderId: string, itemIds: string[], tenders: { method: 'cash' | 'card'; amount: number }[], pin: string) {
+  return authFetch<{ message: string }>(
     `/api/businesses/${businessId}/orders/${orderId}/manual-payment`,
-    { method: 'POST', body: JSON.stringify({ itemIds, method }) }
+    { method: 'POST', body: JSON.stringify({ itemIds, tenders, pin }) }
   );
+}
+
+export function clearStaffPin(businessId: string, userId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/staff/${userId}/pin`, { method: 'DELETE' });
 }
 
 export interface NotificationCounts {

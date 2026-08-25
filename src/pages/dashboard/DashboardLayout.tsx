@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import CommandPalette from '../../components/CommandPalette';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, type NotificationCounts } from '../../lib/authApi';
@@ -73,7 +74,6 @@ const TABS = [
 const SETTINGS_ITEMS = [
   { path: 'settings/business-profile', label: 'Business Profile', ownerOnly: true, requires: null },
   { path: 'settings/credentials', label: 'Credentials & Integrations', ownerOnly: true, requires: null },
-  { path: 'settings/delivery', label: 'Delivery Platforms', ownerOnly: true, requires: null },
   { path: 'settings/contract', label: 'Contracts & Receipts', ownerOnly: true, requires: null },
   // Staff-only entry point - owners get this inline inside Business
   // Profile instead (see that page), and Business Profile itself is
@@ -84,7 +84,6 @@ const SETTINGS_ITEMS = [
   { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/rate-plans', label: 'Rate Plans', ownerOnly: true, requires: 'hotel' as const },
   { path: 'settings/night-audit', label: 'Night Audit', ownerOnly: true, requires: 'hotel' as const },
-  { path: 'settings/pos-integration', label: 'POS Integration', ownerOnly: true, requires: 'ordering' as const },
   { path: 'settings/hr', label: 'HR', ownerOnly: true, requires: 'hr' as const },
   { path: 'settings/payroll', label: 'Payroll', ownerOnly: true, requires: 'payroll' as const },
   { path: 'settings/accounting', label: 'Accounting', ownerOnly: true, requires: 'accounting' as const },
@@ -111,6 +110,19 @@ const SETTINGS_ITEMS = [
   { path: 'org/suppliers', label: 'Org Suppliers', ownerOnly: false, requires: 'orgOwner' as const },
   { path: 'org/purchase-orders', label: 'Org Purchase Orders', ownerOnly: false, requires: 'orgOwner' as const },
 ];
+
+// Real fix for a confirmed bug: .includes(tab.path) is a plain substring
+// check, so a short path like 'pos' falsely matches ANY longer path that
+// happens to start with those same letters - 'settings/pos-integration'
+// included, which is exactly why the POS Terminal tab lit up while
+// looking at Settings > POS Integration. Requires a real segment
+// boundary (either an exact match, or the next character is a genuine
+// '/') so 'pos' only ever matches '/admin/dashboard/pos' itself or
+// something truly nested under it, never a same-prefix sibling.
+function isTabActive(pathname: string, tabPath: string): boolean {
+  const target = `/admin/dashboard/${tabPath}`;
+  return pathname === target || pathname.startsWith(`${target}/`);
+}
 
 export default function DashboardLayout() {
   // The provider has to sit outside the component that actually
@@ -141,6 +153,20 @@ function DashboardLayoutInner() {
   const [category, setCategory] = useState<string | null>(null);
   const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, requests: 0, payments: 0, kitchen: 0, housekeeping: 0, 'front-desk': 0 });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Auto-enters on these three specifically - the working, information-
+  // dense screens someone stares at for a whole shift, where every
+  // pixel spent on chrome is a pixel not spent on the actual floor/
+  // kitchen/counter. Re-triggers fresh on every navigation to one of
+  // these (not a sticky global toggle) - landing on Kitchen after
+  // manually exiting focus mode on Orders should still focus Kitchen,
+  // matching "pressing the page" literally rather than remembering a
+  // preference across completely different screens.
+  const FOCUS_MODE_PATHS = ['pos', 'kitchen', 'orders'];
+  const [focusMode, setFocusMode] = useState(() => FOCUS_MODE_PATHS.some((p) => isTabActive(location.pathname, p)));
+  useEffect(() => {
+    setFocusMode(FOCUS_MODE_PATHS.some((p) => isTabActive(location.pathname, p)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
   const settingsRef = useRef<HTMLDivElement>(null);
   const { setMode } = useTheme();
   // Local override so a hide/reorder change reflects instantly without
@@ -208,7 +234,7 @@ function DashboardLayoutInner() {
   useEffect(() => {
     const bizId = user?.business_id;
     if (!bizId) return;
-    const tab = TABS.find((t) => (t.badge || t.badge2) && location.pathname.includes(t.path));
+    const tab = TABS.find((t) => (t.badge || t.badge2) && isTabActive(location.pathname, t.path));
     const sections = [tab?.badge, tab?.badge2].filter((s): s is keyof NotificationCounts => !!s);
     Promise.all(sections.map((s) => markSectionViewed(bizId, s)))
       .catch(() => {})
@@ -327,8 +353,15 @@ function DashboardLayoutInner() {
   }
   const visibleTabs = applyLayout(baseVisibleTabs);
   const visibleSettingsItems = applyLayout(baseVisibleSettingsItems);
+  // Deliberately the full permission-filtered lists, not the
+  // hide-filtered visibleTabs/visibleSettingsItems above - a command
+  // palette exists precisely to still reach a page someone hid from
+  // their everyday nav bar, not to respect that same declutter choice.
+  const paletteItems = [...baseVisibleTabs, ...baseVisibleSettingsItems]
+    .filter((item, i, arr) => arr.findIndex((x) => x.path === item.path) === i)
+    .map((item) => ({ path: item.path, label: item.label }));
   const hiddenTabs = [...baseVisibleTabs, ...baseVisibleSettingsItems].filter((i) => navLayout?.hidden.includes(i.path));
-  const isSettingsActive = visibleSettingsItems.some((t) => location.pathname.includes(t.path)) || location.pathname.includes('/settings');
+  const isSettingsActive = visibleSettingsItems.some((t) => isTabActive(location.pathname, t.path)) || location.pathname.includes('/settings');
 
   // Persists via setMyNavLayout (self-service, see staffRoutes.js) and
   // updates the local override immediately rather than waiting on a
@@ -397,9 +430,13 @@ function DashboardLayoutInner() {
       style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}
     >
       {showTour && <GuidedTour steps={DASHBOARD_TOUR_STEPS} onDone={closeTour} onSkip={closeTour} />}
+      {!focusMode && (
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <Logo className="h-9 w-auto" />
+          <div className="flex flex-1 items-center gap-4">
+            <Logo className="h-9 w-auto" />
+            <CommandPalette items={paletteItems} t={t} />
+          </div>
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <ClockWidget />
             <div data-tour="account-switcher"><AccountSwitcher /></div>
@@ -432,9 +469,9 @@ function DashboardLayoutInner() {
         </div>
 
         {customizing && (
-          <div className="pro-panel border-t border-brass/20 bg-brass/5 px-6 py-3">
+          <div className="border-y border-brass/30 bg-ink-soft px-6 py-3.5">
             <div className="mx-auto flex max-w-7xl items-center justify-between">
-              <p className="text-sm text-brass">{t('Customizing navigation - use the arrows to reorder, the × to hide. Changes save instantly.')}</p>
+              <p className="font-mono text-xs uppercase tracking-wider text-brass">{t('Customizing navigation - use the arrows to reorder, the × to hide. Changes save instantly.')}</p>
               <button type="button" onClick={() => setCustomizing(false)} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
                 {t('Done')}
               </button>
@@ -449,11 +486,16 @@ function DashboardLayoutInner() {
 
               if (customizing) {
                 return (
-                  <div key={tab.path} className="pro-panel flex shrink-0 items-center gap-2 rounded-lg border border-ink-line bg-ink-soft py-2.5 pe-2 ps-4">
-                    <span className="pe-1 text-base text-ivory">{t(tab.label)}</span>
-                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
-                    <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
-                    <button type="button" onClick={() => hideItem(tab.path)} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-danger hover:bg-danger/10" aria-label="Hide tab">×</button>
+                  <div key={tab.path} className="flex shrink-0 items-stretch overflow-hidden rounded-lg border border-ink-line bg-ink-soft">
+                    <span className="flex items-center gap-2.5 py-2.5 ps-3.5 pe-3 text-base text-ivory">
+                      <span className="font-mono text-xs text-brass/60">{String(i + 1).padStart(2, '0')}</span>
+                      {t(tab.label)}
+                    </span>
+                    <div className="flex items-center border-s border-ink-line">
+                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
+                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-9 w-9 items-center justify-center text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
+                    </div>
+                    <button type="button" onClick={() => hideItem(tab.path)} className="flex h-full w-9 items-center justify-center border-s border-ink-line text-lg text-danger hover:bg-danger/10" aria-label="Hide tab">×</button>
                   </div>
                 );
               }
@@ -463,7 +505,7 @@ function DashboardLayoutInner() {
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
                   className={`relative block shrink-0 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
-                    location.pathname.includes(tab.path)
+                    isTabActive(location.pathname, tab.path)
                       ? 'border-brass text-ivory'
                       : 'border-transparent text-ivory-dim hover:text-ivory'
                   }`}
@@ -492,20 +534,17 @@ function DashboardLayoutInner() {
               </svg>
             </button>
 
-            {/* Same .pro-panel depth as every other functional panel in
-                this dashboard (POS ticket, Kitchen tickets, Bookings
-                rows, Requests alerts, Orders receipts) - one visual
-                language for "this is a real, elevated surface" across
-                the whole app, this dropdown included, not a one-off
-                shadow value that happened to be here before. */}
             {(settingsOpen || customizing) && (
-              <div className="pro-panel absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft">
+              <div className="absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
                 <div className={customizing ? 'max-h-[70vh] space-y-1.5 overflow-y-auto p-2.5' : 'grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5'}>
                   {visibleSettingsItems.map((tab, i) => {
                     if (customizing) {
                       return (
-                        <div key={tab.path} className="pro-panel flex items-center justify-between gap-3 rounded-lg border border-ink-line bg-ink py-2.5 pe-2 ps-4">
-                          <span className="text-base text-ivory">{t(tab.label)}</span>
+                        <div key={tab.path} className="flex items-stretch overflow-hidden rounded-lg border border-ink-line bg-ink">
+                          <span className="flex flex-1 items-center gap-2.5 py-2.5 ps-3.5 pe-3 text-base text-ivory">
+                            <span className="font-mono text-xs text-brass/60">{String(i + 1).padStart(2, '0')}</span>
+                            {t(tab.label)}
+                          </span>
                           <div className="flex items-center gap-1.5">
                             <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
                             <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
@@ -520,7 +559,7 @@ function DashboardLayoutInner() {
                         to={`/admin/dashboard/${tab.path}`}
                         onClick={() => setSettingsOpen(false)}
                         className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
-                          location.pathname.includes(tab.path)
+                          isTabActive(location.pathname, tab.path)
                             ? 'bg-brass/10 text-brass'
                             : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                         }`}
@@ -552,7 +591,20 @@ function DashboardLayoutInner() {
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">
+      )}
+      {focusMode && (
+        <div className="flex items-center justify-between px-4 py-2">
+          <CommandPalette items={paletteItems} t={t} />
+          <button
+            type="button"
+            onClick={() => setFocusMode(false)}
+            className="rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim transition-colors hover:border-brass/50 hover:text-ivory"
+          >
+            {t('Exit focus mode')}
+          </button>
+        </div>
+      )}
+      <main className={focusMode ? 'px-4 py-4 sm:px-6' : 'mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14'}>
         <Outlet context={{ refetchFeatures }} />
       </main>
     </div>

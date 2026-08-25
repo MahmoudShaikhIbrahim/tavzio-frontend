@@ -163,7 +163,15 @@ export async function authFetch<T>(path: string, options?: RequestInit, isRetry 
   }
 
   const data = await safeJson(res);
-  if (!res.ok) throw new Error(data.message || 'Request failed');
+  if (!res.ok) {
+    const error = new Error(data.message || 'Request failed');
+    // Additive only - every existing catch block already only reads
+    // .message, unaffected. This gives a specific few flows (PIN setup
+    // detection, so far) a real structured code to branch on instead of
+    // fragile string-matching against the message text.
+    if (data.code) (error as Error & { code?: string }).code = data.code;
+    throw error;
+  }
   return data as T;
 }
 

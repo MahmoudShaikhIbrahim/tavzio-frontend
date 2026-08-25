@@ -176,7 +176,11 @@ export interface TranslationDict {
   tbYourName: string;
   tbDate: string;
   tbTime: string;
+  tbSelectDate: string;
+  tbSelectTime: string;
   tbGuests: string;
+  menuSearchPlaceholder: string;
+  menuNoSearchResults: string;
   tbSpecialRequests: string;
   tbPreOrderFood: string;
   tbPreOrderFoodDesc: string;

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { Search } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getMenu, submitOrder, getBusiness, payOrder, createOrderPaySession, confirmOrderPayment, cancelOrderPayment, payOrderWithCash } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
@@ -59,6 +60,7 @@ function MenuPageContent({ slug }: { slug: string }) {
   const [cashPendingConfirmed, setCashPendingConfirmed] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [confirmingReturn, setConfirmingReturn] = useState(false);
 
   const cart = useCart();
@@ -303,6 +305,18 @@ function MenuPageContent({ slug }: { slug: string }) {
     );
   }
 
+  const searchResults = searchQuery.trim()
+    ? items.filter((i) => {
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          translated(i.name, i.name_i18n, language).toLowerCase().includes(q) ||
+          i.name.toLowerCase().includes(q) ||
+          translated(i.description, i.description_i18n, language).toLowerCase().includes(q) ||
+          i.description.toLowerCase().includes(q)
+        );
+      })
+    : [];
+
   function renderItem(item: MenuItem) {
     const orderable = submissionEnabled && isOrderable(item);
     const priceTag = (
@@ -423,6 +437,31 @@ function MenuPageContent({ slug }: { slug: string }) {
           </div>
         )}
 
+        {/* Real search - matches against both the base name/description
+            and whatever language is currently active, so a search stays
+            useful regardless of which language a guest has the menu
+            set to. While searching, category browsing gives way to a
+            flat results list - a match could span several categories,
+            and grouping it back into those would only make the results
+            harder to scan, not easier. */}
+        <div className="relative mt-4">
+          <Search size={16} strokeWidth={2} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ivory-dim" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('menuSearchPlaceholder')}
+            className="w-full rounded-lg border border-ink-line bg-ink-soft py-2.5 ps-9 pe-3 text-sm text-ivory placeholder:text-ivory-dim/60"
+          />
+        </div>
+
+        {searchQuery.trim() ? (
+          <div className="mt-4 space-y-3">
+            {searchResults.map(renderItem)}
+            {searchResults.length === 0 && <p className="py-6 text-center text-sm text-ivory-dim">{t('menuNoSearchResults')}</p>}
+          </div>
+        ) : (
+          <>
         {categories.length > 1 && (
           <div className="mt-4 -mx-6 flex gap-2 overflow-x-auto px-6 pb-1" style={{ scrollbarWidth: 'none' }}>
             {categories.map((cat) => (
@@ -456,6 +495,8 @@ function MenuPageContent({ slug }: { slug: string }) {
           <div className={layoutMode === 'grid' ? 'mt-6 grid grid-cols-2 gap-3' : 'mt-6 space-y-3'}>
             {items.filter((i) => !i.category_id).map(renderItem)}
           </div>
+        )}
+        </>
         )}
       </div>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
+import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -145,6 +145,21 @@ export default function StaffPage() {
     }))) return;
     const result = await resetAccountPassword(businessId!, userId);
     setResetResult(result);
+  }
+
+  // Same "owner unlocks a locked-out staff member" pattern as password
+  // reset above, but genuinely simpler underneath: a PIN is cleared, not
+  // replaced - the owner never learns or chooses the new one, the staff
+  // member sets their own the next time they take a payment (real
+  // first-time-setup flow already built into PaymentModal for exactly
+  // this moment).
+  async function handleResetPin(userId: string, name: string) {
+    if (!(await confirm({
+      title: t('Reset PIN?'),
+      message: t('Clear {name}\'s POS PIN? They\'ll be asked to set a new one the next time they take a payment.').replace('{name}', name),
+      confirmLabel: t('Reset PIN'),
+    }))) return;
+    await clearStaffPin(businessId!, userId);
   }
 
   // For someone who never checked their first invite email - sends a
@@ -337,6 +352,9 @@ export default function StaffPage() {
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory">
                   {t('Reset password')}
+                </button>
+                <button type="button" onClick={() => handleResetPin(s.id, s.name)} className="text-sm text-ivory-dim hover:text-ivory">
+                  {t('Reset PIN')}
                 </button>
                 <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">
                   {resendingId === s.id ? t('Resending...') : t('Resend invite')}

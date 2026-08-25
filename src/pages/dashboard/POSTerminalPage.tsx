@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Banknote, CreditCard, UtensilsCrossed, RotateCcw, Lock, Minus, Plus } from 'lucide-react';
+import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search } from 'lucide-react';
+import PaymentModal from '../../components/PaymentModal';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
-  getMyOpenTill, openTill, closeTill, listTillSessions,
-  listMenuCategories, listMenuItems, createPosOrder, confirmPosCardPayment, getBusiness, lookupFolioByRoom,
+  getMyOpenTill, openTill, closeTill, listTillSessions, getXReport, type XReport,
+  listMenuCategories, listMenuItems, createPosOrder, getBusiness, lookupFolioByRoom,
   listHotelOutlets, listPayments,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
@@ -23,27 +23,13 @@ interface CartLine {
 
 export default function POSTerminalPage() {
   const { user } = useSession();
-  const { t } = useT();
   const businessId = user?.business_id;
   const [till, setTill] = useState<TillSession | null | undefined>(undefined);
-  const [searchParams] = useSearchParams();
-  const [cardPaymentResult, setCardPaymentResult] = useState<'success' | 'failed' | null>(null);
 
   function reloadTill() {
     if (businessId) getMyOpenTill(businessId).then(setTill);
   }
   useEffect(reloadTill, [businessId]);
-
-  // Landed back here after paying on the gateway's own hosted page -
-  // verify the real outcome server-side, same never-trust-the-redirect
-  // rule as the guest portal's folio payment confirmation.
-  useEffect(() => {
-    const txnId = searchParams.get('posPaymentTxnId');
-    if (!txnId || !businessId) return;
-    confirmPosCardPayment(businessId, txnId)
-      .then(() => setCardPaymentResult('success'))
-      .catch(() => setCardPaymentResult('failed'));
-  }, [searchParams, businessId]);
 
   if (!businessId || till === undefined) return <p className="text-ivory-dim">Loading...</p>;
 
@@ -51,11 +37,6 @@ export default function POSTerminalPage() {
 
   return (
     <div className="space-y-4">
-      {cardPaymentResult && (
-        <div className={`rounded-lg border px-4 py-3 text-sm ${cardPaymentResult === 'success' ? 'border-success/40 bg-success/10 text-success' : 'border-danger/40 bg-danger/10 text-danger'}`}>
-          {cardPaymentResult === 'success' ? t('Online card payment confirmed.') : t('Online card payment was not completed.')}
-        </div>
-      )}
       <TerminalScreen businessId={businessId} till={till} onTillClosed={reloadTill} />
     </div>
   );
@@ -166,15 +147,18 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [orderType, setOrderType] = useState<'dine_in' | 'walk_in' | 'pickup' | 'delivery'>('walk_in');
   const [tableLabel, setTableLabel] = useState('');
   const [orderNote, setOrderNote] = useState('');
   const [showCloseTill, setShowCloseTill] = useState(false);
+  const [showXReport, setShowXReport] = useState(false);
   const [showRefunds, setShowRefunds] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState<{ total: number; method: string } | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<{ items: { id: string; orderId: string; name: string; unitPrice: number; addonTotal: number; quantity: number }[] } | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [queuedCount, setQueuedCount] = useState(getQueue().length);
 
@@ -292,7 +276,12 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       ? Math.min(cartSubtotal, Math.max(0, discountValue))
       : 0;
   const cartTotal = Math.max(0, cartSubtotal - discountAmount);
-  const visibleItems = items.filter((i) => i.category_id === activeCategory && (!outletItemIds || outletItemIds.has(i.id)));
+  const visibleItems = itemSearchQuery.trim()
+    ? items.filter((i) => {
+        const q = itemSearchQuery.trim().toLowerCase();
+        return (!outletItemIds || outletItemIds.has(i.id)) && (i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q));
+      })
+    : items.filter((i) => i.category_id === activeCategory && (!outletItemIds || outletItemIds.has(i.id)));
 
   function resetCartState() {
     setCart([]);
@@ -306,7 +295,15 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     setDiscountReason('');
   }
 
-  async function handleCharge(paymentMethod: 'cash' | 'card' | 'other') {
+  // Both Send to Kitchen and Payment start with the exact same real
+  // action - create the order, unpaid, and fire it to the kitchen.
+  // Payment continues on to open the shared PaymentModal immediately
+  // for that just-created order; Send to Kitchen stops there. If the
+  // Payment modal gets cancelled, the order simply stays unpaid and
+  // reachable later via Orders - the same real state a dine-in table
+  // or a pay-on-collection pickup order is always in, no special
+  // casing needed between "meant to pay now" and "changed their mind".
+  async function handleSendToKitchen(openPaymentAfter: boolean) {
     if (cart.length === 0) return;
     if (discountType && !discountReason.trim()) { setError('Enter a reason for the discount/comp'); return; }
     setCheckingOut(true);
@@ -316,28 +313,31 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       orderType,
       note: orderNote,
       items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
-      paymentMethod,
       ...(discountType ? { discountType, discountValue, discountReason } : {}),
     };
 
     try {
       if (!navigator.onLine) throw new Error('offline');
-      await createPosOrder(businessId, payload);
-      setConfirmed({ total: cartTotal, method: paymentMethod });
+      const result = await createPosOrder(businessId, payload);
+      if (openPaymentAfter) {
+        setPendingPayment({
+          items: result.items.map((i) => ({ id: i.id, orderId: result.order.id, name: i.item_name, unitPrice: i.unit_price, addonTotal: i.addon_total, quantity: i.quantity })),
+        });
+      } else {
+        setConfirmed({ total: cartTotal, method: 'sent to kitchen' });
+      }
       resetCartState();
     } catch {
       // Genuinely offline (or the request failed to even reach the
-      // server) - never block the sale over it. Save it locally and
+      // server) - never block the order over it. Save it locally and
       // keep going; it syncs for real the moment connectivity returns.
-      // No server reachable here to auto-number the label (that fix
-      // only applies to the online path above) - falls back to the
-      // plain type name, same as the old default behavior, since a
-      // rare offline-only label collision is a real tradeoff against
-      // never blocking a sale over connectivity, not worth solving
-      // with a client-side counter that couldn't be trustworthy anyway.
+      // Payment can't be taken offline either way (PIN verification
+      // needs the server), so an offline "Payment" press just falls
+      // back to queuing the order like Send to Kitchen would - it's
+      // payable once back online, same as any other unpaid order.
       queueOrder({ businessId, ...payload, tableLabel: payload.tableLabel || ORDER_TYPE_LABELS[orderType] });
       setQueuedCount(getQueue().length);
-      setConfirmed({ total: cartTotal, method: `${paymentMethod} (saved offline - will sync)` });
+      setConfirmed({ total: cartTotal, method: 'saved offline - will sync' });
       resetCartState();
     } finally {
       setCheckingOut(false);
@@ -356,7 +356,6 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
       await createPosOrder(businessId, {
         tableLabel,
         items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
-        paymentMethod: 'other',
         chargeToFolioId: roomFolio.folioId,
         ...(discountType ? { discountType, discountValue, discountReason } : {}),
       });
@@ -369,20 +368,19 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     }
   }
 
-  if (confirmed) {
-    return (
-      <div className="mx-auto max-w-sm space-y-4 text-center">
-        <p className="font-display text-2xl text-ivory">{t('Order sent to kitchen')}</p>
-        <p className="text-ivory-dim">AED {confirmed.total.toFixed(2)} · {t('paid by')} {confirmed.method}</p>
-        <p className="text-sm text-ivory-dim">
-          {t('Incl. VAT (5%):')} AED {(confirmed.total - confirmed.total / 1.05).toFixed(2)}
-        </p>
-        <button type="button" onClick={() => setConfirmed(null)} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">
-          {t('New order')}
-        </button>
-      </div>
-    );
-  }
+  // Real fix for a confirmed complaint: this used to replace the ENTIRE
+  // terminal screen after every single order, forcing an explicit "New
+  // order" click before the next customer could even be started - on a
+  // busy counter that's real friction, hundreds of times a shift. The
+  // cart is already reset by the time this fires either way (see
+  // resetCartState() calls above), so there's nothing left to protect by
+  // blocking the screen - a brief, non-blocking toast that clears itself
+  // says the same thing without stopping anyone.
+  useEffect(() => {
+    if (!confirmed) return;
+    const timer = setTimeout(() => setConfirmed(null), 2500);
+    return () => clearTimeout(timer);
+  }, [confirmed]);
 
   if (showCloseTill) {
     return <CloseTillScreen businessId={businessId} till={till} onDone={onTillClosed} onCancel={() => setShowCloseTill(false)} />;
@@ -401,11 +399,28 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+    <div className="relative grid gap-6 lg:grid-cols-[1fr_380px]">
+      {/* Real, non-blocking replacement for the old full-screen block -
+          floats over the corner, never intercepts a tap on the terminal
+          underneath, and clears itself on the timer set above. */}
+      {confirmed && (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-toast flex justify-center sm:inset-x-auto sm:end-6">
+          <div className="flex items-center gap-3 rounded-xl border border-success/40 bg-ink-soft px-5 py-3 shadow-lg pointer-events-auto motion-safe:animate-hero-rise">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">✓</span>
+            <div>
+              <p className="text-sm font-medium text-ivory">{t('Order sent to kitchen')}</p>
+              <p className="text-xs text-ivory-dim">AED {confirmed.total.toFixed(2)} · {t('paid by')} {confirmed.method}</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div>
         <div className="mb-5 flex items-center justify-between border-b border-ink-line pb-4">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
           <div className="flex items-center gap-5">
+            <button type="button" onClick={() => setShowXReport(true)} className="flex items-center gap-1.5 text-sm text-ivory-dim hover:text-ivory">
+              <FileText size={15} strokeWidth={2} />{t('X-report')}
+            </button>
             <button type="button" onClick={() => setShowRefunds(true)} className="flex items-center gap-1.5 text-sm text-danger hover:underline">
               <RotateCcw size={15} strokeWidth={2} />{t('Refunds')}
             </button>
@@ -421,13 +436,23 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               : `${t('Syncing')} ${queuedCount} ${t('order(s) saved while offline...')}`}
           </div>
         )}
+        <div className="relative mb-3">
+          <Search size={16} strokeWidth={2} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ivory-dim" />
+          <input
+            type="search"
+            value={itemSearchQuery}
+            onChange={(e) => setItemSearchQuery(e.target.value)}
+            placeholder={t('Search items...')}
+            className="w-full rounded-lg border border-ink-line bg-ink-soft py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
+          />
+        </div>
         {/* Bigger touch targets throughout this page on purpose - real
             terminals get tapped on a touchscreen, not clicked with a
             mouse, and get tapped hundreds of times a shift. Active
             state gets real elevation (matches .card-elevated's shadow
             language) instead of a flat color fill, so the current
             category reads as physically raised, not just recolored. */}
-        <div className="flex gap-2.5 overflow-x-auto pb-2">
+        <div className={`flex gap-2.5 overflow-x-auto pb-2 ${itemSearchQuery.trim() ? 'pointer-events-none opacity-40' : ''}`}>
           {categories.map((c) => (
             <button type="button"
               key={c.id}
@@ -635,13 +660,14 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           </div>
         )}
 
-        {/* Payment actions - real weight hierarchy instead of three
-            visually similar buttons: Cash is genuinely the most common
-            path at a physical counter, so it's the one filled/bold
-            action; Card and Charge-to-Room are equally valid but
-            secondary. Icons here are a real scanning aid for a cashier
-            moving fast, not decoration - a staff member recognizes the
-            banknote/card shape faster than reading the word. */}
+        {/* Send to Kitchen and Payment both create the order for real
+            (unpaid) - Payment continues straight into the shared
+            PaymentModal for whatever was just created, Send to Kitchen
+            stops there and leaves it open for later (a dine-in table
+            settling at the end of the meal, a pickup order paid on
+            collection). Charge to Room stays its own immediate action -
+            charging to a guest's room genuinely is the settlement, no
+            cash/card tender choice involved. */}
         <div className="space-y-2 p-4">
           {isHotel && (
             <button type="button"
@@ -652,14 +678,26 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               {t('Charge to Room')}{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
-          <button type="button" onClick={() => handleCharge('cash')} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-            <Banknote size={18} strokeWidth={2} />{t('Charge - Cash')}
+          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            {t('Send to Kitchen')}
           </button>
-          <button type="button" onClick={() => handleCharge('card')} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50">
-            <CreditCard size={18} strokeWidth={2} />{t('Charge - Card (external machine)')}
+          <button type="button" onClick={() => handleSendToKitchen(true)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            {t('Payment')}
           </button>
         </div>
       </div>
+
+      {pendingPayment && (
+        <PaymentModal
+          businessId={businessId}
+          items={pendingPayment.items}
+          onClose={() => setPendingPayment(null)}
+          onDone={() => { setPendingPayment(null); setConfirmed({ total: cartTotal, method: 'paid' }); }}
+        />
+      )}
+      {showXReport && (
+        <XReportPanel businessId={businessId} tillId={till.id} onClose={() => setShowXReport(false)} />
+      )}
     </div>
   );
 }
@@ -731,6 +769,46 @@ function RefundsPanel({ businessId }: { businessId: string }) {
         )}
       </div>
     </Section>
+  );
+}
+
+// Real, read-only - fetches the snapshot once on open and shows it.
+// No close/confirm action here at all, deliberately: an X-report that
+// could accidentally finalize anything wouldn't be a real X-report.
+function XReportPanel({ businessId, tillId, onClose }: { businessId: string; tillId: string; onClose: () => void }) {
+  const { t } = useT();
+  const [report, setReport] = useState<XReport | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getXReport(businessId, tillId).then(setReport).catch((err) => setError(err instanceof Error ? err.message : 'Could not load report'));
+  }, [businessId, tillId]);
+
+  return (
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-ink/80 p-4">
+      <div className="w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-6 shadow-2xl shadow-black/50">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-xl text-ivory">{t('X-report')}</h2>
+          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">{t('Close')}</button>
+        </div>
+        <p className="mb-4 text-sm text-ivory-dim">{t('A snapshot, not a close - the till stays open.')}</p>
+        {error && <p className="text-sm text-danger">{error}</p>}
+        {!report && !error && <p className="text-ivory-dim">{t('Loading...')}</p>}
+        {report && (
+          <div className="space-y-2 text-base">
+            <div className="flex justify-between"><span className="text-ivory-dim">{t('Opened')}</span><span className="text-ivory">{new Date(report.openedAt).toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-ivory-dim">{t('Opening float')}</span><span className="text-ivory">AED {report.openingFloatAed.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-ivory-dim">{t('Cash sales')}</span><span className="text-ivory">AED {report.cashSalesTotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-ivory-dim">{t('Card sales')}</span><span className="text-ivory">AED {report.cardSalesTotal.toFixed(2)}</span></div>
+            <div className="mt-3 flex justify-between border-t border-ink-line pt-3">
+              <span className="text-ivory">{t('Expected cash in drawer')}</span>
+              <span className="font-display text-xl text-brass">AED {report.expectedCashAed.toFixed(2)}</span>
+            </div>
+            <p className="text-xs text-ivory-dim">{t('Generated')} {new Date(report.generatedAt).toLocaleTimeString()}</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

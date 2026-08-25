@@ -5,6 +5,7 @@ import { getBusiness } from '../../lib/authApi';
 import PayBillSetupPage from './PayBillSetupPage';
 import PrinterSetupPage from './PrinterSetupPage';
 import DeliveryIntegrationPage from './DeliveryIntegrationPage';
+import PosIntegrationPage from './PosIntegrationPage';
 import ExternalHotelSystemsPage from './ExternalHotelSystemsPage';
 import AccountingSyncPage from './AccountingSyncPage';
 
@@ -16,13 +17,14 @@ import AccountingSyncPage from './AccountingSyncPage';
 // integration works has changed, only where it lives.
 export default function CredentialsPage() {
   const { t } = useT();
-  const [tab, setTab] = useState<'payments' | 'printer' | 'delivery' | 'hotel-systems' | 'accounting'>('payments');
+  const [tab, setTab] = useState<'payments' | 'printer' | 'delivery' | 'pos-integration' | 'hotel-systems' | 'accounting'>('payments');
   const isHotel = useIsHotel();
 
   const tabs: { key: typeof tab; label: string }[] = [
     { key: 'payments', label: t('Payment Gateway') },
     { key: 'printer', label: t('Receipt Printer') },
     ...(isHotel ? [] : [{ key: 'delivery' as const, label: t('Delivery Platforms') }]),
+    { key: 'pos-integration', label: t('POS Integration') },
     ...(isHotel ? [{ key: 'hotel-systems' as const, label: t('External Hotel Systems') }] : []),
     { key: 'accounting', label: t('Accounting Sync') },
   ];
@@ -44,6 +46,7 @@ export default function CredentialsPage() {
         {tab === 'payments' && <PayBillSetupPage />}
         {tab === 'printer' && <PrinterSetupPage />}
         {tab === 'delivery' && !isHotel && <DeliveryIntegrationPage />}
+        {tab === 'pos-integration' && <PosIntegrationPage />}
         {tab === 'hotel-systems' && isHotel && <ExternalHotelSystemsPage />}
         {tab === 'accounting' && <AccountingSyncPage />}
       </div>

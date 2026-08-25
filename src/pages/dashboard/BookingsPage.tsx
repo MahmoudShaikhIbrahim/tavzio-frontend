@@ -217,7 +217,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
   const foodItems = booking.booking_items || [];
 
   return (
-    <div className="pro-panel overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+    <div className="overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
       {/* Same device already used on Kitchen tickets for "this needs
           attention" - a real colored strip, not a new pattern invented
           just for this page, so the whole dashboard signals urgency the

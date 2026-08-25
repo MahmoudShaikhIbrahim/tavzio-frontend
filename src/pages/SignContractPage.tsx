@@ -42,7 +42,7 @@ export default function SignContractPage() {
   async function handleSign() {
     if (!token) return;
     if (!fullName.trim()) { setError('Type your full legal name to sign'); return; }
-    if (!agreed) { setError('Please confirm you have read and agree to the terms'); return; }
+    if (!agreed) { setError('Please confirm you have read and agree to this contract and all its terms and conditions'); return; }
     setSigning(true);
     setError('');
     try {
@@ -129,12 +129,12 @@ export default function SignContractPage() {
             />
             <label className="flex items-center gap-2 text-base text-[#f4eee3]">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-[#b8925a]" />
-              I have read and agree to the terms above.
+              I have read this contract in full and agree to all of its terms and conditions.
             </label>
             {error && <p className="text-base text-red-400">{error}</p>}
             <button type="button"
               onClick={handleSign}
-              disabled={signing}
+              disabled={signing || !agreed}
               className="w-full rounded-lg bg-[#b8925a] px-4 py-2.5 text-base font-medium text-[#141110] hover:opacity-90 disabled:opacity-50"
             >
               {signing ? 'Signing...' : 'Sign & continue to payment setup'}

@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
-  listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems, recordManualPayment,
+  listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import type { LoyaltyClaim } from '../../types';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
+import PaymentModal from '../../components/PaymentModal';
 import { getBusiness } from '../../lib/authApi';
 import type { NotificationSettings } from '../../types';
 
@@ -33,7 +34,6 @@ export default function RequestsPage() {
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [claims, setClaims] = useState<LoyaltyClaim[]>([]);
   const [cashPending, setCashPending] = useState<CashPendingItem[]>([]);
-  const [confirmingCash, setConfirmingCash] = useState<string | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
 
   function reloadRequests() {
@@ -46,16 +46,7 @@ export default function RequestsPage() {
     if (businessId) listCashPendingItems(businessId).then(setCashPending);
   }
 
-  async function handleConfirmCash(item: CashPendingItem) {
-    if (!businessId) return;
-    setConfirmingCash(item.id);
-    try {
-      await recordManualPayment(businessId, item.order_id, [item.id], 'cash');
-      reloadCashPending();
-    } finally {
-      setConfirmingCash(null);
-    }
-  }
+  const [payingCashItem, setPayingCashItem] = useState<CashPendingItem | null>(null);
 
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
@@ -115,7 +106,7 @@ export default function RequestsPage() {
             const style = REQUEST_STYLE[r.request_type];
             const label = r.request_type === 'custom' ? (r.custom_request_label || t(style.label)) : t(style.label);
             return (
-              <div key={r.id} className={`pro-panel flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
+              <div key={r.id} className={`flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
                 <span className={`text-xl font-medium ${style.text}`}>
                   {label} — <span className="text-ivory">{r.table_label || t('No table')}</span>
                 </span>
@@ -130,23 +121,22 @@ export default function RequestsPage() {
           })}
 
           {cashPending.map((item) => (
-            <div key={item.id} className="pro-panel flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
+            <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
               <span className="text-xl font-medium text-warning">
                 {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
                 <span className="text-ivory-dim"> ({item.quantity}× {item.item_name}, {((item.unit_price + item.addon_total) * item.quantity).toFixed(2)})</span>
               </span>
               <button type="button"
-                onClick={() => handleConfirmCash(item)}
-                disabled={confirmingCash === item.id}
-                className="rounded-lg border-2 border-warning px-5 py-3 text-lg text-warning hover:bg-warning/10 disabled:opacity-50"
+                onClick={() => setPayingCashItem(item)}
+                className="rounded-lg border-2 border-warning px-5 py-3 text-lg text-warning hover:bg-warning/10"
               >
-                {confirmingCash === item.id ? t('Confirming…') : t('Mark received')}
+                {t('Mark received')}
               </button>
             </div>
           ))}
 
           {claims.map((c) => (
-            <div key={c.id} className="pro-panel flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">
+            <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">
               <span className="text-xl font-medium text-brass-bright">
                 {t('Reward ready —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
                 {c.reward_description ? <span className="text-ivory-dim"> ({c.reward_description})</span> : ''}
@@ -164,6 +154,14 @@ export default function RequestsPage() {
             </div>
           ))}
         </div>
+      )}
+      {payingCashItem && businessId && (
+        <PaymentModal
+          businessId={businessId}
+          items={[{ id: payingCashItem.id, orderId: payingCashItem.order_id, name: payingCashItem.item_name, unitPrice: payingCashItem.unit_price, addonTotal: payingCashItem.addon_total, quantity: payingCashItem.quantity }]}
+          onClose={() => setPayingCashItem(null)}
+          onDone={() => { setPayingCashItem(null); reloadCashPending(); }}
+        />
       )}
     </div>
   );

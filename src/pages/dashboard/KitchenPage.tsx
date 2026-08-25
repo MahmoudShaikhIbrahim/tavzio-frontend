@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listOrders, updateOrderStatus, getBusiness } from '../../lib/authApi';
+import { listOrders, updateOrderStatus, getBusiness, reprintKitchenTicket } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, NotificationSettings } from '../../types';
@@ -48,6 +48,7 @@ export default function KitchenPage() {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [stationFilter, setStationFilter] = useState<string>('all');
+  const [reprintingId, setReprintingId] = useState<string | null>(null);
   useTicker();
 
   function reload() {
@@ -115,6 +116,20 @@ export default function KitchenPage() {
     }
   }
 
+  // A real, named action (logged server-side with who and when) for a
+  // lost or misprinted paper ticket - never silently re-fires anything,
+  // just resends what's already fired to whichever stations have a
+  // printer mapped.
+  async function handleReprint(orderId: string) {
+    if (!businessId) return;
+    setReprintingId(orderId);
+    try {
+      await reprintKitchenTicket(businessId, orderId);
+    } finally {
+      setReprintingId(null);
+    }
+  }
+
   if (!businessId) return null;
 
   const kitchenOrders = orders.filter((order) => order.order_items.some((i) => !i.voided && i.course_status !== 'held'));
@@ -159,7 +174,7 @@ export default function KitchenPage() {
           // for which course, so the kitchen can pace itself.
           const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
           return (
-            <div key={order.id} className="pro-panel overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+            <div key={order.id} className="overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
               {/* A colored top strip reads faster than a thin border at
                   the distance a KDS screen is actually viewed from
                   across a kitchen - the same real convention commercial
@@ -208,6 +223,14 @@ export default function KitchenPage() {
                     className="flex-1 rounded-lg bg-brass px-3 py-3.5 text-base font-medium text-ink hover:opacity-90"
                   >
                     {t('Mark ready')}
+                  </button>
+                  <button type="button"
+                    onClick={() => handleReprint(order.id)}
+                    disabled={reprintingId === order.id}
+                    title={t('Reprint ticket')}
+                    className="rounded-lg border border-ink-line px-3 py-3.5 text-sm text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50"
+                  >
+                    {reprintingId === order.id ? '…' : t('Reprint')}
                   </button>
                 </div>
               </div>

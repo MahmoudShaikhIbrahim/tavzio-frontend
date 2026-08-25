@@ -4,16 +4,17 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
-  voidOrderItem, clearTable, recordManualPayment, fireCourse,
+  voidOrderItem, clearTable, fireCourse,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
   getPaymentIntegration,
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
-import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
+import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim, OrderItemRow } from '../../types';
 import ExportButtons from '../../components/ExportButtons';
 import { useConfirm } from '../../components/ConfirmDialog';
+import PaymentModal from '../../components/PaymentModal';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   // listOrders filters awaiting_payment out server-side - this view never
@@ -514,11 +515,13 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
   businessId: string; orders: OrderRow[]; onClose: () => void; onDone: () => void;
 }) {
   const { t } = useT();
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  // Real combine-checks: a Set, not a single string - two separate
+  // tables wanting to pay together (a common real request, not an edge
+  // case) previously had no way to be settled in one pass at all.
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
+  const [pickingTables, setPickingTables] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [method, setMethod] = useState<'card_machine' | 'cash'>('card_machine');
-  const [recording, setRecording] = useState(false);
-  const [error, setError] = useState('');
+  const [showPayment, setShowPayment] = useState(false);
 
   const tableGroups = orders.reduce<Record<string, OrderRow[]>>((acc, o) => {
     const key = o.table_label || t('No table');
@@ -527,13 +530,26 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
     return acc;
   }, {});
 
-  const tableOrders = selectedTable ? tableGroups[selectedTable] || [] : [];
-  // itemId -> orderId, so a table with several separate orders can still
-  // be settled in one pass - each affected order gets its own
-  // recordManualPayment call underneath, since orders always stay
-  // genuinely separate records.
+  // itemId -> orderId, so several separate orders (whether from one
+  // table with multiple rounds, or several combined tables) can still
+  // be settled in one pass - the shared PaymentModal groups by this
+  // same real orderId underneath, since orders always stay genuinely
+  // separate records even when paid together.
   const itemToOrder = new Map<string, string>();
-  tableOrders.forEach((o) => o.order_items.forEach((i) => { if (!i.voided && !i.paid) itemToOrder.set(i.id, o.id); }));
+  const itemDetails = new Map<string, OrderItemRow>();
+  const itemTable = new Map<string, string>();
+  Array.from(selectedTables).forEach((table) => (tableGroups[table] || []).forEach((o) => o.order_items.forEach((i) => {
+    if (!i.voided && !i.paid) { itemToOrder.set(i.id, o.id); itemDetails.set(i.id, i); itemTable.set(i.id, table); }
+  })));
+
+  function toggleTable(table: string) {
+    setSelectedTables((prev) => {
+      const next = new Set(prev);
+      if (next.has(table)) next.delete(table);
+      else next.add(table);
+      return next;
+    });
+  }
 
   function toggle(itemId: string) {
     setSelected((prev) => {
@@ -544,30 +560,10 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
     });
   }
 
-  async function handleConfirm() {
-    if (selected.size === 0) {
-      setError('Select at least one item');
-      return;
-    }
-    setRecording(true);
-    setError('');
-    try {
-      const byOrder = new Map<string, string[]>();
-      selected.forEach((itemId) => {
-        const orderId = itemToOrder.get(itemId);
-        if (!orderId) return;
-        const existing = byOrder.get(orderId);
-        if (existing) existing.push(itemId);
-        else byOrder.set(orderId, [itemId]);
-      });
-      await Promise.all(Array.from(byOrder.entries()).map(([orderId, itemIds]) => recordManualPayment(businessId, orderId, itemIds, method)));
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not record payment');
-    } finally {
-      setRecording(false);
-    }
-  }
+  const paymentItems = Array.from(selected).map((itemId) => {
+    const item = itemDetails.get(itemId)!;
+    return { id: item.id, orderId: itemToOrder.get(itemId)!, name: item.item_name, unitPrice: item.unit_price, addonTotal: item.addon_total, quantity: item.quantity };
+  });
 
   return (
     <div className="fixed inset-0 z-modal flex items-center justify-center bg-ink/80 p-4">
@@ -577,22 +573,32 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
           <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">{t('Close')}</button>
         </div>
 
-        {!selectedTable ? (
+        {pickingTables ? (
           <div className="space-y-2">
             {Object.keys(tableGroups).length === 0 && <p className="text-base text-ivory-dim">{t('No unpaid items right now.')}</p>}
+            <p className="text-sm text-ivory-dim">{t('Select one table, or several to combine into one payment.')}</p>
             {Object.keys(tableGroups).map((table) => (
-              <button type="button"
+              <label
                 key={table}
-                onClick={() => setSelectedTable(table)}
-                className="block w-full rounded-lg border border-ink-line px-4 py-3 text-start text-base text-ivory hover:border-brass/40"
+                className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-base text-ivory ${
+                  selectedTables.has(table) ? 'border-brass bg-brass/10' : 'border-ink-line hover:border-brass/40'
+                }`}
               >
+                <input type="checkbox" checked={selectedTables.has(table)} onChange={() => toggleTable(table)} className="accent-brass" />
                 {table}
-              </button>
+              </label>
             ))}
+            <button type="button"
+              onClick={() => setPickingTables(false)}
+              disabled={selectedTables.size === 0}
+              className="mt-2 w-full rounded-lg bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            >
+              {selectedTables.size > 1 ? t('Combine {n} tables').replace('{n}', String(selectedTables.size)) : t('Continue')}
+            </button>
           </div>
         ) : (
           <div className="space-y-4">
-            <button type="button" onClick={() => { setSelectedTable(null); setSelected(new Set()); }} className="text-sm text-brass hover:underline">{t('← Back to tables')}</button>
+            <button type="button" onClick={() => { setPickingTables(true); setSelected(new Set()); }} className="text-sm text-brass hover:underline">{t('← Back to tables')}</button>
             <div className="flex items-center justify-between">
               <p className="text-sm text-ivory-dim">{selected.size} {t('of')} {itemToOrder.size} {t('selected')}</p>
               <button type="button"
@@ -602,38 +608,41 @@ function RecordPaymentFlow({ businessId, orders, onClose, onDone }: {
                 {selected.size === itemToOrder.size ? t('Deselect all') : t('Select all')}
               </button>
             </div>
-            <div className="space-y-2">
-              {tableOrders.map((o) => o.order_items.filter((i) => !i.voided && !i.paid).map((item) => (
-                <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
-                  <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="accent-brass" />
-                  {item.quantity}× {item.item_name}
-                  {item.cash_pending && <span className="text-xs text-warning">{t('(cash pending)')}</span>}
-                  <span className="ml-auto text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
-                </label>
-              )))}
-            </div>
-            <div className="flex gap-2">
-              {(['card_machine', 'cash'] as const).map((m) => (
-                <button type="button"
-                  key={m}
-                  onClick={() => setMethod(m)}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-sm ${method === m ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
-                >
-                  {m === 'card_machine' ? t('Card machine') : t('Cash')}
-                </button>
+            <div className="space-y-3">
+              {Array.from(selectedTables).map((table) => (
+                <div key={table}>
+                  {selectedTables.size > 1 && <p className="mb-1 text-xs uppercase tracking-wide text-brass/70">{table}</p>}
+                  <div className="space-y-2">
+                    {(tableGroups[table] || []).map((o) => o.order_items.filter((i) => !i.voided && !i.paid).map((item) => (
+                      <label key={item.id} className="flex items-center gap-2 text-base text-ivory">
+                        <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="accent-brass" />
+                        {item.quantity}× {item.item_name}
+                        {item.cash_pending && <span className="text-xs text-warning">{t('(cash pending)')}</span>}
+                        <span className="ml-auto text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
+                      </label>
+                    )))}
+                  </div>
+                </div>
               ))}
             </div>
-            {error && <p className="text-sm text-danger">{error}</p>}
             <button type="button"
-              onClick={handleConfirm}
-              disabled={recording}
-              className="w-full rounded-lg bg-brass px-3 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              onClick={() => setShowPayment(true)}
+              disabled={selected.size === 0}
+              className="w-full rounded-lg bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
             >
-              {recording ? t('Recording…') : t('Confirm payment received')}
+              {t('Continue to Payment')}
             </button>
           </div>
         )}
       </div>
+      {showPayment && (
+        <PaymentModal
+          businessId={businessId}
+          items={paymentItems}
+          onClose={() => setShowPayment(false)}
+          onDone={onDone}
+        />
+      )}
     </div>
   );
 }
