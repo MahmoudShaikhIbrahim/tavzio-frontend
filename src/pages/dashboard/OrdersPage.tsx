@@ -227,44 +227,44 @@ export default function OrdersPage() {
       </div>
 
       {hasAttentionItems && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {readyUnacked.map((o) => (
-            <div key={o.id} className="pro-panel rounded-xl border border-success/50 bg-success/10 p-4">
-              <p className="text-base font-medium text-success">
+            <div key={o.id} className="rounded-lg border border-success/50 bg-success/10 p-3">
+              <p className="text-sm font-medium text-success">
                 {t('Ready —')} <span className="text-ivory">{o.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-3 w-full rounded-lg border border-success px-3 py-3 text-base text-success hover:bg-success/10">
+              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-2 w-full rounded-md border border-success px-2 min-h-[36px] py-1.5 text-xs text-success hover:bg-success/10">
                 {t('Dismiss')}
               </button>
             </div>
           ))}
           {requests.map((r) => (
-            <div key={r.id} className="pro-panel rounded-xl border border-brass/50 bg-brass/10 p-4">
-              <p className="text-base font-medium text-brass">
+            <div key={r.id} className="rounded-lg border border-brass/50 bg-brass/10 p-3">
+              <p className="text-sm font-medium text-brass">
                 {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')} — <span className="text-ivory">{r.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-3 w-full rounded-lg border border-brass px-3 py-3 text-base text-brass hover:bg-brass/10">
+              <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10">
                 {t('Dismiss')}
               </button>
             </div>
           ))}
           {cashPending.map((item) => (
-            <div key={item.id} className="pro-panel rounded-xl border border-warning/50 bg-warning/10 p-4">
-              <p className="text-base font-medium text-warning">
+            <div key={item.id} className="rounded-lg border border-warning/50 bg-warning/10 p-3">
+              <p className="text-sm font-medium text-warning">
                 {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
               </p>
-              <p className="mt-1 text-sm text-ivory-dim">{item.quantity}× {item.item_name}</p>
-              <p className="mt-2 text-sm text-ivory-dim">{t('Use Record payment to confirm')}</p>
+              <p className="mt-0.5 text-xs text-ivory-dim">{item.quantity}× {item.item_name}</p>
+              <p className="mt-1 text-xs text-ivory-dim">{t('Use Record payment to confirm')}</p>
             </div>
           ))}
           {claims.map((c) => (
-            <div key={c.id} className="pro-panel rounded-xl border border-brass/50 bg-brass/10 p-4">
-              <p className="text-base font-medium text-brass">
+            <div key={c.id} className="rounded-lg border border-brass/50 bg-brass/10 p-3">
+              <p className="text-sm font-medium text-brass">
                 {t('Loyalty reward —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
               </p>
               <button type="button"
                 onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
-                className="mt-3 w-full rounded-lg border border-brass px-3 py-3 text-base text-brass hover:bg-brass/10"
+                className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10"
               >
                 {t('Mark redeemed')}
               </button>
@@ -276,7 +276,7 @@ export default function OrdersPage() {
       {Object.keys(tableGroups).length === 0 ? (
         <p className="text-base text-ivory-dim">{t('No active orders right now.')}</p>
       ) : (
-        <div className="flex flex-wrap items-start gap-6">
+        <div className="flex flex-wrap items-start gap-3">
           {Object.keys(tableGroups).map((table) => (
             <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
           ))}
@@ -408,10 +408,10 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   }
 
   return (
-    <div className="pro-panel w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-5">
+    <div className="w-full max-w-xs rounded-xl border border-ink-line bg-ink-soft p-3">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl text-ivory">{table}</h2>
+          <h2 className="font-display text-base text-ivory">{table}</h2>
           <p className="text-sm text-ivory-dim">
             {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
           </p>
@@ -422,7 +422,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               <button type="button"
                 onClick={handleMarkCompleted}
                 disabled={completing}
-                className="rounded-lg border border-brass/40 px-3 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+                className="rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 disabled:opacity-50"
               >
                 {completing ? t('Completing...') : t('Mark completed')}
               </button>
@@ -438,7 +438,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
         )}
       </div>
 
-      <div className="space-y-3 text-lg">
+      <div className="space-y-2 text-sm">
         {heldByCourse.size > 0 && (
           <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
             {[...heldByCourse.entries()].map(([course, entries]) => {
@@ -449,7 +449,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                   <button type="button"
                     onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
                     disabled={firing === course}
-                    className="rounded-lg bg-brass px-3 py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                    className="rounded-lg bg-brass px-3 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
                   >
                     {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
                   </button>

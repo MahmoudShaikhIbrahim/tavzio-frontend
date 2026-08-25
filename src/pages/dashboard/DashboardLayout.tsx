@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import CommandPalette from '../../components/CommandPalette';
+import { saveLastDashboardPath } from '../../lib/lastDashboardPath';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, type NotificationCounts } from '../../lib/authApi';
@@ -161,9 +162,48 @@ function DashboardLayoutInner() {
   // manually exiting focus mode on Orders should still focus Kitchen,
   // matching "pressing the page" literally rather than remembering a
   // preference across completely different screens.
+  //
+  // Real fix, deliberately never auto-focuses on the very first mount -
+  // a fresh login/reload landing on Orders (whether the old hardcoded
+  // default, or the new restored-last-path one) used to force full-page
+  // focus mode immediately, with no action on the person's part that
+  // would explain why. Only a genuine in-app navigation to one of these
+  // (an actual click on the tab) should trigger it now.
   const FOCUS_MODE_PATHS = ['pos', 'kitchen', 'orders'];
-  const [focusMode, setFocusMode] = useState(() => FOCUS_MODE_PATHS.some((p) => isTabActive(location.pathname, p)));
+  const [focusMode, setFocusMode] = useState(false);
+  const hasMountedRef = useRef(false);
+
+  // Real fullscreen, not just this app's own chrome - requestFullscreen
+  // only works when called synchronously inside a real click/keydown
+  // handler (a hard browser security rule), so this is only ever called
+  // directly from an actual click - never from the path-based
+  // auto-detect effect below, which fires after the fact and would
+  // silently fail or throw if it tried.
+  function enterFocusMode() {
+    setFocusMode(true);
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  }
+  function exitFocusMode() {
+    setFocusMode(false);
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  }
   useEffect(() => {
+    function onFullscreenChange() {
+      if (!document.fullscreenElement) setFocusMode(false);
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+  useEffect(() => {
+    // Real path persistence, every real navigation - what makes a
+    // future login/reload able to return here at all.
+    const dashboardPath = location.pathname.replace(/^\/admin\/dashboard\/?/, '');
+    if (dashboardPath) saveLastDashboardPath(dashboardPath);
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
     setFocusMode(FOCUS_MODE_PATHS.some((p) => isTabActive(location.pathname, p)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
@@ -333,7 +373,16 @@ function DashboardLayoutInner() {
   const baseVisibleTabs = TABS.filter((t) => (!t.ownerOnly || hasOwnerAccess) && tabAllowed(t.requires) && (!allowedSections || allowedSections.includes(t.path)));
   const baseVisibleSettingsItems = SETTINGS_ITEMS
     .filter((t) => (!t.ownerOnly || hasOwnerAccess) && tabAllowed(t.requires))
-    .filter((t) => t.path !== 'settings/change-password' || !isOwner);
+    .filter((t) => t.path !== 'settings/change-password' || !isOwner)
+    // Real fix: a section-restricted staff account used to see the full
+    // Settings dropdown regardless of what was actually assigned to
+    // them - the main tabs bar respected allowedSections, this never
+    // did. Change Password stays always-available (Change PIN now
+    // lives on that same page) since every account needs a way to
+    // manage its own login regardless of what else it's restricted
+    // from - everything else only shows if the owner explicitly
+    // included it in assigned_sections.
+    .filter((t) => t.path === 'settings/change-password' || !allowedSections || allowedSections.includes(t.path));
 
   // Per-person hide/reorder (see migration 0083's nav_layout) applies on
   // top of every access gate above, never instead of it - a hidden tab
@@ -435,9 +484,23 @@ function DashboardLayoutInner() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-4">
             <Logo className="h-9 w-auto" />
-            <CommandPalette items={paletteItems} t={t} />
+            <CommandPalette items={paletteItems} t={t} onNavigate={(path) => { if (FOCUS_MODE_PATHS.includes(path)) enterFocusMode(); }} />
           </div>
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
+            {/* Real, explicit toggle - the actual gap this closes: the
+                only way in before was the automatic POS/Kitchen/Orders
+                trigger, with no way to enter it manually on any other
+                page, or to turn it on/off as a deliberate choice rather
+                than a side effect of which tab happened to be active. */}
+            <button
+              type="button"
+              onClick={enterFocusMode}
+              className="flex items-center gap-1.5 rounded-lg border border-ink-line px-3 py-1.5 text-sm hover:border-brass/40 hover:text-ivory"
+              title={t('Focus mode')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
+              {t('Focus mode')}
+            </button>
             <ClockWidget />
             <div data-tour="account-switcher"><AccountSwitcher /></div>
             <div data-tour="theme-toggle"><ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} /></div>
@@ -504,6 +567,7 @@ function DashboardLayoutInner() {
                 <Link
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
+                  onClick={() => { if (FOCUS_MODE_PATHS.includes(tab.path)) enterFocusMode(); }}
                   className={`relative block shrink-0 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
                     isTabActive(location.pathname, tab.path)
                       ? 'border-brass text-ivory'
@@ -594,10 +658,10 @@ function DashboardLayoutInner() {
       )}
       {focusMode && (
         <div className="flex items-center justify-between px-4 py-2">
-          <CommandPalette items={paletteItems} t={t} />
+          <CommandPalette items={paletteItems} t={t} onNavigate={(path) => { if (FOCUS_MODE_PATHS.includes(path)) enterFocusMode(); }} />
           <button
             type="button"
-            onClick={() => setFocusMode(false)}
+            onClick={exitFocusMode}
             className="rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim transition-colors hover:border-brass/50 hover:text-ivory"
           >
             {t('Exit focus mode')}

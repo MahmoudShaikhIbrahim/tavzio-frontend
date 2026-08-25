@@ -20,14 +20,25 @@ export interface SectionOption {
 
 export const SECTION_OPTIONS: SectionOption[] = [
   { key: 'orders', label: 'Orders', scope: null },
+  { key: 'requests', label: 'Requests', scope: null },
   { key: 'kitchen', label: 'Kitchen', scope: null },
   { key: 'pos', label: 'POS Terminal', scope: null },
+  { key: 'bookings', label: 'Bookings', scope: null },
   { key: 'tables', label: 'Tables', scope: 'restaurant' },
   { key: 'front-desk', label: 'Front Desk', scope: 'hotel' },
   { key: 'housekeeping', label: 'Housekeeping', scope: 'hotel' },
+  { key: 'sales-events', label: 'Sales & Events', scope: 'hotel' },
   { key: 'payments', label: 'Payments', scope: null },
   { key: 'inventory', label: 'Inventory', scope: null },
   { key: 'reconciliation', label: 'Bank Reconciliation', scope: null },
+  // Real settings pages an owner can optionally extend a staff account
+  // into, on top of the always-available Change Password/PIN - the
+  // owner-only ones (Business Profile, Credentials & Integrations, etc)
+  // are deliberately excluded here, same as they're excluded from the
+  // main nav for anyone without owner access in the first place.
+  { key: 'settings/menu', label: 'Settings: Menu Management', scope: null },
+  { key: 'settings/loyalty', label: 'Settings: Loyalty', scope: null },
+  { key: 'settings/cards', label: 'Settings: Cards', scope: null },
 ];
 
 // The actual fix: filters the list above down to what applies to THIS

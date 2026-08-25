@@ -689,8 +689,13 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
           <Field label={t('Supplier (optional)')}>
             <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
               <option value="">{t('None')}</option>
-              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}{!s.email ? ` (${t('no email on file')})` : ''}</option>)}
             </select>
+            {supplierId && (
+              suppliers.find((s) => s.id === supplierId)?.email
+                ? <p className="mt-1 text-xs text-success">{t('This order will be emailed automatically once placed.')}</p>
+                : <p className="mt-1 text-xs text-warning">{t('No email on file for this supplier - add one on their profile to send orders automatically.')}</p>
+            )}
           </Field>
           {items.map((item, i) => (
             <div key={i} className="flex flex-wrap items-end gap-2">

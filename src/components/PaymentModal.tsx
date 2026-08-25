@@ -73,6 +73,12 @@ export default function PaymentModal({ businessId, items, onClose, onDone }: {
     setSetupError('');
     try {
       await setMyPin(newPin);
+      // Real fix: the PIN was successfully created, but `pin` (what
+      // handleConfirm actually sends at final payment submission) was
+      // never updated to match it - it stayed at its initial empty
+      // value the whole time, since first-time setup types into
+      // newPin/confirmNewPin, never into pin itself.
+      setPin(newPin);
       setNeedsSetup(false);
       setStep('tender');
     } catch (err) {
@@ -251,11 +257,12 @@ export default function PaymentModal({ businessId, items, onClose, onDone }: {
             )}
 
             {submitError && <p className="text-sm text-danger">{submitError}</p>}
+            {pin.length < 4 && <p className="text-sm text-danger">{t('PIN was lost - close this and try the payment again')}</p>}
 
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={submitting || cashShort || !splitBalanced || (mode === 'cash' && !tendered)}
+              disabled={submitting || cashShort || !splitBalanced || pin.length < 4 || (mode === 'cash' && !tendered)}
               className="w-full rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? t('Recording...') : t('Confirm payment')}

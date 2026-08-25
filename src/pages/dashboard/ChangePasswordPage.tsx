@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { changePassword, changeMyEmail, updateMyLanguage } from '../../lib/authApi';
+import { changePassword, changeMyEmail, updateMyLanguage, setMyPin } from '../../lib/authApi';
 import { useSession } from '../../hooks/useSession';
 import { useDashboardLanguage } from '../../lib/i18n/DashboardLanguageContext';
 import { useT } from '../../hooks/useT';
@@ -146,6 +146,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
           </form>
         )}
       </Section>
+      {!forced && <ChangePinSection />}
     </>
   );
 
@@ -158,7 +159,63 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
   );
 }
 
-// Confirmed requirement: owner, staff, and super_admin all need this -
+// Real, standalone change flow - separate screen from PaymentModal's
+// own first-time-setup step (which only ever runs the moment someone
+// hits their first sensitive action with no PIN yet), but calling the
+// exact same setMyPin endpoint underneath, which already requires and
+// verifies the current PIN before accepting a new one.
+function ChangePinSection() {
+  const { t } = useT();
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    if (!/^\d{4,6}$/.test(newPin)) { setError('New PIN must be 4-6 digits'); return; }
+    if (newPin !== confirmPin) { setError("PINs don't match"); return; }
+    setSaving(true);
+    try {
+      await setMyPin(newPin, currentPin || undefined);
+      setDone(true);
+      setCurrentPin('');
+      setNewPin('');
+      setConfirmPin('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update PIN');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Section title={t('POS PIN')}>
+      <p className="text-sm text-ivory-dim">
+        {t('Used to confirm sensitive actions at the counter - payments, voids, discounts. Leave "Current PIN" blank if you\u2019ve never set one yet.')}
+      </p>
+      {done && <p className="text-base text-success">{t('PIN updated.')}</p>}
+      <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
+        <Field label={t('Current PIN (leave blank if none yet)')}>
+          <input type="password" inputMode="numeric" maxLength={6} value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))} className={inputClass} />
+        </Field>
+        <Field label={t('New PIN (4-6 digits)')}>
+          <input type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))} className={inputClass} />
+        </Field>
+        <Field label={t('Confirm new PIN')}>
+          <input type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} className={inputClass} />
+        </Field>
+        {error && <p className="text-base text-danger">{error}</p>}
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          {saving ? t('Saving...') : t('Update PIN')}
+        </button>
+      </form>
+    </Section>
+  );
+}
 // self-service only (verified by the account's own current password,
 // same discipline as password change above), so this doesn't let
 // anyone change someone else's email, including an owner changing a

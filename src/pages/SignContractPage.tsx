@@ -26,6 +26,7 @@ export default function SignContractPage() {
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
+  const [resuming, setResuming] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -34,7 +35,31 @@ export default function SignContractPage() {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then(setContract)
+      .then((data: PublicContract) => {
+        setContract(data);
+        // Real fix: signed but not yet paid (checkout was abandoned or
+        // the tab was closed) - resume it automatically instead of
+        // leaving the person stuck on a static "Signed" confirmation
+        // with no way to actually finish. Exactly status 'signed', not
+        // 'paid'/'active' - those are genuinely done, nothing to resume.
+        if (data.status === 'signed') {
+          setResuming(true);
+          fetch(`${BASE}/api/public/contracts/${token}/resume-checkout`, { method: 'POST' })
+            .then((r) => r.json())
+            .then((resumeData) => {
+              if (resumeData.checkoutUrl) {
+                window.location.href = resumeData.checkoutUrl;
+              } else {
+                setCheckoutError(resumeData.message || 'Could not resume payment setup - Tavzio will follow up.');
+                setResuming(false);
+              }
+            })
+            .catch(() => {
+              setCheckoutError('Could not resume payment setup - Tavzio will follow up.');
+              setResuming(false);
+            });
+        }
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [token]);
@@ -68,6 +93,17 @@ export default function SignContractPage() {
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-[#141110]"><div className="h-8 w-8 animate-pulse rounded-full border-2 border-[#b8925a]/40" /></div>;
+  }
+
+  if (resuming) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#141110] px-6 text-center">
+        <div>
+          <div className="mx-auto h-8 w-8 animate-pulse rounded-full border-2 border-[#b8925a]/40" />
+          <p className="mt-4 text-sm text-[#a79a87]">Taking you back to complete payment...</p>
+        </div>
+      </div>
+    );
   }
 
   if (notFound || !contract) {

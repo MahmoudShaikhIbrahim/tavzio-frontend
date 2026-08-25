@@ -43,6 +43,7 @@ export default function BusinessesList() {
       />
 
       <div className="mt-5 overflow-hidden rounded-xl border border-ink-line">
+        <div className="overflow-x-auto">
         <table className="w-full text-left text-base">
           <thead className="bg-ink-soft text-ivory-dim">
             <tr>
@@ -77,6 +78,7 @@ export default function BusinessesList() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

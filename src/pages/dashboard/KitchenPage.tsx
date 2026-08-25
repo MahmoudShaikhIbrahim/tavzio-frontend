@@ -162,7 +162,7 @@ export default function KitchenPage() {
         <p className="text-base text-ivory-dim">{t('No pending orders right now.')}</p>
       )}
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {visibleOrders
           .map((order) => {
           const minutes = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
@@ -174,53 +174,53 @@ export default function KitchenPage() {
           // for which course, so the kitchen can pace itself.
           const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
           return (
-            <div key={order.id} className="overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+            <div key={order.id} className="overflow-hidden rounded-lg border border-ink-line bg-ink-soft">
               {/* A colored top strip reads faster than a thin border at
                   the distance a KDS screen is actually viewed from
                   across a kitchen - the same real convention commercial
                   kitchen displays (Toast, Square, Lightspeed) already
                   use to signal an aging ticket, just implemented here
                   with a genuine block of color instead of a 2px line. */}
-              <div className={`h-1.5 ${urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
-              <div className="p-4">
+              <div className={`h-1 ${urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
+              <div className="p-2.5">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-xl text-ivory">{order.table_label || t('No table')}</p>
-                  <div className="flex items-center gap-2">
-                    {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-2.5 py-1 text-xs font-medium text-brass">{t('Preparing')}</span>}
+                  <p className="font-display text-base text-ivory">{order.table_label || t('No table')}</p>
+                  <div className="flex items-center gap-1.5">
+                    {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-[10px] font-medium text-brass">{t('Preparing')}</span>}
                     <TicketAge createdAt={order.created_at} />
                   </div>
                 </div>
-                <div className="mt-4 space-y-2.5 text-lg">
+                <div className="mt-2 space-y-1.5 text-sm">
                   {firedItems.map((item) => (
-                    <div key={item.id} className="flex gap-2.5">
-                      <span className="flex h-7 min-w-7 items-center justify-center rounded-md bg-ink px-1.5 font-mono text-sm text-brass">{item.quantity}×</span>
+                    <div key={item.id} className="flex gap-1.5">
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded bg-ink px-1 font-mono text-xs text-brass">{item.quantity}×</span>
                       <div className="text-ivory-dim">
                         <span className="text-ivory">{item.item_name}</span>
-                        {item.station && <span className="ml-1.5 text-xs uppercase tracking-wide text-brass/60">{item.station}</span>}
+                        {item.station && <span className="ml-1 text-[10px] uppercase tracking-wide text-brass/60">{item.station}</span>}
                         {item.addons.length > 0 && (
-                          <span className="block text-sm text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
+                          <span className="block text-xs text-brass/70">+ {item.addons.map((a) => a.name).join(', ')}</span>
                         )}
-                        {item.note && <span className="block text-sm italic">— {item.note}</span>}
+                        {item.note && <span className="block text-xs italic">— {item.note}</span>}
                       </div>
                     </div>
                   ))}
                 </div>
                 {heldCourses.length > 0 && (
-                  <p className="mt-3 rounded-lg bg-ink px-3 py-2 text-sm text-brass/70">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
+                  <p className="mt-2 rounded bg-ink px-2 py-1 text-xs text-brass/70">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
                 )}
-                {order.note && <p className="mt-3 rounded-lg border border-brass/30 bg-brass/5 px-3 py-2 text-sm italic text-brass">{t('Note:')} {order.note}</p>}
-                <div className="mt-4 flex gap-2">
+                {order.note && <p className="mt-2 rounded border border-brass/30 bg-brass/5 px-2 py-1 text-xs italic text-brass">{t('Note:')} {order.note}</p>}
+                <div className="mt-2.5 flex gap-1.5">
                   {order.status === 'pending' && (
                     <button type="button"
                       onClick={() => handleStart(order.id)}
-                      className="flex-1 rounded-lg border border-brass/40 px-3 py-3.5 text-base font-medium text-brass hover:bg-brass/10"
+                      className="flex-1 rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10"
                     >
                       {t('Start')}
                     </button>
                   )}
                   <button type="button"
                     onClick={() => handleMarkReady(order.id)}
-                    className="flex-1 rounded-lg bg-brass px-3 py-3.5 text-base font-medium text-ink hover:opacity-90"
+                    className="flex-1 rounded-md bg-brass px-2 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90"
                   >
                     {t('Mark ready')}
                   </button>
@@ -228,7 +228,7 @@ export default function KitchenPage() {
                     onClick={() => handleReprint(order.id)}
                     disabled={reprintingId === order.id}
                     title={t('Reprint ticket')}
-                    className="rounded-lg border border-ink-line px-3 py-3.5 text-sm text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50"
+                    className="rounded-md border border-ink-line px-2 min-h-[36px] py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50"
                   >
                     {reprintingId === order.id ? '…' : t('Reprint')}
                   </button>

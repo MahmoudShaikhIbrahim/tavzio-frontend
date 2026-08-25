@@ -101,18 +101,18 @@ export default function RequestsPage() {
       {nothingPending ? (
         <p className="text-lg text-ivory-dim">{t('Nothing pending right now.')}</p>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {requests.map((r) => {
             const style = REQUEST_STYLE[r.request_type];
             const label = r.request_type === 'custom' ? (r.custom_request_label || t(style.label)) : t(style.label);
             return (
-              <div key={r.id} className={`flex items-center justify-between rounded-xl border-2 ${style.border} ${style.bg} px-5 py-4`}>
-                <span className={`text-xl font-medium ${style.text}`}>
+              <div key={r.id} className={`rounded-lg border ${style.border} ${style.bg} p-3`}>
+                <p className={`text-sm font-medium ${style.text}`}>
                   {label} — <span className="text-ivory">{r.table_label || t('No table')}</span>
-                </span>
+                </p>
                 <button type="button"
                   onClick={() => dismissRequest(businessId, r.id).then(reloadRequests)}
-                  className="rounded-lg border-2 border-ivory-dim/40 px-5 py-3 text-lg text-ivory hover:bg-ivory/10"
+                  className="mt-2 w-full rounded-md border border-ivory-dim/40 px-2 min-h-[36px] py-1.5 text-xs text-ivory hover:bg-ivory/10"
                 >
                   {t('Dismiss')}
                 </button>
@@ -121,14 +121,14 @@ export default function RequestsPage() {
           })}
 
           {cashPending.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-xl border-2 border-warning/50 bg-warning/10 px-5 py-4">
-              <span className="text-xl font-medium text-warning">
+            <div key={item.id} className="rounded-lg border border-warning/50 bg-warning/10 p-3">
+              <p className="text-sm font-medium text-warning">
                 {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
-                <span className="text-ivory-dim"> ({item.quantity}× {item.item_name}, {((item.unit_price + item.addon_total) * item.quantity).toFixed(2)})</span>
-              </span>
+              </p>
+              <p className="mt-0.5 text-xs text-ivory-dim">{item.quantity}× {item.item_name}, {((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</p>
               <button type="button"
                 onClick={() => setPayingCashItem(item)}
-                className="rounded-lg border-2 border-warning px-5 py-3 text-lg text-warning hover:bg-warning/10"
+                className="mt-2 w-full rounded-md border border-warning px-2 min-h-[36px] py-1.5 text-xs text-warning hover:bg-warning/10"
               >
                 {t('Mark received')}
               </button>
@@ -136,20 +136,20 @@ export default function RequestsPage() {
           ))}
 
           {claims.map((c) => (
-            <div key={c.id} className="flex items-center justify-between rounded-xl border-2 border-brass bg-brass/10 px-5 py-4">
-              <span className="text-xl font-medium text-brass-bright">
+            <div key={c.id} className="rounded-lg border border-brass bg-brass/10 p-3">
+              <p className="text-sm font-medium text-brass-bright">
                 {t('Reward ready —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
-                {c.reward_description ? <span className="text-ivory-dim"> ({c.reward_description})</span> : ''}
-              </span>
+              </p>
+              {c.reward_description && <p className="mt-0.5 text-xs text-ivory-dim">{c.reward_description}</p>}
               {c.reward_type === 'manual' ? (
                 <button type="button"
                   onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
-                  className="rounded-lg border-2 border-brass px-5 py-3 text-lg text-brass hover:bg-brass/10"
+                  className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10"
                 >
                   {t('Mark applied')}
                 </button>
               ) : (
-                <span className="text-lg text-ivory-dim">{t('Applies automatically at Pay Bill')}</span>
+                <p className="mt-2 text-xs text-ivory-dim">{t('Applies automatically at Pay Bill')}</p>
               )}
             </div>
           ))}

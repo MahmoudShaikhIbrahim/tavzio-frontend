@@ -296,7 +296,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
       {performance && performance.ticketCount > 0 && (
         <Section title={t('Maintenance performance (30 days)')}>
           {performance.urgentOpenCount > 0 && <p className="text-sm text-danger">{performance.urgentOpenCount} {t('urgent ticket(s) still open.')}</p>}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-lg border border-ink-line p-3">
               <p className="text-xs text-ivory-dim">{t('Resolved')}</p>
               <p className="text-xl text-ivory">{performance.resolvedCount} / {performance.ticketCount}</p>

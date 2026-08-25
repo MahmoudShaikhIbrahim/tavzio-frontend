@@ -13,7 +13,7 @@ interface PaletteItem {
 // Only ever receives items already filtered through the same
 // tabAllowed() visibility rules the real nav uses, so this never
 // surfaces a page the current account can't actually reach.
-export default function CommandPalette({ items, t }: { items: PaletteItem[]; t: (s: string) => string }) {
+export default function CommandPalette({ items, t, onNavigate }: { items: PaletteItem[]; t: (s: string) => string; onNavigate?: (path: string) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -47,6 +47,7 @@ export default function CommandPalette({ items, t }: { items: PaletteItem[]; t: 
     : items;
 
   function go(item: PaletteItem) {
+    onNavigate?.(item.path);
     navigate(`/admin/dashboard/${item.path}`);
     setOpen(false);
   }

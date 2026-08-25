@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import {
@@ -29,6 +29,64 @@ const FOOD_TIMING_OPTIONS = [
 type Step = 'loading' | 'notAvailable' | 'form' | 'otp' | 'submitting' | 'confirmed' | 'paymentPending' | 'paymentFailed' | 'managePhone' | 'manageOtp' | 'manageList';
 
 interface CartLine { menuItemId: string; name: string; price: number; quantity: number }
+
+// Real, robust fix for a confirmed bug: layering a semi-transparent
+// native date/time input under a custom placeholder (the previous
+// approach) still let the native picker's own internal sub-controls
+// (WebKit's calendar-picker-indicator, the native mm/dd/yyyy segments
+// once a value exists) render their own box on top - producing the
+// doubled/broken look. The only actually reliable fix is to hide the
+// native input completely (opacity-0, zero visible footprint) and
+// drive it entirely through one single custom-styled box - tapping it
+// calls showPicker() to open the real native picker, with a focus()
+// fallback for older Safari versions that don't support it yet.
+function DatePickerField({ value, onChange, placeholder, type }: {
+  value: string; onChange: (v: string) => void; placeholder: string; type: 'date' | 'time';
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function openPicker() {
+    const el = inputRef.current;
+    if (!el) return;
+    if ('showPicker' in el && typeof el.showPicker === 'function') {
+      try { el.showPicker(); return; } catch { /* fall through to focus() below */ }
+    }
+    el.focus();
+  }
+
+  function formatDisplay() {
+    if (!value) return placeholder;
+    if (type === 'date') {
+      const d = new Date(`${value}T00:00:00`);
+      return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    const [h, m] = value.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m);
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={openPicker}
+        className={`w-full truncate rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-start text-sm ${value ? 'text-ivory' : 'text-ivory-dim/70'}`}
+      >
+        {formatDisplay()}
+      </button>
+      <input
+        ref={inputRef}
+        type={type}
+        required
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 h-full w-full opacity-0"
+        tabIndex={-1}
+      />
+    </div>
+  );
+}
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -432,34 +490,11 @@ function BookingPageContent({ slug }: { slug: string }) {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbDate')}</label>
-              <div className="relative">
-                <input type="date" required value={date} onChange={(e) => setDate(e.target.value)}
-                  className="relative z-10 w-full rounded-lg border border-ink-line bg-transparent px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
-                {/* Real fix for a confirmed bug: iOS Safari renders a
-                    genuinely empty <input type="date"> with no visible
-                    placeholder text at all - not a color issue, the
-                    native picker chrome itself just doesn't show
-                    anything until a value exists. pointer-events-none so
-                    taps still reach the real input underneath and open
-                    the native picker normally. */}
-                {!date && (
-                  <span className="pointer-events-none absolute inset-0 z-0 flex items-center rounded-lg bg-ink-soft px-3 text-sm text-ivory-dim/70">
-                    {t('tbSelectDate')}
-                  </span>
-                )}
-              </div>
+              <DatePickerField value={date} onChange={setDate} placeholder={t('tbSelectDate')} type="date" />
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbTime')}</label>
-              <div className="relative">
-                <input type="time" required value={time} onChange={(e) => setTime(e.target.value)}
-                  className="relative z-10 w-full rounded-lg border border-ink-line bg-transparent px-3 py-2.5 text-sm text-ivory [color-scheme:dark]" />
-                {!time && (
-                  <span className="pointer-events-none absolute inset-0 z-0 flex items-center rounded-lg bg-ink-soft px-3 text-sm text-ivory-dim/70">
-                    {t('tbSelectTime')}
-                  </span>
-                )}
-              </div>
+              <DatePickerField value={time} onChange={setTime} placeholder={t('tbSelectTime')} type="time" />
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbGuests')}</label>
@@ -581,10 +616,8 @@ function RescheduleForm({ booking, busy, onCancel, onSave }: {
   return (
     <div className="mt-3 space-y-2 border-t border-ink-line pt-3">
       <div className="grid grid-cols-3 gap-2">
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory [color-scheme:dark]" />
-        <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
-          className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory [color-scheme:dark]" />
+        <DatePickerField value={date} onChange={setDate} placeholder="Date" type="date" />
+        <DatePickerField value={time} onChange={setTime} placeholder="Time" type="time" />
         <input type="number" min={1} value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
           className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-center text-sm text-ivory" />
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { getLastDashboardPath } from './lib/lastDashboardPath';
 import { ThemeProvider } from './lib/ThemeContext';
 import { ConfirmDialogProvider } from './components/ConfirmDialog';
 import Home from './pages/Home';
@@ -110,6 +111,15 @@ function InviteHashRedirect() {
   return null;
 }
 
+// Real fix, replacing the old hardcoded <Navigate to="orders" /> - a
+// fresh login or reload lands back wherever the person actually was
+// last, not always on Orders (which also happens to auto-trigger focus
+// mode, the exact confusing "why am I suddenly in full-page Orders"
+// bug this closes for good).
+function DashboardIndexRedirect() {
+  return <Navigate to={getLastDashboardPath()} replace />;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -198,7 +208,7 @@ export default function App() {
         {/* Owner/staff shared dashboard */}
         <Route element={<RequireRole allow={['business_owner', 'staff']} />}>
           <Route path="/admin/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="orders" replace />} />
+            <Route index element={<DashboardIndexRedirect />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="forecasting" element={<ForecastingPage />} />
             <Route path="staff" element={<StaffPage />} />

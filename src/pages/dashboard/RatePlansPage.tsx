@@ -234,7 +234,7 @@ function PricingRulesSection({ businessId }: { businessId: string }) {
 
       <Section title={t('Occupancy forecast (14 days)')}>
         {forecast && forecast.forecast.length > 0 ? (
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-7">
             {forecast.forecast.map((f) => (
               <div key={f.date} className={`rounded-lg border p-2 text-center ${f.occupancyPct >= 80 ? 'border-danger/40 bg-danger/5' : f.occupancyPct >= 50 ? 'border-warning/40 bg-warning/5' : 'border-ink-line'}`}>
                 <p className="text-xs text-ivory-dim">{new Date(f.date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' })}</p>
