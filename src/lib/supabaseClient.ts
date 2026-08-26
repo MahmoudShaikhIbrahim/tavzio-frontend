@@ -159,6 +159,27 @@ export function subscribeToRoomUpdates(
 // public "anyone can view" RLS policy specifically so Realtime, which
 // enforces RLS the same as a normal query, actually delivers events to
 // an anonymous visitor.
+// Public/anonymous, business-scoped Realtime for the customer-facing
+// menu page - replaces its old 20s poll. Backed by the same anon SELECT
+// policies the public menu API itself already uses (menu_items,
+// menu_categories), so this never exposes anything the page couldn't
+// already fetch directly. Watches everything that can actually change
+// what's orderable mid-browse: an item's own availability, its
+// category's pause state, and the business-wide ordering_paused flag.
+export function subscribeToMenuChanges(businessId: string, onChange: () => void) {
+  const filter = `business_id=eq.${businessId}`;
+  const channel = client.channel(`menu-changes-${businessId}-${Math.random().toString(36).slice(2)}`);
+  channel
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'menu_items', filter }, () => onChange())
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'menu_categories', filter }, () => onChange())
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'businesses', filter: `id=eq.${businessId}` }, () => onChange())
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 export function subscribeToDemoOrders(sessionId: string, onChange: () => void) {
   const filter = `session_id=eq.${sessionId}`;
   const channel = client.channel(`demo-orders-${sessionId}-${Math.random().toString(36).slice(2)}`);

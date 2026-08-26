@@ -84,11 +84,32 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
     const idx = sorted.findIndex((s) => s.id === id);
     const swapWith = sorted[idx + direction];
     if (!swapWith) return;
-    await Promise.all([
-      updateGuestService(businessId, sorted[idx].id, { sortOrder: swapWith.sort_order }),
-      updateGuestService(businessId, swapWith.id, { sortOrder: sorted[idx].sort_order }),
-    ]);
-    reload();
+    const aId = sorted[idx].id;
+    const aOrder = sorted[idx].sort_order;
+    const bId = swapWith.id;
+    const bOrder = swapWith.sort_order;
+    setServices((prev) => prev.map((s) => {
+      if (s.id === aId) return { ...s, sort_order: bOrder };
+      if (s.id === bId) return { ...s, sort_order: aOrder };
+      return s;
+    }));
+    try {
+      await Promise.all([
+        updateGuestService(businessId, aId, { sortOrder: bOrder }),
+        updateGuestService(businessId, bId, { sortOrder: aOrder }),
+      ]);
+    } catch {
+      reload();
+    }
+  }
+
+  async function handleToggleEnabled(s: HotelGuestServiceRow) {
+    setServices((prev) => prev.map((x) => (x.id === s.id ? { ...x, enabled: !x.enabled } : x)));
+    try {
+      await updateGuestService(businessId, s.id, { enabled: !s.enabled });
+    } catch {
+      reload();
+    }
   }
 
   async function handleDelete(id: string, label: string) {
@@ -124,7 +145,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
               <div className="flex items-center gap-3 text-sm">
                 <button type="button" onClick={() => handleReorder(s.id, -1)} disabled={i === 0} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↑</button>
                 <button type="button" onClick={() => handleReorder(s.id, 1)} disabled={i === sorted.length - 1} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↓</button>
-                <button type="button" onClick={() => updateGuestService(businessId, s.id, { enabled: !s.enabled }).then(reload)} className="text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => handleToggleEnabled(s)} className="text-ivory-dim hover:text-ivory">
                   {s.enabled ? t('Disable') : t('Enable')}
                 </button>
                 <button type="button" onClick={() => setEditingId(s.id)} className="text-brass hover:underline">{t('Edit')}</button>

@@ -36,6 +36,15 @@ export default function RatePlansPage() {
   }
   useEffect(reload, [businessId]);
 
+  async function handleTogglePlan(p: HotelRatePlan) {
+    setPlans((prev) => prev.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)));
+    try {
+      await updateRatePlan(businessId!, p.id, { active: !p.active });
+    } catch {
+      reload();
+    }
+  }
+
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
 
   return (
@@ -67,7 +76,7 @@ export default function RatePlansPage() {
                     <button type="button" onClick={() => setEditingId(p.id)} className="text-brass hover:underline">{t('Edit')}</button>
                     <button
                       type="button"
-                      onClick={() => updateRatePlan(businessId, p.id, { active: !p.active }).then(reload)}
+                      onClick={() => handleTogglePlan(p)}
                       className="text-ivory-dim hover:text-ivory"
                     >
                       {p.active ? t('Deactivate') : t('Reactivate')}
@@ -174,6 +183,15 @@ function PricingRulesSection({ businessId }: { businessId: string }) {
   }
   useEffect(reload, [businessId]);
 
+  async function handleToggleRule(r: HotelPricingRule) {
+    setRules((prev) => prev.map((x) => (x.id === r.id ? { ...x, active: !x.active } : x)));
+    try {
+      await updatePricingRule(businessId, r.id, { active: !r.active });
+    } catch {
+      reload();
+    }
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
@@ -221,7 +239,7 @@ function PricingRulesSection({ businessId }: { businessId: string }) {
             <div key={r.id} className={`flex items-center justify-between rounded-lg border p-3 ${r.active ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
               <span className="text-ivory">{r.name} - {t('at')} {r.occupancy_threshold_pct}%+ {t('occupancy,')} +{r.surcharge_pct}%</span>
               <div className="flex items-center gap-3 text-sm">
-                <button type="button" onClick={() => updatePricingRule(businessId, r.id, { active: !r.active }).then(reload)} className="text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => handleToggleRule(r)} className="text-ivory-dim hover:text-ivory">
                   {r.active ? t('Deactivate') : t('Reactivate')}
                 </button>
                 <button type="button" onClick={() => handleDelete(r.id)} className="text-danger hover:underline">{t('Remove')}</button>

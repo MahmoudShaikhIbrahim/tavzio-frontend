@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import CommandPalette from '../../components/CommandPalette';
+import CustomizeNavModal from '../../components/CustomizeNavModal';
 import { saveLastDashboardPath } from '../../lib/lastDashboardPath';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -163,22 +164,16 @@ function DashboardLayoutInner() {
   // matching "pressing the page" literally rather than remembering a
   // preference across completely different screens.
   //
-  // Real fix, deliberately never auto-focuses on the very first mount -
-  // a fresh login/reload landing on Orders (whether the old hardcoded
-  // default, or the new restored-last-path one) used to force full-page
-  // focus mode immediately, with no action on the person's part that
-  // would explain why. Only a genuine in-app navigation to one of these
-  // (an actual click on the tab) should trigger it now.
-  const FOCUS_MODE_PATHS = ['pos', 'kitchen', 'orders'];
+  // Real, explicit-only entry - focus mode never auto-triggers from
+  // navigation anymore, on any page, however you got there. The
+  // explicit toggle button below (and the matching Exit button once
+  // inside) are now the only ways in or out.
   const [focusMode, setFocusMode] = useState(false);
-  const hasMountedRef = useRef(false);
 
   // Real fullscreen, not just this app's own chrome - requestFullscreen
   // only works when called synchronously inside a real click/keydown
-  // handler (a hard browser security rule), so this is only ever called
-  // directly from an actual click - never from the path-based
-  // auto-detect effect below, which fires after the fact and would
-  // silently fail or throw if it tried.
+  // handler (a hard browser security rule), so this only ever runs from
+  // the explicit toggle button's own click handler.
   function enterFocusMode() {
     setFocusMode(true);
     document.documentElement.requestFullscreen?.().catch(() => {});
@@ -199,13 +194,6 @@ function DashboardLayoutInner() {
     // future login/reload able to return here at all.
     const dashboardPath = location.pathname.replace(/^\/admin\/dashboard\/?/, '');
     if (dashboardPath) saveLastDashboardPath(dashboardPath);
-
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-    setFocusMode(FOCUS_MODE_PATHS.some((p) => isTabActive(location.pathname, p)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
   const settingsRef = useRef<HTMLDivElement>(null);
   const { setMode } = useTheme();
@@ -288,13 +276,9 @@ function DashboardLayoutInner() {
     function refresh() {
       if (user?.business_id) getNotificationCounts(user.business_id).then(setCounts).catch(() => {});
     }
-    const interval = setInterval(refresh, 15000);
 
     // Real-time: every table that feeds a badge count triggers an
-    // immediate refresh the moment something changes, rather than
-    // waiting up to 15 seconds for the next poll - the poll stays too,
-    // as a safety net if a websocket event is ever missed, but it's no
-    // longer the only thing keeping these numbers current.
+    // immediate refresh the moment something changes.
     const bizId = user.business_id;
     const unsubscribers = [
       subscribeToBusinessTable(bizId, 'orders', refresh),
@@ -312,7 +296,6 @@ function DashboardLayoutInner() {
     ];
 
     return () => {
-      clearInterval(interval);
       unsubscribers.forEach((unsub) => unsub());
     };
   }, [user?.business_id]);
@@ -430,7 +413,7 @@ function DashboardLayoutInner() {
   // vice versa) would be a confusing recategorization, not a reorder.
   // Both still persist into the same flat nav_layout.order array; only
   // the swap itself stays scoped.
-  function moveItem(scope: typeof visibleTabs | typeof visibleSettingsItems, path: string, direction: -1 | 1) {
+  function moveItem(scope: { path: string }[], path: string, direction: -1 | 1) {
     const scopePaths = scope.map((i) => i.path);
     const idx = scopePaths.indexOf(path);
     const swapIdx = idx + direction;
@@ -484,7 +467,7 @@ function DashboardLayoutInner() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-4">
             <Logo className="h-9 w-auto" />
-            <CommandPalette items={paletteItems} t={t} onNavigate={(path) => { if (FOCUS_MODE_PATHS.includes(path)) enterFocusMode(); }} />
+            <CommandPalette items={paletteItems} t={t} />
           </div>
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             {/* Real, explicit toggle - the actual gap this closes: the
@@ -514,7 +497,7 @@ function DashboardLayoutInner() {
             </button>
             <button
               type="button"
-              onClick={() => setCustomizing((v) => !v)}
+              onClick={() => setCustomizing(true)}
               title={t('Customize navigation')}
               className={`flex h-7 w-7 items-center justify-center rounded-full border text-sm transition-all duration-150 active:scale-[0.9] ${
                 customizing ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:border-brass hover:text-brass'
@@ -531,43 +514,15 @@ function DashboardLayoutInner() {
           </div>
         </div>
 
-        {customizing && (
-          <div className="border-y border-brass/30 bg-ink-soft px-6 py-3.5">
-            <div className="mx-auto flex max-w-7xl items-center justify-between">
-              <p className="font-mono text-xs uppercase tracking-wider text-brass">{t('Customizing navigation - use the arrows to reorder, the × to hide. Changes save instantly.')}</p>
-              <button type="button" onClick={() => setCustomizing(false)} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
-                {t('Done')}
-              </button>
-            </div>
-          </div>
-        )}
-
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
           <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-2.5">
-            {visibleTabs.map((tab, i) => {
+            {visibleTabs.map((tab) => {
               const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
-
-              if (customizing) {
-                return (
-                  <div key={tab.path} className="flex shrink-0 items-stretch overflow-hidden rounded-lg border border-ink-line bg-ink-soft">
-                    <span className="flex items-center gap-2.5 py-2.5 ps-3.5 pe-3 text-base text-ivory">
-                      <span className="font-mono text-xs text-brass/60">{String(i + 1).padStart(2, '0')}</span>
-                      {t(tab.label)}
-                    </span>
-                    <div className="flex items-center border-s border-ink-line">
-                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
-                      <button type="button" onClick={() => moveItem(visibleTabs, tab.path, 1)} disabled={i === visibleTabs.length - 1} className="flex h-9 w-9 items-center justify-center text-lg text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
-                    </div>
-                    <button type="button" onClick={() => hideItem(tab.path)} className="flex h-full w-9 items-center justify-center border-s border-ink-line text-lg text-danger hover:bg-danger/10" aria-label="Hide tab">×</button>
-                  </div>
-                );
-              }
 
               return (
                 <Link
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
-                  onClick={() => { if (FOCUS_MODE_PATHS.includes(tab.path)) enterFocusMode(); }}
                   className={`relative block shrink-0 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
                     isTabActive(location.pathname, tab.path)
                       ? 'border-brass text-ivory'
@@ -593,72 +548,51 @@ function DashboardLayoutInner() {
               }`}
             >
               {t('Settings')}
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${(settingsOpen || customizing) ? 'rotate-180' : ''}`}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${settingsOpen ? 'rotate-180' : ''}`}>
                 <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
 
-            {(settingsOpen || customizing) && (
+            {settingsOpen && (
               <div className="absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
-                <div className={customizing ? 'max-h-[70vh] space-y-1.5 overflow-y-auto p-2.5' : 'grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5'}>
-                  {visibleSettingsItems.map((tab, i) => {
-                    if (customizing) {
-                      return (
-                        <div key={tab.path} className="flex items-stretch overflow-hidden rounded-lg border border-ink-line bg-ink">
-                          <span className="flex flex-1 items-center gap-2.5 py-2.5 ps-3.5 pe-3 text-base text-ivory">
-                            <span className="font-mono text-xs text-brass/60">{String(i + 1).padStart(2, '0')}</span>
-                            {t(tab.label)}
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, -1)} disabled={i === 0} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move left">‹</button>
-                            <button type="button" onClick={() => moveItem(visibleSettingsItems, tab.path, 1)} disabled={i === visibleSettingsItems.length - 1} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20" aria-label="Move right">›</button>
-                            <button type="button" onClick={() => hideItem(tab.path)} className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-danger hover:bg-danger/10" aria-label="Hide">×</button>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return (
-                      <Link
-                        key={tab.path}
-                        to={`/admin/dashboard/${tab.path}`}
-                        onClick={() => setSettingsOpen(false)}
-                        className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
-                          isTabActive(location.pathname, tab.path)
-                            ? 'bg-brass/10 text-brass'
-                            : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                        }`}
-                      >
-                        {t(tab.label)}
-                      </Link>
-                    );
-                  })}
+                <div className="grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5">
+                  {visibleSettingsItems.map((tab) => (
+                    <Link
+                      key={tab.path}
+                      to={`/admin/dashboard/${tab.path}`}
+                      onClick={() => setSettingsOpen(false)}
+                      className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                        isTabActive(location.pathname, tab.path)
+                          ? 'bg-brass/10 text-brass'
+                          : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                      }`}
+                    >
+                      {t(tab.label)}
+                    </Link>
+                  ))}
                 </div>
-                {hiddenTabs.length > 0 && (
-                  <div className="border-t border-ink-line p-2.5">
-                    <p className="px-1 pb-1 text-sm text-ivory-dim">{t('Hidden - tap to restore')}</p>
-                    <div className="flex flex-wrap gap-1.5 px-1 pb-1">
-                      {hiddenTabs.map((tab) => (
-                        <button
-                          key={tab.path}
-                          type="button"
-                          onClick={() => restoreItem(tab.path)}
-                          className="rounded-full border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:border-brass hover:text-ivory"
-                        >
-                          + {t(tab.label)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
         </nav>
       </header>
       )}
+
+      {customizing && (
+        <CustomizeNavModal
+          mainTabs={visibleTabs}
+          settingsItems={visibleSettingsItems}
+          hiddenTabs={hiddenTabs}
+          onMove={moveItem}
+          onHide={hideItem}
+          onRestore={restoreItem}
+          onDone={() => setCustomizing(false)}
+          t={t}
+        />
+      )}
       {focusMode && (
         <div className="flex items-center justify-between px-4 py-2">
-          <CommandPalette items={paletteItems} t={t} onNavigate={(path) => { if (FOCUS_MODE_PATHS.includes(path)) enterFocusMode(); }} />
+          <CommandPalette items={paletteItems} t={t} />
           <button
             type="button"
             onClick={exitFocusMode}

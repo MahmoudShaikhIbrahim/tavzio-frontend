@@ -183,23 +183,23 @@ export default function KitchenPage() {
                   with a genuine block of color instead of a 2px line. */}
               <div className={`h-1 ${urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
               <div className="p-2.5">
-                <div className="space-y-1.5 text-sm">
+                <div className="space-y-2">
                   {firedItems.map((item) => (
                     <div key={item.id} className="flex gap-1.5">
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded bg-ink px-1 font-mono text-xs text-brass">{item.quantity}×</span>
+                      <span className="flex h-6 min-w-6 items-center justify-center rounded bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
                       <div className="text-ivory-dim">
-                        <span className="font-medium text-ivory">{item.item_name}</span>
+                        <span className="font-display text-lg font-medium text-ivory">{item.item_name}</span>
                         {item.station && <span className="ml-1 text-[10px] uppercase tracking-wide text-brass">{item.station}</span>}
                         {item.addons.length > 0 && (
-                          <span className="block text-xs text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>
+                          <span className="block text-sm text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>
                         )}
-                        {item.note && <span className="block text-xs italic text-ivory">— {item.note}</span>}
+                        {item.note && <span className="block text-sm italic text-ivory">— {item.note}</span>}
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-2 flex items-center justify-between border-t border-ink-line pt-2">
-                  <p className="font-display text-base text-ivory">{order.table_label || t('No table')}</p>
+                  <p className="text-sm text-ivory-dim">{order.table_label || t('No table')}</p>
                   <div className="flex items-center gap-1.5">
                     {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-[10px] font-medium text-brass">{t('Preparing')}</span>}
                     <TicketAge createdAt={order.created_at} />

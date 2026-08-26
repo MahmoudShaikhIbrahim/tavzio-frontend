@@ -149,6 +149,15 @@ export default function OrdersPage() {
     }
   }
 
+  async function handleApplyClaim(id: string) {
+    setClaims((prev) => prev.filter((c) => c.id !== id));
+    try {
+      await applyManualClaim(businessId!, id);
+    } catch {
+      reloadClaims();
+    }
+  }
+
   async function handleAckReady(orderId: string) {
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ready_ack: true } : o)));
     try {
@@ -263,7 +272,7 @@ export default function OrdersPage() {
                 {t('Loyalty reward —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
               </p>
               <button type="button"
-                onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
+                onClick={() => handleApplyClaim(c.id)}
                 className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10"
               >
                 {t('Mark redeemed')}
@@ -434,7 +443,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
             <div className="flex gap-2.5">
               <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
               <div>
-                <span className="font-medium text-ivory">{item.item_name}</span>
+                <span className="font-display text-lg font-medium text-ivory">{item.item_name}</span>
                 {item.course_status === 'held' && (
                   <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
                 )}
@@ -468,7 +477,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
       <div className="mb-3 mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-3">
         <div>
-          <h2 className="font-display text-base text-ivory">{table}</h2>
+          <h2 className="text-sm text-ivory-dim">{table}</h2>
           <p className="text-sm text-ivory-dim">
             {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
           </p>

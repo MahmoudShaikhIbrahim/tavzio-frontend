@@ -46,6 +46,28 @@ export default function RequestsPage() {
     if (businessId) listCashPendingItems(businessId).then(setCashPending);
   }
 
+  // Real fix: these used to wait for the full round trip before the
+  // card ever disappeared - the actual reason Orders page's own
+  // Dismiss/Ack buttons already felt instant and these didn't. Same
+  // fix here: update state immediately, only reload for real if the
+  // request actually fails.
+  async function handleDismiss(id: string) {
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await dismissRequest(businessId!, id);
+    } catch {
+      reloadRequests();
+    }
+  }
+  async function handleApplyClaim(id: string) {
+    setClaims((prev) => prev.filter((c) => c.id !== id));
+    try {
+      await applyManualClaim(businessId!, id);
+    } catch {
+      reloadClaims();
+    }
+  }
+
   const [payingCashItem, setPayingCashItem] = useState<CashPendingItem | null>(null);
 
   useEffect(reloadRequests, [businessId]);
@@ -111,7 +133,7 @@ export default function RequestsPage() {
                   {label} — <span className="text-ivory">{r.table_label || t('No table')}</span>
                 </p>
                 <button type="button"
-                  onClick={() => dismissRequest(businessId, r.id).then(reloadRequests)}
+                  onClick={() => handleDismiss(r.id)}
                   className="mt-2 w-full rounded-md border border-ivory-dim/40 px-2 min-h-[36px] py-1.5 text-xs text-ivory hover:bg-ivory/10"
                 >
                   {t('Dismiss')}
@@ -143,7 +165,7 @@ export default function RequestsPage() {
               {c.reward_description && <p className="mt-0.5 text-xs text-ivory-dim">{c.reward_description}</p>}
               {c.reward_type === 'manual' ? (
                 <button type="button"
-                  onClick={() => applyManualClaim(businessId, c.id).then(reloadClaims)}
+                  onClick={() => handleApplyClaim(c.id)}
                   className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10"
                 >
                   {t('Mark applied')}

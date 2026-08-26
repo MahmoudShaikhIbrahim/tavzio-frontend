@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { subscribeToMenuChanges } from '../lib/supabaseClient';
 import { getMenu, submitOrder, getBusiness, payOrder, createOrderPaySession, confirmOrderPayment, cancelOrderPayment, payOrderWithCash } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import type { Business } from '../types';
@@ -78,38 +79,44 @@ function MenuPageContent({ slug }: { slug: string }) {
     return true;
   }
 
-  useEffect(() => {
-    function fetchMenu() {
-      getMenu(slug, language)
-        .then((res) => {
-          setCategories(res.categories);
-          setItems(res.items);
-          setOrderingPaused(res.orderingPaused);
-          setSubmissionEnabled(res.submissionEnabled);
-          setPayBeforeOrderEnabled(res.payBeforeOrderEnabled);
+  const fetchMenu = useCallback(() => {
+    getMenu(slug, language)
+      .then((res) => {
+        setCategories(res.categories);
+        setItems(res.items);
+        setOrderingPaused(res.orderingPaused);
+        setSubmissionEnabled(res.submissionEnabled);
+        setPayBeforeOrderEnabled(res.payBeforeOrderEnabled);
 
-          // Drop anything now unavailable straight out of the cart -
-          // a customer should never be able to submit an order for
-          // something that went sold-out while they were still browsing.
-          const unavailableIds = new Set(
-            res.items
-              .filter((i) => !i.is_available || res.orderingPaused || res.categories.find((c) => c.id === i.category_id)?.paused)
-              .map((i) => i.id)
-          );
-          if (unavailableIds.size > 0) cart.removeByMenuItemIds(unavailableIds);
-        })
-        .catch(() => setNotFound(true))
-        .finally(() => setLoading(false));
-    }
-
-    fetchMenu();
-    // Periodic refresh, not just on load - catches an item, category, or
-    // the whole business getting paused while a customer is still on
-    // this page, not just on their next visit.
-    const interval = setInterval(fetchMenu, 20000);
-    return () => clearInterval(interval);
+        // Drop anything now unavailable straight out of the cart -
+        // a customer should never be able to submit an order for
+        // something that went sold-out while they were still browsing.
+        const unavailableIds = new Set(
+          res.items
+            .filter((i) => !i.is_available || res.orderingPaused || res.categories.find((c) => c.id === i.category_id)?.paused)
+            .map((i) => i.id)
+        );
+        if (unavailableIds.size > 0) cart.removeByMenuItemIds(unavailableIds);
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, language]);
+
+  useEffect(() => {
+    fetchMenu();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, language]);
+
+  useEffect(() => {
+    if (!business?.id) return;
+    // Real-time, not a poll - catches an item, category, or the whole
+    // business getting paused while a customer is still on this page,
+    // the instant it happens rather than up to 20 seconds later.
+    const unsubscribe = subscribeToMenuChanges(business.id, fetchMenu);
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business?.id]);
 
   function scrollToCategory(categoryId: string) {
     categoryRefs.current[categoryId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });

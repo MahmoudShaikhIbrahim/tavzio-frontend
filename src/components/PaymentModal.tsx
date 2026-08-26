@@ -19,8 +19,8 @@ interface PaymentItem {
 // to design around). Same component every time on purpose: the PIN
 // gate, multi-tender support, and cash change calculation shouldn't be
 // something any call site could accidentally build differently or skip.
-export default function PaymentModal({ businessId, items, onClose, onDone }: {
-  businessId: string; items: PaymentItem[]; onClose: () => void; onDone: () => void;
+export default function PaymentModal({ businessId, items, onClose, onDone, defaultMode = 'cash' }: {
+  businessId: string; items: PaymentItem[]; onClose: () => void; onDone: () => void; defaultMode?: 'cash' | 'card';
 }) {
   const { t } = useT();
   const [step, setStep] = useState<'pin' | 'tender'>('pin');
@@ -36,7 +36,7 @@ export default function PaymentModal({ businessId, items, onClose, onDone }: {
   const [settingUp, setSettingUp] = useState(false);
   const [setupError, setSetupError] = useState('');
 
-  const [mode, setMode] = useState<'cash' | 'card' | 'split'>('cash');
+  const [mode, setMode] = useState<'cash' | 'card' | 'split'>(defaultMode);
   const [cashTendered, setCashTendered] = useState('');
   const [splitCash, setSplitCash] = useState('');
   const [splitCard, setSplitCard] = useState('');

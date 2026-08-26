@@ -82,7 +82,7 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const isManual = payment.provider?.startsWith('manual_');
+  const isManual = payment.provider?.startsWith('manual_') || payment.provider?.startsWith('pos_');
   // Telr, N-Genius, and Ziina are real gateway brand names, never
   // translated - only the generic method words (Tap/Cash/Card machine)
   // and the Unknown fallback go through t().
@@ -132,7 +132,11 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
             <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">{t('Refunded')} {payment.refund_amount}</span>
           ) : !isManual ? (
             <button type="button" onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">{t('Refund')}</button>
-          ) : null}
+          ) : (
+            <span className="text-sm text-ivory-dim" title={t('This was a counter payment (cash or card machine) - refund it there directly, not through Tavzio.')}>
+              {t('Refund on the machine/register')}
+            </span>
+          )}
         </div>
       </div>
 

@@ -182,6 +182,15 @@ function EventSpacesTab({ businessId }: { businessId: string }) {
   }
   useEffect(reload, [businessId]);
 
+  async function handleToggleSpace(s: HotelEventSpace) {
+    setSpaces((prev) => prev.map((x) => (x.id === s.id ? { ...x, active: !x.active } : x)));
+    try {
+      await updateEventSpace(businessId, s.id, { active: !s.active });
+    } catch {
+      reload();
+    }
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
@@ -206,7 +215,7 @@ function EventSpacesTab({ businessId }: { businessId: string }) {
           <div key={s.id} className={`rounded-xl border p-4 ${s.active ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
             <div className="flex items-center justify-between">
               <p className="text-base text-ivory">{s.name}</p>
-              <button type="button" onClick={() => updateEventSpace(businessId, s.id, { active: !s.active }).then(reload)} className="text-sm text-ivory-dim hover:text-ivory">
+              <button type="button" onClick={() => handleToggleSpace(s)} className="text-sm text-ivory-dim hover:text-ivory">
                 {s.active ? t('Deactivate') : t('Reactivate')}
               </button>
             </div>

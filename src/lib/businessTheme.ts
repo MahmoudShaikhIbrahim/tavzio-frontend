@@ -41,10 +41,21 @@ function isLight([r, g, b]: [number, number, number]): boolean {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
 }
 
-// Builds the full 7-variable set from just two chosen colors. Either or
+// Builds the full CSS variable set from just two chosen colors. Either or
 // both can be null/undefined - in that case those specific variables are
 // simply omitted, so the page's normal [data-theme] default takes over
 // with zero visual change until a business actually picks a color.
+//
+// Deliberately never touches --color-ivory/--color-ivory-dim (the real
+// text-color tokens) or any status color (success/danger/warning) - a
+// business's own background/button choice must only ever affect
+// background surfaces and the brand accent, never what color words
+// themselves render in. Text color is governed purely by the real
+// dark/light theme toggle, always - this used to compute an ivory value
+// from the chosen background's own luminance, which (being an inline
+// style) silently overrode the theme toggle's actual, carefully-tuned
+// contrast the moment any custom background was set, regardless of
+// which mode someone was actually in.
 export function buildBusinessThemeVars(background?: string | null, button?: string | null): CSSProperties {
   const vars: Record<string, string> = {};
 
@@ -54,8 +65,6 @@ export function buildBusinessThemeVars(background?: string | null, button?: stri
     vars['--color-ink'] = rgbToTriple(bg);
     vars['--color-ink-soft'] = rgbToTriple(shift(bg, textIsDark ? -0.08 : 0.12));
     vars['--color-ink-line'] = rgbToTriple(shift(bg, textIsDark ? -0.18 : 0.28));
-    vars['--color-ivory'] = textIsDark ? '20 17 15' : '244 238 227';
-    vars['--color-ivory-dim'] = textIsDark ? '82 71 56' : '167 154 135';
   }
 
   const btn = button ? hexToRgb(button) : null;

@@ -165,11 +165,7 @@ function BillPageContent({ slug }: { slug: string }) {
       }
     });
 
-    const safetyNet = setInterval(loadBill, 20000);
-    return () => {
-      unsubscribe();
-      clearInterval(safetyNet);
-    };
+    return unsubscribe;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tapEventId, items.length > 0]);
 
