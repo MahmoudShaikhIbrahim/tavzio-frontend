@@ -173,10 +173,14 @@ export function listTillSessions(businessId: string) {
 // --- POS terminal orders ---
 
 export function createPosOrder(businessId: string, payload: {
-  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; chargeToFolioId?: string;
+  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; cardId?: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; chargeToFolioId?: string;
   discountType?: 'percentage' | 'fixed'; discountValue?: number; discountReason?: string;
 }) {
   return authFetch<{ order: OrderRow; items: OrderItemRow[] }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function assignTable(businessId: string, orderId: string, cardId: string) {
+  return authFetch<OrderRow>(`/api/businesses/${businessId}/orders/${orderId}/assign-table`, { method: 'PATCH', body: JSON.stringify({ cardId }) });
 }
 
 export function fireCourse(businessId: string, orderId: string, course: string) {
@@ -1247,6 +1251,14 @@ export interface LinkedAccount {
 }
 export function listLinkedAccounts() {
   return authFetch<LinkedAccount[]>('/api/auth/linked-accounts');
+}
+export function createLinkedAccount(profileIdA: string, profileIdB: string) {
+  return authFetch<{ id: string }>('/api/auth/admin/linked-accounts', {
+    method: 'POST', body: JSON.stringify({ profileIdA, profileIdB }),
+  });
+}
+export function deleteLinkedAccount(linkId: string) {
+  return authFetch<{ message: string }>(`/api/auth/linked-accounts/${linkId}`, { method: 'DELETE' });
 }
 export function switchAccount(targetProfileId: string) {
   return authFetch<{ accessToken: string; refreshToken: string }>('/api/auth/switch-account', {

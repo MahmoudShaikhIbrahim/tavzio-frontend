@@ -7,11 +7,11 @@ import { useT } from '../../hooks/useT';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions, getXReport, type XReport,
   listMenuCategories, listMenuItems, createPosOrder, getBusiness, lookupFolioByRoom,
-  listHotelOutlets, listPayments, listOrders,
+  listHotelOutlets, listPayments, listOrders, listFloorTables, assignTable,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
-import type { TillSession, MenuCategory, MenuItem, PaymentRow, OrderRow } from '../../types';
+import type { TillSession, MenuCategory, MenuItem, PaymentRow, OrderRow, FloorTable } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 import { PaymentRowItem } from './PaymentsPage';
 
@@ -152,6 +152,17 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [orderType, setOrderType] = useState<'dine_in' | 'walk_in' | 'pickup' | 'delivery'>('walk_in');
+  const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState('');
+  function reloadFloorTables() {
+    listFloorTables(businessId).then(setFloorTables).catch(() => {});
+  }
+  useEffect(() => {
+    reloadFloorTables();
+    const unsubOrders = subscribeToBusinessTable(businessId, 'orders', reloadFloorTables);
+    return unsubOrders;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
   const [tableLabel, setTableLabel] = useState('');
   const [orderNote, setOrderNote] = useState('');
   const [showCloseTill, setShowCloseTill] = useState(false);
@@ -178,6 +189,23 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   // Restaurant's whole menu.
   const [outletItemIds, setOutletItemIds] = useState<Set<string> | null>(null);
   const [quickPayTarget, setQuickPayTarget] = useState<OrderRow | null>(null);
+  const [convertingOrder, setConvertingOrder] = useState<OrderRow | null>(null);
+  const [convertCardId, setConvertCardId] = useState('');
+  const [convertSaving, setConvertSaving] = useState(false);
+
+  async function handleConvertToDineIn() {
+    if (!convertingOrder || !convertCardId) return;
+    setConvertSaving(true);
+    try {
+      await assignTable(businessId, convertingOrder.id, convertCardId);
+      setConvertingOrder(null);
+      setConvertCardId('');
+      reloadQuickPay();
+      reloadFloorTables();
+    } finally {
+      setConvertSaving(false);
+    }
+  }
 
   // Real fix for the exact complaint: "who tf is walk 1 and walk 2" -
   // an auto-numbered label ("Walk-in #3", "Pickup #7") tells staff
@@ -197,17 +225,19 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   // Real fix for a confirmed gap: an order sent to the kitchen had no
   // direct way back to pay it except navigating away to Orders and
   // working through Record Payment's table-selection maze. This is the
-  // actual replacement - unpaid walk-in/pickup orders that came from a
-  // staff member typing them in at this counter (card_id null, the
-  // reliable signal for "no physical NFC tap involved" - an NFC
-  // customer order always carries the real card_id of whichever card
-  // was tapped), shown right here as one-tap buttons.
+  // actual replacement - every unpaid staff-entered order (card_id
+  // null is the reliable signal for "no physical NFC tap involved" -
+  // an NFC customer order always carries the real card_id of whichever
+  // card was tapped, and stays in its own Pay Bill flow, not here),
+  // shown right here as one-tap buttons. Covers dine-in too now, not
+  // just walk-in/pickup - a dine-in table that wants to pay on the
+  // card machine instead of tapping their own card needs exactly the
+  // same one-tap Pay this already gives walk-ins.
   const [quickPayOrders, setQuickPayOrders] = useState<OrderRow[]>([]);
   function reloadQuickPay() {
     listOrders(businessId).then((orders) => {
       setQuickPayOrders(orders.filter((o) =>
         !o.card_id
-        && ['walk_in', 'pickup'].includes(o.order_type)
         && o.order_items.some((i) => !i.voided && !i.paid)
       ));
     }).catch(() => {});
@@ -342,6 +372,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     setCart([]);
     setOrderType('walk_in');
     setTableLabel('');
+    setSelectedCardId('');
     setOrderNote('');
     setRoomFolio(null);
     setRoomNumber('');
@@ -366,6 +397,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
     const payload = {
       tableLabel: tableLabel.trim() || undefined,
       orderType,
+      cardId: orderType === 'dine_in' && selectedCardId ? selectedCardId : undefined,
       note: orderNote,
       items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
       ...(discountType ? { discountType, discountValue, discountReason } : {}),
@@ -500,14 +532,25 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             <p className="mb-1.5 text-xs uppercase tracking-wide text-ivory-dim">{t('Unpaid - tap to pay')}</p>
             <div className="flex flex-wrap gap-2">
               {quickPayOrders.map((order) => (
-                <button
-                  type="button"
-                  key={order.id}
-                  onClick={() => setQuickPayTarget(order)}
-                  className="rounded-full border border-brass/40 bg-brass/5 px-3 py-1.5 text-sm text-ivory hover:bg-brass/10"
-                >
-                  {quickPayLabel(order)}
-                </button>
+                <div key={order.id} className="flex items-stretch overflow-hidden rounded-full border border-brass/40 bg-brass/5">
+                  <button
+                    type="button"
+                    onClick={() => setQuickPayTarget(order)}
+                    className="px-3 py-1.5 text-sm text-ivory hover:bg-brass/10"
+                  >
+                    {quickPayLabel(order)}
+                  </button>
+                  {['walk_in', 'pickup'].includes(order.order_type) && (
+                    <button
+                      type="button"
+                      onClick={() => setConvertingOrder(order)}
+                      title={t('Seat this customer at a table')}
+                      className="border-s border-brass/40 px-2.5 py-1.5 text-sm text-brass hover:bg-brass/10"
+                    >
+                      {t('Sit down')}
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -601,6 +644,21 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               even across multiple POS terminals ringing up orders at
               once - while still overridable with a real name/phone/table
               number when that's useful. */}
+          {orderType === 'dine_in' ? (
+            <Field label={t('Table')} className="mt-3">
+              <select value={selectedCardId} onChange={(e) => setSelectedCardId(e.target.value)} className={inputClass}>
+                <option value="">{t('No table selected (label only)')}</option>
+                {floorTables.map((tbl) => (
+                  <option key={tbl.id} value={tbl.id} disabled={tbl.table_status === 'occupied'}>
+                    {tbl.label || tbl.uid} {tbl.table_status === 'occupied' ? `- ${t('occupied')}` : tbl.table_status === 'reserved' ? `- ${t('reserved')}` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-ivory-dim">
+                {t("Picking a table links this order to the customer's own Pay Bill - no table picked just labels it, same as before.")}
+              </p>
+            </Field>
+          ) : (
           <Field label={t(ORDER_TYPE_FIELD_LABEL[orderType])} className="mt-3">
             <input
               value={tableLabel}
@@ -609,6 +667,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               placeholder={t(ORDER_TYPE_PLACEHOLDER[orderType])}
             />
           </Field>
+          )}
           {/* Already fully supported server-side (orders.note + a per-item
               note on order_items) - this input was simply never added
               here before now. */}
@@ -789,6 +848,30 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             setConfirmed({ total: quickPayTarget.order_items.reduce((s, i) => s + (i.unit_price + i.addon_total) * i.quantity, 0), headline: t('Payment received'), detail: t('Paid in full') });
           }}
         />
+      )}
+      {convertingOrder && (
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-ink/80 px-4" onClick={() => setConvertingOrder(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-5 shadow-2xl shadow-black/50" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display text-lg text-ivory">{t('Seat')} {quickPayLabel(convertingOrder)}</h2>
+            <p className="mt-1 text-sm text-ivory-dim">{t('Pick which table they moved to - their order comes with them.')}</p>
+            <select value={convertCardId} onChange={(e) => setConvertCardId(e.target.value)} className={`${inputClass} mt-3`}>
+              <option value="">{t('Choose a table')}</option>
+              {floorTables.map((tbl) => (
+                <option key={tbl.id} value={tbl.id} disabled={tbl.table_status === 'occupied'}>
+                  {tbl.label || tbl.uid} {tbl.table_status === 'occupied' ? `- ${t('occupied')}` : ''}
+                </option>
+              ))}
+            </select>
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={() => setConvertingOrder(null)} className="flex-1 rounded-lg border border-ink-line py-2.5 text-sm text-ivory-dim hover:text-ivory">
+                {t('Cancel')}
+              </button>
+              <button type="button" onClick={handleConvertToDineIn} disabled={!convertCardId || convertSaving} className="flex-1 rounded-lg bg-brass py-2.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+                {convertSaving ? t('Seating...') : t('Confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {showXReport && (
         <XReportPanel businessId={businessId} tillId={till.id} onClose={() => setShowXReport(false)} />

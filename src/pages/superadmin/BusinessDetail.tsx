@@ -12,6 +12,8 @@ import { ContractStatusLabel } from './ContractsListPage';
 import { Field, inputClass } from '../../components/ui';
 import type { AdminBusiness, Card, BillingReceipt, BillingReceiptLineItem, Contract } from '../../types';
 import { useConfirm } from '../../components/ConfirmDialog';
+import { useSession } from '../../hooks/useSession';
+import { listLinkedAccounts, createLinkedAccount, deleteLinkedAccount, type LinkedAccount } from '../../lib/authApi';
 
 export default function BusinessDetail() {
   const confirm = useConfirm();
@@ -60,6 +62,7 @@ export default function BusinessDetail() {
         <BusinessTypeEditor business={business} businessId={businessId} onSaved={setBusiness} />
         <OwnerPasswordReset business={business} businessId={businessId} />
         <AdminCardIssue business={business} businessId={businessId} />
+        <LinkAccountSection business={business} />
 
         <div className="mt-4 flex gap-2">
           {business.status !== 'active' && (
@@ -292,6 +295,70 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
           {resetting ? 'Resetting...' : "Reset owner's password"}
         </button>
       )}
+    </div>
+  );
+}
+
+// Real fix for a confirmed gap: creating a link was already possible on
+// the backend (super_admin only, by design - see linkedAccountsController
+// for why), but there was no interface for it at all. Scoped to the
+// realistic case this exists for: linking THIS business's owner account
+// to whichever super_admin account is currently viewing this page, so
+// the fast switch-without-signing-out flow actually has something to
+// switch to.
+function LinkAccountSection({ business }: { business: AdminBusiness }) {
+  const { user } = useSession();
+  const confirm = useConfirm();
+  const [links, setLinks] = useState<LinkedAccount[]>([]);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+
+  function reload() {
+    listLinkedAccounts().then(setLinks).catch(() => {});
+  }
+  useEffect(reload, []);
+
+  const existingLink = links.find((l) => l.account.id === business.owner);
+
+  async function handleLink() {
+    if (!user) return;
+    setCreating(true);
+    setError('');
+    try {
+      await createLinkedAccount(user.id, business.owner);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create link');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleUnlink() {
+    if (!existingLink) return;
+    if (!(await confirm({ title: 'Remove this link?', message: `Remove the link between your account and ${business.name}'s owner? You'll need to sign in separately to switch between them afterward.`, danger: true }))) return;
+    await deleteLinkedAccount(existingLink.linkId);
+    reload();
+  }
+
+  return (
+    <div className="mt-2">
+      <p className="text-sm text-ivory-dim">
+        {existingLink
+          ? `Linked to your account since ${new Date(existingLink.linkedSince).toLocaleDateString()} - switch to it any time from your account menu, no sign-in needed.`
+          : "Not linked to your account yet - link it to switch between this business's owner account and your own without signing out."}
+      </p>
+      {error && <p className="mt-1 text-sm text-danger">{error}</p>}
+      <button
+        type="button"
+        onClick={existingLink ? handleUnlink : handleLink}
+        disabled={creating}
+        className={`mt-2 rounded-lg border px-3 py-2 text-sm disabled:opacity-50 ${
+          existingLink ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
+        }`}
+      >
+        {creating ? 'Linking...' : existingLink ? 'Remove link' : 'Link to my account'}
+      </button>
     </div>
   );
 }

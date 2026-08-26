@@ -5,16 +5,18 @@ import { findClosestMatch } from '../lib/fuzzyMatch';
 interface PaletteItem {
   path: string;
   label: string;
+  kind?: 'page' | 'action';
+  keywords?: string;
 }
 
-// Real "type any page name" search, not a filter box - opens over
-// everything (Cmd/Ctrl+K, the universal convention for exactly this),
-// searches every reachable destination at once (main tabs + every
-// Settings sub-page), and jumps straight there on Enter or a click.
-// Only ever receives items already filtered through the same
-// tabAllowed() visibility rules the real nav uses, so this never
-// surfaces a page the current account can't actually reach.
-export default function CommandPalette({ items, t, onNavigate }: { items: PaletteItem[]; t: (s: string) => string; onNavigate?: (path: string) => void }) {
+// Real "type any page name, or what you're trying to do" search, not
+// just a page filter - opens over everything (Cmd/Ctrl+K, the
+// universal convention for exactly this), searches every reachable
+// page AND every real task at once, and jumps straight there on Enter
+// or a click. Only ever receives items already filtered through the
+// same tabAllowed()/ownerOnly rules the real nav uses, so this never
+// surfaces a page or action the current account can't actually reach.
+export default function CommandPalette({ items, actions = [], t, onNavigate }: { items: PaletteItem[]; actions?: PaletteItem[]; t: (s: string) => string; onNavigate?: (path: string) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -43,16 +45,24 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
     }
   }, [open]);
 
-  const results = query.trim()
-    ? items.filter((i) => t(i.label).toLowerCase().includes(query.trim().toLowerCase()))
-    : items;
+  const allItems = [...items, ...actions];
+  const q = query.trim().toLowerCase();
+  const results = q
+    ? allItems
+        .filter((i) => t(i.label).toLowerCase().includes(q) || i.keywords?.toLowerCase().includes(q))
+        .sort((a, b) => {
+          const aDirect = t(a.label).toLowerCase().includes(q) ? 0 : 1;
+          const bDirect = t(b.label).toLowerCase().includes(q) ? 0 : 1;
+          return aDirect - bDirect;
+        })
+    : allItems;
 
   // Real "did you mean" - only computed when there's a genuine typo
   // situation (a real query with zero substring matches), and only
   // ever suggests something that's actually close, never a random
   // guess dressed up as a suggestion.
-  const suggestion = query.trim() && results.length === 0
-    ? findClosestMatch(query, items, (i) => t(i.label))
+  const suggestion = q && results.length === 0
+    ? findClosestMatch(query, allItems, (i) => t(i.label))
     : null;
 
   function go(item: PaletteItem) {
@@ -79,7 +89,7 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
         className="flex items-center gap-2 rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/40 hover:text-ivory"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-        {t('Search pages...')}
+        {t('Search...')}
         <span className="ml-1 rounded border border-ink-line px-1.5 py-0.5 font-mono text-[10px] text-ivory-dim/70">⌘K</span>
       </button>
 
@@ -96,12 +106,12 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
                 onKeyDown={handleKeyDown}
-                placeholder={t('Type a page name...')}
+                placeholder={t('Search pages or type what you want to do...')}
                 className="w-full bg-transparent text-base text-ivory placeholder:text-ivory-dim/60 focus:outline-none"
               />
             </div>
             <div className="max-h-[50vh] overflow-y-auto p-2">
-              {results.length === 0 && !suggestion && <p className="px-3 py-6 text-center text-sm text-ivory-dim">{t('No matching pages.')}</p>}
+              {results.length === 0 && !suggestion && <p className="px-3 py-6 text-center text-sm text-ivory-dim">{t('Nothing found.')}</p>}
               {results.length === 0 && suggestion && (
                 <button
                   type="button"
@@ -116,14 +126,17 @@ export default function CommandPalette({ items, t, onNavigate }: { items: Palett
               {results.map((item, i) => (
                 <button
                   type="button"
-                  key={item.path}
+                  key={`${item.kind || 'page'}-${item.label}`}
                   onClick={() => go(item)}
                   onMouseEnter={() => setActiveIndex(i)}
-                  className={`block w-full rounded-lg px-3 py-2.5 text-start text-base transition-colors ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-start text-base transition-colors ${
                     i === activeIndex ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
                   }`}
                 >
-                  {t(item.label)}
+                  <span>{t(item.label)}</span>
+                  {item.kind === 'action' && (
+                    <span className="shrink-0 rounded-full border border-ink-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-ivory-dim">{t('Action')}</span>
+                  )}
                 </button>
               ))}
             </div>

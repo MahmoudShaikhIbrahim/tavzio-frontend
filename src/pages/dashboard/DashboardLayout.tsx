@@ -8,10 +8,9 @@ import { useT } from '../../hooks/useT';
 import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, type NotificationCounts } from '../../lib/authApi';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
-import ThemeToggle from '../../components/ThemeToggle';
+import AccountMenu from '../../components/AccountMenu';
 import Logo from '../../components/Logo';
 import ClockWidget from '../../components/ClockWidget';
-import AccountSwitcher from '../../components/AccountSwitcher';
 import { useTheme } from '../../lib/ThemeContext';
 import { DashboardLanguageProvider } from '../../lib/i18n/DashboardLanguageContext';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
@@ -30,7 +29,7 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     selector: 'nav-tabs',
     title: 'Your main tabs',
-    body: "The tabs you use most live here - which ones you see depends on what's enabled for your business. Double-click or long-press any tab to hide it or move it left/right.",
+    body: "The tabs you use most live here - which ones you see depends on what's enabled for your business. Use the customize-navigation button in the header to reorder them or hide the ones you don't use.",
   },
   {
     selector: 'settings-dropdown',
@@ -38,14 +37,19 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
     body: 'Less frequent things - Menu, Staff, Payroll, Accounting, and more - are grouped under Settings so they never crowd your main tabs. Hidden tabs can also be restored from here.',
   },
   {
-    selector: 'account-switcher',
-    title: 'Switch accounts',
-    body: 'Manage more than one business? Switch between them here without signing out.',
+    selector: 'command-palette',
+    title: 'Jump anywhere, instantly',
+    body: "Press ⌘K (or Ctrl+K) from any screen, or tap this bar. Type a page name, or what you're trying to do - \"invite staff\" finds the real action, not just the Staff page. Even a typo still gets you there, it'll suggest the closest real match. This reaches every page and action you can access, including ones hidden from your main tabs - hiding something from the nav bar doesn't mean losing the fast way back to it.",
   },
   {
-    selector: 'theme-toggle',
-    title: 'Light or dark',
-    body: 'Your theme preference is saved to your account - it follows you to any device you log in from.',
+    selector: 'focus-mode-button',
+    title: 'Focus mode',
+    body: 'For a busy counter shift - hides everything except the page itself and takes over the full screen, browser chrome included. Turn it on here any time, on any page, not just POS/Kitchen/Orders. Press it again (or the Exit button once inside) to come back to normal.',
+  },
+  {
+    selector: 'account-menu',
+    title: 'Your account',
+    body: 'Business Profile, your theme (light, dark, or matching your system), and sign out all live here now, together. If you manage more than one business, switching between them without signing out lives here too.',
   },
 ];
 
@@ -111,6 +115,43 @@ const SETTINGS_ITEMS = [
   { path: 'org/menu', label: 'Org Menu', ownerOnly: false, requires: 'orgOwner' as const },
   { path: 'org/suppliers', label: 'Org Suppliers', ownerOnly: false, requires: 'orgOwner' as const },
   { path: 'org/purchase-orders', label: 'Org Purchase Orders', ownerOnly: false, requires: 'orgOwner' as const },
+];
+
+// Real tasks, not just destinations - "how do I invite a new server"
+// is a much more natural thing to search than knowing it lives under
+// Settings > HR. Each one points at wherever that task actually
+// happens; keywords cover the different real ways someone might
+// phrase the same task ("add", "create", "new" all mean the same
+// thing to someone searching). requires reuses the exact same values
+// tabAllowed() already checks, so this filters through the same real
+// feature-gating the tabs themselves use - a hotel never sees a
+// restaurant-only action and vice versa, no separate rules to drift
+// out of sync.
+const DASHBOARD_ACTIONS = [
+  { path: 'pos', label: 'Take an order', keywords: 'new order sell ring up', requires: 'ordering' as const },
+  { path: 'pos', label: 'Record a payment', keywords: 'pay bill charge card cash', requires: 'ordering' as const },
+  { path: 'pos', label: 'Open the till', keywords: 'start shift cash drawer', requires: 'ordering' as const },
+  { path: 'pos', label: 'Close the till', keywords: 'end shift cash out', requires: 'ordering' as const },
+  { path: 'pos', label: 'Run an X-report', keywords: 'sales summary shift report', requires: 'ordering' as const },
+  { path: 'pos', label: 'Issue a refund', keywords: 'return money back', requires: 'ordering' as const },
+  { path: 'settings/menu', label: 'Add a menu item', keywords: 'new dish product create', requires: null },
+  { path: 'settings/menu', label: 'Add a menu category', keywords: 'new section create', requires: null },
+  { path: 'settings/menu', label: 'Pause a menu item', keywords: 'sold out unavailable 86', requires: null },
+  { path: 'staff', label: 'Invite a staff member', keywords: 'new employee add hire', requires: 'staffAccounts' as const },
+  { path: 'staff', label: 'Deactivate a staff member', keywords: 'remove fire disable account', requires: 'staffAccounts' as const },
+  { path: 'inventory', label: 'Create a purchase order', keywords: 'restock order supplier new', requires: 'inventory' as const },
+  { path: 'inventory', label: 'Add a supplier', keywords: 'new vendor create', requires: 'inventory' as const },
+  { path: 'inventory', label: 'Record waste', keywords: 'spoilage loss log', requires: 'inventory' as const },
+  { path: 'inventory', label: 'Check low stock', keywords: 'running out reorder alert', requires: 'inventory' as const },
+  { path: 'bookings', label: 'Create a new booking', keywords: 'reservation table new add', requires: 'booking' as const },
+  { path: 'tables', label: 'Merge tables', keywords: 'combine join party', requires: 'orderingNotHotel' as const },
+  { path: 'front-desk', label: 'Check in a guest', keywords: 'arrival room new', requires: 'hotel' as const },
+  { path: 'front-desk', label: 'Check out a guest', keywords: 'departure folio close', requires: 'hotel' as const },
+  { path: 'housekeeping', label: 'Assign a housekeeping task', keywords: 'clean room new', requires: 'hotel' as const },
+  { path: 'settings/rate-plans', label: 'Add a rate plan', keywords: 'pricing new room rate', requires: 'hotel' as const },
+  { path: 'payments', label: "View today's payments", keywords: 'transactions sales revenue', requires: null },
+  { path: 'settings/loyalty', label: 'Set up a loyalty reward', keywords: 'points program new', requires: null },
+  { path: 'settings/cards', label: 'Issue a new NFC card', keywords: 'create program table', requires: null },
 ];
 
 // Real fix for a confirmed bug: .includes(tab.path) is a plain substring
@@ -391,7 +432,11 @@ function DashboardLayoutInner() {
   // their everyday nav bar, not to respect that same declutter choice.
   const paletteItems = [...baseVisibleTabs, ...baseVisibleSettingsItems]
     .filter((item, i, arr) => arr.findIndex((x) => x.path === item.path) === i)
-    .map((item) => ({ path: item.path, label: item.label }));
+    .map((item) => ({ path: item.path, label: item.label, kind: 'page' as const }));
+  const reachablePaths = new Set([...baseVisibleTabs, ...baseVisibleSettingsItems].map((i) => i.path));
+  const paletteActions = DASHBOARD_ACTIONS
+    .filter((a) => reachablePaths.has(a.path) && tabAllowed(a.requires))
+    .map((a) => ({ path: a.path, label: a.label, keywords: a.keywords, kind: 'action' as const }));
   const hiddenTabs = [...baseVisibleTabs, ...baseVisibleSettingsItems].filter((i) => navLayout?.hidden.includes(i.path));
   const isSettingsActive = visibleSettingsItems.some((t) => isTabActive(location.pathname, t.path)) || location.pathname.includes('/settings');
 
@@ -467,7 +512,7 @@ function DashboardLayoutInner() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-4">
             <Logo className="h-9 w-auto" />
-            <CommandPalette items={paletteItems} t={t} />
+            <div data-tour="command-palette"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             {/* Real, explicit toggle - the actual gap this closes: the
@@ -477,16 +522,14 @@ function DashboardLayoutInner() {
                 than a side effect of which tab happened to be active. */}
             <button
               type="button"
+              data-tour="focus-mode-button"
               onClick={enterFocusMode}
-              className="flex items-center gap-1.5 rounded-lg border border-ink-line px-3 py-1.5 text-sm hover:border-brass/40 hover:text-ivory"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line hover:border-brass/40 hover:text-ivory"
               title={t('Focus mode')}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
-              {t('Focus mode')}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
             </button>
             <ClockWidget />
-            <div data-tour="account-switcher"><AccountSwitcher /></div>
-            <div data-tour="theme-toggle"><ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} /></div>
             <button
               type="button"
               onClick={() => setShowTour(true)}
@@ -509,8 +552,15 @@ function DashboardLayoutInner() {
                 <circle cx="9" cy="12" r="1.6" stroke="currentColor" strokeWidth="1.4" />
               </svg>
             </button>
-            <span>{user?.name} · {isOwner ? 'Owner' : 'Staff'}</span>
-            <button type="button" onClick={logout} className="hover:text-ivory">{t('Sign out')}</button>
+            <div data-tour="account-menu">
+              <AccountMenu
+                name={user?.name || ''}
+                role={isOwner ? t('Owner') : t('Staff')}
+                onSignOut={logout}
+                onThemeChange={(mode) => updateMyTheme(mode).catch(() => {})}
+                t={t}
+              />
+            </div>
           </div>
         </div>
 
@@ -592,7 +642,7 @@ function DashboardLayoutInner() {
       )}
       {focusMode && (
         <div className="flex items-center justify-between px-4 py-2">
-          <CommandPalette items={paletteItems} t={t} />
+          <CommandPalette items={paletteItems} actions={paletteActions} t={t} />
           <button
             type="button"
             onClick={exitFocusMode}

@@ -6,6 +6,36 @@
 // (see tailwind.config.js + index.css) on a scoped wrapper - so every
 // existing class re-themes automatically, with zero changes needed in
 // any page component. Two colors in, a full coherent palette out.
+//
+// Real history worth keeping straight, since this file has swung
+// between two different bugs:
+// 1. The original version derived ivory/ivory-dim from the chosen
+//    background's own luminance. Being an inline style, this silently
+//    overrode the actual dark/light theme toggle's own carefully-tuned
+//    text contrast the moment ANY custom background was set - a person
+//    in Light mode who set a custom color could end up looking at text
+//    computed as if they were in Dark mode, or vice versa, with no way
+//    to predict which.
+// 2. The fix for that removed the derivation entirely, leaving text
+//    color governed purely by [data-theme]. That solved the
+//    unpredictability, but broke the opposite, equally real case: pick
+//    a background genuinely different from the default (e.g. white,
+//    while the toggle is still set to Dark), and the text - now fixed
+//    to whatever Dark mode's ivory happens to be - stops adapting to it
+//    at all. Light text on a light background, unreadable, exactly the
+//    bug just reported.
+//
+// The real fix is neither extreme: when a business has NOT set a custom
+// background, text is governed purely by [data-theme], exactly as
+// before - fully predictable, zero surprise. The moment a custom
+// background IS set, this computes a complete, self-consistent palette
+// FROM that color using real WCAG contrast math - not a guess, not a
+// simplified luma approximation - so text is always genuinely legible
+// against whatever was actually chosen, independent of whatever the
+// separate dark/light toggle happens to be set to. This is what "forget
+// the original theme, just use the new colors" actually means in
+// practice: the chosen color becomes its own real source of truth, not
+// a background color layered under someone else's text decision.
 // =========================================================================
 
 import type { CSSProperties } from 'react';
@@ -34,37 +64,72 @@ function shift([r, g, b]: [number, number, number], amount: number): [number, nu
   return [clamp(r + (target - r) * t), clamp(g + (target - g) * t), clamp(b + (target - b) * t)];
 }
 
-// Relative luminance (WCAG-style approximation) - decides whether text on
-// top of this color should be light or dark, so a business can never
-// accidentally pick a combination that makes their own page unreadable.
-function isLight([r, g, b]: [number, number, number]): boolean {
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
+// The real WCAG relative luminance formula, gamma-corrected - not the
+// simplified 0.299/0.587/0.114 luma approximation. Contrast bugs are
+// exactly what this file exists to prevent, so this uses the same
+// rigorous calculation actual accessibility tooling uses, not a
+// shortcut.
+function relativeLuminance([r, g, b]: [number, number, number]): number {
+  const toLinear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }
+
+function contrastRatio(a: [number, number, number], b: [number, number, number]): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  const lighter = Math.max(la, lb);
+  const darker = Math.min(la, lb);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+// Real color families already used throughout this app, dark and light
+// variants - see index.css's own [data-theme='dark']/[data-theme='light']
+// blocks, which these are pulled from directly. Reused here rather than
+// invented fresh, so a derived palette still looks and feels like this
+// app, not a generic computed theme.
+const IVORY_DARK: [number, number, number] = [244, 238, 227];
+const IVORY_DIM_DARK: [number, number, number] = [167, 154, 135];
+const IVORY_LIGHT: [number, number, number] = [33, 28, 22];
+const IVORY_DIM_LIGHT: [number, number, number] = [82, 71, 56];
+
+const STATUS_DARK = { success: [74, 222, 128] as const, danger: [248, 113, 113] as const, warning: [250, 204, 21] as const };
+const STATUS_LIGHT = { success: [21, 128, 61] as const, danger: [185, 28, 28] as const, warning: [161, 98, 7] as const };
 
 // Builds the full CSS variable set from just two chosen colors. Either or
 // both can be null/undefined - in that case those specific variables are
 // simply omitted, so the page's normal [data-theme] default takes over
 // with zero visual change until a business actually picks a color.
-//
-// Deliberately never touches --color-ivory/--color-ivory-dim (the real
-// text-color tokens) or any status color (success/danger/warning) - a
-// business's own background/button choice must only ever affect
-// background surfaces and the brand accent, never what color words
-// themselves render in. Text color is governed purely by the real
-// dark/light theme toggle, always - this used to compute an ivory value
-// from the chosen background's own luminance, which (being an inline
-// style) silently overrode the theme toggle's actual, carefully-tuned
-// contrast the moment any custom background was set, regardless of
-// which mode someone was actually in.
 export function buildBusinessThemeVars(background?: string | null, button?: string | null): CSSProperties {
   const vars: Record<string, string> = {};
 
   const bg = background ? hexToRgb(background) : null;
   if (bg) {
-    const textIsDark = isLight(bg);
+    // Real decision, not a fixed threshold: compute the actual contrast
+    // ratio of BOTH candidate text families against this exact
+    // background, and use whichever genuinely wins - correct even for
+    // backgrounds that don't fall cleanly on either side of a simple
+    // luminance cutoff.
+    const useLightText = contrastRatio(bg, IVORY_DARK) >= contrastRatio(bg, IVORY_LIGHT);
+
     vars['--color-ink'] = rgbToTriple(bg);
-    vars['--color-ink-soft'] = rgbToTriple(shift(bg, textIsDark ? -0.08 : 0.12));
-    vars['--color-ink-line'] = rgbToTriple(shift(bg, textIsDark ? -0.18 : 0.28));
+    vars['--color-ink-soft'] = rgbToTriple(shift(bg, useLightText ? 0.10 : -0.06));
+    vars['--color-ink-line'] = rgbToTriple(shift(bg, useLightText ? 0.22 : -0.16));
+    vars['--color-ivory'] = rgbToTriple(useLightText ? IVORY_DARK : IVORY_LIGHT);
+    vars['--color-ivory-dim'] = rgbToTriple(useLightText ? IVORY_DIM_DARK : IVORY_DIM_LIGHT);
+
+    // Same real-contrast decision for status colors - picks whichever
+    // of the two already-tuned status palettes (both independently
+    // verified to pass WCAG AA against their own real background) reads
+    // correctly against THIS background, rather than leaving status
+    // colors fixed to the separate dark/light toggle the way the
+    // previous version accidentally did.
+    const statusSet = useLightText ? STATUS_DARK : STATUS_LIGHT;
+    vars['--color-success'] = rgbToTriple([...statusSet.success]);
+    vars['--color-danger'] = rgbToTriple([...statusSet.danger]);
+    vars['--color-warning'] = rgbToTriple([...statusSet.warning]);
   }
 
   const btn = button ? hexToRgb(button) : null;
