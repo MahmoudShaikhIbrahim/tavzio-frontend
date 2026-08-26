@@ -353,7 +353,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           </div>
           <div className="flex items-start justify-between gap-2 p-3">
             <div className="min-w-0">
-              <p className="truncate font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+              <p className="truncate font-display text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
               {submissionEnabled && !orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}
             </div>
             {priceTag}
@@ -372,7 +372,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         >
           {item.image_url && <img src={item.image_url} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />}
           <div className="flex-1">
-            <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+            <p className="font-display text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
             {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
           </div>
           {priceTag}
@@ -390,7 +390,7 @@ function MenuPageContent({ slug }: { slug: string }) {
       >
         {item.image_url && <img src={item.image_url} alt="" className="h-24 w-24 shrink-0 rounded-lg object-cover" />}
         <div className="flex-1">
-          <p className="font-body text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
+          <p className="font-display text-[15px] font-medium text-ivory">{translated(item.name, item.name_i18n, language)}</p>
           {item.description && <p className="mt-0.5 text-xs text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
           {orderable && (item.addons && item.addons.length > 0) && <p className="mt-0.5 text-xs text-brass/70">{t('addonsAvailable')}</p>}
           {!orderable && <p className="mt-0.5 text-xs font-medium text-danger">{t('unavailable')}</p>}

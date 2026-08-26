@@ -531,7 +531,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                   return (
                     <div key={item.id} className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm text-ivory">{item.name}</p>
+                        <p className="truncate font-display text-sm text-ivory">{item.name}</p>
                         <p className="text-xs text-ivory-dim">AED {item.price.toFixed(2)}</p>
                       </div>
                       {line ? (

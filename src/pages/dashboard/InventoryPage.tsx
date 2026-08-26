@@ -162,7 +162,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
           return (
             <div key={ing.id} className="rounded-xl border border-ink-line bg-ink-soft/40 p-4 transition-colors hover:border-brass/40">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-base text-ivory">{ing.name}</p>
+                <p className="font-display text-base text-ivory">{ing.name}</p>
                 <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${low ? 'border-danger/40 text-danger' : 'border-success/40 text-success'}`}>
                   {low ? t('Low stock') : t('In stock')}
                 </span>

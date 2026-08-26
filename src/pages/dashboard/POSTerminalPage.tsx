@@ -564,7 +564,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
                 </div>
               )}
               <div className="p-3">
-                <p className="text-sm text-ivory line-clamp-1">{item.name}</p>
+                <p className="font-display text-sm text-ivory line-clamp-1">{item.name}</p>
                 <p className="mt-0.5 text-sm font-medium text-brass">AED {item.price.toFixed(2)}</p>
               </div>
             </button>
@@ -627,7 +627,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           {cart.map((line) => (
             <div key={line.menuItemId} className="space-y-1.5 border-b border-ink-line/50 pb-2.5 last:border-0 last:pb-0">
               <div className="flex items-center justify-between gap-2 text-base">
-                <span className="text-ivory">{line.name}</span>
+                <span className="font-display text-ivory">{line.name}</span>
                 <div className="flex items-center gap-2.5">
                   <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory">
                     <Minus size={14} strokeWidth={2.25} />
