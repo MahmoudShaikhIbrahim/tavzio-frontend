@@ -99,7 +99,6 @@ const SETTINGS_ITEMS = [
   { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
   { path: 'settings/cards', label: 'Cards', ownerOnly: false, requires: null },
   { path: 'settings/notifications', label: 'Notifications', ownerOnly: false, requires: null },
-  { path: 'services', label: 'Services', ownerOnly: false, requires: 'booking' as const },
   { path: 'features', label: 'Features', ownerOnly: false, requires: null },
   { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
   { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },

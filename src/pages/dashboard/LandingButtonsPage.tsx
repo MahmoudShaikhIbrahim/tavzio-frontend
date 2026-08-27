@@ -13,7 +13,7 @@ import { uploadBusinessFile } from '../../lib/supabaseClient';
 import type { AdminBusiness, BusinessLinks, CustomButton, Service, ServiceOption } from '../../types';
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
 import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
-import { sectionOptionsFor } from '../../lib/dashboardSections';
+import { requestTargetSectionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, ActionButton } from '../../components/ui';
 import { useConfirm } from '../../components/ConfirmDialog';
 
@@ -485,7 +485,7 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
       {buttonType === 'notification' && (
         <Field label={t('Where should this request go?')}>
           <select value={notificationDestination} onChange={(e) => setNotificationDestination(e.target.value as typeof notificationDestination)} className={inputClass}>
-            <option value="general">{t('Front Desk / Requests list')}</option>
+            <option value="general">{isHotel ? t('Front Desk / Requests list') : t('Requests list')}</option>
             {isHotel && <option value="housekeeping_task">{t('Housekeeping')}</option>}
             {isHotel && <option value="maintenance_ticket">{t('Maintenance')}</option>}
           </select>
@@ -494,7 +494,7 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
               <p className="mt-2 text-sm text-ivory-dim">{t('Still lands on the Requests page, not a dedicated screen - this only limits which staff see it there. Choose "Kitchen" to notify kitchen staff specifically, or leave it blank so everyone with Requests access sees it.')}</p>
               <select value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className={`${inputClass} mt-1`}>
                 <option value="">{t('Everyone with Requests access')}</option>
-                {sectionOptionsFor(isHotel).map((s) => <option key={s.key} value={s.key}>{t(s.label)}</option>)}
+                {requestTargetSectionsFor(isHotel).map((s) => <option key={s.key} value={s.key}>{t(s.label)}</option>)}
               </select>
             </>
           )}

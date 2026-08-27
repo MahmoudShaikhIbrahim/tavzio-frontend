@@ -53,3 +53,24 @@ export function sectionOptionsFor(isHotel: boolean): SectionOption[] {
   return SECTION_OPTIONS.filter((o) => o.scope === null || (o.scope === 'hotel') === isHotel);
 }
 
+// A real, separate, deliberately narrower list for "which staff section
+// should be notified of a guest request" - reusing SECTION_OPTIONS
+// wholesale here was a genuine mismatch: that list exists for staff
+// dashboard-access restriction, so it includes things like Payments,
+// Inventory, Bank Reconciliation, and Settings pages, none of which are
+// ever a sensible destination for a guest-facing request notification.
+// Only sections where staff would plausibly need to see and act on one
+// belong here.
+export const REQUEST_TARGET_SECTIONS: SectionOption[] = [
+  { key: 'orders', label: 'Orders', scope: null },
+  { key: 'kitchen', label: 'Kitchen', scope: null },
+  { key: 'pos', label: 'POS Terminal', scope: null },
+  { key: 'tables', label: 'Tables', scope: 'restaurant' },
+  { key: 'front-desk', label: 'Front Desk', scope: 'hotel' },
+  { key: 'housekeeping', label: 'Housekeeping', scope: 'hotel' },
+];
+
+export function requestTargetSectionsFor(isHotel: boolean): SectionOption[] {
+  return REQUEST_TARGET_SECTIONS.filter((o) => o.scope === null || (o.scope === 'hotel') === isHotel);
+}
+
