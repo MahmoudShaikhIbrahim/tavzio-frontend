@@ -255,9 +255,19 @@ export default function OrdersPage() {
               <p className="text-sm font-medium text-brass">
                 {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')} — <span className="text-ivory">{r.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleDismissRequest(r.id)} className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10">
-                {t('Dismiss')}
-              </button>
+              <div className="mt-2 flex gap-2">
+                {r.table_label && tableGroups[r.table_label] && (
+                  <a
+                    href={`#table-${encodeURIComponent(r.table_label)}`}
+                    className="flex-1 rounded-md border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30"
+                  >
+                    {t('View order')}
+                  </a>
+                )}
+                <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10">
+                  {t('Dismiss')}
+                </button>
+              </div>
             </div>
           ))}
           {cashPending.map((item) => (
@@ -288,7 +298,7 @@ export default function OrdersPage() {
       {Object.keys(tableGroups).length === 0 ? (
         <p className="text-base text-ivory-dim">{t('No active orders right now.')}</p>
       ) : (
-        <div className="flex flex-wrap items-start gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Object.keys(tableGroups).map((table) => (
             <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
           ))}
@@ -420,7 +430,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   }
 
   return (
-    <div className="w-full rounded-xl border border-ink-line bg-ink-soft p-3">
+    <div id={`table-${encodeURIComponent(table)}`} className="w-full scroll-mt-24 rounded-xl border border-ink-line bg-ink-soft p-3">
       <div className="space-y-2 text-sm">
         {heldByCourse.size > 0 && (
           <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
