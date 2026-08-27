@@ -74,8 +74,8 @@ function useScrolledPast(threshold: number) {
 }
 
 // One definition for the luxury button treatment (see .btn-luxury in
-// index.css) so every primary CTA on the page - hero, lead form,
-// pricing form - shares the exact same hover behavior instead of each
+// index.css) so every primary CTA on the page - hero, lead form -
+// shares the exact same hover behavior instead of each
 // one hand-rolling the label/arrow markup slightly differently.
 function PrimaryLink({ to, href, onClick, type, disabled, className, children }: {
   to?: string; href?: string; onClick?: (e: ReactMouseEvent) => void; type?: 'button' | 'submit';
@@ -106,10 +106,9 @@ const MOBILE_LINKS = [
   { n: '01', label: 'Solutions', href: '#solutions' },
   { n: '02', label: 'How it works', href: '#how-it-works' },
   { n: '03', label: 'Demo', to: '/demo' },
-  { n: '04', label: 'Pricing', href: '#pricing', isPricing: true },
 ];
 
-function MobileMenu({ open, onClose, onPricingClick }: { open: boolean; onClose: () => void; onPricingClick: (e: ReactMouseEvent) => void }) {
+function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -155,7 +154,7 @@ function MobileMenu({ open, onClose, onPricingClick }: { open: boolean; onClose:
               <a
                 key={link.n}
                 href={link.href}
-                onClick={link.isPricing ? (e) => { onPricingClick(e); onClose(); } : onClose}
+                onClick={onClose}
                 className={rowClass}
               >
                 {row}
@@ -185,12 +184,6 @@ export default function Home() {
   const scrolled = useScrolledPast(24);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  function scrollToPricing(e: ReactMouseEvent) {
-    e.preventDefault();
-    setMobileMenuOpen(false);
-    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-  }
-
   return (
     <div data-theme={theme} className="min-h-screen bg-ink">
       {/* Header - sticky, with real anchor navigation into sections
@@ -212,7 +205,6 @@ export default function Home() {
           <a href="#solutions" className="transition-colors hover:text-ivory">Solutions</a>
           <a href="#how-it-works" className="transition-colors hover:text-ivory">How it works</a>
           <Link to="/demo" className="transition-colors hover:text-ivory">Demo</Link>
-          <a href="#pricing" onClick={scrollToPricing} className="transition-colors hover:text-ivory">Pricing</a>
         </nav>
         <div className="flex items-center gap-3">
           <Link
@@ -232,7 +224,7 @@ export default function Home() {
         </div>
       </div>
 
-      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} onPricingClick={scrollToPricing} />
+      <MobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       {/* Hero - the tap itself is the thesis, not a headline over a
           generic gradient. Real product photography with a live ripple
@@ -258,14 +250,14 @@ export default function Home() {
               </span>
               For restaurants & hotels in the UAE
             </p>
-            <h1 className="mt-5 animate-hero-rise font-display text-[2.75rem] leading-[1.06] text-ivory [animation-delay:80ms] sm:text-6xl lg:text-[5.5rem] xl:text-[6.75rem]">
-              One tap.
+            <h1 className="mt-5 animate-hero-rise font-display text-[2.5rem] leading-[1.08] text-ivory [animation-delay:80ms] sm:text-5xl lg:text-7xl xl:text-8xl">
+              Every guest request.
               <br />
-              Every guest <em className="not-italic text-brass">touchpoint.</em>
+              Answered in <em className="not-italic text-brass">one tap.</em>
             </h1>
             <p className="mx-auto mt-6 max-w-md animate-hero-rise text-[15px] leading-relaxed text-ivory-dim [animation-delay:160ms] lg:mx-0">
-              A single brass card on the table or the nightstand becomes a live menu, a bill, a loyalty
-              program, a room request — replacing the staff you'd otherwise need to run each one by hand.
+              A single NFC card on the table or the nightstand becomes the menu, the bill, the loyalty program,
+              and the request line — so guests get instant service, and your staff stop repeating the same answers all day.
             </p>
             <div className="mt-9 flex animate-hero-rise flex-wrap items-center justify-center gap-5 [animation-delay:240ms] lg:justify-start">
               <PrimaryLink href="#get-started">Get started</PrimaryLink>
@@ -275,13 +267,6 @@ export default function Home() {
               >
                 Try the demo
               </Link>
-              <a
-                href="#pricing"
-                onClick={scrollToPricing}
-                className="text-sm font-medium text-ivory-dim transition-colors hover:text-ivory"
-              >
-                Contact us for pricing →
-              </a>
             </div>
           </div>
 
@@ -390,7 +375,7 @@ export default function Home() {
 
       {/* Features - an indexed list, not a grid of matched icon cards.
           The numbering ties back to the same editorial device used for
-          "How it works" and the pricing example, so the page reads as
+          "How it works", so the page reads as
           one considered system rather than five separate templates
           bolted together. */}
       <RevealSection className="border-b border-ink-line px-6 py-20">
@@ -446,44 +431,6 @@ export default function Home() {
         </div>
       </RevealSection>
 
-      {/* Pricing, with a real worked example */}
-      <div id="pricing" className="border-b border-ink-line px-6 py-20">
-        <div className="mx-auto max-w-4xl">
-          {/* Why the price is what it is, before showing the numbers themselves */}
-          <div className="mb-14 grid gap-6 sm:grid-cols-2">
-            <div className="card-elevated rounded-xl border border-brass/30 bg-ink-soft p-6">
-              <p className="font-display text-lg text-brass">Tavzio means fewer employees</p>
-              <p className="mt-3 text-sm leading-relaxed text-ivory-dim">
-                Traditional restaurant and hotel software helps you manage staff. Tavzio replaces the need for a lot of them —
-                taking orders, answering requests, and routine day-to-day tasks run on their own, around the clock.
-              </p>
-              <p className="mt-4 border-l-2 border-brass/60 pl-3 text-sm text-ivory">
-                The real saving isn't the subscription — it's the salaries, visas, and training you no longer need to pay for.
-              </p>
-            </div>
-            <div className="card-elevated rounded-xl border border-ink-line bg-ink-soft p-6">
-              <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">The operational savings chain</p>
-              <div className="mt-4 space-y-2 text-sm text-ivory-dim">
-                <div className="rounded-lg border border-ink-line px-3 py-2">Less payroll & salaries</div>
-                <div className="pl-3 text-brass/60">↓</div>
-                <div className="rounded-lg border border-ink-line px-3 py-2">Fewer employee visas & medical insurance</div>
-                <div className="pl-3 text-brass/60">↓</div>
-                <div className="rounded-lg border border-ink-line px-3 py-2">Less training overhead & fewer human errors</div>
-                <div className="pl-3 text-brass/60">↓</div>
-                <div className="rounded-lg border border-success/40 bg-success/5 px-3 py-2 text-success">Significantly lower operating expenses</div>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Pricing</p>
-          <p className="mx-auto mt-3 max-w-md text-center text-sm text-ivory-dim">
-            Priced for what you actually run — a restaurant table or a hotel room. Tell us how to reach you and we'll
-            send over exact numbers for your setup.
-          </p>
-
-          <ContactUsForm />
-        </div>
-      </div>
 
       {/* Lead capture - an isolated, framed zone rather than a plain
           section flowing into the footer, so the single most important
@@ -579,81 +526,6 @@ function LeadForm() {
       {error && <p className="text-sm text-danger">{error}</p>}
       <PrimaryLink type="submit" disabled={submitting} className="w-full justify-center">
         {submitting ? 'Sending...' : 'Get started'}
-      </PrimaryLink>
-    </form>
-  );
-}
-
-// Confirmed requirement: pricing numbers came off the homepage entirely
-// - this is the only way to actually reach anyone about pricing now.
-// Deliberately lighter than LeadForm above (no business type, no stand
-// count) since this is a "just tell me the price" inquiry, not a
-// signup - source: 'pricing_inquiry' is what keeps it distinguishable
-// from a real Get Started lead once it lands in the same Leads section
-// (see migration 0087 and LeadsPage.tsx).
-function ContactUsForm() {
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [preferredContactMethod, setPreferredContactMethod] = useState<'email' | 'phone'>('email');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      await submitLead({ email, phone, source: 'pricing_inquiry', preferredContactMethod });
-      setDone(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not submit - please try again');
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (done) {
-    return (
-      <div className="mx-auto mt-8 max-w-sm rounded-xl border border-brass/30 bg-ink-soft p-6 text-center">
-        <p className="font-display text-lg text-ivory">Thanks — we've got it.</p>
-        <p className="mt-1 text-sm text-ivory-dim">
-          We'll reach out {preferredContactMethod === 'email' ? 'by email' : 'by phone'} shortly with pricing for your setup.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mx-auto mt-8 max-w-sm space-y-3 text-left">
-      <input
-        type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
-      />
-      <input
-        type="tel" required placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
-      />
-      <div>
-        <p className="mb-1.5 text-sm text-ivory-dim">How should we reach you?</p>
-        <div className="flex gap-2">
-          {(['email', 'phone'] as const).map((method) => (
-            <button
-              key={method}
-              type="button"
-              onClick={() => setPreferredContactMethod(method)}
-              className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium capitalize transition-colors ${
-                preferredContactMethod === method ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
-              }`}
-            >
-              {method}
-            </button>
-          ))}
-        </div>
-      </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
-      <PrimaryLink type="submit" disabled={submitting} className="w-full justify-center">
-        {submitting ? 'Sending...' : 'Contact us'}
       </PrimaryLink>
     </form>
   );

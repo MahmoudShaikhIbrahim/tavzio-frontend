@@ -942,7 +942,7 @@ export interface OrderRow {
   prep_started_at?: string | null;
   ready_at?: string | null;
   order_items: OrderItemRow[];
-  source?: 'customer_tap' | 'staff_pos' | 'delivery';
+  source: 'customer_tap' | 'staff_pos' | 'delivery';
   delivery_platform?: string | null;
 }
 

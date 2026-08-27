@@ -130,6 +130,13 @@ export function buildBusinessThemeVars(background?: string | null, button?: stri
     vars['--color-success'] = rgbToTriple([...statusSet.success]);
     vars['--color-danger'] = rgbToTriple([...statusSet.danger]);
     vars['--color-warning'] = rgbToTriple([...statusSet.warning]);
+    // Same real pattern confirmed by contrast math in index.css's own
+    // default themes: whichever status-color family is vibrant (paired
+    // with light ivory text) needs near-black text on top of it, and
+    // whichever is darker/muted (paired with dark ivory text) needs
+    // white - the opposite polarity from the main ivory decision, not
+    // the same one.
+    vars['--color-status-text'] = useLightText ? '20 17 15' : '255 255 255';
   }
 
   const btn = button ? hexToRgb(button) : null;

@@ -23,6 +23,7 @@
     --color-success: 74 222 128;
     --color-info: 96 165 250;
     --color-warning: 250 204 21;
+    --color-status-text: 20 17 15;
   }
 
   [data-theme='dark'] {
@@ -37,6 +38,7 @@
     --color-success: 74 222 128;
     --color-info: 96 165 250;
     --color-warning: 250 204 21;
+    --color-status-text: 20 17 15;
   }
 
   [data-theme='light'] {
@@ -51,6 +53,7 @@
     --color-success: 21 128 61;
     --color-info: 29 78 216;
     --color-warning: 161 98 7;
+    --color-status-text: 255 255 255;
   }
 
   html {

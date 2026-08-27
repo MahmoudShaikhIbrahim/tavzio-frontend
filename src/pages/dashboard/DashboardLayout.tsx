@@ -512,9 +512,9 @@ function DashboardLayoutInner() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-4">
             <Logo />
-            <div data-tour="command-palette"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
+            <div data-tour="command-palette"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
             {/* Real, explicit toggle - the actual gap this closes: the
                 only way in before was the automatic POS/Kitchen/Orders
                 trigger, with no way to enter it manually on any other
@@ -581,7 +581,7 @@ function DashboardLayoutInner() {
                 >
                   {t(tab.label)}
                   {count > 0 && (
-                    <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-ivory">
+                    <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-status-text">
                       {count > 9 ? '9+' : count}
                     </span>
                   )}

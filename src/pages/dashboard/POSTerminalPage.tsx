@@ -227,19 +227,19 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   // Real fix for a confirmed gap: an order sent to the kitchen had no
   // direct way back to pay it except navigating away to Orders and
   // working through Record Payment's table-selection maze. This is the
-  // actual replacement - every unpaid staff-entered order (card_id
-  // null is the reliable signal for "no physical NFC tap involved" -
-  // an NFC customer order always carries the real card_id of whichever
-  // card was tapped, and stays in its own Pay Bill flow, not here),
-  // shown right here as one-tap buttons. Covers dine-in too now, not
-  // just walk-in/pickup - a dine-in table that wants to pay on the
-  // card machine instead of tapping their own card needs exactly the
-  // same one-tap Pay this already gives walk-ins.
+  // Real fix for a confirmed bug: card_id alone stopped being a
+  // reliable "is this staff-managed" signal the moment a walk-in gets
+  // converted to dine-in and connected to a table with a real card -
+  // the order gains a card_id even though it's still fundamentally a
+  // staff-placed order, not a genuine customer NFC session. source is
+  // the actually-reliable field here: set once at creation to
+  // 'staff_pos' or 'customer_tap' and never touched afterward by the
+  // table-conversion flow, regardless of what happens to card_id.
   const [quickPayOrders, setQuickPayOrders] = useState<OrderRow[]>([]);
   function reloadQuickPay() {
     listOrders(businessId).then((orders) => {
       setQuickPayOrders(orders.filter((o) =>
-        !o.card_id
+        o.source === 'staff_pos'
         && o.order_items.some((i) => !i.voided && !i.paid)
       ));
     }).catch(() => {});
@@ -593,12 +593,12 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             </button>
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {visibleItems.map((item) => (
             <button type="button"
               key={item.id}
               onClick={() => addToCart(item)}
-              className="card-elevated overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-colors hover:border-brass/50"
+              className="overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-colors hover:border-brass/50"
             >
               {/* Photo recognition matters at the counter - a busy
                   cashier reads a picture far faster than a name, which is
@@ -606,13 +606,13 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
                   to a plain tile only if this item genuinely has no
                   photo uploaded yet. */}
               {item.image_url ? (
-                <img src={item.image_url} alt={item.name} className="h-24 w-full object-cover sm:h-28" loading="lazy" />
+                <img src={item.image_url} alt={item.name} className="h-20 w-full object-cover sm:h-24" loading="lazy" />
               ) : (
-                <div className="flex h-24 w-full items-center justify-center bg-ink text-ivory-dim/30 sm:h-28">
-                  <UtensilsCrossed size={26} strokeWidth={1.5} />
+                <div className="flex h-20 w-full items-center justify-center bg-ink text-ivory-dim/30 sm:h-24">
+                  <UtensilsCrossed size={22} strokeWidth={1.5} />
                 </div>
               )}
-              <div className="p-3">
+              <div className="p-2.5">
                 <p className="font-display text-sm text-ivory line-clamp-1">{item.name}</p>
                 <p className="mt-0.5 text-sm font-medium text-brass">AED {item.price.toFixed(2)}</p>
               </div>
@@ -622,7 +622,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         </div>
       </div>
 
-      <div className="pro-panel divide-y divide-ink-line rounded-xl border border-ink-line bg-ink-soft">
+      <div className="divide-y divide-ink-line rounded-xl border border-ink-line bg-ink-soft">
         <div className="p-4">
           <Field label={t('Order type')}>
             <div className="grid grid-cols-4 gap-1.5">
@@ -822,7 +822,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
               {t('Charge to Room')}{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
-          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-3.5 text-base font-medium text-status-text hover:opacity-90 disabled:opacity-50">
             {t('Send to Kitchen')}
           </button>
           <button type="button" onClick={() => handleSendToKitchen(true)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">

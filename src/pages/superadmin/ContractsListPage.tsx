@@ -235,7 +235,7 @@ export default function ContractsListPage() {
                     type="button"
                     disabled={busyId === c.id}
                     onClick={() => handleTerminate(c)}
-                    className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-ivory hover:opacity-90 disabled:opacity-50"
+                    className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-status-text hover:opacity-90 disabled:opacity-50"
                   >
                     {busyId === c.id ? 'Terminating...' : 'Confirm termination'}
                   </button>

@@ -188,13 +188,16 @@ export default function OrdersPage() {
   }, {});
 
   // A group whose every item across every one of its orders has been
-  // individually voided has nothing left to act on - the order's own
-  // status never changes just because its items were deleted one by
-  // one, so without this it would sit here forever as an empty "All
-  // items deleted" card cluttering the page.
+  // individually voided - OR fully paid - has nothing left to act on.
+  // Neither the order's own status nor a manual "Mark completed" click
+  // is required for either case: voiding one item at a time never
+  // flips status on its own, and paying off every item shouldn't need
+  // a separate confirmation once there's genuinely nothing left owing.
   for (const table of Object.keys(tableGroups)) {
-    const anyItemLeft = tableGroups[table].some((o) => o.order_items.some((i) => !i.voided));
-    if (!anyItemLeft) delete tableGroups[table];
+    const remainingItems = tableGroups[table].flatMap((o) => o.order_items.filter((i) => !i.voided));
+    const anyItemLeft = remainingItems.length > 0;
+    const anyUnpaid = remainingItems.some((i) => !i.paid);
+    if (!anyItemLeft || !anyUnpaid) delete tableGroups[table];
   }
 
   const hasAttentionItems = requests.length > 0 || claims.length > 0 || cashPending.length > 0 || readyUnacked.length > 0;
@@ -417,7 +420,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   }
 
   return (
-    <div className="w-full max-w-xs rounded-xl border border-ink-line bg-ink-soft p-3">
+    <div className="w-full rounded-xl border border-ink-line bg-ink-soft p-3">
       <div className="space-y-2 text-sm">
         {heldByCourse.size > 0 && (
           <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
@@ -450,8 +453,8 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 {item.cash_pending && (
                   <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
                 )}
-                {item.addons.length > 0 && <span className="block text-base text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>}
-                {item.note && <span className="block italic text-ivory">— {item.note}</span>}
+                {item.addons.length > 0 && <span className="block text-sm text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>}
+                {item.note && <span className="block text-sm italic text-ivory">— {item.note}</span>}
               </div>
             </div>
             <button type="button"
@@ -465,7 +468,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 );
                 voidOrderItem(businessId, order.id, item.id).catch(onChange);
               }}
-              className="shrink-0 text-base text-danger hover:underline"
+              className="shrink-0 text-sm text-danger hover:underline"
               title={t('Delete just this item')}
             >
               {t('Delete')}
