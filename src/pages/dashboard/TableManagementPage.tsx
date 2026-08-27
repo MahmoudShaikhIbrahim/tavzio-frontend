@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
-  listFloorTables, updateTableStatus, mergeTables, unmergeTable,
-  listWaitlist, addToWaitlist, seatWaitlistEntry, cancelWaitlistEntry,
+  listTables, createTable, updateTable, deleteTable, connectCardToTable, disconnectCardFromTable, mergeTables, unmergeTable,
+  listWaitlist, addToWaitlist, seatWaitlistEntry, cancelWaitlistEntry, listCards,
 } from '../../lib/authApi';
-import type { FloorTable, WaitlistEntry } from '../../types';
+import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import type { FloorTable, WaitlistEntry, Card } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const STATUS_COLOR: Record<string, string> = {
   available: 'border-success/50 text-success',
@@ -15,68 +17,130 @@ const STATUS_COLOR: Record<string, string> = {
   cleaning: 'border-ivory-dim/50 text-ivory-dim',
 };
 
+// Real, independent tables now - a table exists on its own, whether or
+// not it has an NFC card connected yet. Losing or damaging a card no
+// longer means losing the table: disconnect the old one, connect a new
+// one, everything about the table itself (status, history, identity)
+// stays exactly as it was. Same real pattern this codebase already uses
+// for hotel rooms, applied here for the first time to restaurant tables.
 export default function TableManagementPage() {
   const { user } = useSession();
   const { t } = useT();
+  const confirm = useConfirm();
   const businessId = user?.business_id;
   const [tables, setTables] = useState<FloorTable[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [availableCards, setAvailableCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [mergingId, setMergingId] = useState<string | null>(null);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
   const [showAddWaitlist, setShowAddWaitlist] = useState(false);
+  const [showAddTable, setShowAddTable] = useState(false);
 
   function reload() {
     if (!businessId) return;
-    listFloorTables(businessId).then(setTables);
-    listWaitlist(businessId).then(setWaitlist);
+    listTables(businessId).then(setTables).catch(() => {});
+    listWaitlist(businessId).then(setWaitlist).catch(() => {});
+    // Real, active cards not already connected to a table (or to a
+    // hotel room, or a staff login) - exactly the pool of stands that
+    // could actually be wired up to a table right now.
+    listCards(businessId).then((cards) => {
+      setAvailableCards(cards.filter((c) => c.status === 'active' && !c.linked_user_id && !c.room_id && !c.table_id));
+    }).catch(() => {});
   }
   useEffect(() => {
     setLoading(true);
-    Promise.all([businessId ? listFloorTables(businessId) : Promise.resolve([]), businessId ? listWaitlist(businessId) : Promise.resolve([])])
-      .then(([t, w]) => { setTables(t); setWaitlist(w); })
+    if (!businessId) return;
+    Promise.all([listTables(businessId), listWaitlist(businessId)])
+      .then(([tbls, w]) => { setTables(tbls); setWaitlist(w); })
       .finally(() => setLoading(false));
+    reload();
+    const unsubTables = subscribeToBusinessTable(businessId, 'tables', reload);
+    const unsubCards = subscribeToBusinessTable(businessId, 'cards', reload);
+    return () => { unsubTables(); unsubCards(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 
-  async function handleStatusChange(cardId: string, tableStatus: FloorTable['table_status']) {
+  async function handleCreateTable(label: string, seatCount: number) {
+    if (!businessId || !label.trim()) return;
+    await createTable(businessId, { label: label.trim(), seatCount });
+    setShowAddTable(false);
+    reload();
+  }
+
+  async function handleDeleteTable(table: FloorTable) {
+    if (!businessId) return;
+    if (!(await confirm({ title: t('Delete this table?'), message: `${t('Delete')} "${table.label}"? ${t('This cannot be undone.')}`, confirmLabel: t('Delete'), danger: true }))) return;
+    try {
+      await deleteTable(businessId, table.id);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('Could not delete this table'));
+    }
+  }
+
+  async function handleStatusChange(tableId: string, status: FloorTable['status']) {
     if (!businessId) return;
     // Optimistic: the table's border color updates the instant you tap,
     // instead of waiting on a full re-fetch of every table + the whole
     // waitlist just to reflect a single status change.
-    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, table_status: tableStatus } : t)));
+    setTables((prev) => prev.map((t) => (t.id === tableId ? { ...t, status } : t)));
     try {
-      await updateTableStatus(businessId, cardId, { tableStatus });
+      await updateTable(businessId, tableId, { status });
     } catch {
       reload();
     }
   }
 
-  async function handleMerge(cardId: string, mergeWithCardId: string) {
+  async function handleConnectCard(tableId: string, cardId: string) {
+    if (!businessId) return;
+    setConnectingId(null);
+    try {
+      await connectCardToTable(businessId, tableId, cardId);
+      reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : t('Could not connect that card'));
+    }
+  }
+
+  async function handleDisconnectCard(table: FloorTable) {
+    if (!businessId) return;
+    if (!(await confirm({
+      title: t('Disconnect this card?'),
+      message: `${t('Disconnect the NFC card from')} "${table.label}"? ${t('The table itself stays exactly as it is - you can connect a new or replacement card any time.')}`,
+      confirmLabel: t('Disconnect'),
+    }))) return;
+    await disconnectCardFromTable(businessId, table.id);
+    reload();
+  }
+
+  async function handleMerge(tableId: string, mergeWithTableId: string) {
     if (!businessId) return;
     setMergingId(null);
-    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, merged_with_card_id: mergeWithCardId, table_status: 'occupied' } : t)));
+    setTables((prev) => prev.map((t) => (t.id === tableId ? { ...t, mergedWithTableId: mergeWithTableId, status: 'occupied' } : t)));
     try {
-      await mergeTables(businessId, cardId, mergeWithCardId);
+      await mergeTables(businessId, tableId, mergeWithTableId);
     } catch {
       reload();
     }
   }
 
-  async function handleUnmerge(cardId: string) {
+  async function handleUnmerge(tableId: string) {
     if (!businessId) return;
-    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, merged_with_card_id: null } : t)));
+    setTables((prev) => prev.map((t) => (t.id === tableId ? { ...t, mergedWithTableId: null } : t)));
     try {
-      await unmergeTable(businessId, cardId);
+      await unmergeTable(businessId, tableId);
     } catch {
       reload();
     }
   }
 
-  async function handleSeat(entryId: string, cardId: string) {
+  async function handleSeat(entryId: string, tableId: string) {
     if (!businessId) return;
     setWaitlist((prev) => prev.filter((w) => w.id !== entryId));
-    setTables((prev) => prev.map((t) => (t.id === cardId ? { ...t, table_status: 'occupied' } : t)));
+    setTables((prev) => prev.map((t) => (t.id === tableId ? { ...t, status: 'occupied' } : t)));
     try {
-      await seatWaitlistEntry(businessId, entryId, cardId);
+      await seatWaitlistEntry(businessId, entryId, tableId);
     } catch {
       reload();
     }
@@ -94,24 +158,57 @@ export default function TableManagementPage() {
 
   if (!businessId) return <p className="text-ivory-dim">Loading...</p>;
 
-  const availableTables = tables.filter((t) => t.table_status === 'available' && !t.merged_with_card_id);
+  const availableTables = tables.filter((t) => t.status === 'available' && !t.mergedWithTableId);
 
   return (
     <div className="space-y-8">
       <h1 className="font-display text-3xl text-ivory">{t('Table Management')}</h1>
 
-      <Section title={t('Floor plan')}>
+      <Section title={t('Floor plan')} action={
+        <button type="button" onClick={() => setShowAddTable((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          {t('+ Add table')}
+        </button>
+      }>
+        {showAddTable && <AddTableForm onCreate={handleCreateTable} onCancel={() => setShowAddTable(false)} />}
         {loading && <p className="text-ivory-dim">Loading...</p>}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {tables.filter((t) => !t.merged_with_card_id).map((table) => {
-            const mergedInto = tables.find((tt) => tt.merged_with_card_id === table.id);
+          {tables.filter((t) => !t.mergedWithTableId).map((table) => {
+            const mergedInto = tables.find((tt) => tt.mergedWithTableId === table.id);
             return (
-              <div key={table.id} className={`rounded-xl border p-4 ${STATUS_COLOR[table.table_status]}`}>
-                <p className="text-base font-medium text-ivory">{table.label || t('Unnamed')}</p>
-                <p className="text-sm">{t(table.table_status)}{table.seat_count > 0 && ` · ${table.seat_count} seats`}</p>
+              <div key={table.id} className={`rounded-xl border p-4 ${STATUS_COLOR[table.status]}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-base font-medium text-ivory">{table.label}</p>
+                  <button type="button" onClick={() => handleDeleteTable(table)} className="text-xs text-ivory-dim hover:text-danger" title={t('Delete table')}>✕</button>
+                </div>
+                <p className="text-sm">{t(table.status)}{table.seatCount > 0 && ` · ${table.seatCount} ${t('seats')}`}</p>
+
+                {/* Real, always-visible connection status - the actual
+                    point of this whole redesign: a table with no card
+                    is a completely normal, valid state, not an error. */}
+                {table.card ? (
+                  <div className="mt-2 flex items-center justify-between rounded-lg bg-ink/40 px-2 py-1.5">
+                    <span className="text-xs text-success">{t('Connected')} · {table.card.uid}</span>
+                    <button type="button" onClick={() => handleDisconnectCard(table)} className="text-xs text-ivory-dim hover:text-danger">{t('Disconnect')}</button>
+                  </div>
+                ) : connectingId === table.id ? (
+                  <select
+                    onChange={(e) => e.target.value && handleConnectCard(table.id, e.target.value)}
+                    className="mt-2 w-full rounded border border-brass/40 bg-ink px-2 py-1 text-xs text-ivory"
+                    defaultValue=""
+                    autoFocus
+                  >
+                    <option value="">{t('Pick a card to connect...')}</option>
+                    {availableCards.map((c) => <option key={c.id} value={c.id}>{c.uid}</option>)}
+                  </select>
+                ) : (
+                  <button type="button" onClick={() => setConnectingId(table.id)} className="mt-2 w-full rounded-lg border border-brass/40 py-1 text-xs text-brass hover:bg-brass/10">
+                    {t('+ Connect NFC card')}
+                  </button>
+                )}
+
                 {table.activeOrders.length > 0 && (
-                  <p className="mt-1 text-sm text-ivory-dim">
-                    {table.activeOrders.length} order{table.activeOrders.length === 1 ? '' : 's'} · AED {table.activeOrders.reduce((s, o) => s + o.total, 0).toFixed(2)}
+                  <p className="mt-2 text-sm text-ivory-dim">
+                    {table.activeOrders.length} {t('order')}{table.activeOrders.length === 1 ? '' : 's'} · AED {table.activeOrders.reduce((s, o) => s + o.total, 0).toFixed(2)}
                   </p>
                 )}
                 {mergedInto && <p className="mt-1 text-xs text-ivory-dim">+ {t('merged with')} {mergedInto.label}</p>}
@@ -121,7 +218,7 @@ export default function TableManagementPage() {
                     <button type="button"
                       key={s}
                       onClick={() => handleStatusChange(table.id, s)}
-                      className={`rounded px-2 py-0.5 text-xs ${table.table_status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
+                      className={`rounded px-2 py-0.5 text-xs ${table.status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
                     >
                       {t(s)}
                     </button>
@@ -136,7 +233,7 @@ export default function TableManagementPage() {
                       defaultValue=""
                     >
                       <option value="">{t('Merge with...')}</option>
-                      {tables.filter((tt) => tt.id !== table.id && !tt.merged_with_card_id).map((tt) => (
+                      {tables.filter((tt) => tt.id !== table.id && !tt.mergedWithTableId).map((tt) => (
                         <option key={tt.id} value={tt.id}>{tt.label}</option>
                       ))}
                     </select>
@@ -147,7 +244,7 @@ export default function TableManagementPage() {
               </div>
             );
           })}
-          {tables.filter((table) => table.merged_with_card_id).map((table) => (
+          {tables.filter((table) => table.mergedWithTableId).map((table) => (
             <div key={table.id} className="rounded-xl border border-ink-line p-4 opacity-60">
               <p className="text-base text-ivory">{table.label}</p>
               <p className="text-sm text-ivory-dim">{t('merged into another table')}</p>
@@ -189,6 +286,31 @@ export default function TableManagementPage() {
         </div>
       </Section>
     </div>
+  );
+}
+
+// Real, new capability: a table can now be created before any physical
+// NFC card exists for it at all - set up your whole floor plan on day
+// one, connect cards as they arrive.
+function AddTableForm({ onCreate, onCancel }: { onCreate: (label: string, seatCount: number) => void; onCancel: () => void }) {
+  const { t } = useT();
+  const [label, setLabel] = useState('');
+  const [seatCount, setSeatCount] = useState(2);
+
+  return (
+    <form
+      onSubmit={(e) => { e.preventDefault(); if (label.trim()) onCreate(label, seatCount); }}
+      className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4"
+    >
+      <Field label={t('Table name/number')}>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('e.g. Table 5')} required autoFocus className={inputClass} />
+      </Field>
+      <Field label={t('Seats')}>
+        <input type="number" min={1} onFocus={(e) => e.target.select()} value={seatCount} onChange={(e) => setSeatCount(Number(e.target.value))} className={`${inputClass} w-24`} />
+      </Field>
+      <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Create')}</button>
+      <button type="button" onClick={onCancel} className="text-sm text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
+    </form>
   );
 }
 

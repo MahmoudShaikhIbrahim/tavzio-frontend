@@ -458,6 +458,17 @@ function ContractsSection({ businessId }: { businessId: string }) {
                   <ContractStatusLabel status={c.status} />
                   {c.signed_by_name && ` · signed by ${c.signed_by_name}`}
                 </p>
+                {c.countdown && (
+                  <p className="mt-1 text-sm">
+                    <span className={c.countdown.daysToBilling <= 3 ? 'font-medium text-warning' : 'text-ivory-dim'}>
+                      Next receipt: {new Date(c.countdown.nextBillingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                    <span className="text-ivory-dim"> · </span>
+                    <span className={c.countdown.daysToExpiry <= c.countdown.expiryWarningDays ? 'font-medium text-danger' : 'text-ivory-dim'}>
+                      Renews: {new Date(c.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 {c.status === 'draft' && (

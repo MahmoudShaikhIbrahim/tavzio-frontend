@@ -111,6 +111,13 @@ function ContractTab() {
           {isSigned ? `${t('Signed by')} ${activeContract.signed_by_name} ${t('on')} ${new Date(activeContract.signed_at!).toLocaleDateString()}` : t('Awaiting your signature')}
         </span>
       </div>
+      {activeContract.countdown && (
+        <p className="mt-1 text-sm text-ivory-dim">
+          {t('Next bill:')} {new Date(activeContract.countdown.nextBillingDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+          {' · '}
+          {t('Renews:')} {new Date(activeContract.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+        </p>
+      )}
 
       <pre className="max-h-[28rem] overflow-y-auto whitespace-pre-wrap rounded-lg border border-ink-line bg-ink-soft p-5 text-sm leading-relaxed text-ivory-dim">
         {isSigned && activeContract.signed_snapshot_text ? activeContract.signed_snapshot_text : previewText}

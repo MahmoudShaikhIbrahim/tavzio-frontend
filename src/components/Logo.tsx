@@ -1,24 +1,22 @@
-import { useTheme } from '../lib/ThemeContext';
+// Real text, not an image - a PNG has a color baked in at export time, so
+// it can never adapt to whatever a business actually sets as their own
+// theme color (see businessTheme.ts, which computes real, contrast-safe
+// text color from whatever background a business picks). Real text
+// inherits that same color automatically, the same way every other
+// word on the page already does - dark mode, light mode, or any custom
+// color a business sets - no separate light/dark image swap needed at
+// all, since text-ivory already handles that itself.
+//
+// size replaces what used to be a height class (h-9, h-12, etc) - those
+// were sized for an image's aspect ratio and don't map cleanly onto
+// font size. className is still there for real layout needs (mx-auto,
+// lg:hidden) alongside it.
+const SIZES = { md: 'text-2xl', lg: 'text-3xl', sm: 'text-xl' } as const;
 
-// Single source of truth for the Tavzio wordmark. Two pre-cut transparent
-// PNGs (white text for dark surfaces, ink-dark text for light surfaces)
-// swap based on the resolved theme, so this always reads clean regardless
-// of which page or theme mode it's dropped into - no more plain text
-// "Tavzio" standing in for the real mark, and no more baking a light/dark
-// choice into any one page. Cropped tight to the actual glyphs (not a
-// mostly-empty square canvas), so a given height genuinely fills its
-// space instead of most of it being invisible padding - that gap was
-// the real reason the mark used to read as "barely visible" even when
-// its container looked reasonably sized.
-export default function Logo({ className = 'h-9 w-auto' }: { className?: string }) {
-  const { resolvedTheme } = useTheme();
-  const src = resolvedTheme === 'light' ? '/brand/logo-dark.png' : '/brand/logo-white.png';
+export default function Logo({ className = '', size = 'md' }: { className?: string; size?: keyof typeof SIZES }) {
   return (
-    <img
-      src={src}
-      alt="Tavzio"
-      className={className}
-      style={{ filter: resolvedTheme === 'light' ? 'none' : 'drop-shadow(0 0 14px rgba(184,146,90,0.28))' }}
-    />
+    <span className={`inline-flex items-center font-display font-semibold uppercase tracking-wide text-ivory ${SIZES[size]} ${className}`}>
+      Tavzio
+    </span>
   );
 }

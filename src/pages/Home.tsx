@@ -206,7 +206,7 @@ export default function Home() {
         }`}
       >
         <a href="/" className="flex items-center gap-2">
-          <Logo className="h-9 w-auto" />
+          <Logo />
         </a>
         <nav className="hidden items-center gap-12 text-sm text-ivory-dim md:flex">
           <a href="#solutions" className="transition-colors hover:text-ivory">Solutions</a>

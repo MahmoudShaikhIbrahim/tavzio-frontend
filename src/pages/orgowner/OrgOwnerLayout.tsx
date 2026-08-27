@@ -50,7 +50,7 @@ export default function OrgOwnerLayout() {
     <div className="min-h-screen bg-ink">
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <Logo className="h-9 w-auto" />
+          <Logo />
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <AccountSwitcher />
             <span>{user?.name} · Organization Owner</span>

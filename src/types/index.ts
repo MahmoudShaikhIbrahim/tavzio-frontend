@@ -299,6 +299,12 @@ export interface Contract {
   terminated_by?: string | null;
   termination_reason?: string | null;
   termination_basis?: 'non_payment' | 'material_breach' | 'client_convenience' | 'mutual_agreement' | null;
+  countdown: {
+    nextBillingDate: string;
+    daysToBilling: number;
+    daysToExpiry: number;
+    expiryWarningDays: number;
+  } | null;
 }
 
 export interface DigitalCardAnalytics {
@@ -630,13 +636,11 @@ export interface TillSession {
 
 export interface FloorTable {
   id: string;
-  uid: string;
-  business_id: string;
   label: string;
-  status: 'active' | 'inactive' | 'lost' | 'disabled';
-  table_status: 'available' | 'occupied' | 'reserved' | 'cleaning';
-  seat_count: number;
-  merged_with_card_id: string | null;
+  seatCount: number;
+  status: 'available' | 'occupied' | 'reserved' | 'cleaning';
+  mergedWithTableId: string | null;
+  card: { id: string; uid: string; status: string } | null;
   activeOrders: { id: string; card_id: string; total: number; status: string }[];
 }
 
@@ -759,6 +763,8 @@ export interface Card {
   business_id: string;
   label: string;
   linked_user_id: string | null;
+  room_id: string | null;
+  table_id: string | null;
   status: 'active' | 'inactive' | 'lost' | 'disabled';
   last_programmed_at: string;
   created_at: string;
@@ -980,7 +986,7 @@ export interface BookingRow {
   table_id: string | null;
   guest_name: string;
   created_by_staff_id: string | null;
-  cards?: { label: string } | null;
+  tables?: { label: string } | null;
   customer_phone_verified: boolean;
   food_ready_offset_minutes: number | null;
   arrival_status: 'not_arrived' | 'arrived';

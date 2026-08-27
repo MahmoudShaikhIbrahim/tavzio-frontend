@@ -139,7 +139,7 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-ink">
       <header className="border-b border-ink-line px-6 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link to="/"><Logo className="h-8 w-auto" /></Link>
+          <Link to="/"><Logo size="sm" /></Link>
           <button
             type="button"
             onClick={() => setTocOpen(true)}

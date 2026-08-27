@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listBookings, createBooking, updateBookingStatus, assignBookingTable, confirmArrivalByStaff, listFloorTables, getBusiness, updateBusinessFeatures } from '../../lib/authApi';
+import { listBookings, createBooking, updateBookingStatus, assignBookingTable, confirmArrivalByStaff, listTables, getBusiness, updateBusinessFeatures } from '../../lib/authApi';
 import ExportButtons from '../../components/ExportButtons';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
@@ -45,7 +45,7 @@ export default function BookingsPage() {
     listBookings(businessId)
       .then((rows) => { setBookings(rows); setLoaded(true); })
       .catch((err) => { setLoadError(err instanceof Error ? err.message : 'Could not load bookings'); setLoaded(true); });
-    listFloorTables(businessId).then(setTables).catch(() => setTables([]));
+    listTables(businessId).then(setTables).catch(() => setTables([]));
   }
 
   useEffect(reload, [businessId]);

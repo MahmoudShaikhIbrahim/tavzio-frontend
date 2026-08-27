@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search } from 'lucide-react';
+import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search, CreditCard } from 'lucide-react';
 import { isCloseMatch } from '../../lib/fuzzyMatch';
+import RecordPaymentFlow from '../../components/RecordPaymentFlow';
 import PaymentModal from '../../components/PaymentModal';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions, getXReport, type XReport,
   listMenuCategories, listMenuItems, createPosOrder, getBusiness, lookupFolioByRoom,
-  listHotelOutlets, listPayments, listOrders, listFloorTables, assignTable,
+  listHotelOutlets, listPayments, listOrders, listTables, assignTable,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
@@ -155,7 +156,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
   const [selectedCardId, setSelectedCardId] = useState('');
   function reloadFloorTables() {
-    listFloorTables(businessId).then(setFloorTables).catch(() => {});
+    listTables(businessId).then(setFloorTables).catch(() => {});
   }
   useEffect(() => {
     reloadFloorTables();
@@ -168,6 +169,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   const [showCloseTill, setShowCloseTill] = useState(false);
   const [showXReport, setShowXReport] = useState(false);
   const [showRefunds, setShowRefunds] = useState(false);
+  const [showRecordPayment, setShowRecordPayment] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState<{ total: number; headline: string; detail: string } | null>(null);
@@ -391,13 +393,14 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   // casing needed between "meant to pay now" and "changed their mind".
   async function handleSendToKitchen(openPaymentAfter: boolean) {
     if (cart.length === 0) return;
+    if (orderType === 'dine_in' && !selectedCardId) { setError('Pick which table this is for'); return; }
     if (discountType && !discountReason.trim()) { setError('Enter a reason for the discount/comp'); return; }
     setCheckingOut(true);
     setError('');
     const payload = {
       tableLabel: tableLabel.trim() || undefined,
       orderType,
-      cardId: orderType === 'dine_in' && selectedCardId ? selectedCardId : undefined,
+      tableId: orderType === 'dine_in' && selectedCardId ? selectedCardId : undefined,
       note: orderNote,
       items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, course: l.course || undefined })),
       ...(discountType ? { discountType, discountValue, discountReason } : {}),
@@ -509,6 +512,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         <div className="mb-5 flex items-center justify-between border-b border-ink-line pb-4">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
           <div className="flex items-center gap-5">
+            <button type="button" onClick={() => setShowRecordPayment(true)} className="flex items-center gap-1.5 text-sm text-ivory-dim hover:text-ivory">
+              <CreditCard size={15} strokeWidth={2} />{t('Record payment')}
+            </button>
             <button type="button" onClick={() => setShowXReport(true)} className="flex items-center gap-1.5 text-sm text-ivory-dim hover:text-ivory">
               <FileText size={15} strokeWidth={2} />{t('X-report')}
             </button>
@@ -647,15 +653,15 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
           {orderType === 'dine_in' ? (
             <Field label={t('Table')} className="mt-3">
               <select value={selectedCardId} onChange={(e) => setSelectedCardId(e.target.value)} className={inputClass}>
-                <option value="">{t('No table selected (label only)')}</option>
+                <option value="">{t('Choose a table...')}</option>
                 {floorTables.map((tbl) => (
-                  <option key={tbl.id} value={tbl.id} disabled={tbl.table_status === 'occupied'}>
-                    {tbl.label || tbl.uid} {tbl.table_status === 'occupied' ? `- ${t('occupied')}` : tbl.table_status === 'reserved' ? `- ${t('reserved')}` : ''}
+                  <option key={tbl.id} value={tbl.id} disabled={tbl.status === 'occupied'}>
+                    {tbl.label}{!tbl.card ? ` - ${t('no card connected')}` : ''} {tbl.status === 'occupied' ? `- ${t('occupied')}` : tbl.status === 'reserved' ? `- ${t('reserved')}` : ''}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-xs text-ivory-dim">
-                {t("Picking a table links this order to the customer's own Pay Bill - no table picked just labels it, same as before.")}
+                {t("This links the order to the customer's own Pay Bill.")}
               </p>
             </Field>
           ) : (
@@ -857,8 +863,8 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             <select value={convertCardId} onChange={(e) => setConvertCardId(e.target.value)} className={`${inputClass} mt-3`}>
               <option value="">{t('Choose a table')}</option>
               {floorTables.map((tbl) => (
-                <option key={tbl.id} value={tbl.id} disabled={tbl.table_status === 'occupied'}>
-                  {tbl.label || tbl.uid} {tbl.table_status === 'occupied' ? `- ${t('occupied')}` : ''}
+                <option key={tbl.id} value={tbl.id} disabled={tbl.status === 'occupied'}>
+                  {tbl.label} {tbl.status === 'occupied' ? `- ${t('occupied')}` : ''}
                 </option>
               ))}
             </select>
@@ -872,6 +878,14 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             </div>
           </div>
         </div>
+      )}
+      {showRecordPayment && (
+        <RecordPaymentFlow
+          businessId={businessId}
+          orders={quickPayOrders}
+          onClose={() => setShowRecordPayment(false)}
+          onDone={() => { setShowRecordPayment(false); reloadQuickPay(); }}
+        />
       )}
       {showXReport && (
         <XReportPanel businessId={businessId} tillId={till.id} onClose={() => setShowXReport(false)} />

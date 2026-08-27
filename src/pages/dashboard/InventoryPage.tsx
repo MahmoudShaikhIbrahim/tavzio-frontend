@@ -680,16 +680,19 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
     { ingredientId: '', quantity: '', unitCostAed: '' },
   ]);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [receiveQtys, setReceiveQtys] = useState<Record<string, string>>({});
 
   function reload() {
-    listPurchaseOrders(businessId).then(setOrders);
+    listPurchaseOrders(businessId)
+      .then((data) => { setOrders(data); setLoadError(''); })
+      .catch((err) => setLoadError(err instanceof Error ? err.message : 'Could not load purchase orders'));
   }
   useEffect(() => {
     reload();
-    listSuppliers(businessId).then(setSuppliers);
-    listIngredients(businessId).then(setIngredients);
+    listSuppliers(businessId).then(setSuppliers).catch(() => {});
+    listIngredients(businessId).then(setIngredients).catch(() => {});
   }, [businessId]);
 
   async function handleCreate(e: React.FormEvent) {
@@ -785,7 +788,11 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
           {error && <p className="text-base text-danger">{error}</p>}
         </form>
       )}
+      {loadError && (
+        <p className="rounded-lg border border-danger/40 bg-danger/5 px-3 py-2.5 text-base text-danger">{loadError}</p>
+      )}
       <div className="space-y-3">
+        {!loadError && orders.length === 0 && <p className="text-ivory-dim">{t('No purchase orders yet.')}</p>}
         {orders.map((po) => (
           <div key={po.id} className="rounded-xl border border-ink-line bg-ink-soft/40 px-4 py-3 transition-colors hover:border-brass/40">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -845,7 +852,6 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
             )}
           </div>
         ))}
-        {orders.length === 0 && <p className="text-ivory-dim">{t('No purchase orders yet.')}</p>}
       </div>
     </Section>
   );

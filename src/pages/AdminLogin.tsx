@@ -43,7 +43,7 @@ function AuthShell({ children }: { children: ReactNode }) {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_20%_10%,rgba(184,146,90,0.14),transparent)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_85%_90%,rgba(184,146,90,0.10),transparent)]" />
         <div className="relative">
-          <Logo className="h-9 w-auto" />
+          <Logo />
           <p className="mt-14 max-w-xs font-display text-3xl leading-tight text-ivory">
             One tap. Every guest <em className="not-italic text-brass">touchpoint.</em>
           </p>
@@ -137,7 +137,7 @@ export default function AdminLogin() {
     <div data-theme={theme}>
       <AuthShell>
         <div className="card-elevated w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-8">
-          <Logo className="mx-auto h-12 w-auto lg:hidden" />
+          <Logo size="lg" className="mx-auto lg:hidden" />
           <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>
           <p className="mt-1 text-center text-sm text-ivory-dim">
             Platform administrators, business owners, and staff all sign in
@@ -235,7 +235,7 @@ function SetPasswordForm({ mode, theme, onDone }: { mode: 'invite' | 'recovery';
     <div data-theme={theme}>
       <AuthShell>
         <div className="card-elevated w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-8">
-          <Logo className="mx-auto h-12 w-auto lg:hidden" />
+          <Logo size="lg" className="mx-auto lg:hidden" />
           <h1 className="mt-1 text-center font-display text-2xl text-ivory">
             {mode === 'invite' ? 'Welcome to Tavzio' : 'Set a new password'}
           </h1>

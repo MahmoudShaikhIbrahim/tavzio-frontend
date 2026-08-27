@@ -173,14 +173,14 @@ export function listTillSessions(businessId: string) {
 // --- POS terminal orders ---
 
 export function createPosOrder(businessId: string, payload: {
-  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; cardId?: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; chargeToFolioId?: string;
+  tableLabel?: string; orderType?: 'dine_in' | 'walk_in' | 'pickup' | 'delivery'; tableId?: string; items: { menuItemId: string; quantity: number; addonIds?: string[]; note?: string; course?: string }[]; note?: string; chargeToFolioId?: string;
   discountType?: 'percentage' | 'fixed'; discountValue?: number; discountReason?: string;
 }) {
   return authFetch<{ order: OrderRow; items: OrderItemRow[] }>(`/api/businesses/${businessId}/orders/pos`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function assignTable(businessId: string, orderId: string, cardId: string) {
-  return authFetch<OrderRow>(`/api/businesses/${businessId}/orders/${orderId}/assign-table`, { method: 'PATCH', body: JSON.stringify({ cardId }) });
+export function assignTable(businessId: string, orderId: string, tableId: string) {
+  return authFetch<OrderRow>(`/api/businesses/${businessId}/orders/${orderId}/assign-table`, { method: 'PATCH', body: JSON.stringify({ tableId }) });
 }
 
 export function fireCourse(businessId: string, orderId: string, course: string) {
@@ -189,20 +189,36 @@ export function fireCourse(businessId: string, orderId: string, course: string) 
 
 // --- Table management ---
 
-export function listFloorTables(businessId: string) {
+export function listTables(businessId: string) {
   return authFetch<FloorTable[]>(`/api/businesses/${businessId}/tables-floor`);
 }
 
-export function updateTableStatus(businessId: string, cardId: string, payload: { tableStatus?: 'available' | 'occupied' | 'reserved' | 'cleaning'; seatCount?: number }) {
-  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+export function createTable(businessId: string, payload: { label: string; seatCount?: number }) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function mergeTables(businessId: string, cardId: string, mergeWithCardId: string) {
-  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}/merge`, { method: 'POST', body: JSON.stringify({ mergeWithCardId }) });
+export function updateTable(businessId: string, tableId: string, payload: { label?: string; seatCount?: number; status?: 'available' | 'occupied' | 'reserved' | 'cleaning' }) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${tableId}`, { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
-export function unmergeTable(businessId: string, cardId: string) {
-  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${cardId}/unmerge`, { method: 'POST' });
+export function deleteTable(businessId: string, tableId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/tables-floor/${tableId}`, { method: 'DELETE' });
+}
+
+export function connectCardToTable(businessId: string, tableId: string, cardId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/tables-floor/${tableId}/connect-card`, { method: 'POST', body: JSON.stringify({ cardId }) });
+}
+
+export function disconnectCardFromTable(businessId: string, tableId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/tables-floor/${tableId}/disconnect-card`, { method: 'POST' });
+}
+
+export function mergeTables(businessId: string, tableId: string, mergeWithTableId: string) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${tableId}/merge`, { method: 'POST', body: JSON.stringify({ mergeWithTableId }) });
+}
+
+export function unmergeTable(businessId: string, tableId: string) {
+  return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${tableId}/unmerge`, { method: 'POST' });
 }
 
 export function listWaitlist(businessId: string) {
@@ -213,8 +229,8 @@ export function addToWaitlist(businessId: string, payload: { guestName: string; 
   return authFetch<WaitlistEntry>(`/api/businesses/${businessId}/waitlist`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function seatWaitlistEntry(businessId: string, entryId: string, cardId: string) {
-  return authFetch<WaitlistEntry>(`/api/businesses/${businessId}/waitlist/${entryId}/seat`, { method: 'POST', body: JSON.stringify({ cardId }) });
+export function seatWaitlistEntry(businessId: string, entryId: string, tableId: string) {
+  return authFetch<WaitlistEntry>(`/api/businesses/${businessId}/waitlist/${entryId}/seat`, { method: 'POST', body: JSON.stringify({ tableId }) });
 }
 
 export function cancelWaitlistEntry(businessId: string, entryId: string) {

@@ -511,7 +511,7 @@ function DashboardLayoutInner() {
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-4">
-            <Logo className="h-9 w-auto" />
+            <Logo />
             <div data-tour="command-palette"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
