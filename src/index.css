@@ -201,3 +201,23 @@
     0 1px 2px rgba(0, 0, 0, 0.05),
     0 8px 20px -6px rgba(0, 0, 0, 0.08);
 }
+
+/* Real native date/time input styling - a plain <input type="date"/"time">
+   defaults to a black calendar/clock icon that's nearly invisible against
+   this app's dark fields. brightness(0) collapses it to solid black,
+   then invert(70%) + a warm sepia/hue-rotate shifts it to a brass tone
+   matching the rest of the app - the same real technique every dark-themed
+   native date input relies on, since the icon itself can't be recolored
+   with a plain CSS color property. color-scheme: dark also makes the
+   browser's own popup calendar/clock render in a dark palette instead of
+   a jarring white box appearing against a dark page. */
+.date-time-field {
+  color-scheme: dark;
+}
+[data-theme='light'] .date-time-field {
+  color-scheme: light;
+}
+.date-time-field::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(70%) sepia(40%) saturate(400%) hue-rotate(2deg);
+  cursor: pointer;
+}

@@ -109,6 +109,8 @@ export const tl: TranslationDict = {
   howCanWeHelp: 'Paano ka namin matutulungan?',
   typeYourMessage: 'I-type ang iyong mensahe...',
   send: 'Ipadala',
+  cancel: 'Kanselahin',
+  addNoteOptional: 'Magdagdag ng tala (opsyonal)',
   messageSentConfirmation: 'Naipadala ang mensahe - sasagot agad ang reception.',
   howWasYourStay: 'Kumusta ang iyong pananatili?',
   whatWouldYouLikeToTellUs: 'Ano ang gusto mong sabihin sa amin?',

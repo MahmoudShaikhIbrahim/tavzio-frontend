@@ -109,6 +109,8 @@ export const ur: TranslationDict = {
   howCanWeHelp: 'ہم آپ کی کیسے مدد کر سکتے ہیں؟',
   typeYourMessage: 'اپنا پیغام لکھیں...',
   send: 'بھیجیں',
+  cancel: 'منسوخ کریں',
+  addNoteOptional: 'نوٹ شامل کریں (اختیاری)',
   messageSentConfirmation: 'پیغام بھیج دیا گیا - ریسیپشن جلد جواب دے گا۔',
   howWasYourStay: 'آپ کا قیام کیسا رہا؟',
   whatWouldYouLikeToTellUs: 'آپ ہمیں کیا بتانا چاہیں گے؟',

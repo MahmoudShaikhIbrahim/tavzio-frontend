@@ -126,19 +126,20 @@ function CustomButtonItem({ btn, slug, tapEventId, onOpenGroup }: {
 function QuickRequestButton({ slug, tapEventId, button }: {
   slug: string; tapEventId: number | null; button: { id: string; label: string; icon: string; image_url: string | null };
 }) {
-  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [state, setState] = useState<'idle' | 'expanded' | 'sending' | 'sent' | 'error'>('idle');
+  const [note, setNote] = useState('');
   const { t } = useLanguage();
   const Icon = getIcon(button.icon);
   const brandColor = getIconColor(button.icon);
 
-  async function handleClick() {
+  async function handleSend() {
     if (!tapEventId) {
       setState('error');
       return;
     }
     setState('sending');
     try {
-      await submitCustomButtonRequest(slug, button.id, tapEventId);
+      await submitCustomButtonRequest(slug, button.id, tapEventId, note.trim() || undefined);
       setState('sent');
     } catch {
       setState('error');
@@ -164,11 +165,35 @@ function QuickRequestButton({ slug, tapEventId, button }: {
     );
   }
 
+  if (state === 'expanded' || state === 'sending') {
+    return (
+      <div className="rounded-2xl border border-brass/40 p-3">
+        <div className="flex items-center gap-3 text-ivory">
+          {iconEl}
+          <span className="font-body text-[15px] font-medium">{button.label}</span>
+        </div>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={t('addNoteOptional')}
+          rows={2}
+          className="mt-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+        />
+        <div className="mt-2 flex gap-2">
+          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+            {state === 'sending' ? t('sending') : t('send')}
+          </button>
+          <button type="button" onClick={() => setState('idle')} className="text-sm text-ivory-dim">{t('cancel')}</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <button type="button" onClick={handleClick} disabled={state === 'sending'} className={buttonClass}>
+    <button type="button" onClick={() => setState('expanded')} className={buttonClass}>
       {iconEl}
       <span className="font-body text-[15px] font-medium">
-        {state === 'sending' ? t('sending') : state === 'error' ? `${button.label} — ${t('tapAgainToTry')}` : button.label}
+        {state === 'error' ? `${button.label} — ${t('tapAgainToTry')}` : button.label}
       </span>
     </button>
   );

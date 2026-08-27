@@ -6,13 +6,13 @@ import {
   recordWaste, getWasteReport, getLowStock, getInventoryValuation,
   getMenuItemFoodCost, getActualFoodCost,
   listSuppliers, createSupplier, updateSupplier, deleteSupplier,
-  listPurchaseOrders, createPurchaseOrder, receivePurchaseOrder,
+  listPurchaseOrders, createPurchaseOrder, receivePurchaseOrder, listPurchaseOrderReceipts,
   listWarehouses, createWarehouse, updateWarehouse, deleteWarehouse, getWarehouseStock,
   listStockTransfers, createStockTransfer, approveStockTransfer, shipStockTransfer,
   receiveStockTransfer, cancelStockTransfer, listPoAllocations, receivePoAllocation,
 } from '../../lib/authApi';
 import type {
-  Ingredient, Supplier, PurchaseOrder, LowStockIngredient, InventoryValuation, WasteReport, FoodCostReport, ActualFoodCostReport,
+  Ingredient, Supplier, PurchaseOrder, PurchaseOrderReceipt, LowStockIngredient, InventoryValuation, WasteReport, FoodCostReport, ActualFoodCostReport,
   Warehouse, WarehouseStockLine, StockTransfer, PoAllocation,
 } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
@@ -683,6 +683,8 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
   const [loadError, setLoadError] = useState('');
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [receiveQtys, setReceiveQtys] = useState<Record<string, string>>({});
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [receipts, setReceipts] = useState<PurchaseOrderReceipt[]>([]);
 
   function reload() {
     listPurchaseOrders(businessId)
@@ -734,6 +736,12 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
     setReceiveQtys({});
     reload();
     listIngredients(businessId).then(setIngredients);
+  }
+
+  function toggleHistory(poId: string) {
+    if (historyId === poId) { setHistoryId(null); return; }
+    setHistoryId(poId);
+    listPurchaseOrderReceipts(businessId, poId).then(setReceipts).catch(() => setReceipts([]));
   }
 
   return (
@@ -818,6 +826,15 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                     </button>
                   </>
                 )}
+                {(po.status === 'partially_received' || po.status === 'received') && (
+                  <button
+                    type="button"
+                    onClick={() => toggleHistory(po.id)}
+                    className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory"
+                  >
+                    {historyId === po.id ? t('Hide history') : t('Receive history')}
+                  </button>
+                )}
               </div>
             </div>
             <p className="mt-1 text-sm text-ivory-dim">
@@ -826,6 +843,24 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                 return `${it.quantity} ${it.ingredients?.unit || ''} ${it.ingredients?.name || ''}${remaining < it.quantity && remaining > 0 ? ` (${remaining} ${t('outstanding')})` : ''}`;
               }).join(', ')}
             </p>
+            {historyId === po.id && (
+              <div className="mt-3 space-y-2 rounded-lg border border-ink-line bg-ink p-3">
+                {receipts.length === 0 && <p className="text-sm text-ivory-dim">{t('Loading...')}</p>}
+                {receipts.map((r) => (
+                  <div key={r.id} className="rounded-lg border border-ink-line px-3 py-2 text-sm">
+                    <p className="text-ivory">
+                      {new Date(r.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      {' · '}
+                      <span className={r.is_partial ? 'text-warning' : 'text-success'}>{r.is_partial ? t('Partial receive') : t('Full receive')}</span>
+                      {r.profiles?.name && ` · ${r.profiles.name}`}
+                    </p>
+                    <p className="mt-1 text-xs text-ivory-dim">
+                      {r.items.map((i) => `${i.receivedNow} ${i.unit} ${i.name}${i.stillMissing > 0 ? ` (${i.stillMissing} ${t('still missing')})` : ''}`).join(', ')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
             {receivingId === po.id && (
               <div className="mt-3 space-y-2 rounded-lg border border-ink-line bg-ink p-3">
                 {po.purchase_order_items.map((it) => {

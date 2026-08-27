@@ -7,10 +7,10 @@ import type {
   LoyaltyEarnMethod, LoyaltyStructure, RewardType, LoyaltyClaim,
   MenuCategory, MenuItem, OrderRow, OrderStatus, OrderItemRow,
   PosIntegration, PosIntegrationStatus, PosProvider, PosPurpose,
-  Service, BookingRow, BookingStatus,
+  Service, ServiceOption, BookingRow, BookingStatus,
   CustomButton, PaymentRow, MenuItemAddon, AuditLogEntry, SupportMessage, InboxThread,
   BillingReceipt, BillingReceiptLineItem, ReceiptBranding,
-  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, LowStockIngredient, InventoryValuation, WasteReport,
+  Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, PurchaseOrderReceipt, LowStockIngredient, InventoryValuation, WasteReport,
   FoodCostReport, ActualFoodCostReport, StaffSchedule, ScheduleReport, LaborCostReport, MySchedule,
   SalesForecast, BusinessBudget, BudgetVsActual,
   Lead, TillSession, FloorTable, WaitlistEntry,
@@ -142,6 +142,17 @@ export function deleteDemoMenuItem(itemId: string) {
 }
 export function importDemoMenuFromBusiness(businessId: string) {
   return authFetch<{ message: string; items: DemoMenuItem[] }>('/api/admin/demo/menu-items/import', { method: 'POST', body: JSON.stringify({ businessId }) });
+}
+
+export interface DemoSettings {
+  business_name: string;
+  cover_image_url: string;
+}
+export function getDemoSettingsAdmin() {
+  return authFetch<DemoSettings>('/api/admin/demo/settings');
+}
+export function updateDemoSettingsAdmin(payload: { businessName?: string; coverImageUrl?: string }) {
+  return authFetch<DemoSettings>('/api/admin/demo/settings', { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
 // --- Till sessions ---
@@ -1718,6 +1729,22 @@ export function deleteService(businessId: string, serviceId: string) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/services/${serviceId}`, { method: 'DELETE' });
 }
 
+export function listServiceOptions(businessId: string, serviceId: string) {
+  return authFetch<ServiceOption[]>(`/api/businesses/${businessId}/services/${serviceId}/options`);
+}
+
+export function createServiceOption(businessId: string, serviceId: string, payload: { label: string; priceDelta?: number; sortOrder?: number }) {
+  return authFetch<ServiceOption>(`/api/businesses/${businessId}/services/${serviceId}/options`, { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updateServiceOption(businessId: string, serviceId: string, optionId: string, payload: { label?: string; priceDelta?: number; sortOrder?: number }) {
+  return authFetch<ServiceOption>(`/api/businesses/${businessId}/services/${serviceId}/options/${optionId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteServiceOption(businessId: string, serviceId: string, optionId: string) {
+  return authFetch<{ message: string }>(`/api/businesses/${businessId}/services/${serviceId}/options/${optionId}`, { method: 'DELETE' });
+}
+
 // --- Bookings (owner/staff view + confirm/decline) ---
 
 export function listBookings(businessId: string, status?: BookingStatus) {
@@ -2455,6 +2482,10 @@ export function receivePurchaseOrder(businessId: string, poId: string, items?: {
     method: 'POST',
     body: JSON.stringify(items ? { items } : {}),
   });
+}
+
+export function listPurchaseOrderReceipts(businessId: string, poId: string) {
+  return authFetch<PurchaseOrderReceipt[]>(`/api/businesses/${businessId}/inventory/purchase-orders/${poId}/receipts`);
 }
 
 // super_admin only - one-time, deliberate action. Overwrites whichever

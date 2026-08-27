@@ -432,18 +432,24 @@ function CustomButtonItem({ btn, portalBase, onOpenGroup }: {
 // destinations, so both button systems land in the exact same real
 // staff-facing queues either way.
 function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCustomButton; portalBase: string; iconEl: ReactNode }) {
-  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [state, setState] = useState<'idle' | 'expanded' | 'sending' | 'sent' | 'error'>('idle');
+  const [note, setNote] = useState('');
 
-  async function handleClick() {
+  async function handleSend() {
     setState('sending');
     try {
       const requestType = btn.notification_destination === 'housekeeping_task' ? 'housekeeping'
         : btn.notification_destination === 'maintenance_ticket' ? 'maintenance'
         : 'other';
+      // Real fix for a confirmed bug: the button's own configured
+      // target_section was never actually sent, so an admin's routing
+      // choice (e.g. "Kitchen") was silently discarded every time -
+      // the request always fell back to "everyone with Requests access."
+      const fullNote = note.trim() ? `${btn.label}: ${note.trim()}` : btn.label;
       const res = await fetch(`${BASE}/api/public${portalBase}/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestType, note: btn.label }),
+        body: JSON.stringify({ requestType, note: fullNote, targetSection: btn.target_section }),
       });
       if (!res.ok) throw new Error();
       setState('sent');
@@ -461,10 +467,34 @@ function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCusto
     );
   }
 
+  if (state === 'expanded' || state === 'sending') {
+    return (
+      <div className="w-full rounded-lg border border-brass/40 p-3">
+        <div className="flex items-center gap-3 text-ivory">
+          {iconEl}
+          <span>{btn.label}</span>
+        </div>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Add a note (optional)"
+          rows={2}
+          className="mt-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+        />
+        <div className="mt-2 flex gap-2">
+          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+            {state === 'sending' ? 'Sending...' : 'Send'}
+          </button>
+          <button type="button" onClick={() => setState('idle')} className="text-sm text-ivory-dim">Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <button type="button" onClick={handleClick} disabled={state === 'sending'} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass disabled:opacity-50">
+    <button type="button" onClick={() => setState('expanded')} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass disabled:opacity-50">
       {iconEl}
-      <span>{state === 'sending' ? 'Sending...' : state === 'error' ? `${btn.label} - tap to try again` : btn.label}</span>
+      <span>{state === 'error' ? `${btn.label} - tap to try again` : btn.label}</span>
     </button>
   );
 }

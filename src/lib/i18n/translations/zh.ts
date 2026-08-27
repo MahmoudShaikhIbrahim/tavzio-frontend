@@ -109,6 +109,8 @@ export const zh: TranslationDict = {
   howCanWeHelp: '我们能为您做些什么？',
   typeYourMessage: '输入您的消息...',
   send: '发送',
+  cancel: '取消',
+  addNoteOptional: '添加备注（可选）',
   messageSentConfirmation: '消息已发送 - 前台将尽快回复。',
   howWasYourStay: '您的入住体验如何？',
   whatWouldYouLikeToTellUs: '您想告诉我们什么？',

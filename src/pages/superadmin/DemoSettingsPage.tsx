@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   listDemoMenuItems, createDemoMenuItem, updateDemoMenuItem, deleteDemoMenuItem, importDemoMenuFromBusiness,
-  listBusinesses, type DemoMenuItem,
+  listBusinesses, getDemoSettingsAdmin, updateDemoSettingsAdmin, type DemoMenuItem, type DemoSettings,
 } from '../../lib/authApi';
+import { uploadBusinessFile } from '../../lib/supabaseClient';
 import type { AdminBusiness } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import { useConfirm } from '../../components/ConfirmDialog';
@@ -21,6 +22,10 @@ export default function DemoSettingsPage() {
   const [businesses, setBusinesses] = useState<AdminBusiness[]>([]);
   const [importBusinessId, setImportBusinessId] = useState('');
   const [importResult, setImportResult] = useState('');
+  const [demoSettings, setDemoSettings] = useState<DemoSettings | null>(null);
+  const [businessName, setBusinessName] = useState('');
+  const [savingIdentity, setSavingIdentity] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   function reload() {
     setLoading(true);
@@ -29,7 +34,28 @@ export default function DemoSettingsPage() {
   useEffect(reload, []);
   useEffect(() => {
     listBusinesses({}).then((r) => setBusinesses(r.businesses)).catch(() => {});
+    getDemoSettingsAdmin().then((s) => { setDemoSettings(s); setBusinessName(s.business_name); }).catch(() => {});
   }, []);
+
+  async function handleSaveIdentity() {
+    setSavingIdentity(true);
+    const updated = await updateDemoSettingsAdmin({ businessName });
+    setDemoSettings(updated);
+    setSavingIdentity(false);
+  }
+
+  async function handleUploadCover(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const url = await uploadBusinessFile('platform', file, 'demo-cover');
+      const updated = await updateDemoSettingsAdmin({ coverImageUrl: url });
+      setDemoSettings(updated);
+    } finally {
+      setUploadingCover(false);
+    }
+  }
 
   async function handleImport() {
     if (!importBusinessId) return;
@@ -71,6 +97,28 @@ export default function DemoSettingsPage() {
           business's actual menu - deleting a real account never affects this.
         </p>
       </div>
+
+      <Section title="Business Identity">
+        <p className="text-base text-ivory-dim">
+          The name and cover photo shown on the demo phone at tavzio.ae/demo - the actual identity a visitor sees, not a placeholder.
+        </p>
+        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end">
+          <Field label="Business name">
+            <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} className={inputClass} />
+          </Field>
+          <button type="button" onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            {savingIdentity ? 'Saving...' : 'Save name'}
+          </button>
+        </div>
+        <div className="mt-4">
+          <p className="mb-1.5 text-base text-ivory-dim">Cover photo</p>
+          {demoSettings?.cover_image_url && (
+            <img src={demoSettings.cover_image_url} alt="" className="mb-2 h-24 w-40 rounded-lg object-cover" />
+          )}
+          <input type="file" accept="image/*" onChange={handleUploadCover} disabled={uploadingCover} className="text-sm text-ivory-dim" />
+          {uploadingCover && <p className="mt-1 text-sm text-ivory-dim">Uploading...</p>}
+        </div>
+      </Section>
 
       <Section title="Import from a real business">
         <p className="text-sm text-ivory-dim">

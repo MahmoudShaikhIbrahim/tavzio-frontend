@@ -169,6 +169,10 @@ export interface BookingConfig {
   allowPreOrder: boolean;
   downPayment: { enabled: boolean; mode?: 'full' | 'percentage' | 'fixed'; value?: number };
   menu: { id: string; name: string; price: number; description: string; image_url: string; menu_categories?: { name: string } | null }[];
+  services: {
+    id: string; name: string; description: string; price: number; duration_minutes: number;
+    service_options: { id: string; label: string; price_delta: number; sort_order: number }[];
+  }[];
 }
 export function getBookingConfig(slug: string) {
   return request<BookingConfig>(`/api/public/business/${slug}/booking-config`);
@@ -195,6 +199,7 @@ export interface CreateBookingResponse {
 export function submitPublicBooking(slug: string, payload: {
   phone: string; guestName: string; partySize: number; requestedAt: string; note?: string;
   items?: { menuItemId: string; quantity: number }[]; foodReadyOffsetMinutes?: number;
+  serviceId?: string; serviceOptionId?: string; serviceRequestedAt?: string;
 }) {
   return request<CreateBookingResponse>(`/api/public/business/${slug}/bookings`, {
     method: 'POST', body: JSON.stringify(payload),
@@ -297,10 +302,10 @@ export function cancelBillPaySession(slug: string, paymentId: string) {
 // Submits a notification-type custom button request (Call a Waiter,
 // Request the Bill, Housekeeping, or any owner-defined one) - lands in
 // the same staff-facing Requests list as everything else.
-export function submitCustomButtonRequest(slug: string, buttonId: string, tapEventId: number) {
+export function submitCustomButtonRequest(slug: string, buttonId: string, tapEventId: number, note?: string) {
   return request<{ order: OrderRow }>(`/api/public/business/${slug}/custom-buttons/${buttonId}/request`, {
     method: 'POST',
-    body: JSON.stringify({ tapEventId }),
+    body: JSON.stringify({ tapEventId, note }),
   });
 }
 

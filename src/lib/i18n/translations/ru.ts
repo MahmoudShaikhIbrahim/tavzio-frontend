@@ -109,6 +109,8 @@ export const ru: TranslationDict = {
   howCanWeHelp: 'Чем мы можем помочь?',
   typeYourMessage: 'Введите ваше сообщение...',
   send: 'Отправить',
+  cancel: 'Отмена',
+  addNoteOptional: 'Добавить примечание (необязательно)',
   messageSentConfirmation: 'Сообщение отправлено - стойка регистрации скоро ответит.',
   howWasYourStay: 'Как прошло ваше проживание?',
   whatWouldYouLikeToTellUs: 'Что бы вы хотели нам сказать?',

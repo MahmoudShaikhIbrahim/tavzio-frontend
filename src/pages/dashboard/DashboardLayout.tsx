@@ -78,7 +78,6 @@ const TABS = [
 // monolithic Settings page, now surfaces here instead - grouped roughly
 // by how closely related each thing is, not alphabetically.
 const SETTINGS_ITEMS = [
-  { path: 'settings/business-profile', label: 'Business Profile', ownerOnly: true, requires: null },
   { path: 'settings/credentials', label: 'Credentials & Integrations', ownerOnly: true, requires: null },
   { path: 'settings/contract', label: 'Contracts & Receipts', ownerOnly: true, requires: null },
   // Staff-only entry point - owners get this inline inside Business

@@ -481,6 +481,16 @@ export interface PurchaseOrder {
   purchase_order_items: PurchaseOrderItem[];
 }
 
+export interface PurchaseOrderReceipt {
+  id: string;
+  purchase_order_id: string;
+  received_by: string | null;
+  is_partial: boolean;
+  items: { ingredientId: string; name: string; unit: string; receivedNow: number; stillMissing: number }[];
+  created_at: string;
+  profiles?: { name: string } | null;
+}
+
 export interface LowStockIngredient {
   ingredientId: string;
   name: string;
@@ -956,6 +966,14 @@ export interface Service {
   price: number;
   duration_minutes: number;
   is_available: boolean;
+  sort_order: number;
+}
+
+export interface ServiceOption {
+  id: string;
+  service_id: string;
+  label: string;
+  price_delta: number;
   sort_order: number;
 }
 

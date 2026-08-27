@@ -109,6 +109,8 @@ export const ar: TranslationDict = {
   howCanWeHelp: 'كيف يمكننا مساعدتك؟',
   typeYourMessage: 'اكتب رسالتك...',
   send: 'إرسال',
+  cancel: 'إلغاء',
+  addNoteOptional: 'أضف ملاحظة (اختياري)',
   messageSentConfirmation: 'تم إرسال الرسالة - سيرد الاستقبال قريباً.',
   howWasYourStay: 'كيف كانت إقامتك؟',
   whatWouldYouLikeToTellUs: 'ما الذي تود إخبارنا به؟',

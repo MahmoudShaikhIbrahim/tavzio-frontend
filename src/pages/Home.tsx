@@ -242,7 +242,7 @@ export default function Home() {
       <div className="relative overflow-hidden border-b border-ink-line">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_50%_0%,rgba(184,146,90,0.10),transparent)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_60%_at_82%_35%,rgba(184,146,90,0.08),transparent)]" />
-        <div className="relative mx-auto grid max-w-6xl gap-16 px-6 py-20 sm:py-28 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-12">
+        <div className="relative mx-auto grid max-w-6xl gap-16 px-6 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-12">
           <div className="text-center lg:text-left">
             <p className="inline-flex animate-hero-rise items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-brass">
               <span className="relative flex h-1.5 w-1.5">
@@ -250,10 +250,8 @@ export default function Home() {
               </span>
               For restaurants & hotels in the UAE
             </p>
-            <h1 className="mt-5 animate-hero-rise font-display text-[2.5rem] leading-[1.08] text-ivory [animation-delay:80ms] sm:text-5xl lg:text-7xl xl:text-8xl">
-              Every guest request.
-              <br />
-              Answered in <em className="not-italic text-brass">one tap.</em>
+            <h1 className="mt-5 animate-hero-rise font-display text-[2.25rem] leading-[1.1] text-ivory [animation-delay:80ms] sm:text-5xl lg:text-6xl">
+              Every request. <em className="not-italic text-brass">One tap.</em>
             </h1>
             <p className="mx-auto mt-6 max-w-md animate-hero-rise text-[15px] leading-relaxed text-ivory-dim [animation-delay:160ms] lg:mx-0">
               A single NFC card on the table or the nightstand becomes the menu, the bill, the loyalty program,
@@ -280,6 +278,9 @@ export default function Home() {
                 One tap becomes <span key={tapIndex} className="text-brass">{TAP_BECOMES[tapIndex]}</span>
               </p>
             </div>
+            <p className="mt-3 text-center text-xs text-ivory-dim lg:text-left">
+              Every stand is customized to match your brand — finish, engraving, and branding, all made to order.
+            </p>
           </div>
         </div>
       </div>

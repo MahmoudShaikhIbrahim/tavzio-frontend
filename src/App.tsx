@@ -56,7 +56,6 @@ import NotificationsPage from './pages/dashboard/NotificationsPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
 import RequestsPage from './pages/dashboard/RequestsPage';
 import KitchenPage from './pages/dashboard/KitchenPage';
-import ServicesManagementPage from './pages/dashboard/ServicesManagementPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import FeaturesPage from './pages/dashboard/FeaturesPage';
 import PaymentsPage from './pages/dashboard/PaymentsPage';
@@ -235,7 +234,6 @@ export default function App() {
             <Route path="orders" element={<OrdersPage />} />
             <Route path="requests" element={<RequestsPage />} />
             <Route path="kitchen" element={<KitchenPage />} />
-            <Route path="services" element={<ServicesManagementPage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="features" element={<FeaturesPage />} />
             <Route path="payments" element={<PaymentsPage />} />

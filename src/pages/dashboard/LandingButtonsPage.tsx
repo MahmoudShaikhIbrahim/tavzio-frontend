@@ -6,12 +6,14 @@ import {
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
   listGuestServices, createGuestService, updateGuestService, deleteGuestService,
   GUEST_SERVICE_ROUTING_TYPES, type HotelGuestServiceRow,
+  listServices, createService, updateService, deleteService,
+  listServiceOptions, createServiceOption, deleteServiceOption,
 } from '../../lib/authApi';
 import { uploadBusinessFile } from '../../lib/supabaseClient';
-import type { AdminBusiness, BusinessLinks, CustomButton } from '../../types';
+import type { AdminBusiness, BusinessLinks, CustomButton, Service, ServiceOption } from '../../types';
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
 import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
-import { SECTION_OPTIONS } from '../../lib/dashboardSections';
+import { sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, ActionButton } from '../../components/ui';
 import { useConfirm } from '../../components/ConfirmDialog';
 
@@ -20,7 +22,7 @@ export default function LandingButtonsPage() {
   const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
-  const [tab, setTab] = useState<'landing' | 'guest-portal'>('landing');
+  const [tab, setTab] = useState<'landing' | 'guest-portal' | 'services'>('landing');
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -37,14 +39,15 @@ export default function LandingButtonsPage() {
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-ink-line">
-        {(['landing', 'guest-portal'] as const).map((tabKey) => (
+        {(['landing', 'guest-portal', 'services'] as const).map((tabKey) => (
           <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {tabKey === 'landing' ? t('Landing Page') : t('Guest Portal Services')}
+            {tabKey === 'landing' ? t('Landing Page') : tabKey === 'guest-portal' ? t('Guest Portal Services') : t('Bookable Services')}
           </button>
         ))}
       </div>
       {tab === 'landing' && <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />}
       {tab === 'guest-portal' && <GuestPortalServicesSection businessId={businessId} />}
+      {tab === 'services' && <BookableServicesSection businessId={businessId} />}
     </div>
   );
 }
@@ -488,10 +491,10 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
           </select>
           {notificationDestination === 'general' && (
             <>
-              <p className="mt-2 text-sm text-ivory-dim">{t('Which section should see it? Leave blank to notify everyone with Requests access.')}</p>
+              <p className="mt-2 text-sm text-ivory-dim">{t('Still lands on the Requests page, not a dedicated screen - this only limits which staff see it there. Choose "Kitchen" to notify kitchen staff specifically, or leave it blank so everyone with Requests access sees it.')}</p>
               <select value={targetSection} onChange={(e) => setTargetSection(e.target.value)} className={`${inputClass} mt-1`}>
                 <option value="">{t('Everyone with Requests access')}</option>
-                {SECTION_OPTIONS.map((s) => <option key={s.key} value={s.key}>{t(s.label)}</option>)}
+                {sectionOptionsFor(isHotel).map((s) => <option key={s.key} value={s.key}>{t(s.label)}</option>)}
               </select>
             </>
           )}
@@ -609,6 +612,194 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// Real, relocated home for bookable services (birthday packages etc.) -
+// previously an orphaned page with no link pointing to it anywhere in
+// the UI. Extended with real option management ("With cake" / "Without
+// cake" style choices, each with its own real price), which is what
+// actually makes these selectable with real choices during Online
+// Booking, not just a flat name/price.
+function BookableServicesSection({ businessId }: { businessId: string }) {
+  const { t } = useT();
+  const confirm = useConfirm();
+  const [services, setServices] = useState<Service[]>([]);
+  const [showForm, setShowForm] = useState(false);
+
+  function reload() {
+    listServices(businessId).then(setServices);
+  }
+  useEffect(reload, [businessId]);
+
+  return (
+    <Section
+      title={t('Bookable Services')}
+      action={
+        <button type="button"
+          onClick={() => setShowForm((s) => !s)}
+          className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90"
+        >
+          {t('+ Add service')}
+        </button>
+      }
+    >
+      <p className="text-sm text-ivory-dim">
+        {t('Real, priced extras a guest can add to their table booking - a birthday package, an anniversary setup, and so on. Give each one real options (like "With cake" or "Without cake") if it needs a choice - these show up for guests during Online Booking, with their own date and time.')}
+      </p>
+      {showForm && <ServiceForm businessId={businessId} onDone={() => { setShowForm(false); reload(); }} />}
+      <div className="space-y-3">
+        {services.map((service) => (
+          <ServiceRow key={service.id} service={service} services={services} businessId={businessId} onServicesChange={setServices} onChange={reload} confirm={confirm} />
+        ))}
+        {services.length === 0 && <p className="text-base text-ivory-dim">{t('No services yet.')}</p>}
+      </div>
+    </Section>
+  );
+}
+
+function ServiceForm({ businessId, existing, onDone }: { businessId: string; existing?: Service; onDone: () => void }) {
+  const { t } = useT();
+  const [name, setName] = useState(existing?.name || '');
+  const [description, setDescription] = useState(existing?.description || '');
+  const [price, setPrice] = useState(existing?.price ?? 0);
+  const [durationMinutes, setDurationMinutes] = useState(existing?.duration_minutes ?? 30);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    const payload = { name, description, price, durationMinutes };
+    if (existing) {
+      await updateService(businessId, existing.id, payload);
+    } else {
+      await createService(businessId, payload);
+    }
+    setSaving(false);
+    onDone();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mb-3 space-y-3 rounded-lg border border-ink-line p-3">
+      <div className="grid grid-cols-3 gap-3">
+        <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Price')}><input type="number" onFocus={(e) => e.target.select()} step="0.01" min={0} value={price} onChange={(e) => setPrice(Number(e.target.value))} className={inputClass} /></Field>
+        <Field label={t('Duration (min)')}><input type="number" onFocus={(e) => e.target.select()} min={5} step={5} value={durationMinutes} onChange={(e) => setDurationMinutes(Number(e.target.value))} className={inputClass} /></Field>
+      </div>
+      <Field label={t('Description')}>
+        <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
+      </Field>
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        {saving ? t('Saving...') : existing ? t('Save changes') : t('Add service')}
+      </button>
+    </form>
+  );
+}
+
+function ServiceRow({ service, services, businessId, onServicesChange, onChange, confirm }: {
+  service: Service; services: Service[]; businessId: string; onServicesChange: (s: Service[]) => void; onChange: () => void;
+  confirm: ReturnType<typeof useConfirm>;
+}) {
+  const { t } = useT();
+  const [editing, setEditing] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+
+  if (editing) {
+    return <ServiceForm businessId={businessId} existing={service} onDone={() => { setEditing(false); onChange(); }} />;
+  }
+
+  return (
+    <div className="rounded-lg border border-ink-line px-3.5 py-2.5">
+      <div className="flex flex-col gap-3 text-base sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <span className="text-ivory">{service.name}</span>
+          <span className="ml-2 text-ivory-dim">{service.price.toFixed(2)} · {service.duration_minutes} min</span>
+          {!service.is_available && <span className="ml-2 text-base text-danger">{t('unavailable')}</span>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <ActionButton onClick={() => setShowOptions((s) => !s)}>{showOptions ? t('Hide options') : t('Options')}</ActionButton>
+          <ActionButton
+            onClick={() => {
+              onServicesChange(services.map((s) => (s.id === service.id ? { ...s, is_available: !s.is_available } : s)));
+              updateService(businessId, service.id, { isAvailable: !service.is_available }).catch(onChange);
+            }}
+          >
+            {service.is_available ? t('Mark unavailable') : t('Mark available')}
+          </ActionButton>
+          <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
+          <ActionButton
+            danger
+            onClick={async () => {
+              if (!(await confirm({ title: t('Delete this service?'), message: `${t('Delete')} "${service.name}"?`, confirmLabel: t('Delete'), danger: true }))) return;
+              onServicesChange(services.filter((s) => s.id !== service.id));
+              deleteService(businessId, service.id).catch(onChange);
+            }}
+          >
+            {t('Remove')}
+          </ActionButton>
+        </div>
+      </div>
+      {showOptions && <ServiceOptionsManager businessId={businessId} serviceId={service.id} />}
+    </div>
+  );
+}
+
+// Real option management - "With cake" / "Without cake" style choices,
+// each with its own real price adjustment, not just decorative labels.
+function ServiceOptionsManager({ businessId, serviceId }: { businessId: string; serviceId: string }) {
+  const { t } = useT();
+  const confirm = useConfirm();
+  const [options, setOptions] = useState<ServiceOption[]>([]);
+  const [label, setLabel] = useState('');
+  const [priceDelta, setPriceDelta] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  function reload() {
+    listServiceOptions(businessId, serviceId).then(setOptions);
+  }
+  useEffect(reload, [businessId, serviceId]);
+
+  async function handleAdd(e: FormEvent) {
+    e.preventDefault();
+    if (!label.trim()) return;
+    setSaving(true);
+    await createServiceOption(businessId, serviceId, { label: label.trim(), priceDelta });
+    setLabel('');
+    setPriceDelta(0);
+    setSaving(false);
+    reload();
+  }
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-ink-line pt-3">
+      <p className="text-sm text-ivory-dim">{t('Options a guest can choose from - e.g. "With cake" (+50) or "Without cake".')}</p>
+      {options.map((opt) => (
+        <div key={opt.id} className="flex items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
+          <span className="text-ivory">{opt.label}{opt.price_delta !== 0 && ` (${opt.price_delta > 0 ? '+' : ''}AED ${opt.price_delta.toFixed(2)})`}</span>
+          <button type="button"
+            onClick={async () => {
+              if (!(await confirm({ title: t('Remove this option?'), message: `${t('Remove')} "${opt.label}"?`, confirmLabel: t('Remove'), danger: true }))) return;
+              setOptions((prev) => prev.filter((o) => o.id !== opt.id));
+              deleteServiceOption(businessId, serviceId, opt.id).catch(reload);
+            }}
+            className="text-xs text-danger hover:underline"
+          >
+            {t('Remove')}
+          </button>
+        </div>
+      ))}
+      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2">
+        <Field label={t('Option label')}>
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('e.g. With cake')} className={inputClass} />
+        </Field>
+        <Field label={t('Price adjustment')}>
+          <input type="number" onFocus={(e) => e.target.select()} step="0.01" value={priceDelta} onChange={(e) => setPriceDelta(Number(e.target.value))} className={`${inputClass} w-32`} />
+        </Field>
+        <button type="submit" disabled={saving || !label.trim()} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+          {t('+ Add option')}
+        </button>
+      </form>
     </div>
   );
 }

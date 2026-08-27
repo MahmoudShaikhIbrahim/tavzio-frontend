@@ -109,6 +109,8 @@ export const es: TranslationDict = {
   howCanWeHelp: '¿En qué podemos ayudarte?',
   typeYourMessage: 'Escribe tu mensaje...',
   send: 'Enviar',
+  cancel: 'Cancelar',
+  addNoteOptional: 'Añadir una nota (opcional)',
   messageSentConfirmation: 'Mensaje enviado - recepción responderá en breve.',
   howWasYourStay: '¿Qué tal tu estancia?',
   whatWouldYouLikeToTellUs: '¿Qué te gustaría contarnos?',

@@ -139,6 +139,8 @@ export interface TranslationDict {
   howCanWeHelp: string;
   typeYourMessage: string;
   send: string;
+  cancel: string;
+  addNoteOptional: string;
   messageSentConfirmation: string;
   howWasYourStay: string;
   whatWouldYouLikeToTellUs: string;

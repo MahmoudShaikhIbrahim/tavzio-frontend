@@ -194,6 +194,21 @@ export function subscribeToDemoOrders(sessionId: string, onChange: () => void) {
   };
 }
 
+// Same real pattern, for the actual notification flow (Call Waiter /
+// Request the Bill) the demo phone now sends.
+export function subscribeToDemoRequests(sessionId: string, onChange: () => void) {
+  const filter = `session_id=eq.${sessionId}`;
+  const channel = client.channel(`demo-requests-${sessionId}-${Math.random().toString(36).slice(2)}`);
+  channel
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'demo_requests', filter }, () => onChange())
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'demo_requests', filter }, () => onChange())
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 // Uploads a logo or cover image to the `business-assets` bucket, under a
 // fixed path per business+kind (so re-uploading overwrites cleanly rather
 // than accumulating orphaned files), and returns its public URL.

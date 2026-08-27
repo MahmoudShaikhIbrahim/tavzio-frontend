@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, UtensilsCrossed } from 'lucide-react';
 import {
   getBookingConfig, requestBookingOtp, verifyBookingOtp, submitPublicBooking, cancelPublicBooking,
   listMyBookings, reschedulePublicBooking, type MyBooking,
@@ -43,48 +43,15 @@ interface CartLine { menuItemId: string; name: string; price: number; quantity: 
 function DatePickerField({ value, onChange, placeholder, type }: {
   value: string; onChange: (v: string) => void; placeholder: string; type: 'date' | 'time';
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function openPicker() {
-    const el = inputRef.current;
-    if (!el) return;
-    if ('showPicker' in el && typeof el.showPicker === 'function') {
-      try { el.showPicker(); return; } catch { /* fall through to focus() below */ }
-    }
-    el.focus();
-  }
-
-  function formatDisplay() {
-    if (!value) return placeholder;
-    if (type === 'date') {
-      const d = new Date(`${value}T00:00:00`);
-      return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-    const [h, m] = value.split(':').map(Number);
-    const d = new Date();
-    d.setHours(h, m);
-    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-  }
-
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={openPicker}
-        className={`w-full truncate rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-start text-sm ${value ? 'text-ivory' : 'text-ivory-dim/70'}`}
-      >
-        {formatDisplay()}
-      </button>
-      <input
-        ref={inputRef}
-        type={type}
-        required
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="absolute inset-0 h-full w-full opacity-0"
-        tabIndex={-1}
-      />
-    </div>
+    <input
+      type={type}
+      required
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={placeholder}
+      className="date-time-field w-full truncate rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-start text-sm text-ivory"
+    />
   );
 }
 
@@ -115,6 +82,10 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [note, setNote] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [foodTiming, setFoodTiming] = useState(0);
+  const [selectedServiceId, setSelectedServiceId] = useState('');
+  const [selectedServiceOptionId, setSelectedServiceOptionId] = useState('');
+  const [serviceDate, setServiceDate] = useState('');
+  const [serviceTime, setServiceTime] = useState('');
   const [otp, setOtp] = useState('');
   const [, setOtpSent] = useState(false);
   const [error, setError] = useState('');
@@ -193,6 +164,10 @@ function BookingPageContent({ slug }: { slug: string }) {
   async function handleVerifyAndSubmit(e: FormEvent) {
     e.preventDefault();
     if (!otp) return;
+    if (selectedServiceId && (!serviceDate || !serviceTime)) {
+      setError('Please choose a date and time for the service you selected');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
@@ -203,6 +178,9 @@ function BookingPageContent({ slug }: { slug: string }) {
         phone, guestName, partySize, requestedAt, note,
         items: config?.allowPreOrder && cart.length > 0 ? cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })) : undefined,
         foodReadyOffsetMinutes: config?.allowPreOrder && cart.length > 0 ? foodTiming : undefined,
+        serviceId: selectedServiceId || undefined,
+        serviceOptionId: selectedServiceOptionId || undefined,
+        serviceRequestedAt: selectedServiceId ? new Date(`${serviceDate}T${serviceTime}`).toISOString() : undefined,
       });
 
       setBookingId(result.booking.id);
@@ -530,9 +508,18 @@ function BookingPageContent({ slug }: { slug: string }) {
                   const line = cart.find((l) => l.menuItemId === item.id);
                   return (
                     <div key={item.id} className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-display text-sm text-ivory">{item.name}</p>
-                        <p className="text-xs text-ivory-dim">AED {item.price.toFixed(2)}</p>
+                      <div className="flex min-w-0 items-center gap-3">
+                        {item.image_url ? (
+                          <img src={item.image_url} alt={item.name} className="h-12 w-12 shrink-0 rounded-lg object-cover" loading="lazy" />
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-ink text-ivory-dim/30">
+                            <UtensilsCrossed size={18} strokeWidth={1.5} />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate font-display text-sm text-ivory">{item.name}</p>
+                          <p className="text-xs text-ivory-dim">AED {item.price.toFixed(2)}</p>
+                        </div>
                       </div>
                       {line ? (
                         <div className="flex shrink-0 items-center gap-2">
@@ -564,6 +551,63 @@ function BookingPageContent({ slug }: { slug: string }) {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {config && config.services.length > 0 && (
+            <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
+              <p className="font-display text-lg text-ivory">Add a service</p>
+              <p className="mt-0.5 text-xs text-ivory-dim">Birthday packages and other extras for your visit - optional.</p>
+              <select
+                value={selectedServiceId}
+                onChange={(e) => { setSelectedServiceId(e.target.value); setSelectedServiceOptionId(''); }}
+                className="mt-3 w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-sm text-ivory"
+              >
+                <option value="">None</option>
+                {config.services.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} — AED {s.price.toFixed(2)}</option>
+                ))}
+              </select>
+
+              {selectedServiceId && (() => {
+                const service = config.services.find((s) => s.id === selectedServiceId);
+                if (!service) return null;
+                return (
+                  <>
+                    {service.description && <p className="mt-2 text-xs text-ivory-dim">{service.description}</p>}
+                    {service.service_options.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        {service.service_options.map((opt) => (
+                          <label key={opt.id} className="flex items-center gap-2 text-sm text-ivory">
+                            <input
+                              type="radio" name="serviceOption" className="accent-brass"
+                              checked={selectedServiceOptionId === opt.id}
+                              onChange={() => setSelectedServiceOptionId(opt.id)}
+                            />
+                            {opt.label}{opt.price_delta !== 0 && ` (${opt.price_delta > 0 ? '+' : ''}AED ${opt.price_delta.toFixed(2)})`}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="mb-1 text-xs text-ivory-dim">When for the service?</p>
+                        <input
+                          type="date" required value={serviceDate} onChange={(e) => setServiceDate(e.target.value)}
+                          className="date-time-field w-full truncate rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-start text-sm text-ivory"
+                        />
+                      </div>
+                      <div>
+                        <p className="mb-1 text-xs text-ivory-dim invisible">Time</p>
+                        <input
+                          type="time" required value={serviceTime} onChange={(e) => setServiceTime(e.target.value)}
+                          className="date-time-field w-full truncate rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-start text-sm text-ivory"
+                        />
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 

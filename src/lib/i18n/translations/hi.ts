@@ -109,6 +109,8 @@ export const hi: TranslationDict = {
   howCanWeHelp: 'हम आपकी कैसे मदद कर सकते हैं?',
   typeYourMessage: 'अपना संदेश टाइप करें...',
   send: 'भेजें',
+  cancel: 'रद्द करें',
+  addNoteOptional: 'एक नोट जोड़ें (वैकल्पिक)',
   messageSentConfirmation: 'संदेश भेजा गया - रिसेप्शन जल्द ही जवाब देगा।',
   howWasYourStay: 'आपका प्रवास कैसा रहा?',
   whatWouldYouLikeToTellUs: 'आप हमें क्या बताना चाहेंगे?',
