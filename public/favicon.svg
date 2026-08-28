@@ -22,7 +22,7 @@
   <rect width="64" height="64" rx="14" fill="url(#cardBg)"/>
   <rect width="64" height="64" rx="14" fill="url(#cardGlow)"/>
   <svg x="13" y="13" width="38" height="38" viewBox="-89.50 -37.50 763.25 773.75">
-    <g fill="#c9a668" transform="skewX(-17.715)">
+    <g fill="#FFFFFF" transform="skewX(-17.715)">
       <path d="M 114.0,0 L 637.5,0 L 634.0,164.0 L 398.4,164.0 L 398.4,700.0 L 237.4,700.0 L 237.4,164.0 L 0,164.0 L 0,114.0 A 114.0,114.0 0 0 1 114.0,0 Z"/>
     </g>
   </svg>
