@@ -57,27 +57,12 @@ export default {
           '60%': { opacity: '1', transform: 'scale(1.08)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
-        // The iOS "jiggle mode" wobble - deliberately tiny (0.6deg,
-        // toned down further after feedback that it read as too much
-        // "vibration") and every caller alternates each item's
-        // animation-delay by a few ms so neighbors visibly wobble out of
-        // phase, never in unison. That's what actually reads as "these
-        // are now individually grabbable" rather than as one decorative
-        // shake - and it's purely cosmetic now: hit-testing during a
-        // drag is measured once at drag start and never re-reads a live
-        // (wobbling) position, so this animation can no longer affect
-        // reorder accuracy no matter how large or small it is.
-        jiggle: {
-          '0%, 100%': { transform: 'rotate(-0.6deg)' },
-          '50%': { transform: 'rotate(0.6deg)' },
-        },
       },
       animation: {
         'tap-ripple': 'tap-ripple 1.1s cubic-bezier(0.22, 1, 0.36, 1) 1',
         'hero-rise': 'hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both',
         'live-pulse': 'live-pulse 2s ease-in-out infinite',
         'confirm-pop': 'confirm-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
-        jiggle: 'jiggle 0.22s ease-in-out infinite',
       },
       // Same curve as tap-ripple above, exposed as a reusable class
       // (ease-brass) so every other piece of motion in the app - scroll

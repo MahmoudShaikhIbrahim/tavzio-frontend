@@ -6,7 +6,6 @@ import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
-import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function StaffPage() {
@@ -50,7 +49,8 @@ export default function StaffPage() {
   }
 
   useEffect(reload, [businessId]);
-  usePollingFallback(reload, !!businessId);
+
+  // Live-updates the Team list on any staff/owner profile change for this
   // business - a newly invited account, a role/section change made from
   // another tab, a deactivate/reactivate - without waiting for a manual
   // page reload. Full refetch on each event rather than merging the

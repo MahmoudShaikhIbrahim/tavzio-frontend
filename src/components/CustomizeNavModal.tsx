@@ -1,5 +1,3 @@
-import { useDragReorder } from '../hooks/useDragReorder';
-
 interface NavCustomizeItem {
   path: string;
   label: string;
@@ -20,58 +18,55 @@ interface NavCustomizeItem {
 // first-to-last on its own; a wrapping grid has no natural reading
 // direction, which was the real reason "1" and "last" ever felt
 // unclear in the first place, not a labeling problem.
-//
-// Reordering itself: real long-press-then-drag (useDragReorder), the
-// same iPhone-home-screen-style gesture used for POS items and Menu
-// Management categories - press and hold a row until the list jiggles,
-// drag it to its new spot, release to save. Replaces the old up/down
-// buttons entirely.
 export default function CustomizeNavModal({
-  mainTabs, settingsItems, hiddenTabs, onReorder, onHide, onRestore, onDone, t,
+  mainTabs, settingsItems, hiddenTabs, onMove, onHide, onRestore, onDone, t,
 }: {
   mainTabs: NavCustomizeItem[];
   settingsItems: NavCustomizeItem[];
   hiddenTabs: NavCustomizeItem[];
-  onReorder: (scope: NavCustomizeItem[], newOrder: NavCustomizeItem[]) => void;
+  onMove: (scope: NavCustomizeItem[], path: string, direction: -1 | 1) => void;
   onHide: (path: string) => void;
   onRestore: (path: string) => void;
   onDone: () => void;
   t: (s: string) => string;
 }) {
   function List({ title, items }: { title: string; items: NavCustomizeItem[] }) {
-    const drag = useDragReorder<NavCustomizeItem>({
-      items,
-      getId: (i) => i.path,
-      onCommit: (newOrder) => onReorder(items, newOrder),
-    });
     return (
       <div>
         <p className="mb-2 text-sm font-medium text-ivory">{t(title)}</p>
         <div className="space-y-2">
-          {drag.displayItems.map((item, i) => {
-            const isDragging = drag.draggingId === item.path;
-            const isJiggling = drag.arranging && !isDragging;
-            const handlers = drag.itemHandlers(item.path);
-            return (
-              <div key={item.path}
-                ref={(el) => drag.registerItemRef(item.path, el)}
-                {...handlers}
-                className={`flex items-center gap-3 rounded-lg border border-ink-line bg-ink px-3 py-2.5 touch-none select-none sm:touch-auto ${
-                  isJiggling ? 'motion-safe:animate-jiggle' : ''
-                } ${isDragging ? 'z-10 border-brass/50 shadow-lg' : ''}`}
-                style={{ ...handlers.style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-sm text-brass">{i + 1}</span>
-                <span className="flex-1 text-base text-ivory">{t(item.label)}</span>
+          {items.map((item, i) => (
+            <div key={item.path} className="flex items-center gap-3 rounded-lg border border-ink-line bg-ink px-3 py-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-sm text-brass">{i + 1}</span>
+              <span className="flex-1 text-base text-ivory">{t(item.label)}</span>
+              <div className="flex shrink-0 items-center gap-1">
+                <button type="button"
+                  onClick={() => onMove(items, item.path, -1)}
+                  disabled={i === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20"
+                  aria-label={t('Move up')}
+                  title={t('Move up')}
+                >
+                  ↑
+                </button>
+                <button type="button"
+                  onClick={() => onMove(items, item.path, 1)}
+                  disabled={i === items.length - 1}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-lg text-ivory-dim hover:bg-ink-soft hover:text-ivory disabled:opacity-20"
+                  aria-label={t('Move down')}
+                  title={t('Move down')}
+                >
+                  ↓
+                </button>
                 <button type="button"
                   onClick={() => onHide(item.path)}
-                  className="ms-1 shrink-0 rounded-lg border border-ink-line px-2.5 py-1.5 text-xs text-ivory-dim hover:border-danger hover:text-danger"
+                  className="ms-1 rounded-lg border border-ink-line px-2.5 py-1.5 text-xs text-ivory-dim hover:border-danger hover:text-danger"
                 >
                   {t('Hide')}
                 </button>
               </div>
-            );
-          })}
+            </div>
+          ))}
           {items.length === 0 && <p className="text-sm text-ivory-dim">{t('Nothing here.')}</p>}
         </div>
       </div>
@@ -96,7 +91,7 @@ export default function CustomizeNavModal({
               this one line removes any doubt about which end is which. */}
           <p className="mt-3 flex items-center gap-2 text-sm text-ivory-dim">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 text-xs text-brass">1</span>
-            {t('shows first in your navigation bar. Press and hold, then drag to reorder - changes save instantly.')}
+            {t('shows first in your navigation bar. Use ↑ / ↓ to reorder - changes save instantly.')}
           </p>
         </div>
 

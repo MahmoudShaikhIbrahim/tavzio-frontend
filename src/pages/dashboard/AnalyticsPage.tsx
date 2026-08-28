@@ -9,7 +9,6 @@ import {
   type TopItemsReport, type RevenueTrend, type PeakHours, type KitchenPerformance, type HotelPerformance,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
-import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { useSession } from '../../hooks/useSession';
 import type { AnalyticsSummary, CardBreakdownItem } from '../../types';
 import { Section } from '../../components/ui';
@@ -53,7 +52,8 @@ export default function AnalyticsPage() {
   }
 
   useEffect(reload, [businessId]);
-  usePollingFallback(reload, !!businessId);
+
+  // Live updates: a new nfc_tap event bumps the on-screen counter and feed
   // immediately, without waiting for a manual refresh. This is what "leave
   // the page open, never refresh" actually looks like under the hood.
   // (The Supabase client is already authorized for this user by useSession

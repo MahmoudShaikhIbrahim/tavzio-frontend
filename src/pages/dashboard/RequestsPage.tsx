@@ -8,7 +8,6 @@ import {
 import type { LoyaltyClaim } from '../../types';
 import { hexToRgba } from '../../lib/color';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
-import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import PaymentModal from '../../components/PaymentModal';
 import { getBusiness } from '../../lib/authApi';
@@ -75,11 +74,6 @@ export default function RequestsPage() {
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
   useEffect(reloadCashPending, [businessId]);
-  // Explicit, system-wide request: an independent 5-second poll of all
-  // three of this page's own reload functions, completely separate from
-  // the realtime subscriptions below - a safety net so a missed/dropped
-  // Realtime event is never more than 5s stale, with no manual refresh.
-  usePollingFallback(() => { reloadRequests(); reloadClaims(); reloadCashPending(); }, !!businessId);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);

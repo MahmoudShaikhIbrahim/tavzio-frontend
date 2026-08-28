@@ -5,7 +5,6 @@ import { useT } from '../../hooks/useT';
 import { listBookings, createBooking, updateBookingStatus, assignBookingTable, confirmArrivalByStaff, listTables, getBusiness, updateBusinessFeatures, updateBusiness } from '../../lib/authApi';
 import ExportButtons from '../../components/ExportButtons';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
-import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
 import WeeklyHoursEditor, { type WeeklyHours } from '../../components/WeeklyHoursEditor';
@@ -51,11 +50,6 @@ export default function BookingsPage() {
   }
 
   useEffect(reload, [businessId]);
-  // Explicit, system-wide request: an independent 5-second poll of this
-  // page's own reload(), completely separate from the realtime
-  // subscription below - a safety net so a missed/dropped Realtime
-  // event is never more than 5s stale, with no manual refresh needed.
-  usePollingFallback(reload, !!businessId);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => { setNotificationSettings(b.notification_settings); setBusiness(b); });
   }, [businessId]);

@@ -452,14 +452,18 @@ function DashboardLayoutInner() {
 
   // Two independent reorder scopes, not one combined list - the top tab
   // bar and the Settings dropdown grid are two different UI regions, so
-  // dragging a tab out of the bar and into the dropdown (or vice versa)
-  // would be a confusing recategorization, not a reorder. Both still
-  // persist into the same flat nav_layout.order array; only the drag
-  // gesture itself stays scoped to its own list.
-  function reorderScope(scope: { path: string }[], newOrder: { path: string }[]) {
+  // "move right" swapping a tab out of the bar and into the dropdown (or
+  // vice versa) would be a confusing recategorization, not a reorder.
+  // Both still persist into the same flat nav_layout.order array; only
+  // the swap itself stays scoped.
+  function moveItem(scope: { path: string }[], path: string, direction: -1 | 1) {
+    const scopePaths = scope.map((i) => i.path);
+    const idx = scopePaths.indexOf(path);
+    const swapIdx = idx + direction;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= scopePaths.length) return;
+    [scopePaths[idx], scopePaths[swapIdx]] = [scopePaths[swapIdx], scopePaths[idx]];
     const otherScope = scope === visibleTabs ? visibleSettingsItems : visibleTabs;
-    const newPaths = newOrder.map((i) => i.path);
-    const fullOrder = scope === visibleTabs ? [...newPaths, ...otherScope.map((i) => i.path)] : [...otherScope.map((i) => i.path), ...newPaths];
+    const fullOrder = scope === visibleTabs ? [...scopePaths, ...otherScope.map((i) => i.path)] : [...otherScope.map((i) => i.path), ...scopePaths];
     persistLayout({ hidden: navLayout?.hidden ?? [], order: fullOrder });
   }
 
@@ -627,7 +631,7 @@ function DashboardLayoutInner() {
           mainTabs={visibleTabs}
           settingsItems={visibleSettingsItems}
           hiddenTabs={hiddenTabs}
-          onReorder={reorderScope}
+          onMove={moveItem}
           onHide={hideItem}
           onRestore={restoreItem}
           onDone={() => setCustomizing(false)}
@@ -647,7 +651,7 @@ function DashboardLayoutInner() {
         </div>
       )}
       <main className={focusMode ? 'px-4 py-4 sm:px-6' : 'mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14'}>
-        <Outlet context={{ refetchFeatures, focusMode }} />
+        <Outlet context={{ refetchFeatures }} />
       </main>
     </div>
   );

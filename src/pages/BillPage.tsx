@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, cancelBillPaySession, markItemsCashPending } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { subscribeToBillItems } from '../lib/supabaseClient';
-import { usePollingFallback } from '../hooks/usePollingFallback';
 import { getSavedPhone } from '../lib/loyaltyStorage';
 import type { BillItem, Receipt, Business } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
@@ -126,19 +125,14 @@ function BillPageContent({ slug }: { slug: string }) {
   }
 
   useEffect(loadBill, [slug, tapEventId]);
-  // Explicit, system-wide request, and a real fix for a false claim this
-  // comment used to make: there was no actual safety-net timer here at
-  // all before now, just this comment describing one that didn't exist.
-  // This is a genuine 5-second poll of loadBill(), independent of the
-  // realtime subscription below.
-  usePollingFallback(loadBill, !!tapEventId);
 
   // Live updates: any diner's screen reflects payments the moment they
   // happen, elsewhere at the same table - no manual refresh, and no risk
   // of two people both trying to pay for something someone else just
-  // settled. The 5-second poll above is the actual fallback for a
+  // settled. Falls back to nothing if the tap isn't live yet; a plain
+  // 20s safety-net refresh underneath covers the rare edge case of a
   // brand-new order appearing after the initial load (a new order_id the
-  // realtime filter wasn't subscribed to yet), or for any missed event.
+  // realtime filter wasn't subscribed to yet).
   useEffect(() => {
     if (!tapEventId || items.length === 0) return;
     const orderIds = Array.from(new Set(items.map((i) => i.order_id)));
@@ -342,38 +336,13 @@ function BillPageContent({ slug }: { slug: string }) {
             <div className="flex justify-between text-sm text-ivory"><span>Total</span><span>{receipt.total.toFixed(2)} AED</span></div>
           </div>
 
-          {/* Real fix for the explicit request: nothing here let the
-              guest keep a copy of the receipt or leave a review right
-              after paying - the exact moment they're most likely to.
-              Download uses the browser's native print-to-PDF (no extra
-              PDF library needed for a one-page receipt); the review
-              button only renders if the business has actually set a
-              Google review link on their landing page (same `links`
-              config the landing page itself reads from), never a
-              guessed/default URL. */}
-          <div className="mt-4 grid grid-cols-2 gap-2 print:hidden">
-            <button type="button" onClick={() => window.print()} className="rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10">
-              Download receipt
-            </button>
-            {business?.links?.googleReviews?.enabled && business.links.googleReviews.value && (
-              <a
-                href={business.links.googleReviews.value}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10"
-              >
-                ★ Leave a review
-              </a>
-            )}
-          </div>
-
           <button type="button"
             onClick={() => { setPaid(false); setReceipt(null); setSelected(new Set()); setTipPercent(0); loadBill(); }}
-            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10 print:hidden"
+            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10"
           >
             View live bill
           </button>
-          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden">
+          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft">
             {t('backTo', { slug })}
           </button>
         </div>

@@ -63,7 +63,7 @@ const BASE = import.meta.env.VITE_API_BASE_URL || '';
 // call in the app - a hung request here can't leave someone stuck forever.
 let refreshInFlight: Promise<string | null> | null = null;
 
-export async function refreshAccessToken(): Promise<string | 'invalid' | null> {
+async function refreshAccessToken(): Promise<string | 'invalid' | null> {
   if (refreshInFlight) return refreshInFlight;
 
   const refreshToken = getRefreshToken();

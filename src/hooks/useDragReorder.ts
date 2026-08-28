@@ -16,20 +16,36 @@ import { useCallback, useRef, useState } from 'react';
 // it doesn't reason about rows/columns at all, just "which item's
 // on-screen center is the pointer closest to right now."
 //
-// The hit-testing is measured ONCE, at the instant the drag begins
-// (dragStartCenters), and never re-measured against the live DOM again
-// for the rest of that drag. Two real bugs came from the first version
-// not doing this: (1) the jiggle wobble on every OTHER item constantly,
-// if only slightly, shifts each one's live getBoundingClientRect() every
-// animation frame, so hit-testing against live rects was comparing
-// against a moving target and produced direction-dependent drift over a
-// multi-position drag; (2) since the new order was always derived by
-// incrementally splicing the PREVIOUS live order, any one miscalculated
-// swap permanently corrupted every swap after it for the rest of that
-// drag. Now every move event derives the new order fresh from the
-// original start order plus "how far has the pointer moved from where
-// this item started", so there's nothing to drift and nothing for the
-// wobble to interfere with.
+// Two real, separate bugs came out of the first version, both fixed
+// here:
+//
+// 1) Hit-testing is measured ONCE, at the instant the drag begins
+// (dragStartCenters), and never re-measured against the live DOM again.
+// The jiggle wobble on every OTHER item constantly, if only slightly,
+// shifts each one's live getBoundingClientRect() every animation frame -
+// hit-testing against those live rects was comparing against a moving
+// target and drifted, worse in one direction than the other over a
+// multi-position drag. Every move event now derives the new order fresh
+// from the frozen original order + start positions, so there's nothing
+// to drift and nothing for the wobble to interfere with.
+//
+// 2) The dragged item's on-screen position no longer goes through React
+// state/re-render at all. The first version called setDragOffset() on
+// every single pointermove - for POS specifically, that's a full
+// re-render of a genuinely heavy component (cart, order panel, floor
+// tables, hotel folio lookups) tens of times a second, which is exactly
+// the kind of load that makes a browser start coalescing/dropping
+// pointermove events - "unsettling", "1 out of 100" is what that looks
+// like from the outside. The dragged item's visual position is now a
+// direct DOM mutation (this hook holds real refs to every item) on the
+// SAME synchronous event, completely decoupled from React's render
+// cycle; a React state update (setLiveOrder) only fires when the
+// pointer actually crosses into a new slot, not on every pixel of
+// movement. All internal decision logic (is a drag in progress, which
+// item, what the latest order is) reads from refs, not from state
+// variables closed over by a specific render, so it can never go stale
+// no matter how React's async scheduling times out relative to a fast
+// native pointer event.
 //
 // T only needs a stable id via getId - the hook never looks at
 // anything else on the item, so the same hook drives menu items, nav
@@ -48,17 +64,17 @@ export function useDragReorder<T>({
   // one final result to persist.
   onCommit: (newOrder: T[]) => void;
 }) {
+  // State exists ONLY for what a render actually needs to show (jiggle
+  // class, which item is currently lifted, which order to lay out). It
+  // is never read inside an event-handler's decision logic - refs are,
+  // exclusively, precisely so a stale closure from an older render can
+  // never cause a wrong branch.
   const [arranging, setArranging] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [liveOrder, setLiveOrder] = useState<T[]>(items);
-  // How far the pointer has moved from where the drag started - applied
-  // as a live transform on the dragged item so it actually visibly
-  // follows the finger/cursor, the way a "picked up" tile should. This
-  // was the real, biggest miss in the first version: the dragged tile
-  // never moved from its original cell at all, it just sat there
-  // scaled-up while the array silently reordered underneath it - which
-  // is exactly why dragging looked like it "wasn't working."
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  const arrangingRef = useRef(false);
+  const draggingIdRef = useRef<string | null>(null);
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const longPressTimer = useRef<number | null>(null);
   const pressOrigin = useRef<{ x: number; y: number } | null>(null);
@@ -66,13 +82,13 @@ export function useDragReorder<T>({
   const dragStartOrder = useRef<T[]>(items);
   const dragStartCenters = useRef<{ id: string; x: number; y: number }[]>([]);
   const dragStartPointer = useRef({ x: 0, y: 0 });
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
   // A long-press-then-release-without-moving is still a valid pointerdown
   // + pointerup sequence in the same spot, which browsers then follow
   // with a synthetic click - exactly the moment arranging just turned
   // back off, so that click would otherwise silently re-trigger whatever
   // the item's normal tap action is (e.g. adding it to a cart) right as
-  // the person let go. A ref, not state, because it must be correct at
-  // the instant the click fires with zero re-render race.
+  // the person let go.
   const suppressClickId = useRef<string | null>(null);
 
   const registerItemRef = useCallback((id: string, el: HTMLElement | null) => {
@@ -85,6 +101,16 @@ export function useDragReorder<T>({
       window.clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+  }
+
+  // Applies the live drag offset straight to the DOM node - called on
+  // every pointermove, deliberately bypassing React entirely. This is
+  // what makes the dragged tile actually track the pointer/finger
+  // smoothly regardless of how expensive the surrounding component is
+  // to re-render.
+  function paintDragOffset(id: string) {
+    const el = itemRefs.current.get(id);
+    if (el) el.style.transform = `translate(${dragOffsetRef.current.x}px, ${dragOffsetRef.current.y}px) scale(1.06)`;
   }
 
   function handlePointerDown(id: string, e: React.PointerEvent) {
@@ -102,8 +128,10 @@ export function useDragReorder<T>({
         return { id: getId(it), x: (r?.left ?? 0) + (r?.width ?? 0) / 2, y: (r?.top ?? 0) + (r?.height ?? 0) / 2 };
       });
       dragStartPointer.current = { x: pressOrigin.current!.x, y: pressOrigin.current!.y };
+      dragOffsetRef.current = { x: 0, y: 0 };
+      arrangingRef.current = true;
+      draggingIdRef.current = id;
       setLiveOrder(items);
-      setDragOffset({ x: 0, y: 0 });
       setArranging(true);
       setDraggingId(id);
       try { target.setPointerCapture(pointerId); } catch { /* already released, e.g. a very fast tap */ }
@@ -111,7 +139,7 @@ export function useDragReorder<T>({
   }
 
   function handlePointerMove(id: string, e: React.PointerEvent) {
-    if (!arranging || draggingId !== id) {
+    if (!arrangingRef.current || draggingIdRef.current !== id) {
       // Not armed yet - a real drag/scroll gesture before the long
       // press fires should cancel it, same as iOS not entering jiggle
       // mode if you were actually just scrolling.
@@ -123,14 +151,16 @@ export function useDragReorder<T>({
       return;
     }
 
-    const dx = e.clientX - dragStartPointer.current.x;
-    const dy = e.clientY - dragStartPointer.current.y;
-    setDragOffset({ x: dx, y: dy });
+    dragOffsetRef.current = {
+      x: e.clientX - dragStartPointer.current.x,
+      y: e.clientY - dragStartPointer.current.y,
+    };
+    paintDragOffset(id);
 
     const myStart = dragStartCenters.current.find((c) => c.id === id);
     if (!myStart) return;
-    const currentX = myStart.x + dx;
-    const currentY = myStart.y + dy;
+    const currentX = myStart.x + dragOffsetRef.current.x;
+    const currentY = myStart.y + dragOffsetRef.current.y;
 
     // Nearest slot to the dragged item's CURRENT (start + delta)
     // position, measured only against every item's FROZEN start
@@ -141,6 +171,15 @@ export function useDragReorder<T>({
       const d = Math.hypot(currentX - c.x, currentY - c.y);
       if (d < nearestDist) { nearestDist = d; nearestId = c.id; }
     }
+
+    // A React state update only happens here, when the target slot has
+    // actually changed - not on every pixel of movement. This is the
+    // real fix for the re-render storm: the previous version called
+    // setState on every single pointermove even when nothing about the
+    // ORDER had changed yet.
+    const currentlyAt = orderRef.current.findIndex((it) => getId(it) === id);
+    const targetAt = dragStartOrder.current.findIndex((it) => getId(it) === nearestId);
+    if (currentlyAt === targetAt) return;
 
     // Always rebuilt from the ORIGINAL start order, never from whatever
     // the previous move event left behind - so there's no incremental
@@ -159,11 +198,20 @@ export function useDragReorder<T>({
 
   function endGesture(id: string) {
     clearLongPress();
-    if (arranging) {
+    if (arrangingRef.current) {
+      arrangingRef.current = false;
+      draggingIdRef.current = null;
       setArranging(false);
       setDraggingId(null);
-      setDragOffset({ x: 0, y: 0 });
       suppressClickId.current = id;
+      // The transform was applied directly to the DOM node, entirely
+      // outside React's style prop - React has never had this in a
+      // style object it rendered, so it has no memory of it and would
+      // never clear it on its own. Left unset, the dropped tile would
+      // stay visually offset in place forever, permanently detached
+      // from its real (now-different) grid/list position.
+      const el = itemRefs.current.get(id);
+      if (el) el.style.transform = '';
       onCommit(orderRef.current);
     }
     pressOrigin.current = null;
@@ -186,19 +234,12 @@ export function useDragReorder<T>({
       onPointerCancel: () => endGesture(id),
       // A long press is a real press-and-hold, not a click - suppress
       // the browser's own text-selection/callout gesture on touch so it
-      // doesn't fight with this one. The dragged item also gets a real
-      // transform here so it visibly tracks the pointer/finger instead
-      // of sitting still while the list silently reorders around it.
+      // doesn't fight with this one. No transform here anymore for the
+      // dragged item - that's applied directly to the DOM node by
+      // paintDragOffset, not through this declarative style, so it
+      // can't lag behind a busy render.
       style: {
         touchAction: arranging && isDragging ? 'none' : undefined,
-        // Scale baked directly into this same transform string, not left
-        // to a Tailwind scale-* class - an inline style's transform
-        // always wins over a class's transform (same CSS property,
-        // higher specificity), so a separate scale-105 class on the
-        // dragged item would have been silently discarded the moment
-        // this translate was added instead of combined with it.
-        transform: isDragging ? `translate(${dragOffset.x}px, ${dragOffset.y}px) scale(1.06)` : undefined,
-        transition: isDragging ? 'none' : undefined,
       } as React.CSSProperties,
     };
   }
