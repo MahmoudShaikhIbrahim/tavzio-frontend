@@ -3,6 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listMessages, sendMessage, markMessagesRead } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import type { SupportMessage } from '../../types';
 
 export default function MessagesPage() {
@@ -19,8 +20,7 @@ export default function MessagesPage() {
   }
 
   useEffect(reload, [businessId]);
-
-  // Mark read the moment this page is open - the "unread" state only
+  usePollingFallback(reload, !!businessId);
   // matters before someone's actually looking at the thread.
   useEffect(() => {
     if (businessId) markMessagesRead(businessId);

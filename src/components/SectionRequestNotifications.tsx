@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listRequestsForSection, dismissRequest, type RequestRow } from '../lib/authApi';
 import { subscribeToBusinessTable } from '../lib/supabaseClient';
+import { usePollingFallback } from '../hooks/usePollingFallback';
 import { hexToRgba } from '../lib/color';
 import { useT } from '../hooks/useT';
 
@@ -22,6 +23,7 @@ export default function SectionRequestNotifications({ businessId, section }: { b
     return () => { unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId, section]);
+  usePollingFallback(reload, !!businessId);
 
   async function handleDismiss(id: string) {
     setRequests((prev) => prev.filter((r) => r.id !== id));

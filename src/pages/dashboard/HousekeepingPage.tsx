@@ -8,6 +8,7 @@ import {
   type HousekeepingTask, type MaintenanceTicket, type GuestServiceRequest, type HousekeepingPerformance, type MaintenancePerformance,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import type { HotelRoom } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
@@ -70,9 +71,7 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
     getHousekeepingPerformance(businessId, 7).then(setPerformance);
   }
   useEffect(reload, [businessId]);
-
-  // Real-time: a new task or a status/room change appears the instant it
-  // happens - no more waiting for a manual refresh or a section revisit.
+  usePollingFallback(reload, !!businessId);
   useEffect(() => {
     const unsubTasks = subscribeToBusinessTable(businessId, 'housekeeping_tasks', reload);
     return unsubTasks;
@@ -206,6 +205,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
     getMaintenancePerformance(businessId, 30).then(setPerformance);
   }
   useEffect(reload, [businessId]);
+  usePollingFallback(reload, !!businessId);
 
   useEffect(() => {
     const unsubTickets = subscribeToBusinessTable(businessId, 'maintenance_tickets', reload);
@@ -326,6 +326,7 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
 
   function reload() { listGuestRequests(businessId).then(setRequests); }
   useEffect(reload, [businessId]);
+  usePollingFallback(reload, !!businessId);
 
   useEffect(() => {
     const unsubRequests = subscribeToBusinessTable(businessId, 'guest_service_requests', reload);

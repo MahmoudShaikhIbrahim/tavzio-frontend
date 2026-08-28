@@ -13,6 +13,7 @@ import {
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import type { TillSession, MenuCategory, MenuItem, PaymentRow, OrderRow, FloorTable } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
@@ -258,6 +259,12 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
     return () => { unsubOrders(); unsubItems(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
+  // Explicit, system-wide request: an independent 5-second poll of both
+  // this screen's own reload functions (floor tables + unpaid/quick-pay
+  // orders), completely separate from the realtime subscriptions above -
+  // a safety net so a missed/dropped Realtime event is never more than
+  // 5s stale, with no manual refresh needed.
+  usePollingFallback(() => { reloadFloorTables(); reloadQuickPay(); }, !!businessId);
 
   useEffect(() => {
     getBusiness(businessId).then((b) => setIsHotel(b.category === 'hotel')).catch(() => {});
@@ -517,7 +524,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
           </div>
         </div>
       )}
-      <div>
+      <div className="min-w-0">
         {/* Real fix for the explicit request: in focus mode, the title
             + full toolbar row used to take the same vertical space as
             normal mode, pushing the item area (and, on a short screen,
@@ -960,6 +967,7 @@ function RefundsPanel({ businessId }: { businessId: string }) {
     listPayments(businessId).then(setPayments).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
+  usePollingFallback(reload, !!businessId);
 
   const filtered = payments
     .filter((p) => {

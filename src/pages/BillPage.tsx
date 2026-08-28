@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getBill, payBill, getBusiness, createBillPaySession, confirmBillPayment, cancelBillPaySession, markItemsCashPending } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { subscribeToBillItems } from '../lib/supabaseClient';
+import { usePollingFallback } from '../hooks/usePollingFallback';
 import { getSavedPhone } from '../lib/loyaltyStorage';
 import type { BillItem, Receipt, Business } from '../types';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
@@ -125,14 +126,19 @@ function BillPageContent({ slug }: { slug: string }) {
   }
 
   useEffect(loadBill, [slug, tapEventId]);
+  // Explicit, system-wide request, and a real fix for a false claim this
+  // comment used to make: there was no actual safety-net timer here at
+  // all before now, just this comment describing one that didn't exist.
+  // This is a genuine 5-second poll of loadBill(), independent of the
+  // realtime subscription below.
+  usePollingFallback(loadBill, !!tapEventId);
 
   // Live updates: any diner's screen reflects payments the moment they
   // happen, elsewhere at the same table - no manual refresh, and no risk
   // of two people both trying to pay for something someone else just
-  // settled. Falls back to nothing if the tap isn't live yet; a plain
-  // 20s safety-net refresh underneath covers the rare edge case of a
+  // settled. The 5-second poll above is the actual fallback for a
   // brand-new order appearing after the initial load (a new order_id the
-  // realtime filter wasn't subscribed to yet).
+  // realtime filter wasn't subscribed to yet), or for any missed event.
   useEffect(() => {
     if (!tapEventId || items.length === 0) return;
     const orderIds = Array.from(new Set(items.map((i) => i.order_id)));

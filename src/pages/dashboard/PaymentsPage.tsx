@@ -3,6 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listPayments, getBusiness, refundPayment } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { PaymentRow, NotificationSettings } from '../../types';
 import { Section } from '../../components/ui';
@@ -19,6 +20,7 @@ export default function PaymentsPage() {
     if (businessId) listPayments(businessId).then(setPayments);
   }
   useEffect(reload, [businessId]);
+  usePollingFallback(reload, !!businessId);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
