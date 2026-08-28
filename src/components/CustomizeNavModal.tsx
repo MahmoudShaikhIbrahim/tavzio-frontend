@@ -56,7 +56,6 @@ export default function CustomizeNavModal({
               <div key={item.path}
                 ref={(el) => drag.registerItemRef(item.path, el)}
                 {...handlers}
-                onClick={() => drag.handleActivate(item.path)}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-all duration-200 ${
                   isHeld ? 'scale-[1.02] border-brass bg-ink shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40 bg-ink' : 'border-ink-line bg-ink'
                 }`}
@@ -64,7 +63,9 @@ export default function CustomizeNavModal({
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-sm text-brass">{i + 1}</span>
                 <span className="flex-1 text-base text-ivory">{t(item.label)}</span>
                 <button type="button"
-                  onClick={(e) => { e.stopPropagation(); onHide(item.path); }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerUp={(e) => e.stopPropagation()}
+                  onClick={() => onHide(item.path)}
                   className="ms-1 shrink-0 rounded-lg border border-ink-line px-2.5 py-1.5 text-xs text-ivory-dim hover:border-danger hover:text-danger"
                 >
                   {t('Hide')}

@@ -48,7 +48,7 @@ export default function MenuManagementPage() {
       <h1 className="font-display text-3xl text-ivory">{t('Menu Management')}</h1>
       <div className="flex flex-wrap gap-2 border-b border-ink-line">
         {(['ordering-status', 'ai-upload', 'categories', 'items'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -149,7 +149,6 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
           <div key={c.id}
             ref={isSearching ? undefined : (el) => drag.registerItemRef(c.id, el)}
             {...handlers}
-            onClick={isSearching ? undefined : () => drag.handleActivate(c.id)}
             className={`flex items-center justify-between rounded-lg border px-5 py-4 text-base transition-all duration-200 ${
               isSearching ? 'border-ink-line' : 'cursor-pointer'
             } ${isHeld ? 'scale-[1.01] border-brass shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40' : 'border-ink-line'}`}
@@ -157,8 +156,9 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
               <button type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
+                onPointerDown={(e) => e.stopPropagation()}
+                onPointerUp={(e) => e.stopPropagation()}
+                onClick={() => {
                   onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
                   updateMenuCategory(businessId, c.id, { paused: !c.paused }).catch(onChange);
                 }}
@@ -166,12 +166,12 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
               >
                 {c.paused ? t('Paused') : t('Orderable')}
               </button>
-              {/* ActionButton's onClick doesn't pass through the event, so
-                  stopPropagation happens on this wrapper instead - same
-                  goal as the Orderable button above (a click inside the
-                  row must not also register as a placement/cancel tap
-                  on the row itself). */}
-              <span onClick={(e) => e.stopPropagation()}>
+              {/* Same reasoning as the Orderable button above - a press
+                  inside the row must never bubble up and register as a
+                  placement/cancel tap on the row itself. ActionButton's
+                  onClick doesn't pass through the event, so it can't
+                  stopPropagation itself; this wrapper does it instead. */}
+              <span onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
                 <ActionButton
                   danger
                   onClick={() => {

@@ -1,17 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
-// Complete restructure, after repeated failures with the previous
-// approach (continuously tracking the pointer during a live drag,
-// computing nearest-slot on every move, keeping a captured/document-
-// level listener alive for the whole gesture). That entire class of
-// mechanic has too many independent ways to fail - pointer capture
-// isn't uniformly reliable, coordinate math can drift, and a fast or
-// imprecise real-world gesture (exactly what a POS touchscreen sees)
-// stresses all of it at once.
-//
-// This is a fundamentally different, much simpler interaction instead:
 // PICK UP, THEN PLACE - two discrete, ordinary events, not one long
-// continuously-tracked gesture.
+// continuously-tracked gesture (see git history for why the earlier
+// continuous-drag version was abandoned entirely).
 //
 //   1. Press and hold an item (~500ms) - it visually lifts to show it's
 //      picked up.
@@ -19,22 +10,23 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 //      committed immediately.
 //   3. Tap the held item again - cancels the pick-up, nothing moves.
 //
-// There is no pointer-tracking during step 2's tap, no capture, no
-// document-level listeners, no per-pixel coordinate comparison. The
-// entire mechanic reduces to two ordinary click-equivalent events a
-// browser has never had trouble delivering reliably, on any device,
-// mouse or touch. What still makes this feel considered rather than
-// abrupt is real animation: the picked-up item gets a genuine lift
-// (scale/shadow, a real CSS transition), and every item's move into
-// its new slot is a real FLIP animation (positions captured just
-// before the commit, then eased from there to the real new layout) -
-// not an instant jump.
+// Real hardening pass: every part of step 2's "tap" is now handled
+// directly through onPointerUp, not the browser's separate, synthesized
+// `click` event. Relying on `click` meant relying on each browser's own
+// rules for whether/when a click fires after a pointer sequence -
+// rules that are not identical across engines, particularly around
+// long-press-style interactions. Detecting a tap explicitly in
+// onPointerUp (short elapsed time, minimal movement, only when nothing
+// is currently held) removes that entire category of cross-browser
+// risk - there's no unspecified translation layer left to disagree
+// about.
 //
 // T only needs a stable id via getId - the hook never looks at
 // anything else on the item, so the same hook drives menu items, nav
 // entries, and categories without any per-surface variant.
 const SETTLE_MS = 260;
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const TAP_MAX_MOVE_PX = 8;
 
 export function useDragReorder<T>({
   items,
@@ -44,8 +36,8 @@ export function useDragReorder<T>({
   items: T[];
   getId: (item: T) => string;
   // Called immediately once a placement happens, with the final
-  // reordered array - there's no separate "live" intermediate order to
-  // manage anymore, a placement IS the commit.
+  // reordered array - a placement IS the commit, there's no separate
+  // "live" intermediate order to manage.
   onCommit: (newOrder: T[]) => void;
 }) {
   const [heldId, setHeldId] = useState<string | null>(null);
@@ -54,7 +46,7 @@ export function useDragReorder<T>({
   const longPressTimer = useRef<number | null>(null);
   const pressOrigin = useRef<{ x: number; y: number } | null>(null);
   const prevRectsRef = useRef<Map<string, DOMRect>>(new Map());
-  // Set the instant a long press fires, consumed by the click that
+  // Set the instant a long press fires, consumed by the pointerup that
   // immediately follows releasing it - without this, that release
   // would register as an ordinary tap on the item that was just picked
   // up (e.g. adding it to a cart) the moment the person let go.
@@ -96,9 +88,8 @@ export function useDragReorder<T>({
   function handlePointerDown(id: string, e: React.PointerEvent) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     // Something is already held and this press landed on a DIFFERENT
-    // item - that's a placement tap, not the start of a new pick-up;
-    // no long-press timer needed, the click handler below does the
-    // placement directly.
+    // item - the placement itself happens on release (onPointerUp), not
+    // here; no long-press timer is needed for a placement tap.
     if (heldIdRef.current && heldIdRef.current !== id) return;
     pressOrigin.current = { x: e.clientX, y: e.clientY };
     clearLongPress();
@@ -114,44 +105,54 @@ export function useDragReorder<T>({
     // Only ever cancels a PENDING long press (before it's fired) if
     // this was actually a scroll/swipe rather than a genuine hold -
     // same reasoning iOS uses for not entering pick-up mode on a
-    // scroll gesture. Once something is actually held, there is
-    // nothing left to track here at all - that's the entire point of
-    // this rewrite.
+    // scroll gesture.
     if (longPressTimer.current !== null && pressOrigin.current) {
       const dx = e.clientX - pressOrigin.current.x;
       const dy = e.clientY - pressOrigin.current.y;
-      if (Math.hypot(dx, dy) > 8) clearLongPress();
+      if (Math.hypot(dx, dy) > TAP_MAX_MOVE_PX) clearLongPress();
     }
   }
 
-  function handlePointerUp() {
+  // Everything happens here, on release - the single source of truth
+  // for "what did this press+release actually mean", entirely within
+  // pointer events, never depending on a separately-synthesized click.
+  function handlePointerUp(id: string, e: React.PointerEvent, onTap?: () => void) {
+    const wasStillPending = longPressTimer.current !== null;
+    const origin = pressOrigin.current;
     clearLongPress();
     pressOrigin.current = null;
-  }
 
-  // Called by the caller's own onClick. Returns true when this click
-  // was consumed by the pick-up/placement gesture (the caller should
-  // skip its own default tap action - e.g. adding an item to a cart);
-  // false means this was a genuine, ordinary tap the caller should
-  // handle normally.
-  function handleActivate(id: string): boolean {
     if (justPickedUpId.current === id) {
+      // Tail end of the long press that just picked this item up - not
+      // a real tap, already handled.
       justPickedUpId.current = null;
-      return true;
+      return;
     }
+
     if (heldIdRef.current) {
       if (heldIdRef.current === id) {
+        // A genuine separate tap on the already-held item - cancel.
         heldIdRef.current = null;
         setHeldId(null);
-        return true;
+        return;
       }
+      // Placement: releasing on a different item while one is held.
       commitPlacement(id);
-      return true;
+      return;
     }
-    return false;
+
+    // Nothing held. A real ordinary tap only if the long-press timer
+    // was still pending when released (never fired - i.e. this was a
+    // short press) and the pointer didn't move far - i.e. this was
+    // neither a completed hold nor a scroll/swipe.
+    if (wasStillPending && origin) {
+      const dx = e.clientX - origin.x;
+      const dy = e.clientY - origin.y;
+      if (Math.hypot(dx, dy) <= TAP_MAX_MOVE_PX) onTap?.();
+    }
   }
 
-  // Real FLIP animation, now triggered simply by the committed order
+  // Real FLIP animation, triggered simply by the committed order
   // actually changing - captured positions (prevRectsRef) come from
   // right before the commit in commitPlacement above, so every item
   // eases from where it visually was into its real new slot instead of
@@ -177,25 +178,28 @@ export function useDragReorder<T>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
-  function itemHandlers(id: string) {
+  // onTap is the caller's own default action for a genuine, ordinary
+  // tap when nothing is held (e.g. adding an item to a cart) - passed
+  // straight through to handlePointerUp so the ENTIRE decision (was
+  // this a tap, a placement, a cancel, or the tail of a pick-up) lives
+  // in one place, driven only by pointer events.
+  function itemHandlers(id: string, onTap?: () => void) {
     return {
       onPointerDown: (e: React.PointerEvent) => handlePointerDown(id, e),
       onPointerMove: handlePointerMove,
-      onPointerUp: handlePointerUp,
-      onPointerCancel: handlePointerUp,
+      onPointerUp: (e: React.PointerEvent) => handlePointerUp(id, e, onTap),
+      onPointerCancel: () => { clearLongPress(); pressOrigin.current = null; },
     };
   }
 
   return {
     heldId,
     // Always just the caller's own items now - there's no separate
-    // in-flight "live" order distinct from the committed one anymore,
-    // since a placement commits immediately. Kept as `displayItems` so
-    // callers didn't need restructuring beyond swapping the gesture
-    // itself.
+    // in-flight "live" order distinct from the committed one, since a
+    // placement commits immediately. Kept as `displayItems` so callers
+    // don't need restructuring beyond swapping the gesture itself.
     displayItems: items,
     registerItemRef,
     itemHandlers,
-    handleActivate,
   };
 }

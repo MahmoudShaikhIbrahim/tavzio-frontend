@@ -115,7 +115,7 @@ export function AdvancedDatePicker({ value, onChange, minDate }: { value: string
 
 // Real time-slot grid - a fixed interval of real, tappable slots rather
 // than a native scroll wheel, closes the same way the date picker does.
-export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, startHour = 8, endHour = 23, minTime, maxTime }: {
+export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, startHour, endHour, minTime, maxTime }: {
   value: string; onChange: (v: string) => void; intervalMinutes?: number; startHour?: number; endHour?: number; minTime?: string | null; maxTime?: string | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -146,10 +146,23 @@ export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, star
     }
   }, [open, value]);
 
+  // Real fix for the confirmed bug: a hardcoded 8am-23:00 default here
+  // silently capped every selectable slot to that window regardless of
+  // minTime/maxTime - a business genuinely open with "no restriction",
+  // or open outside 8am-11pm (open past midnight, or from 6am), could
+  // never actually get a matching slot no matter what the real hours
+  // said, because slots outside 8-23 were never generated in the first
+  // place for the min/max filter below to even consider. The
+  // generation range itself now covers the real bounds: the full day
+  // (0-23) when no explicit range or min/max is given, always widened
+  // to whatever minTime/maxTime actually require.
+  const effectiveStartHour = startHour ?? (minTime ? Number(minTime.split(':')[0]) : 0);
+  const effectiveEndHour = endHour ?? (maxTime ? Number(maxTime.split(':')[0]) : 23);
+
   const slots: string[] = [];
-  for (let h = startHour; h <= endHour; h++) {
+  for (let h = effectiveStartHour; h <= effectiveEndHour; h++) {
     for (let m = 0; m < 60; m += intervalMinutes) {
-      if (h === endHour && m > 0) break;
+      if (h === effectiveEndHour && m > 0) break;
       const t = `${pad(h)}:${pad(m)}`;
       if (minTime && t < minTime) continue;
       if (maxTime && t > maxTime) continue;
@@ -164,7 +177,7 @@ export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, star
   useEffect(() => {
     if (value && !slots.includes(value)) onChange('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minTime, maxTime, startHour, endHour]);
+  }, [minTime, maxTime, effectiveStartHour, effectiveEndHour]);
 
   function displayTime(t: string) {
     const [h, m] = t.split(':').map(Number);

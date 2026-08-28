@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
 
       <div className="flex flex-wrap gap-2 border-b border-ink-line">
         {tabs.map((t) => (
-          <button type="button" key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-2 text-base ${activeTab === t.key ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={t.key} onClick={() => setTab(t.key)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${activeTab === t.key ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
             {t.label}
           </button>
         ))}

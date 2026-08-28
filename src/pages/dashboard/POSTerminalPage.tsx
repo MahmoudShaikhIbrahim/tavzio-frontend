@@ -683,21 +683,15 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             {itemDrag.displayItems.map((item) => {
               const isHeld = itemDrag.heldId === item.id;
               const isPlaceTarget = itemDrag.heldId !== null && !isHeld;
-              const dragHandlers = itemDrag.itemHandlers(item.id);
+              const dragHandlers = itemDrag.itemHandlers(item.id, () => addToCart(item));
               return (
-              <div key={item.id}
+              <button type="button" key={item.id}
                 ref={(el) => itemDrag.registerItemRef(item.id, el)}
                 {...dragHandlers}
-                className={`relative select-none rounded-xl transition-all duration-200 ${
-                  isHeld ? 'z-10 scale-105 shadow-xl shadow-black/50 ring-2 ring-brass' : ''
-                } ${isPlaceTarget ? 'ring-1 ring-dashed ring-brass/40' : ''}`}
+                className={`relative select-none overflow-hidden rounded-xl border text-left transition-all duration-200 ${
+                  isHeld ? 'z-10 scale-105 border-brass bg-ink-soft shadow-xl shadow-black/50 ring-2 ring-brass' : isPlaceTarget ? 'border-brass/20 bg-ink-soft ring-1 ring-dashed ring-brass/40 hover:border-brass' : 'border-ink-line bg-ink-soft hover:border-brass/50'
+                }`}
               >
-                <button type="button"
-                  onClick={() => { if (!itemDrag.handleActivate(item.id)) addToCart(item); }}
-                  className={`w-full overflow-hidden rounded-xl border text-left transition-colors ${
-                    isHeld ? 'border-brass bg-ink-soft' : isPlaceTarget ? 'border-brass/20 bg-ink-soft hover:border-brass' : 'border-ink-line bg-ink-soft hover:border-brass/50'
-                  }`}
-                >
                   {/* Photo recognition matters at the counter - a busy
                       cashier reads a picture far faster than a name, which is
                       exactly what a plain text tile made slower. Falls back
@@ -714,8 +708,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                     <p className={`font-display text-ivory line-clamp-1 ${focusMode ? 'text-xs' : 'text-sm'}`}>{item.name}</p>
                     <p className={`font-medium text-brass ${focusMode ? 'text-xs' : 'mt-0.5 text-sm'}`}>AED {item.price.toFixed(2)}</p>
                   </div>
-                </button>
-              </div>
+              </button>
               );
             })}
             {visibleItems.length === 0 && <p className="text-ivory-dim">{t('No items in this category.')}</p>}

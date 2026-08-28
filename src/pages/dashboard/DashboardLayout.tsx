@@ -503,7 +503,7 @@ function DashboardLayoutInner() {
       {showTour && <GuidedTour steps={DASHBOARD_TOUR_STEPS} onDone={closeTour} onSkip={closeTour} />}
       {!focusMode && (
       <header className="border-b border-ink-line">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
           <div className="flex flex-1 items-center gap-4">
             <Logo />
           </div>
@@ -558,8 +558,18 @@ function DashboardLayoutInner() {
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
-          <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-2.5">
+        {/* Real fix for the explicit request: fixed px-6 container
+            padding + px-3 py-2.5 text-base per tab, with no mobile
+            breakpoint at all, meant this nav fit barely 2 tabs per row
+            on a real phone (confirmed in the actual screenshots) and
+            pushed real page content down through several screenfuls of
+            just navigation before a person ever saw it. Genuinely more
+            compact below sm (smaller padding, smaller text) - the same
+            tabs, same tap targets that stay comfortably touchable, just
+            packed tighter so more of them fit per row on a narrow
+            screen. Unchanged above sm - this never touches desktop. */}
+        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-4 pt-1.5 sm:px-6">
+          <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-1.5 sm:gap-2.5">
             {visibleTabs.map((tab) => {
               const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
 
@@ -567,7 +577,7 @@ function DashboardLayoutInner() {
                 <Link
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
-                  className={`relative block shrink-0 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                  className={`relative block shrink-0 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] sm:px-3 sm:py-2.5 sm:text-base ${
                     isTabActive(location.pathname, tab.path)
                       ? 'border-brass text-ivory'
                       : 'border-transparent text-ivory-dim hover:text-ivory'
@@ -587,7 +597,7 @@ function DashboardLayoutInner() {
           <div ref={settingsRef} data-tour="settings-dropdown" className="relative shrink-0">
             <button type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+              className={`flex items-center gap-1.5 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] sm:px-3 sm:py-2.5 sm:text-base ${
                 isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
               }`}
             >
@@ -598,8 +608,8 @@ function DashboardLayoutInner() {
             </button>
 
             {settingsOpen && (
-              <div className="absolute end-0 top-full z-dropdown mt-2 w-[26rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50">
-                <div className="grid max-h-[70vh] grid-cols-2 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5">
+              <div className="absolute end-0 top-full z-dropdown mt-2 w-[20rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50 sm:w-[26rem]">
+                <div className="grid max-h-[70vh] grid-cols-1 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5 sm:grid-cols-2">
                   {visibleSettingsItems.map((tab) => (
                     <Link
                       key={tab.path}
