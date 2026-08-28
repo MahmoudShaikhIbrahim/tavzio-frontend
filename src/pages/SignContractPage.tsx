@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import Logo from '../components/Logo';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -118,7 +119,15 @@ export default function SignContractPage() {
     <div className="min-h-screen bg-[#141110] px-5 py-10">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="text-center">
-          <img src="/brand/logo-white.png" alt="Tavzio" className="mx-auto h-12 w-auto" style={{ filter: 'drop-shadow(0 0 14px rgba(184,146,90,0.28))' }} />
+          {/* Real fix for the explicit request: this was the one place
+              in the whole app still using an actual image file for the
+              logo (/brand/logo-white.png) instead of the same real
+              icon+text Logo component every other page already uses -
+              same drop-shadow treatment this page already had, just on
+              real markup instead of a flat PNG. */}
+          <div className="inline-block" style={{ filter: 'drop-shadow(0 0 14px rgba(184,146,90,0.28))' }}>
+            <Logo size="lg" />
+          </div>
         </div>
 
         {activated && (

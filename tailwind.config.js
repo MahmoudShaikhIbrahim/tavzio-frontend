@@ -30,6 +30,12 @@ export default {
         display: ['"Inter"', 'sans-serif'],
         body: ['"Inter"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
+        // The actual font specified on the real business card
+        // ('Manrope', used there for every non-name line of text) -
+        // scoped to its own token rather than replacing `display`
+        // globally, since only the "Tavzio" wordmark itself was asked
+        // to match the card, not every heading on the site.
+        wordmark: ['"Manrope"', 'sans-serif'],
       },
       keyframes: {
         'tap-ripple': {

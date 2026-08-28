@@ -160,7 +160,12 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
   // once a category actually has more than one page's worth. Resets to
   // page 1 whenever the category or search changes, since staying on
   // "page 2" of a brand new category/search would just show an empty grid.
-  const ITEMS_PER_PAGE = 12;
+  // Explicit request: focus mode's denser grid (smaller tiles, more
+  // columns) genuinely has room for double the items before it would
+  // need to scroll - 12 was a flat constant that ignored that, which is
+  // exactly why an item was stranded alone on page 2 while page 1
+  // still had visible room in focus mode.
+  const ITEMS_PER_PAGE = focusMode ? 24 : 12;
   const [itemsPage, setItemsPage] = useState(0);
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   useEffect(() => { setItemsPage(0); }, [activeCategory, itemSearchQuery]);

@@ -1,5 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#14110F"/>
-  <circle cx="32" cy="32" r="22" fill="none" stroke="#B8925A" stroke-width="3"/>
-  <text x="32" y="41" text-anchor="middle" font-family="Georgia, serif" font-size="26" fill="#B8925A">T</text>
+  <defs>
+    <!-- Same stops, same order, as the real business card's base
+         background layer: linear-gradient(128deg, #070706 0%, #0d0906
+         30%, #1e130a 58%, #3a2312 82%, #4a2c15 100%) -->
+    <linearGradient id="cardBg" x1="12%" y1="6%" x2="82%" y2="94%">
+      <stop offset="0%" stop-color="#070706"/>
+      <stop offset="30%" stop-color="#0d0906"/>
+      <stop offset="58%" stop-color="#1e130a"/>
+      <stop offset="82%" stop-color="#3a2312"/>
+      <stop offset="100%" stop-color="#4a2c15"/>
+    </linearGradient>
+    <!-- The card's second, top layer: radial-gradient(140% 130% at 90%
+         100%, rgba(120,72,32,0.55), transparent 60%) - CSS multi-layer
+         backgrounds paint the first-listed layer on top, so this sits
+         above cardBg here too. -->
+    <radialGradient id="cardGlow" cx="90%" cy="100%" r="95%">
+      <stop offset="0%" stop-color="#784820" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#784820" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#cardBg)"/>
+  <rect width="64" height="64" rx="14" fill="url(#cardGlow)"/>
+  <svg x="13" y="13" width="38" height="38" viewBox="-89.50 -37.50 763.25 773.75">
+    <g fill="#c9a668" transform="skewX(-17.715)">
+      <path d="M 114.0,0 L 637.5,0 L 634.0,164.0 L 398.4,164.0 L 398.4,700.0 L 237.4,700.0 L 237.4,164.0 L 0,164.0 L 0,114.0 A 114.0,114.0 0 0 1 114.0,0 Z"/>
+    </g>
+  </svg>
 </svg>
