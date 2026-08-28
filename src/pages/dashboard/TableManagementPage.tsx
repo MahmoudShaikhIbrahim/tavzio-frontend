@@ -6,6 +6,7 @@ import {
   listWaitlist, addToWaitlist, seatWaitlistEntry, cancelWaitlistEntry, listCards,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import type { FloorTable, WaitlistEntry, Card } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
@@ -61,6 +62,7 @@ export default function TableManagementPage() {
     return () => { unsubTables(); unsubCards(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
+  usePollingFallback(reload, !!businessId);
 
   async function handleCreateTable(label: string, seatCount: number) {
     if (!businessId || !label.trim()) return;

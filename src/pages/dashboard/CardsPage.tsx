@@ -3,6 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listCards, updateCard } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import type { Card } from '../../types';
 import { Section } from '../../components/ui';
 
@@ -17,9 +18,7 @@ export default function CardsPage() {
   }
 
   useEffect(reload, [businessId]);
-
-  // Live sync - a rename or status change from super admin (or another
-  // staff member) shows up here instantly, not just on next page load.
+  usePollingFallback(reload, !!businessId);
   useEffect(() => {
     if (!businessId) return;
     const unsubscribe = subscribeToBusinessTable(businessId, 'cards', reload);

@@ -10,6 +10,7 @@ import {
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
+import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { hexToRgba } from '../../lib/color';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
@@ -78,6 +79,11 @@ export default function OrdersPage() {
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
   useEffect(reloadCashPending, [businessId]);
+  // Explicit, system-wide request: an independent 5-second poll of all
+  // four of this page's own reload functions, completely separate from
+  // the realtime subscriptions below - a safety net so a missed/dropped
+  // Realtime event is never more than 5s stale, with no manual refresh.
+  usePollingFallback(() => { reload(); reloadRequests(); reloadClaims(); reloadCashPending(); }, !!businessId);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
   }, [businessId]);
