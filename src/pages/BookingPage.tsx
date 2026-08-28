@@ -1,9 +1,9 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Search, UtensilsCrossed } from 'lucide-react';
 import {
   getBookingConfig, requestBookingOtp, verifyBookingOtp, submitPublicBooking, cancelPublicBooking,
-  listMyBookings, reschedulePublicBooking, type MyBooking,
+  listMyBookings, reschedulePublicBooking, cancelPublicBookingService, type MyBooking,
   getBookingPaymentStatus, getBusiness, type BookingConfig,
 } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
@@ -30,6 +30,24 @@ const FOOD_TIMING_OPTIONS = [
 type Step = 'loading' | 'notAvailable' | 'form' | 'otp' | 'submitting' | 'confirmed' | 'paymentPending' | 'paymentFailed' | 'managePhone' | 'manageOtp' | 'manageList';
 
 interface CartLine { menuItemId: string; name: string; price: number; quantity: number; note: string }
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+// Real helper matching the backend's own checkWithinHours semantics
+// exactly: a day missing from the hours object means no restriction, an
+// explicit null means closed that day. bookingHours (if set at all)
+// takes over from operatingHours entirely, not merged day-by-day - the
+// same "one complete override object" model the admin editor itself uses.
+function getEffectiveHoursFor(dateStr: string, operatingHours: BookingConfig['operatingHours'], bookingHours: BookingConfig['bookingHours']) {
+  if (!dateStr) return { minTime: undefined, maxTime: undefined, closed: false };
+  const hoursObj = bookingHours || operatingHours;
+  if (!hoursObj) return { minTime: undefined, maxTime: undefined, closed: false };
+  const dayKey = DAY_KEYS[new Date(`${dateStr}T00:00:00`).getDay()];
+  if (!(dayKey in hoursObj)) return { minTime: undefined, maxTime: undefined, closed: false };
+  const dayHours = hoursObj[dayKey];
+  if (!dayHours) return { minTime: undefined, maxTime: undefined, closed: true };
+  return { minTime: dayHours.open, maxTime: dayHours.close, closed: false };
+}
 
 // Real, robust fix for a confirmed bug: layering a semi-transparent
 // native date/time input under a custom placeholder (the previous
@@ -125,6 +143,10 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [foodSearchQuery, setFoodSearchQuery] = useState('');
+  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  function scrollToCategory(category: string) {
+    categoryRefs.current[category]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   const [note, setNote] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [foodTiming, setFoodTiming] = useState(0);
@@ -137,9 +159,6 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [, setOtpSent] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [cancelling, setCancelling] = useState(false);
-  const [cancelled, setCancelled] = useState(false);
   const [managePhone, setManagePhone] = useState('');
   const [manageOtp, setManageOtp] = useState('');
   const [myBookings, setMyBookings] = useState<MyBooking[]>([]);
@@ -242,7 +261,6 @@ function BookingPageContent({ slug }: { slug: string }) {
         serviceRequestedAt: selectedServiceId ? new Date(`${serviceDate}T${serviceTime}`).toISOString() : undefined,
       });
 
-      setBookingId(result.booking.id);
       if (result.paymentRequired && result.redirectUrl) {
         window.location.href = result.redirectUrl;
         return;
@@ -252,19 +270,6 @@ function BookingPageContent({ slug }: { slug: string }) {
       setError(err instanceof Error ? err.message : 'Could not complete your booking');
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function handleCancelBooking() {
-    if (!bookingId) return;
-    setCancelling(true);
-    try {
-      await cancelPublicBooking(bookingId, phone);
-      setCancelled(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not cancel this booking');
-    } finally {
-      setCancelling(false);
     }
   }
 
@@ -306,6 +311,22 @@ function BookingPageContent({ slug }: { slug: string }) {
       setMyBookings((prev) => prev.filter((b) => b.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not cancel this booking');
+    } finally {
+      setManageBusy(false);
+    }
+  }
+
+  // Real, separate action for the explicit request: cancels just the
+  // attached service, keeping the table reservation itself - updates
+  // the booking in place rather than removing it from the list, since
+  // the booking is still very much active.
+  async function handleCancelServiceFromList(id: string) {
+    setManageBusy(true);
+    try {
+      const updated = await cancelPublicBookingService(id, managePhone.trim());
+      setMyBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not cancel this service');
     } finally {
       setManageBusy(false);
     }
@@ -361,14 +382,6 @@ function BookingPageContent({ slug }: { slug: string }) {
   }
 
   if (step === 'confirmed') {
-    if (cancelled) {
-      return (
-        <Shell isRtl={isRtl}>
-          <p className="font-display text-xl text-ivory">{t('tbBookingCancelled')}</p>
-          <p className="max-w-xs text-sm text-ivory-dim">{t('tbBookingCancelledDesc')}</p>
-        </Shell>
-      );
-    }
     return (
       <Shell isRtl={isRtl}>
         <div className="flex h-16 w-16 animate-confirm-pop items-center justify-center rounded-full border-2 border-brass bg-brass/10 motion-reduce:animate-none">
@@ -383,12 +396,6 @@ function BookingPageContent({ slug }: { slug: string }) {
           {t('tbTapStand')}
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
-        {bookingId && (
-          <button type="button" disabled={cancelling} onClick={handleCancelBooking}
-            className="mt-4 rounded-lg border border-danger/40 px-4 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-50">
-            {cancelling ? t('tbCancelling') : t('tbCancelBooking')}
-          </button>
-        )}
       </Shell>
     );
   }
@@ -486,8 +493,22 @@ function BookingPageContent({ slug }: { slug: string }) {
               <div key={b.id} className="rounded-xl border border-brass/30 bg-ink-soft p-4">
                 <p className="text-ivory">{new Date(b.requested_at).toLocaleString()}</p>
                 <p className="text-sm text-ivory-dim">{t('tbGuests')}: {b.party_size} · {t(b.status === 'confirmed' ? 'tbStatusConfirmed' : 'tbStatusPending')}</p>
+                {b.services?.name && (
+                  <div className="mt-1.5 rounded-lg border border-brass/30 bg-ink px-2.5 py-1.5 text-sm text-ivory">
+                    <p>
+                      🎉 {b.services.name}
+                      {b.service_options?.label && <span className="text-ivory-dim"> — {b.service_options.label}</span>}
+                      {b.service_requested_at && (
+                        <span className="text-ivory-dim"> · {new Date(b.service_requested_at).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
+                      )}
+                    </p>
+                    <button type="button" disabled={manageBusy} onClick={() => handleCancelServiceFromList(b.id)} className="mt-1 text-xs text-danger hover:underline disabled:opacity-50">
+                      {t('tbCancelServiceOnly')}
+                    </button>
+                  </div>
+                )}
                 {rescheduling === b.id ? (
-                  <RescheduleForm booking={b} busy={manageBusy} onCancel={() => setRescheduling(null)} onSave={handleReschedule} />
+                  <RescheduleForm booking={b} busy={manageBusy} onCancel={() => setRescheduling(null)} onSave={handleReschedule} operatingHours={config?.operatingHours ?? null} bookingHours={config?.bookingHours ?? null} />
                 ) : (
                   <div className="mt-3 flex gap-3">
                     <button type="button" disabled={manageBusy} onClick={() => setRescheduling(b.id)} className="text-sm text-brass hover:underline disabled:opacity-50">
@@ -531,7 +552,11 @@ function BookingPageContent({ slug }: { slug: string }) {
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbTime')}</label>
-              <AdvancedTimePicker value={time} onChange={setTime} />
+              {(() => {
+                const hours = getEffectiveHoursFor(date, config?.operatingHours ?? null, config?.bookingHours ?? null);
+                if (hours.closed) return <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger">{t('tbClosedThatDay')}</p>;
+                return <AdvancedTimePicker value={time} onChange={setTime} minTime={hours.minTime} maxTime={hours.maxTime} />;
+              })()}
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbGuests')}</label>
@@ -565,18 +590,34 @@ function BookingPageContent({ slug }: { slug: string }) {
                   (acc[cat] ||= []).push(item);
                   return acc;
                 }, {});
+                const categoryNames = Object.keys(grouped);
                 return (
-                  <div className="mt-3 space-y-5">
-                    {Object.entries(grouped).map(([category, items]) => (
-                      <div key={category}>
-                        <p className="text-xs font-medium uppercase tracking-wide text-brass">{category}</p>
-                        <div className="mt-2 space-y-2">
-                          {items.map((item) => <BookingMenuItemRow key={item.id} item={item} cart={cart} onAdd={addToCart} t={t} />)}
-                        </div>
+                  <>
+                    {categoryNames.length > 1 && (
+                      <div className="mt-3 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
+                        {categoryNames.map((category) => (
+                          <button type="button"
+                            key={category}
+                            onClick={() => scrollToCategory(category)}
+                            className="shrink-0 rounded-full border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass"
+                          >
+                            {category}
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                    {filtered.length === 0 && <p className="mt-3 text-sm text-ivory-dim">{t('tbNoMenuResults')}</p>}
-                  </div>
+                    )}
+                    <div className="mt-3 space-y-5">
+                      {Object.entries(grouped).map(([category, items]) => (
+                        <div key={category} ref={(el) => { categoryRefs.current[category] = el; }} className="scroll-mt-16">
+                          <p className="text-xs font-medium uppercase tracking-wide text-brass">{category}</p>
+                          <div className="mt-2 space-y-2">
+                            {items.map((item) => <BookingMenuItemRow key={item.id} item={item} cart={cart} onAdd={addToCart} t={t} />)}
+                          </div>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && <p className="mt-3 text-sm text-ivory-dim">{t('tbNoMenuResults')}</p>}
+                    </div>
+                  </>
                 );
               })()}
 
@@ -639,28 +680,33 @@ function BookingPageContent({ slug }: { slug: string }) {
                   <>
                     {service.description && <p className="mt-2 text-xs text-ivory-dim">{service.description}</p>}
                     {service.service_options.length > 0 && (
-                      <div className="mt-3 space-y-1.5">
-                        {service.service_options.map((opt) => (
-                          <label key={opt.id} className="flex items-center gap-2 text-sm text-ivory">
-                            <input
-                              type="radio" name="serviceOption" className="accent-brass"
-                              checked={selectedServiceOptionId === opt.id}
-                              onChange={() => setSelectedServiceOptionId(opt.id)}
-                            />
-                            {opt.label}{opt.price_delta !== 0 && ` (${opt.price_delta > 0 ? '+' : ''}AED ${opt.price_delta.toFixed(2)})`}
-                          </label>
-                        ))}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {service.service_options.map((opt) => {
+                          const isSelected = selectedServiceOptionId === opt.id;
+                          return (
+                            <button
+                              type="button"
+                              key={opt.id}
+                              onClick={() => setSelectedServiceOptionId(isSelected ? '' : opt.id)}
+                              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                                isSelected ? 'border-brass bg-brass text-ink font-medium' : 'border-ink-line text-ivory hover:border-brass/40'
+                              }`}
+                            >
+                              {opt.label}{opt.price_delta !== 0 && ` (${opt.price_delta > 0 ? '+' : ''}AED ${opt.price_delta.toFixed(2)})`}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="mb-1 text-xs text-ivory-dim">Date (same as your booking, unless different)</p>
-                        <AdvancedDatePicker value={serviceDate} onChange={(v) => { setServiceDate(v); setServiceDateTouched(true); }} />
-                      </div>
-                      <div>
-                        <p className="mb-1 text-xs text-ivory-dim invisible">Time</p>
-                        <AdvancedTimePicker value={serviceTime} onChange={setServiceTime} />
-                      </div>
+                    <p className="mt-3 text-xs text-ivory-dim">When for the service? (defaults to your booking's own date)</p>
+                    <div className="mt-1 grid grid-cols-2 gap-3">
+                      <AdvancedDatePicker value={serviceDate} onChange={(v) => { setServiceDate(v); setServiceDateTouched(true); }} />
+                      <AdvancedTimePicker
+                        value={serviceTime}
+                        onChange={setServiceTime}
+                        minTime={service.available_start_time?.slice(0, 5)}
+                        maxTime={service.available_end_time?.slice(0, 5)}
+                      />
                     </div>
                   </>
                 );
@@ -704,26 +750,32 @@ function LoadingShell() {
   );
 }
 
-function RescheduleForm({ booking, busy, onCancel, onSave }: {
+function RescheduleForm({ booking, busy, onCancel, onSave, operatingHours, bookingHours }: {
   booking: MyBooking; busy: boolean; onCancel: () => void;
   onSave: (id: string, date: string, time: string, partySize: number) => void;
+  operatingHours: BookingConfig['operatingHours']; bookingHours: BookingConfig['bookingHours'];
 }) {
   const { t } = useLanguage();
   const current = new Date(booking.requested_at);
   const [date, setDate] = useState(current.toISOString().slice(0, 10));
   const [time, setTime] = useState(current.toTimeString().slice(0, 5));
   const [partySize, setPartySize] = useState(booking.party_size);
+  const hours = getEffectiveHoursFor(date, operatingHours, bookingHours);
 
   return (
     <div className="mt-3 space-y-2 border-t border-ink-line pt-3">
-      <div className="grid grid-cols-3 gap-2">
-        <AdvancedDatePicker value={date} onChange={setDate} />
-        <AdvancedTimePicker value={time} onChange={setTime} />
-        <input type="number" min={1} value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
-          className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-center text-sm text-ivory" />
-      </div>
+      {hours.closed ? (
+        <p className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{t('tbClosedThatDay')}</p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <AdvancedDatePicker value={date} onChange={setDate} />
+          <AdvancedTimePicker value={time} onChange={setTime} minTime={hours.minTime} maxTime={hours.maxTime} />
+          <input type="number" min={1} value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
+            className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-center text-sm text-ivory" />
+        </div>
+      )}
       <div className="flex gap-3">
-        <button type="button" disabled={busy} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+        <button type="button" disabled={busy || hours.closed || !time} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
           {busy ? t('tbConfirming') : t('tbSaveChanges')}
         </button>
         <button type="button" disabled={busy} onClick={onCancel} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">

@@ -263,6 +263,8 @@ export interface AdminBusiness {
   notification_settings: NotificationSettings;
   trn: string;
   tourism_dirham_rate_aed: number;
+  operating_hours: Record<string, { open: string; close: string } | null> | null;
+  booking_hours: Record<string, { open: string; close: string } | null> | null;
   created_at: string;
   contractCountdown: {
     contractNumber: string;
@@ -967,6 +969,8 @@ export interface Service {
   duration_minutes: number;
   is_available: boolean;
   sort_order: number;
+  available_start_time: string | null;
+  available_end_time: string | null;
 }
 
 export interface ServiceOption {

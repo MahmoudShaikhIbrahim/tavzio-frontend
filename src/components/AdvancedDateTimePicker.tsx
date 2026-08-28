@@ -115,8 +115,8 @@ export function AdvancedDatePicker({ value, onChange, minDate }: { value: string
 
 // Real time-slot grid - a fixed interval of real, tappable slots rather
 // than a native scroll wheel, closes the same way the date picker does.
-export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, startHour = 8, endHour = 23 }: {
-  value: string; onChange: (v: string) => void; intervalMinutes?: number; startHour?: number; endHour?: number;
+export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, startHour = 8, endHour = 23, minTime, maxTime }: {
+  value: string; onChange: (v: string) => void; intervalMinutes?: number; startHour?: number; endHour?: number; minTime?: string | null; maxTime?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -150,9 +150,21 @@ export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, star
   for (let h = startHour; h <= endHour; h++) {
     for (let m = 0; m < 60; m += intervalMinutes) {
       if (h === endHour && m > 0) break;
-      slots.push(`${pad(h)}:${pad(m)}`);
+      const t = `${pad(h)}:${pad(m)}`;
+      if (minTime && t < minTime) continue;
+      if (maxTime && t > maxTime) continue;
+      slots.push(t);
     }
   }
+
+  // Real fix: if hours changed (a different service, a different date's
+  // day-of-week) and the currently-selected value no longer falls
+  // inside the valid slots, clear it - never leave an invalid time
+  // silently selected just because it used to be valid.
+  useEffect(() => {
+    if (value && !slots.includes(value)) onChange('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minTime, maxTime, startHour, endHour]);
 
   function displayTime(t: string) {
     const [h, m] = t.split(':').map(Number);
@@ -173,8 +185,9 @@ export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, star
       </button>
 
       {open && (
-        <div className="absolute z-dropdown mt-2 w-40 overflow-hidden rounded-2xl border border-ink-line bg-ink-soft shadow-2xl shadow-black/40">
+        <div className="absolute z-dropdown mt-2 w-48 overflow-hidden rounded-2xl border border-ink-line bg-ink-soft shadow-2xl shadow-black/40">
           <div ref={listRef} className="max-h-64 overflow-y-auto p-1.5">
+            {slots.length === 0 && <p className="px-3 py-2 text-sm text-ivory-dim">No times available</p>}
             {slots.map((slot) => (
               <button
                 type="button"

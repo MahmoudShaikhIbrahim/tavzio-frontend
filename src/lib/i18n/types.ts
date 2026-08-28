@@ -179,6 +179,7 @@ export interface TranslationDict {
   tbDate: string;
   tbTime: string;
   tbSelectDate: string;
+  tbClosedThatDay: string;
   tbSelectTime: string;
   tbGuests: string;
   menuSearchPlaceholder: string;
@@ -207,6 +208,7 @@ export interface TranslationDict {
   tbSendingCode: string;
   tbSendVerificationCode: string;
   tbCancelBooking: string;
+  tbCancelServiceOnly: string;
   tbCancelling: string;
   tbBookingCancelled: string;
   tbBookingCancelledDesc: string;

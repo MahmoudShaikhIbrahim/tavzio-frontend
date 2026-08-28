@@ -700,12 +700,14 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
   const [description, setDescription] = useState(existing?.description || '');
   const [price, setPrice] = useState(existing?.price ?? 0);
   const [durationMinutes, setDurationMinutes] = useState(existing?.duration_minutes ?? 30);
+  const [availableStartTime, setAvailableStartTime] = useState(existing?.available_start_time?.slice(0, 5) || '');
+  const [availableEndTime, setAvailableEndTime] = useState(existing?.available_end_time?.slice(0, 5) || '');
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const payload = { name, description, price, durationMinutes };
+    const payload = { name, description, price, durationMinutes, availableStartTime: availableStartTime || null, availableEndTime: availableEndTime || null };
     if (existing) {
       await updateService(businessId, existing.id, payload);
     } else {
@@ -725,6 +727,15 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
       <Field label={t('Description')}>
         <input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} />
       </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={t('Available from (optional)')}>
+          <input type="time" value={availableStartTime} onChange={(e) => setAvailableStartTime(e.target.value)} className={inputClass} />
+        </Field>
+        <Field label={t('Available until (optional)')}>
+          <input type="time" value={availableEndTime} onChange={(e) => setAvailableEndTime(e.target.value)} className={inputClass} />
+        </Field>
+      </div>
+      <p className="text-xs text-ivory-dim">{t('Leave blank for no restriction on that side - guests will only be able to pick times inside this window when booking this service.')}</p>
       <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
         {saving ? t('Saving...') : existing ? t('Save changes') : t('Add service')}
       </button>

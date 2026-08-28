@@ -6,6 +6,7 @@ import { uploadBusinessImage } from '../../lib/supabaseClient';
 import type { AdminBusiness } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
+import WeeklyHoursEditor, { type WeeklyHours } from '../../components/WeeklyHoursEditor';
 import ChangePasswordPage from './ChangePasswordPage';
 
 
@@ -64,6 +65,7 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
   const [coverImageUrl, setCoverImageUrl] = useState(business.cover_image_url);
   const [trn, setTrn] = useState(business.trn || '');
   const [tourismDirhamRateAed, setTourismDirhamRateAed] = useState(business.tourism_dirham_rate_aed || 0);
+  const [operatingHours, setOperatingHours] = useState<WeeklyHours>(business.operating_hours || {});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -71,7 +73,7 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
     e.preventDefault();
     setSaving(true);
     setSaved(false);
-    const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl, trn, tourismDirhamRateAed } as Partial<AdminBusiness>);
+    const updated = await updateBusiness(businessId, { name, description, logoUrl, coverImageUrl, trn, tourismDirhamRateAed, operatingHours } as Partial<AdminBusiness>);
     onSaved(updated);
     setSaving(false);
     setSaved(true);
@@ -114,6 +116,11 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
           <Field label={t('Description')}>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={500} className={inputClass} />
           </Field>
+          <div className="mt-4">
+            <p className="mb-1 text-sm text-ivory">{t('Opening hours')}</p>
+            <p className="mb-2 text-xs text-ivory-dim">{t('Real hours per day - a day left as "No restriction" is treated as always open. Online Booking\'s own time picker follows these unless you set separate booking hours.')}</p>
+            <WeeklyHoursEditor value={operatingHours} onChange={setOperatingHours} />
+          </div>
         </Section>
 
         <Section title={t('Media')}>

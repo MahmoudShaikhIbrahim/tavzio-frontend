@@ -1709,6 +1709,8 @@ export interface ServicePayload {
   durationMinutes?: number;
   isAvailable?: boolean;
   sortOrder?: number;
+  availableStartTime?: string | null;
+  availableEndTime?: string | null;
 }
 
 export function createService(businessId: string, payload: ServicePayload) {

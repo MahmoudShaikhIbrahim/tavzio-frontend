@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listBookings, createBooking, updateBookingStatus, assignBookingTable, confirmArrivalByStaff, listTables, getBusiness, updateBusinessFeatures } from '../../lib/authApi';
+import { listBookings, createBooking, updateBookingStatus, assignBookingTable, confirmArrivalByStaff, listTables, getBusiness, updateBusinessFeatures, updateBusiness } from '../../lib/authApi';
 import ExportButtons from '../../components/ExportButtons';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import WeeklyHoursEditor, { type WeeklyHours } from '../../components/WeeklyHoursEditor';
 import type { BookingRow, BookingStatus, NotificationSettings, FloorTable, AdminBusiness } from '../../types';
 
 const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -179,7 +180,7 @@ function Group({ title, bookings, businessId, tables, onBookingsChange, onChange
         <h2 className={`font-mono text-[11px] uppercase tracking-wider ${urgent ? 'text-brass' : 'text-ivory-dim'}`}>{title}</h2>
         {urgent && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brass px-1.5 text-[11px] font-medium text-ink">{bookings.length}</span>}
       </div>
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} tables={tables} onBookingsChange={onBookingsChange} onChange={onChange} />)}
       </div>
     </div>
@@ -217,50 +218,52 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
   const foodItems = booking.booking_items || [];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
       {/* Same device already used on Kitchen tickets for "this needs
           attention" - a real colored strip, not a new pattern invented
           just for this page, so the whole dashboard signals urgency the
           same way wherever it shows up. */}
-      <div className={`h-1.5 ${booking.status === 'pending' ? 'bg-brass' : 'bg-ink-line'}`} />
-      <div className="p-4 text-base">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-ivory">
+      <div className={`h-1.5 shrink-0 ${booking.status === 'pending' ? 'bg-brass' : 'bg-ink-line'}`} />
+      <div className="flex flex-1 flex-col p-3 text-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-ivory">
             {title}
             {booking.party_size ? <span className="text-ivory-dim"> · {t('party of')} {booking.party_size}</span> : null}
           </p>
-          <p className="text-base text-ivory-dim">
-            {new Date(booking.requested_at).toLocaleString()}
-            {booking.contact_phone && ` · ${booking.contact_phone}`}
+          <p className="text-xs text-ivory-dim">
+            {new Date(booking.requested_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
           </p>
-          {booking.note && <p className="mt-1 text-base italic text-brass">{booking.note}</p>}
-          {booking.services?.name && (
-            <p className="mt-1.5 rounded-lg border border-brass/30 bg-ink px-2.5 py-1.5 text-sm text-ivory">
-              🎉 {booking.services.name}
-              {booking.service_options?.label && <span className="text-ivory-dim"> — {booking.service_options.label}</span>}
-              {booking.service_requested_at && (
-                <span className="text-ivory-dim"> · {new Date(booking.service_requested_at).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
-              )}
-            </p>
-          )}
+          {booking.contact_phone && <p className="text-xs text-ivory-dim">{booking.contact_phone}</p>}
         </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <span className={`rounded-full border px-3 py-1 text-sm font-medium ${STATUS_STYLE[booking.status]}`}>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[booking.status]}`}>
             {t(STATUS_LABEL[booking.status])}
           </span>
           {booking.status === 'confirmed' && (
-            <span className={`rounded-full border px-2.5 py-0.5 text-xs ${booking.arrival_status === 'arrived' ? 'border-success/50 text-success' : 'border-ink-line text-ivory-dim'}`}>
+            <span className={`rounded-full border px-2 py-0.5 text-[11px] ${booking.arrival_status === 'arrived' ? 'border-success/50 text-success' : 'border-ink-line text-ivory-dim'}`}>
               {booking.arrival_status === 'arrived' ? t('Arrived') : t('Not arrived')}
             </span>
           )}
         </div>
       </div>
 
+      {booking.note && <p className="mt-1.5 truncate text-xs italic text-brass">{booking.note}</p>}
+
+      {booking.services?.name && (
+        <p className="mt-1.5 truncate rounded-lg border border-brass/30 bg-ink px-2 py-1 text-xs text-ivory">
+          🎉 {booking.services.name}
+          {booking.service_options?.label && <span className="text-ivory-dim"> — {booking.service_options.label}</span>}
+          {booking.service_requested_at && (
+            <span className="text-ivory-dim"> · {new Date(booking.service_requested_at).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
+          )}
+        </p>
+      )}
+
       {foodItems.length > 0 && (
-        <div className="mt-3 rounded-lg border border-brass/30 bg-ink px-3 py-2.5">
-          <p className="text-xs uppercase tracking-wide text-brass">{t('Pre-ordered food')}</p>
-          <p className="mt-1 text-sm text-ivory-dim">
+        <div className="mt-2 rounded-lg border border-brass/30 bg-ink px-2 py-1.5">
+          <p className="text-[10px] uppercase tracking-wide text-brass">{t('Pre-ordered food')}</p>
+          <p className="mt-0.5 text-xs text-ivory-dim">
             {foodItems.map((i) => `${i.quantity}× ${i.item_name}`).join(', ')}
             {booking.food_ready_offset_minutes !== null && (
               booking.food_ready_offset_minutes === 0
@@ -272,7 +275,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       )}
 
       {booking.down_payment_status !== 'not_required' && (
-        <p className="mt-3 text-sm">
+        <p className="mt-2 text-xs">
           <span className="text-ivory-dim">{t('Down payment')}: </span>
           <span className={booking.down_payment_status === 'paid' ? 'text-success' : booking.down_payment_status === 'failed' ? 'text-danger' : 'text-brass'}>
             AED {booking.down_payment_required_aed.toFixed(2)} · {t(booking.down_payment_status)}
@@ -281,48 +284,50 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       )}
 
       {tables.length > 0 && ['pending', 'confirmed'].includes(booking.status) && (
-        <div className="mt-3 flex items-center gap-2 text-sm">
+        <div className="mt-2 flex items-center gap-1.5 text-xs">
           <span className="text-ivory-dim">{t('Table:')}</span>
-          <select value={booking.table_id || ''} onChange={(e) => setTable(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory">
+          <select value={booking.table_id || ''} onChange={(e) => setTable(e.target.value)} className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory">
             <option value="">{t('Not assigned')}</option>
             {tables.map((tbl) => <option key={tbl.id} value={tbl.id}>{tbl.label}</option>)}
           </select>
         </div>
       )}
 
-      {booking.status === 'pending' && (
-        <div className="mt-3.5 flex gap-2">
+      <div className="mt-auto pt-2.5">
+        {booking.status === 'pending' && (
+          <div className="flex gap-1.5">
+            <button type="button"
+              onClick={() => setStatus('confirmed')}
+              className="flex-1 rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90"
+            >
+              {t('Confirm')}
+            </button>
+            <button type="button"
+              onClick={() => setStatus('declined')}
+              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10"
+            >
+              {t('Decline')}
+            </button>
+          </div>
+        )}
+        {booking.status === 'confirmed' && booking.arrival_status === 'not_arrived' && (
           <button type="button"
-            onClick={() => setStatus('confirmed')}
-            className="flex-1 rounded-lg bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90"
+            onClick={handleConfirmArrival}
+            disabled={confirmingArrival}
+            className="w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
           >
-            {t('Confirm')}
+            {confirmingArrival ? t('Confirming...') : t("Confirm arrival - I see the guest")}
           </button>
+        )}
+        {booking.status === 'confirmed' && (
           <button type="button"
-            onClick={() => setStatus('declined')}
-            className="rounded-lg border border-danger/40 px-4 py-3 text-base text-danger hover:bg-danger/10"
+            onClick={() => setStatus('completed')}
+            className="mt-1.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10"
           >
-            {t('Decline')}
+            {t('Mark completed')}
           </button>
-        </div>
-      )}
-      {booking.status === 'confirmed' && booking.arrival_status === 'not_arrived' && (
-        <button type="button"
-          onClick={handleConfirmArrival}
-          disabled={confirmingArrival}
-          className="mt-3.5 w-full rounded-lg border border-brass/40 px-3 py-3 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
-        >
-          {confirmingArrival ? t('Confirming...') : t("Confirm arrival - I see the guest")}
-        </button>
-      )}
-      {booking.status === 'confirmed' && (
-        <button type="button"
-          onClick={() => setStatus('completed')}
-          className="mt-3.5 w-full rounded-lg border border-brass/40 px-3 py-3 text-base text-brass hover:bg-brass/10"
-        >
-          {t('Mark completed')}
-        </button>
-      )}
+        )}
+      </div>
       </div>
     </div>
   );
@@ -343,9 +348,29 @@ function OnlineBookingSettings({ business, onSaved }: { business: AdminBusiness;
   const [downPaymentEnabled, setDownPaymentEnabled] = useState(!!cfg?.downPayment?.enabled);
   const [downPaymentMode, setDownPaymentMode] = useState<DownPaymentMode>(cfg?.downPayment?.mode || 'percentage');
   const [downPaymentValue, setDownPaymentValue] = useState(cfg?.downPayment?.value ?? 20);
+  const [bookingHours, setBookingHours] = useState<WeeklyHours>(business.booking_hours || {});
+  const [savingHours, setSavingHours] = useState(false);
+  const [savedHours, setSavedHours] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+
+  // Real, separate save for the hours override - booking_hours lives
+  // directly on businesses, not inside the features JSONB the rest of
+  // this form's handleSave manages via updateBusinessFeatures, so this
+  // genuinely needs its own call to updateBusiness.
+  async function handleSaveHours() {
+    setSavingHours(true);
+    setSavedHours(false);
+    try {
+      const updated = await updateBusiness(business.id, { bookingHours } as Partial<AdminBusiness>);
+      onSaved(updated);
+      setSavedHours(true);
+      setTimeout(() => setSavedHours(false), 2000);
+    } finally {
+      setSavingHours(false);
+    }
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -437,6 +462,21 @@ function OnlineBookingSettings({ business, onSaved }: { business: AdminBusiness;
           {saved && <span className="text-sm text-success">{t('Saved')}</span>}
         </div>
       </Section>
+
+      {enabled && (
+        <Section title={t('Booking hours')}>
+          <p className="text-sm text-ivory-dim">
+            {t('Optional override for Online Booking specifically - a day left as "No restriction" here falls back to the business\'s own opening hours (set in Business Profile).')}
+          </p>
+          <div className="mt-3">
+            <WeeklyHoursEditor value={bookingHours} onChange={setBookingHours} />
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <PrimaryButton onClick={handleSaveHours} loading={savingHours} type="button">{t('Save hours')}</PrimaryButton>
+            {savedHours && <span className="text-sm text-success">{t('Saved')}</span>}
+          </div>
+        </Section>
+      )}
 
       {enabled && business.slug && <ShareSection slug={business.slug} />}
     </div>

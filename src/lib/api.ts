@@ -171,8 +171,11 @@ export interface BookingConfig {
   menu: { id: string; name: string; price: number; description: string; image_url: string; menu_categories?: { name: string } | null }[];
   services: {
     id: string; name: string; description: string; price: number; duration_minutes: number;
+    available_start_time: string | null; available_end_time: string | null;
     service_options: { id: string; label: string; price_delta: number; sort_order: number }[];
   }[];
+  operatingHours: Record<string, { open: string; close: string } | null> | null;
+  bookingHours: Record<string, { open: string; close: string } | null> | null;
 }
 export function getBookingConfig(slug: string) {
   return request<BookingConfig>(`/api/public/business/${slug}/booking-config`);
@@ -219,6 +222,9 @@ export function cancelPublicBooking(bookingId: string, phone: string) {
 export interface MyBooking {
   id: string; guest_name: string; party_size: number; requested_at: string;
   note: string; status: string; down_payment_status: string;
+  service_requested_at: string | null;
+  services?: { name: string } | null;
+  service_options?: { label: string } | null;
 }
 export function listMyBookings(slug: string, phone: string) {
   return request<MyBooking[]>(`/api/public/business/${slug}/my-bookings?phone=${encodeURIComponent(phone)}`);
@@ -229,6 +235,13 @@ export function reschedulePublicBooking(bookingId: string, phone: string, reques
     method: 'PATCH', body: JSON.stringify({ phone, requestedAt, partySize }),
   });
 }
+
+export function cancelPublicBookingService(bookingId: string, phone: string) {
+  return request<MyBooking>(`/api/public/bookings/${bookingId}/cancel-service`, {
+    method: 'PATCH', body: JSON.stringify({ phone }),
+  });
+}
+
 
 export interface BookingArrival {
   id: string; guest_name: string; party_size: number; requested_at: string;
