@@ -198,7 +198,7 @@ export interface CreateBookingResponse {
 }
 export function submitPublicBooking(slug: string, payload: {
   phone: string; guestName: string; partySize: number; requestedAt: string; note?: string;
-  items?: { menuItemId: string; quantity: number }[]; foodReadyOffsetMinutes?: number;
+  items?: { menuItemId: string; quantity: number; note?: string }[]; foodReadyOffsetMinutes?: number;
   serviceId?: string; serviceOptionId?: string; serviceRequestedAt?: string;
 }) {
   return request<CreateBookingResponse>(`/api/public/business/${slug}/bookings`, {

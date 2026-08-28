@@ -10,10 +10,12 @@ import {
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
+import { hexToRgba } from '../../lib/color';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
 import ExportButtons from '../../components/ExportButtons';
 import { useConfirm } from '../../components/ConfirmDialog';
+import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import RecordPaymentFlow from '../../components/RecordPaymentFlow';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -204,6 +206,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-10">
+      {businessId && <SectionRequestNotifications businessId={businessId} section="orders" />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <h1 className="font-display text-3xl text-ivory">{t('Orders')}</h1>
@@ -250,26 +253,33 @@ export default function OrdersPage() {
               </button>
             </div>
           ))}
-          {requests.map((r) => (
-            <div key={r.id} className="rounded-lg border border-brass/50 bg-brass/10 p-3">
-              <p className="text-sm font-medium text-brass">
-                {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')} — <span className="text-ivory">{r.table_label || t('No table')}</span>
-              </p>
-              <div className="mt-2 flex gap-2">
-                {r.table_label && tableGroups[r.table_label] && (
-                  <a
-                    href={`#table-${encodeURIComponent(r.table_label)}`}
-                    className="flex-1 rounded-md border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30"
-                  >
-                    {t('View order')}
-                  </a>
-                )}
-                <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10">
-                  {t('Dismiss')}
-                </button>
+          {requests.map((r) => {
+            const customBg = r.request_color ? hexToRgba(r.request_color, 0.1) : null;
+            const customStyle = r.request_color && customBg ? { borderColor: r.request_color, backgroundColor: customBg } : undefined;
+            return (
+              <div key={r.id} className={`rounded-lg border p-3 ${customStyle ? '' : 'border-brass/50 bg-brass/10'}`} style={customStyle}>
+                <p className="text-sm font-medium" style={customStyle ? { color: r.request_color! } : undefined}>
+                  <span className={customStyle ? '' : 'text-brass'}>
+                    {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')}
+                  </span>
+                  {' — '}<span className="text-ivory">{r.table_label || t('No table')}</span>
+                </p>
+                <div className="mt-2 flex gap-2">
+                  {r.table_label && tableGroups[r.table_label] && (
+                    <a
+                      href={`#table-${encodeURIComponent(r.table_label)}`}
+                      className="flex-1 rounded-md border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30"
+                    >
+                      {t('View order')}
+                    </a>
+                  )}
+                  <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10">
+                    {t('Dismiss')}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {cashPending.map((item) => (
             <div key={item.id} className="rounded-lg border border-warning/50 bg-warning/10 p-3">
               <p className="text-sm font-medium text-warning">

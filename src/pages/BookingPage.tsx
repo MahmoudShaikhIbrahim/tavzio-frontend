@@ -7,6 +7,7 @@ import {
   getBookingPaymentStatus, getBusiness, type BookingConfig,
 } from '../lib/api';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
+import { AdvancedDatePicker, AdvancedTimePicker } from '../components/AdvancedDateTimePicker';
 import type { Business } from '../types';
 import { Check } from 'lucide-react';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
@@ -28,7 +29,7 @@ const FOOD_TIMING_OPTIONS = [
 
 type Step = 'loading' | 'notAvailable' | 'form' | 'otp' | 'submitting' | 'confirmed' | 'paymentPending' | 'paymentFailed' | 'managePhone' | 'manageOtp' | 'manageList';
 
-interface CartLine { menuItemId: string; name: string; price: number; quantity: number }
+interface CartLine { menuItemId: string; name: string; price: number; quantity: number; note: string }
 
 // Real, robust fix for a confirmed bug: layering a semi-transparent
 // native date/time input under a custom placeholder (the previous
@@ -40,18 +41,63 @@ interface CartLine { menuItemId: string; name: string; price: number; quantity: 
 // drive it entirely through one single custom-styled box - tapping it
 // calls showPicker() to open the real native picker, with a focus()
 // fallback for older Safari versions that don't support it yet.
-function DatePickerField({ value, onChange, placeholder, type }: {
-  value: string; onChange: (v: string) => void; placeholder: string; type: 'date' | 'time';
+// Real, expandable "add with note" row - matches the same interaction
+// pattern already used for notification buttons elsewhere in the app
+// (tap to expand, optional note, confirm) instead of a bare Add button
+// with no way for the guest to say "no onions" before it's in the cart.
+function BookingMenuItemRow({ item, cart, onAdd, t }: {
+  item: BookingConfig['menu'][number];
+  cart: { menuItemId: string; note: string; quantity: number }[];
+  onAdd: (item: BookingConfig['menu'][number], note?: string) => void;
+  t: (key: Parameters<ReturnType<typeof useLanguage>['t']>[0], vars?: Record<string, string | number>) => string;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [note, setNote] = useState('');
+  const totalQuantity = cart.filter((l) => l.menuItemId === item.id).reduce((s, l) => s + l.quantity, 0);
+
+  function handleConfirmAdd() {
+    onAdd(item, note.trim());
+    setNote('');
+    setExpanded(false);
+  }
+
   return (
-    <input
-      type={type}
-      required
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      aria-label={placeholder}
-      className="date-time-field w-full truncate rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-start text-sm text-ivory"
-    />
+    <div className="rounded-lg border border-ink-line p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-3">
+          {item.image_url ? (
+            <img src={item.image_url} alt={item.name} className="h-12 w-12 shrink-0 rounded-lg object-cover" loading="lazy" />
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-ink text-ivory-dim/30">
+              <UtensilsCrossed size={18} strokeWidth={1.5} />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-display text-sm text-ivory">{item.name}</p>
+            <p className="text-xs text-ivory-dim">AED {item.price.toFixed(2)}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {totalQuantity > 0 && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{totalQuantity} {t('tbInCart')}</span>}
+          <button type="button" onClick={() => setExpanded((s) => !s)} className="rounded-lg border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10">
+            {expanded ? t('tbCancel') : t('tbAdd')}
+          </button>
+        </div>
+      </div>
+      {expanded && (
+        <div className="mt-2">
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t('tbItemNotePlaceholder')}
+            className="w-full rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory placeholder:text-ivory-dim/60"
+          />
+          <button type="button" onClick={handleConfirmAdd} className="mt-1.5 w-full rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+            {t('tbAddToOrder')}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -85,6 +131,7 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [selectedServiceOptionId, setSelectedServiceOptionId] = useState('');
   const [serviceDate, setServiceDate] = useState('');
+  const [serviceDateTouched, setServiceDateTouched] = useState(false);
   const [serviceTime, setServiceTime] = useState('');
   const [otp, setOtp] = useState('');
   const [, setOtpSent] = useState(false);
@@ -105,6 +152,15 @@ function BookingPageContent({ slug }: { slug: string }) {
       .then((c) => { setConfig(c); setStep('form'); })
       .catch(() => setStep('notAvailable'));
   }, [slug]);
+
+  // Real fix for the explicit request: the service date defaults to
+  // the same date as the table booking itself ("obviously the same
+  // date") and stays in sync if the guest changes the main date later -
+  // unless they've deliberately edited the service date themselves,
+  // in which case their own choice is never silently overwritten.
+  useEffect(() => {
+    if (!serviceDateTouched) setServiceDate(date);
+  }, [date, serviceDateTouched]);
 
   // Returning from a redirect-based down payment - poll until the
   // reconciliation loop (or the gateway's own instant callback) marks
@@ -131,17 +187,20 @@ function BookingPageContent({ slug }: { slug: string }) {
     return () => clearInterval(interval);
   }, [returningPaymentId]);
 
-  function addToCart(item: BookingConfig['menu'][number]) {
+  function addToCart(item: BookingConfig['menu'][number], note: string = '') {
     setCart((prev) => {
-      const existing = prev.find((l) => l.menuItemId === item.id);
-      if (existing) return prev.map((l) => (l.menuItemId === item.id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...prev, { menuItemId: item.id, name: item.name, price: item.price, quantity: 1 }];
+      const existing = prev.find((l) => l.menuItemId === item.id && l.note === note);
+      if (existing) return prev.map((l) => (l === existing ? { ...l, quantity: l.quantity + 1 } : l));
+      return [...prev, { menuItemId: item.id, name: item.name, price: item.price, quantity: 1, note }];
     });
   }
-  function changeQuantity(menuItemId: string, delta: number) {
+  function changeQuantity(menuItemId: string, note: string, delta: number) {
     setCart((prev) => prev
-      .map((l) => (l.menuItemId === menuItemId ? { ...l, quantity: l.quantity + delta } : l))
+      .map((l) => (l.menuItemId === menuItemId && l.note === note ? { ...l, quantity: l.quantity + delta } : l))
       .filter((l) => l.quantity > 0));
+  }
+  function removeCartLine(menuItemId: string, note: string) {
+    setCart((prev) => prev.filter((l) => !(l.menuItemId === menuItemId && l.note === note)));
   }
   const cartTotal = cart.reduce((sum, l) => sum + l.price * l.quantity, 0);
 
@@ -176,7 +235,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       const requestedAt = new Date(`${date}T${time}`).toISOString();
       const result = await submitPublicBooking(slug, {
         phone, guestName, partySize, requestedAt, note,
-        items: config?.allowPreOrder && cart.length > 0 ? cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })) : undefined,
+        items: config?.allowPreOrder && cart.length > 0 ? cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, note: l.note })) : undefined,
         foodReadyOffsetMinutes: config?.allowPreOrder && cart.length > 0 ? foodTiming : undefined,
         serviceId: selectedServiceId || undefined,
         serviceOptionId: selectedServiceOptionId || undefined,
@@ -468,11 +527,11 @@ function BookingPageContent({ slug }: { slug: string }) {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbDate')}</label>
-              <DatePickerField value={date} onChange={setDate} placeholder={t('tbSelectDate')} type="date" />
+              <AdvancedDatePicker value={date} onChange={setDate} />
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbTime')}</label>
-              <DatePickerField value={time} onChange={setTime} placeholder={t('tbSelectTime')} type="time" />
+              <AdvancedTimePicker value={time} onChange={setTime} />
             </div>
             <div className="col-span-1">
               <label className="mb-1 block text-xs text-ivory-dim">{t('tbGuests')}</label>
@@ -497,45 +556,49 @@ function BookingPageContent({ slug }: { slug: string }) {
                   className="w-full rounded-lg border border-ink-line bg-ink py-2 ps-8 pe-3 text-sm text-ivory placeholder:text-ivory-dim/60"
                 />
               </div>
-              <div className="mt-3 space-y-2">
-                {config.menu
-                  .filter((item) => {
-                    const q = foodSearchQuery.trim().toLowerCase();
-                    if (!q) return true;
-                    return item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
-                  })
-                  .map((item) => {
-                  const line = cart.find((l) => l.menuItemId === item.id);
-                  return (
-                    <div key={item.id} className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-3">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item.name} className="h-12 w-12 shrink-0 rounded-lg object-cover" loading="lazy" />
-                        ) : (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-ink text-ivory-dim/30">
-                            <UtensilsCrossed size={18} strokeWidth={1.5} />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate font-display text-sm text-ivory">{item.name}</p>
-                          <p className="text-xs text-ivory-dim">AED {item.price.toFixed(2)}</p>
+
+              {(() => {
+                const q = foodSearchQuery.trim().toLowerCase();
+                const filtered = config.menu.filter((item) => !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q));
+                const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, item) => {
+                  const cat = item.menu_categories?.name || t('tbOtherItems');
+                  (acc[cat] ||= []).push(item);
+                  return acc;
+                }, {});
+                return (
+                  <div className="mt-3 space-y-5">
+                    {Object.entries(grouped).map(([category, items]) => (
+                      <div key={category}>
+                        <p className="text-xs font-medium uppercase tracking-wide text-brass">{category}</p>
+                        <div className="mt-2 space-y-2">
+                          {items.map((item) => <BookingMenuItemRow key={item.id} item={item} cart={cart} onAdd={addToCart} t={t} />)}
                         </div>
                       </div>
-                      {line ? (
-                        <div className="flex shrink-0 items-center gap-2">
-                          <button type="button" onClick={() => changeQuantity(item.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:text-ivory">−</button>
-                          <span className="w-5 text-center text-sm text-ivory">{line.quantity}</span>
-                          <button type="button" onClick={() => changeQuantity(item.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:text-ivory">+</button>
-                        </div>
-                      ) : (
-                        <button type="button" onClick={() => addToCart(item)} className="shrink-0 rounded-lg border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10">{t('tbAdd')}</button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    ))}
+                    {filtered.length === 0 && <p className="mt-3 text-sm text-ivory-dim">{t('tbNoMenuResults')}</p>}
+                  </div>
+                );
+              })()}
+
               {cart.length > 0 && (
                 <>
+                  <div className="mt-4 space-y-2 border-t border-ink-line pt-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim">{t('tbYourOrder')}</p>
+                    {cart.map((line) => (
+                      <div key={`${line.menuItemId}-${line.note}`} className="flex items-start justify-between gap-2 rounded-lg bg-ink px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm text-ivory">{line.quantity}× {line.name}</p>
+                          {line.note && <p className="mt-0.5 text-xs italic text-brass">"{line.note}"</p>}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <button type="button" onClick={() => changeQuantity(line.menuItemId, line.note, -1)} className="flex h-6 w-6 items-center justify-center rounded border border-ink-line text-ivory-dim hover:text-ivory">−</button>
+                          <span className="w-4 text-center text-sm text-ivory">{line.quantity}</span>
+                          <button type="button" onClick={() => changeQuantity(line.menuItemId, line.note, 1)} className="flex h-6 w-6 items-center justify-center rounded border border-brass/40 text-brass">+</button>
+                          <button type="button" onClick={() => removeCartLine(line.menuItemId, line.note)} className="ms-1 text-xs text-danger hover:underline">{t('tbRemove')}</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   <div className="mt-3 flex justify-between border-t border-ink-line pt-3 text-sm">
                     <span className="text-ivory-dim">{t('tbTotal')}</span>
                     <span className="text-ivory">AED {cartTotal.toFixed(2)}</span>
@@ -591,18 +654,12 @@ function BookingPageContent({ slug }: { slug: string }) {
                     )}
                     <div className="mt-3 grid grid-cols-2 gap-3">
                       <div>
-                        <p className="mb-1 text-xs text-ivory-dim">When for the service?</p>
-                        <input
-                          type="date" required value={serviceDate} onChange={(e) => setServiceDate(e.target.value)}
-                          className="date-time-field w-full truncate rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-start text-sm text-ivory"
-                        />
+                        <p className="mb-1 text-xs text-ivory-dim">Date (same as your booking, unless different)</p>
+                        <AdvancedDatePicker value={serviceDate} onChange={(v) => { setServiceDate(v); setServiceDateTouched(true); }} />
                       </div>
                       <div>
                         <p className="mb-1 text-xs text-ivory-dim invisible">Time</p>
-                        <input
-                          type="time" required value={serviceTime} onChange={(e) => setServiceTime(e.target.value)}
-                          className="date-time-field w-full truncate rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-start text-sm text-ivory"
-                        />
+                        <AdvancedTimePicker value={serviceTime} onChange={setServiceTime} />
                       </div>
                     </div>
                   </>
@@ -660,8 +717,8 @@ function RescheduleForm({ booking, busy, onCancel, onSave }: {
   return (
     <div className="mt-3 space-y-2 border-t border-ink-line pt-3">
       <div className="grid grid-cols-3 gap-2">
-        <DatePickerField value={date} onChange={setDate} placeholder="Date" type="date" />
-        <DatePickerField value={time} onChange={setTime} placeholder="Time" type="time" />
+        <AdvancedDatePicker value={date} onChange={setDate} />
+        <AdvancedTimePicker value={time} onChange={setTime} />
         <input type="number" min={1} value={partySize} onFocus={(e) => e.target.select()} onChange={(e) => setPartySize(Number(e.target.value))}
           className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-center text-sm text-ivory" />
       </div>

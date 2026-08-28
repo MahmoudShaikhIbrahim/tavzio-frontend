@@ -14,6 +14,7 @@ import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../.
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import type { TillSession, MenuCategory, MenuItem, PaymentRow, OrderRow, FloorTable } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import { PaymentRowItem } from './PaymentsPage';
 
 interface CartLine {
@@ -491,7 +492,9 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
   }
 
   return (
-    <div className="relative grid gap-6 lg:grid-cols-[1fr_380px]">
+    <>
+      {businessId && <SectionRequestNotifications businessId={businessId} section="pos" />}
+      <div className="relative grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Real, non-blocking replacement for the old full-screen block -
           floats over the corner, never intercepts a tap on the terminal
           underneath, and clears itself on the timer set above. */}
@@ -891,6 +894,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         <XReportPanel businessId={businessId} tillId={till.id} onClose={() => setShowXReport(false)} />
       )}
     </div>
+    </>
   );
 }
 

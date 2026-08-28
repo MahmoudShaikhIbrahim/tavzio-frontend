@@ -124,13 +124,30 @@ function CustomButtonItem({ btn, slug, tapEventId, onOpenGroup }: {
 }
 
 function QuickRequestButton({ slug, tapEventId, button }: {
-  slug: string; tapEventId: number | null; button: { id: string; label: string; icon: string; image_url: string | null };
+  slug: string; tapEventId: number | null; button: { id: string; label: string; icon: string; image_url: string | null; allow_note?: boolean };
 }) {
   const [state, setState] = useState<'idle' | 'expanded' | 'sending' | 'sent' | 'error'>('idle');
   const [note, setNote] = useState('');
   const { t } = useLanguage();
   const Icon = getIcon(button.icon);
   const brandColor = getIconColor(button.icon);
+
+  const allowNote = button.allow_note !== false;
+
+  async function handleTap() {
+    if (!allowNote) {
+      if (!tapEventId) { setState('error'); return; }
+      setState('sending');
+      try {
+        await submitCustomButtonRequest(slug, button.id, tapEventId);
+        setState('sent');
+      } catch {
+        setState('error');
+      }
+      return;
+    }
+    setState('expanded');
+  }
 
   async function handleSend() {
     if (!tapEventId) {
@@ -165,7 +182,7 @@ function QuickRequestButton({ slug, tapEventId, button }: {
     );
   }
 
-  if (state === 'expanded' || state === 'sending') {
+  if (allowNote && (state === 'expanded' || state === 'sending')) {
     return (
       <div className="rounded-2xl border border-brass/40 p-3">
         <div className="flex items-center gap-3 text-ivory">
@@ -190,10 +207,10 @@ function QuickRequestButton({ slug, tapEventId, button }: {
   }
 
   return (
-    <button type="button" onClick={() => setState('expanded')} className={buttonClass}>
+    <button type="button" onClick={handleTap} disabled={state === 'sending'} className={buttonClass}>
       {iconEl}
       <span className="font-body text-[15px] font-medium">
-        {state === 'error' ? `${button.label} — ${t('tapAgainToTry')}` : button.label}
+        {state === 'sending' ? t('sending') : state === 'error' ? `${button.label} — ${t('tapAgainToTry')}` : button.label}
       </span>
     </button>
   );

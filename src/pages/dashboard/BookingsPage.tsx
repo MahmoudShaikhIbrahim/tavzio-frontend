@@ -235,6 +235,15 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
             {booking.contact_phone && ` · ${booking.contact_phone}`}
           </p>
           {booking.note && <p className="mt-1 text-base italic text-brass">{booking.note}</p>}
+          {booking.services?.name && (
+            <p className="mt-1.5 rounded-lg border border-brass/30 bg-ink px-2.5 py-1.5 text-sm text-ivory">
+              🎉 {booking.services.name}
+              {booking.service_options?.label && <span className="text-ivory-dim"> — {booking.service_options.label}</span>}
+              {booking.service_requested_at && (
+                <span className="text-ivory-dim"> · {new Date(booking.service_requested_at).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <span className={`rounded-full border px-3 py-1 text-sm font-medium ${STATUS_STYLE[booking.status]}`}>

@@ -37,6 +37,8 @@ interface GuestCustomButton {
   notification_destination: 'general' | 'housekeeping_task' | 'maintenance_ticket';
   target_section: string | null;
   parent_button_id: string | null;
+  allow_note: boolean;
+  color: string | null;
 }
 
 interface PortalData {
@@ -434,8 +436,9 @@ function CustomButtonItem({ btn, portalBase, onOpenGroup }: {
 function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCustomButton; portalBase: string; iconEl: ReactNode }) {
   const [state, setState] = useState<'idle' | 'expanded' | 'sending' | 'sent' | 'error'>('idle');
   const [note, setNote] = useState('');
+  const allowNote = btn.allow_note !== false;
 
-  async function handleSend() {
+  async function send(noteText: string) {
     setState('sending');
     try {
       const requestType = btn.notification_destination === 'housekeeping_task' ? 'housekeeping'
@@ -445,17 +448,23 @@ function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCusto
       // target_section was never actually sent, so an admin's routing
       // choice (e.g. "Kitchen") was silently discarded every time -
       // the request always fell back to "everyone with Requests access."
-      const fullNote = note.trim() ? `${btn.label}: ${note.trim()}` : btn.label;
+      const fullNote = noteText.trim() ? `${btn.label}: ${noteText.trim()}` : btn.label;
       const res = await fetch(`${BASE}/api/public${portalBase}/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestType, note: fullNote, targetSection: btn.target_section }),
+        body: JSON.stringify({ requestType, note: fullNote, targetSection: btn.target_section, color: btn.color }),
       });
       if (!res.ok) throw new Error();
       setState('sent');
     } catch {
       setState('error');
     }
+  }
+  const handleSend = () => send(note);
+
+  function handleTap() {
+    if (!allowNote) { send(''); return; }
+    setState('expanded');
   }
 
   if (state === 'sent') {
@@ -467,7 +476,7 @@ function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCusto
     );
   }
 
-  if (state === 'expanded' || state === 'sending') {
+  if (allowNote && (state === 'expanded' || state === 'sending')) {
     return (
       <div className="w-full rounded-lg border border-brass/40 p-3">
         <div className="flex items-center gap-3 text-ivory">
@@ -492,9 +501,9 @@ function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCusto
   }
 
   return (
-    <button type="button" onClick={() => setState('expanded')} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass disabled:opacity-50">
+    <button type="button" onClick={handleTap} disabled={state === 'sending'} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass disabled:opacity-50">
       {iconEl}
-      <span>{state === 'error' ? `${btn.label} - tap to try again` : btn.label}</span>
+      <span>{state === 'sending' ? 'Sending...' : state === 'error' ? `${btn.label} - tap to try again` : btn.label}</span>
     </button>
   );
 }

@@ -4,6 +4,7 @@ import { useT } from '../../hooks/useT';
 import { listOrders, updateOrderStatus, getBusiness, reprintKitchenTicket } from '../../lib/authApi';
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
+import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import type { OrderRow, NotificationSettings } from '../../types';
 
 // Standard KDS behavior, not a Tavzio invention: a ticket's age is the
@@ -140,6 +141,7 @@ export default function KitchenPage() {
 
   return (
     <div className="space-y-6">
+      {businessId && <SectionRequestNotifications businessId={businessId} section="kitchen" />}
       <div className="flex items-center gap-2">
         <h1 className="font-display text-2xl text-ivory">{t('Kitchen')}</h1>
         {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}

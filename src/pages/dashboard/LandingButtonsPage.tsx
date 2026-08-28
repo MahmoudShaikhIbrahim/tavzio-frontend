@@ -32,21 +32,17 @@ export default function LandingButtonsPage() {
 
   const isHotel = business.category === 'hotel';
 
-  if (!isHotel) {
-    return <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />;
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-ink-line">
-        {(['landing', 'guest-portal', 'services'] as const).map((tabKey) => (
+        {(['landing', ...(isHotel ? ['guest-portal'] as const : []), 'services'] as const).map((tabKey) => (
           <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-4 py-2 text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
             {tabKey === 'landing' ? t('Landing Page') : tabKey === 'guest-portal' ? t('Guest Portal Services') : t('Bookable Services')}
           </button>
         ))}
       </div>
       {tab === 'landing' && <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />}
-      {tab === 'guest-portal' && <GuestPortalServicesSection businessId={businessId} />}
+      {tab === 'guest-portal' && isHotel && <GuestPortalServicesSection businessId={businessId} />}
       {tab === 'services' && <BookableServicesSection businessId={businessId} />}
     </div>
   );
@@ -408,6 +404,8 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
   const [buttonType, setButtonType] = useState<'link' | 'notification' | 'group'>(existing?.button_type || (forcedParentId ? 'notification' : 'link'));
   const [notificationDestination, setNotificationDestination] = useState<'general' | 'housekeeping_task' | 'maintenance_ticket'>(existing?.notification_destination || 'general');
   const [targetSection, setTargetSection] = useState(existing?.target_section || '');
+  const [allowNote, setAllowNote] = useState(existing?.allow_note ?? true);
+  const [color, setColor] = useState(existing?.color || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -443,6 +441,8 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
         notificationDestination: buttonType === 'notification' ? notificationDestination : undefined,
         targetSection: buttonType === 'notification' && notificationDestination === 'general' ? (targetSection || null) : null,
         parentButtonId: forcedParentId ?? (existing?.parent_button_id ?? null),
+        allowNote: buttonType === 'notification' ? allowNote : undefined,
+        color: color || null,
       };
       if (existing) {
         await updateCustomButton(businessId, existing.id, payload);
@@ -510,6 +510,35 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
           {notificationDestination === 'maintenance_ticket' && (
             <p className="mt-2 text-sm text-ivory-dim">{t('Lands directly as a maintenance ticket - room if tapped in-room, otherwise a common-area issue.')}</p>
           )}
+          <label className="mt-3 flex items-center gap-2 text-sm text-ivory">
+            <input type="checkbox" checked={allowNote} onChange={(e) => setAllowNote(e.target.checked)} className="accent-brass" />
+            {t('Let the guest add an optional note before sending')}
+          </label>
+        </Field>
+      )}
+
+      {buttonType === 'notification' && (
+        <Field label={t('Request card color (optional)')}>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={color || '#b8925a'}
+              onChange={(e) => setColor(e.target.value)}
+              className="h-10 w-14 cursor-pointer rounded border border-ink-line bg-ink-soft"
+            />
+            <input
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              placeholder="#b8925a"
+              className={`${inputClass} w-32`}
+            />
+            {color && (
+              <button type="button" onClick={() => setColor('')} className="text-sm text-ivory-dim hover:text-ivory">
+                {t('Use default')}
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-ivory-dim">{t('Only changes this button\'s own request card - never affects any other color in the app.')}</p>
         </Field>
       )}
 

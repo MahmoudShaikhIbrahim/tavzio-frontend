@@ -1013,6 +1013,10 @@ export interface BookingRow {
   down_payment_required_aed: number;
   down_payment_status: 'not_required' | 'pending' | 'paid' | 'failed' | 'refunded';
   booking_items?: BookingItemRow[];
+  service_option_id: string | null;
+  service_requested_at: string | null;
+  services?: { name: string } | null;
+  service_options?: { label: string } | null;
 }
 
 // --- POS / booking-system integration ---
@@ -1065,6 +1069,8 @@ export interface CustomButton {
   notification_destination: 'general' | 'housekeeping_task' | 'maintenance_ticket';
   target_section: string | null;
   parent_button_id: string | null;
+  allow_note: boolean;
+  color: string | null;
 }
 
 // --- Pay Bill / split payments ---

@@ -1909,6 +1909,8 @@ export interface CustomButtonPayload {
   notificationDestination?: 'general' | 'housekeeping_task' | 'maintenance_ticket';
   targetSection?: string | null;
   parentButtonId?: string | null;
+  allowNote?: boolean;
+  color?: string | null;
 }
 
 export function createCustomButton(businessId: string, payload: CustomButtonPayload) {
@@ -2008,12 +2010,17 @@ export interface RequestRow {
   request_type: 'call_waiter' | 'request_bill' | 'custom';
   custom_request_label: string | null;
   target_section: string | null;
+  request_color: string | null;
   status: string;
   created_at: string;
 }
 
 export function listRequests(businessId: string) {
   return authFetch<RequestRow[]>(`/api/businesses/${businessId}/orders/requests`);
+}
+
+export function listRequestsForSection(businessId: string, section: string) {
+  return authFetch<RequestRow[]>(`/api/businesses/${businessId}/orders/requests/for-section/${section}`);
 }
 
 export function dismissRequest(businessId: string, requestId: string) {

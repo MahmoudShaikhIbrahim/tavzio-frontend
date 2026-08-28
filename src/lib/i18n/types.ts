@@ -187,6 +187,14 @@ export interface TranslationDict {
   tbPreOrderFood: string;
   tbPreOrderFoodDesc: string;
   tbAdd: string;
+  tbOtherItems: string;
+  tbNoMenuResults: string;
+  tbYourOrder: string;
+  tbRemove: string;
+  tbInCart: string;
+  tbCancel: string;
+  tbItemNotePlaceholder: string;
+  tbAddToOrder: string;
   tbTotal: string;
   tbWhenReady: string;
   tbReadyOnArrival: string;

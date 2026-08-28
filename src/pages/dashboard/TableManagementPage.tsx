@@ -8,6 +8,7 @@ import {
 import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import type { FloorTable, WaitlistEntry, Card } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import { useConfirm } from '../../components/ConfirmDialog';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -162,6 +163,7 @@ export default function TableManagementPage() {
 
   return (
     <div className="space-y-8">
+      <SectionRequestNotifications businessId={businessId} section="tables" />
       <h1 className="font-display text-3xl text-ivory">{t('Table Management')}</h1>
 
       <Section title={t('Floor plan')} action={

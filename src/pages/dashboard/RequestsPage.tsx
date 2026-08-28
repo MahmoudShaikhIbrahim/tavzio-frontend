@@ -6,6 +6,7 @@ import {
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import type { LoyaltyClaim } from '../../types';
+import { hexToRgba } from '../../lib/color';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import PaymentModal from '../../components/PaymentModal';
@@ -127,10 +128,16 @@ export default function RequestsPage() {
           {requests.map((r) => {
             const style = REQUEST_STYLE[r.request_type];
             const label = r.request_type === 'custom' ? (r.custom_request_label || t(style.label)) : t(style.label);
+            const customBg = r.request_color ? hexToRgba(r.request_color, 0.1) : null;
+            const customStyle = r.request_color && customBg ? { borderColor: r.request_color, backgroundColor: customBg } : undefined;
             return (
-              <div key={r.id} className={`rounded-lg border ${style.border} ${style.bg} p-3`}>
-                <p className={`text-sm font-medium ${style.text}`}>
-                  {label} — <span className="text-ivory">{r.table_label || t('No table')}</span>
+              <div
+                key={r.id}
+                className={`rounded-lg border p-3 ${customStyle ? '' : `${style.border} ${style.bg}`}`}
+                style={customStyle}
+              >
+                <p className="text-sm font-medium" style={customStyle ? { color: r.request_color! } : undefined}>
+                  <span className={customStyle ? '' : style.text}>{label}</span> — <span className="text-ivory">{r.table_label || t('No table')}</span>
                 </p>
                 <button type="button"
                   onClick={() => handleDismiss(r.id)}
