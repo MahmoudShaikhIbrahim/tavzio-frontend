@@ -57,14 +57,19 @@ export default {
           '60%': { opacity: '1', transform: 'scale(1.08)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
-        // The iOS "jiggle mode" wobble - deliberately tiny (1deg) and
-        // fast, and every caller alternates each item's animation-delay
-        // by a few ms so neighbors visibly wobble out of phase, never
-        // in unison. That's what actually reads as "these are now
-        // individually grabbable" rather than as one decorative shake.
+        // The iOS "jiggle mode" wobble - deliberately tiny (0.6deg,
+        // toned down further after feedback that it read as too much
+        // "vibration") and every caller alternates each item's
+        // animation-delay by a few ms so neighbors visibly wobble out of
+        // phase, never in unison. That's what actually reads as "these
+        // are now individually grabbable" rather than as one decorative
+        // shake - and it's purely cosmetic now: hit-testing during a
+        // drag is measured once at drag start and never re-reads a live
+        // (wobbling) position, so this animation can no longer affect
+        // reorder accuracy no matter how large or small it is.
         jiggle: {
-          '0%, 100%': { transform: 'rotate(-1deg)' },
-          '50%': { transform: 'rotate(1deg)' },
+          '0%, 100%': { transform: 'rotate(-0.6deg)' },
+          '50%': { transform: 'rotate(0.6deg)' },
         },
       },
       animation: {

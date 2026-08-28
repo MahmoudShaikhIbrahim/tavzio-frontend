@@ -58,7 +58,7 @@ export default function CustomizeNavModal({
                 {...handlers}
                 className={`flex items-center gap-3 rounded-lg border border-ink-line bg-ink px-3 py-2.5 touch-none select-none sm:touch-auto ${
                   isJiggling ? 'motion-safe:animate-jiggle' : ''
-                } ${isDragging ? 'z-10 scale-[1.02] border-brass/50 shadow-lg' : ''}`}
+                } ${isDragging ? 'z-10 border-brass/50 shadow-lg' : ''}`}
                 style={{ ...handlers.style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
               >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-sm text-brass">{i + 1}</span>

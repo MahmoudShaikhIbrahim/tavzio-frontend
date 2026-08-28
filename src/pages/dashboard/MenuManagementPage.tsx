@@ -149,7 +149,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
             {...handlers}
             className={`flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base ${
               isSearching ? '' : 'touch-none select-none sm:touch-auto'
-            } ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 scale-[1.01] border-brass/50 shadow-lg' : ''}`}
+            } ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 border-brass/50 shadow-lg' : ''}`}
             style={{ ...(handlers as { style?: React.CSSProperties }).style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
           >
             <span className="text-ivory">{c.name}</span>

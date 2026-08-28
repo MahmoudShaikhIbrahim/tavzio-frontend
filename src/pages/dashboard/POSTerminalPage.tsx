@@ -683,7 +683,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               <div key={item.id}
                 ref={(el) => itemDrag.registerItemRef(item.id, el)}
                 {...dragHandlers}
-                className={`relative touch-none select-none sm:touch-auto ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 scale-105 opacity-80' : ''}`}
+                className={`relative touch-none select-none sm:touch-auto ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 opacity-90 shadow-xl shadow-black/40' : ''}`}
                 style={{ ...dragHandlers.style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
               >
                 <button type="button"
