@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getMe } from '../lib/authApi';
-import { getToken, clearSession } from '../lib/session';
+import { getToken, clearSession, refreshAccessToken } from '../lib/session';
 import { authorizeSupabase } from '../lib/supabaseClient';
 import type { Profile } from '../types';
 
@@ -48,6 +48,27 @@ export function useSession() {
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+
+    // The actual root cause of "bookings/requests don't update live,
+    // only a refresh fixes it": authorizeSupabase's realtime.setAuth()
+    // used to only ever get called reactively, when some REST call
+    // happened to 401 on an expired access token (Supabase's default
+    // token lifetime is 1 hour). A staff member just watching a live
+    // page - Bookings, Requests, POS Terminal - makes no REST calls at
+    // all while watching, so nothing ever triggered that refresh; the
+    // realtime websocket kept authorizing with an increasingly stale,
+    // eventually-expired JWT and Supabase silently stopped delivering
+    // postgres_changes events on it, with no error visible client-side.
+    // A full page reload "fixed" it only because it re-bootstraps the
+    // session from scratch with a fresh token. This proactive timer -
+    // running on every one of the ~40 pages that call useSession() -
+    // refreshes well before the 1-hour expiry so the realtime socket's
+    // auth never actually goes stale while the tab stays open.
+    const REALTIME_AUTH_REFRESH_MS = 45 * 60 * 1000; // 45 min, ahead of the 1hr token lifetime
+    const interval = setInterval(() => {
+      refreshAccessToken();
+    }, REALTIME_AUTH_REFRESH_MS);
+    return () => clearInterval(interval);
   }, []);
 
   function logout() {

@@ -336,13 +336,38 @@ function BillPageContent({ slug }: { slug: string }) {
             <div className="flex justify-between text-sm text-ivory"><span>Total</span><span>{receipt.total.toFixed(2)} AED</span></div>
           </div>
 
+          {/* Real fix for the explicit request: nothing here let the
+              guest keep a copy of the receipt or leave a review right
+              after paying - the exact moment they're most likely to.
+              Download uses the browser's native print-to-PDF (no extra
+              PDF library needed for a one-page receipt); the review
+              button only renders if the business has actually set a
+              Google review link on their landing page (same `links`
+              config the landing page itself reads from), never a
+              guessed/default URL. */}
+          <div className="mt-4 grid grid-cols-2 gap-2 print:hidden">
+            <button type="button" onClick={() => window.print()} className="rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10">
+              Download receipt
+            </button>
+            {business?.links?.googleReviews?.enabled && business.links.googleReviews.value && (
+              <a
+                href={business.links.googleReviews.value}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10"
+              >
+                ★ Leave a review
+              </a>
+            )}
+          </div>
+
           <button type="button"
             onClick={() => { setPaid(false); setReceipt(null); setSelected(new Set()); setTipPercent(0); loadBill(); }}
-            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10"
+            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10 print:hidden"
           >
             View live bill
           </button>
-          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft">
+          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden">
             {t('backTo', { slug })}
           </button>
         </div>

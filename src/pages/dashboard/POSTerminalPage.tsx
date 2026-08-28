@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search, CreditCard } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { isCloseMatch } from '../../lib/fuzzyMatch';
 import RecordPaymentFlow from '../../components/RecordPaymentFlow';
 import PaymentModal from '../../components/PaymentModal';
@@ -29,6 +30,7 @@ export default function POSTerminalPage() {
   const { user } = useSession();
   const businessId = user?.business_id;
   const [till, setTill] = useState<TillSession | null | undefined>(undefined);
+  const { focusMode } = useOutletContext<{ focusMode?: boolean }>();
 
   function reloadTill() {
     if (businessId) getMyOpenTill(businessId).then(setTill);
@@ -41,7 +43,7 @@ export default function POSTerminalPage() {
 
   return (
     <div className="space-y-4">
-      <TerminalScreen businessId={businessId} till={till} onTillClosed={reloadTill} />
+      <TerminalScreen businessId={businessId} till={till} onTillClosed={reloadTill} focusMode={!!focusMode} />
     </div>
   );
 }
@@ -146,11 +148,15 @@ const ORDER_TYPE_PLACEHOLDER: Record<'dine_in' | 'walk_in' | 'pickup' | 'deliver
   dine_in: 'e.g. Table 5', walk_in: 'Leave blank to auto-number', pickup: 'e.g. Sara, 050 123 4567', delivery: 'e.g. Ahmed, 050 123 4567',
 };
 
-function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string; till: TillSession; onTillClosed: () => void }) {
+function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { businessId: string; till: TillSession; onTillClosed: () => void; focusMode: boolean }) {
   const { t } = useT();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const itemsScrollRef = useRef<HTMLDivElement>(null);
+  function scrollItems(dir: 1 | -1) {
+    itemsScrollRef.current?.scrollBy({ left: dir * 340, behavior: 'smooth' });
+  }
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [orderType, setOrderType] = useState<'dine_in' | 'walk_in' | 'pickup' | 'delivery'>('walk_in');
@@ -512,6 +518,23 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
         </div>
       )}
       <div>
+        {/* Real fix for the explicit request: in focus mode, the title
+            + full toolbar row used to take the same vertical space as
+            normal mode, pushing the item area (and, on a short screen,
+            the request notification above) out of view - the opposite
+            of what focus mode is for. Collapses to a single compact row
+            with icon-only secondary actions when focus mode is on. */}
+        {focusMode ? (
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h1 className="font-display text-lg text-ivory">{t('POS Terminal')}</h1>
+            <div className="flex items-center gap-3 text-ivory-dim">
+              <button type="button" onClick={() => setShowRecordPayment(true)} title={t('Record payment')} className="hover:text-ivory"><CreditCard size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowXReport(true)} title={t('X-report')} className="hover:text-ivory"><FileText size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowRefunds(true)} title={t('Refunds')} className="hover:text-danger"><RotateCcw size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowCloseTill(true)} title={t('Close till')} className="hover:text-brass"><Lock size={16} strokeWidth={2} /></button>
+            </div>
+          </div>
+        ) : (
         <div className="mb-5 flex items-center justify-between border-b border-ink-line pb-4">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
           <div className="flex items-center gap-5">
@@ -529,6 +552,7 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             </button>
           </div>
         </div>
+        )}
         {(isOffline || queuedCount > 0) && (
           <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${isOffline ? 'border-danger/40 text-danger' : 'border-warning/40 text-warning'}`}>
             {isOffline
@@ -596,32 +620,52 @@ function TerminalScreen({ businessId, till, onTillClosed }: { businessId: string
             </button>
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {visibleItems.map((item) => (
-            <button type="button"
-              key={item.id}
-              onClick={() => addToCart(item)}
-              className="overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-colors hover:border-brass/50"
-            >
-              {/* Photo recognition matters at the counter - a busy
-                  cashier reads a picture far faster than a name, which is
-                  exactly what a plain text tile made slower. Falls back
-                  to a plain tile only if this item genuinely has no
-                  photo uploaded yet. */}
-              {item.image_url ? (
-                <img src={item.image_url} alt={item.name} className="h-20 w-full object-cover sm:h-24" loading="lazy" />
-              ) : (
-                <div className="flex h-20 w-full items-center justify-center bg-ink text-ivory-dim/30 sm:h-24">
-                  <UtensilsCrossed size={22} strokeWidth={1.5} />
+        {/* Real fix for the explicit request: a category with tens of
+            items used to grow this grid straight down the page,
+            endlessly - "the page will go down and down." Items within a
+            category now scroll horizontally in a single row with real
+            left/right nav buttons, so the page height never depends on
+            how many items a category has. */}
+        <div className="relative mt-4">
+          <div ref={itemsScrollRef} className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: 'none' }}>
+            {visibleItems.map((item) => (
+              <button type="button"
+                key={item.id}
+                onClick={() => addToCart(item)}
+                className="w-36 shrink-0 overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-colors hover:border-brass/50"
+              >
+                {/* Photo recognition matters at the counter - a busy
+                    cashier reads a picture far faster than a name, which is
+                    exactly what a plain text tile made slower. Falls back
+                    to a plain tile only if this item genuinely has no
+                    photo uploaded yet. */}
+                {item.image_url ? (
+                  <img src={item.image_url} alt={item.name} className="h-20 w-full object-cover sm:h-24" loading="lazy" />
+                ) : (
+                  <div className="flex h-20 w-full items-center justify-center bg-ink text-ivory-dim/30 sm:h-24">
+                    <UtensilsCrossed size={22} strokeWidth={1.5} />
+                  </div>
+                )}
+                <div className="p-2.5">
+                  <p className="font-display text-sm text-ivory line-clamp-1">{item.name}</p>
+                  <p className="mt-0.5 text-sm font-medium text-brass">AED {item.price.toFixed(2)}</p>
                 </div>
-              )}
-              <div className="p-2.5">
-                <p className="font-display text-sm text-ivory line-clamp-1">{item.name}</p>
-                <p className="mt-0.5 text-sm font-medium text-brass">AED {item.price.toFixed(2)}</p>
-              </div>
-            </button>
-          ))}
-          {visibleItems.length === 0 && <p className="text-ivory-dim">{t('No items in this category.')}</p>}
+              </button>
+            ))}
+            {visibleItems.length === 0 && <p className="text-ivory-dim">{t('No items in this category.')}</p>}
+          </div>
+          {visibleItems.length > 4 && (
+            <>
+              <button type="button" onClick={() => scrollItems(-1)} aria-label={t('Scroll left')}
+                className="absolute -start-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim shadow-lg hover:text-brass sm:flex">
+                <ChevronLeft size={18} strokeWidth={2} />
+              </button>
+              <button type="button" onClick={() => scrollItems(1)} aria-label={t('Scroll right')}
+                className="absolute -end-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim shadow-lg hover:text-brass sm:flex">
+                <ChevronRight size={18} strokeWidth={2} />
+              </button>
+            </>
+          )}
         </div>
       </div>
 

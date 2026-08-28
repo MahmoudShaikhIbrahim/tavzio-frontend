@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent, useRef } from 'react';
+import { Search } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
@@ -84,6 +85,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
   const { t } = useT();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -114,8 +116,20 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
 
   return (
     <Section title={t('Categories')}>
+      <div className="relative mb-4">
+        <Search size={16} strokeWidth={2} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ivory-dim" />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t('Search categories...')}
+          className="w-full rounded-lg border border-ink-line bg-ink py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
+        />
+      </div>
       <div className="space-y-4">
-        {categories.map((c, i) => (
+        {categories.filter((c) => !searchQuery.trim() || c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())).map((c) => {
+          const i = categories.indexOf(c);
+          return (
           <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
@@ -155,8 +169,12 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
               </ActionButton>
             </div>
           </div>
-        ))}
+          );
+        })}
         {categories.length === 0 && <p className="text-base text-ivory-dim">{t('No categories yet — items can also exist without one.')}</p>}
+        {categories.length > 0 && searchQuery.trim() && !categories.some((c) => c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) && (
+          <p className="text-base text-ivory-dim">{t('No categories match.')}</p>
+        )}
       </div>
       <form onSubmit={handleAdd} className="flex gap-2.5 border-t border-ink-line pt-4">
         <input placeholder="e.g. Starters" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
@@ -171,6 +189,21 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
 }) {
   const { t } = useT();
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategoryId, setActiveCategoryId] = useState<string | 'all'>('all');
+
+  // Real fix for the explicit request: with tens/hundreds of items this
+  // list used to be one long undifferentiated scroll with no way to jump
+  // to a category or find one item by name. A category slider filters
+  // by category; the search bar searches across whichever category is
+  // active (or everything, on "All"). Search always wins over a stale
+  // category filter that no longer contains any matches, rather than
+  // showing an empty list while the query clearly matches something
+  // elsewhere.
+  const q = searchQuery.trim().toLowerCase();
+  const matchesQuery = (item: MenuItem) => !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
+  const inActiveCategory = (item: MenuItem) => activeCategoryId === 'all' || item.category_id === activeCategoryId;
+  const visibleItems = items.filter((item) => matchesQuery(item) && (q ? true : inActiveCategory(item)));
 
   return (
     <Section
@@ -191,11 +224,44 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
           onDone={() => { setShowForm(false); onChange(); }}
         />
       )}
+      <div className="relative mb-3">
+        <Search size={16} strokeWidth={2} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ivory-dim" />
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t('Search items...')}
+          className="w-full rounded-lg border border-ink-line bg-ink py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
+        />
+      </div>
+      {categories.length > 1 && (
+        <div className={`mb-4 flex gap-2 overflow-x-auto pb-1 ${q ? 'pointer-events-none opacity-40' : ''}`} style={{ scrollbarWidth: 'none' }}>
+          <button type="button"
+            onClick={() => setActiveCategoryId('all')}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              activeCategoryId === 'all' ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
+            }`}
+          >
+            {t('All')}
+          </button>
+          {categories.map((c) => (
+            <button type="button"
+              key={c.id}
+              onClick={() => setActiveCategoryId(c.id)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                activeCategoryId === c.id ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="space-y-4">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onItemsChange={onItemsChange} items={items} onChange={onChange} />
         ))}
-        {items.length === 0 && <p className="text-base text-ivory-dim">{t('No items yet.')}</p>}
+        {visibleItems.length === 0 && <p className="text-base text-ivory-dim">{items.length === 0 ? t('No items yet.') : t('No items match.')}</p>}
       </div>
     </Section>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Search, UtensilsCrossed } from 'lucide-react';
 import {
@@ -143,10 +143,7 @@ function BookingPageContent({ slug }: { slug: string }) {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [foodSearchQuery, setFoodSearchQuery] = useState('');
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  function scrollToCategory(category: string) {
-    categoryRefs.current[category]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  const [activeFoodCategory, setActiveFoodCategory] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [cart, setCart] = useState<CartLine[]>([]);
   const [foodTiming, setFoodTiming] = useState(0);
@@ -222,6 +219,15 @@ function BookingPageContent({ slug }: { slug: string }) {
     setCart((prev) => prev.filter((l) => !(l.menuItemId === menuItemId && l.note === note)));
   }
   const cartTotal = cart.reduce((sum, l) => sum + l.price * l.quantity, 0);
+  // Real fix for the explicit request: a selected service (its own base
+  // price plus whichever option is chosen) never used to be reflected
+  // in what the guest sees they'll owe - only the food pre-order cart
+  // was. The backend has always priced the service correctly for the
+  // down payment; this just makes the guest-facing total match it.
+  const selectedService = config?.services.find((s) => s.id === selectedServiceId) || null;
+  const selectedServiceOption = selectedService?.service_options.find((o) => o.id === selectedServiceOptionId) || null;
+  const serviceTotal = selectedService ? Number(selectedService.price) + Number(selectedServiceOption?.price_delta || 0) : 0;
+  const grandTotal = cartTotal + serviceTotal;
 
   async function handleSendOtp(e: FormEvent) {
     e.preventDefault();
@@ -584,38 +590,46 @@ function BookingPageContent({ slug }: { slug: string }) {
 
               {(() => {
                 const q = foodSearchQuery.trim().toLowerCase();
-                const filtered = config.menu.filter((item) => !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q));
-                const grouped = filtered.reduce<Record<string, typeof filtered>>((acc, item) => {
+                const searched = config.menu.filter((item) => !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q));
+                const grouped = searched.reduce<Record<string, typeof searched>>((acc, item) => {
                   const cat = item.menu_categories?.name || t('tbOtherItems');
                   (acc[cat] ||= []).push(item);
                   return acc;
                 }, {});
                 const categoryNames = Object.keys(grouped);
+                // Real fix for the explicit request: this used to stack every
+                // category's full item list in one endless vertical scroll -
+                // "10 KM long". Category chips now actually FILTER (one
+                // category shown at a time, like the POS Terminal's own
+                // category tabs) instead of just scrolling to an anchor, and
+                // the visible list is height-capped with its own internal
+                // scroll - so the page itself never grows past a few
+                // screenfuls no matter how large the menu is. Searching
+                // still searches across every category at once, since
+                // narrowing to one category while searching would hide
+                // results the guest is explicitly looking for.
+                const effectiveCategory = q ? null : (activeFoodCategory && categoryNames.includes(activeFoodCategory) ? activeFoodCategory : categoryNames[0] || null);
+                const visibleItems = q ? searched : (effectiveCategory ? grouped[effectiveCategory] || [] : []);
                 return (
                   <>
-                    {categoryNames.length > 1 && (
+                    {!q && categoryNames.length > 1 && (
                       <div className="mt-3 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
                         {categoryNames.map((category) => (
                           <button type="button"
                             key={category}
-                            onClick={() => scrollToCategory(category)}
-                            className="shrink-0 rounded-full border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass"
+                            onClick={() => setActiveFoodCategory(category)}
+                            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                              category === effectiveCategory ? 'border-brass bg-brass text-ink font-medium' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-brass'
+                            }`}
                           >
                             {category}
                           </button>
                         ))}
                       </div>
                     )}
-                    <div className="mt-3 space-y-5">
-                      {Object.entries(grouped).map(([category, items]) => (
-                        <div key={category} ref={(el) => { categoryRefs.current[category] = el; }} className="scroll-mt-16">
-                          <p className="text-xs font-medium uppercase tracking-wide text-brass">{category}</p>
-                          <div className="mt-2 space-y-2">
-                            {items.map((item) => <BookingMenuItemRow key={item.id} item={item} cart={cart} onAdd={addToCart} t={t} />)}
-                          </div>
-                        </div>
-                      ))}
-                      {filtered.length === 0 && <p className="mt-3 text-sm text-ivory-dim">{t('tbNoMenuResults')}</p>}
+                    <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto pe-1">
+                      {visibleItems.map((item) => <BookingMenuItemRow key={item.id} item={item} cart={cart} onAdd={addToCart} t={t} />)}
+                      {visibleItems.length === 0 && <p className="text-sm text-ivory-dim">{t('tbNoMenuResults')}</p>}
                     </div>
                   </>
                 );
@@ -641,7 +655,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                     ))}
                   </div>
                   <div className="mt-3 flex justify-between border-t border-ink-line pt-3 text-sm">
-                    <span className="text-ivory-dim">{t('tbTotal')}</span>
+                    <span className="text-ivory-dim">{selectedService ? 'Food subtotal' : t('tbTotal')}</span>
                     <span className="text-ivory">AED {cartTotal.toFixed(2)}</span>
                   </div>
                   <p className="mt-3 text-xs uppercase tracking-wide text-ivory-dim">{t('tbWhenReady')}</p>
@@ -711,6 +725,29 @@ function BookingPageContent({ slug }: { slug: string }) {
                   </>
                 );
               })()}
+            </div>
+          )}
+
+          {(cart.length > 0 || selectedService) && (
+            <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+              <div className="space-y-1.5 text-sm">
+                {cart.length > 0 && (
+                  <div className="flex justify-between text-ivory-dim">
+                    <span>Food</span>
+                    <span>AED {cartTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {selectedService && (
+                  <div className="flex justify-between text-ivory-dim">
+                    <span>{selectedService.name}{selectedServiceOption ? ` — ${selectedServiceOption.label}` : ''}</span>
+                    <span>AED {serviceTotal.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex justify-between border-t border-ink-line pt-2 text-sm font-medium">
+                <span className="text-ivory">Total</span>
+                <span className="text-brass">AED {grandTotal.toFixed(2)}</span>
+              </div>
             </div>
           )}
 
