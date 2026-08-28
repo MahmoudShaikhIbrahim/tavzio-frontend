@@ -132,30 +132,33 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
           className="w-full rounded-lg border border-ink-line bg-ink py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
         />
       </div>
-      {drag.arranging && <p className="mb-2 text-xs text-brass">{t('Drag to reorder. Release to save.')}</p>}
+      {drag.heldId && <p className="mb-2 text-xs text-brass">{t('Category picked up - tap where you\'d like to place it, or tap it again to cancel.')}</p>}
       <div className="space-y-4">
         {/* Real replacement for the old up/down buttons: press and hold
-            a category, then drag - same iPhone-home-screen-style gesture
-            as POS items and dashboard nav customization. Disabled while
-            searching - dragging a filtered subset can't map back to a
-            real position in the full list. */}
-        {visibleCategories.map((c, i) => {
-          const isDragging = drag.draggingId === c.id;
-          const isJiggling = drag.arranging && !isDragging;
+            a category to pick it up, then tap where it should go - same
+            two-step gesture as POS items and dashboard nav
+            customization, deliberately not a continuous drag (see
+            useDragReorder's own comment for why). Disabled while
+            searching - placing within a filtered subset can't map back
+            to a real position in the full list. */}
+        {visibleCategories.map((c) => {
+          const isHeld = drag.heldId === c.id;
+          const isPlaceTarget = drag.heldId !== null && !isHeld;
           const handlers = isSearching ? {} : drag.itemHandlers(c.id);
           return (
           <div key={c.id}
             ref={isSearching ? undefined : (el) => drag.registerItemRef(c.id, el)}
             {...handlers}
-            className={`flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base ${
-              isSearching ? '' : 'touch-none select-none sm:touch-auto'
-            } ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 border-brass/50 shadow-lg' : ''}`}
-            style={{ ...(handlers as { style?: React.CSSProperties }).style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
+            onClick={isSearching ? undefined : () => drag.handleActivate(c.id)}
+            className={`flex items-center justify-between rounded-lg border px-5 py-4 text-base transition-all duration-200 ${
+              isSearching ? 'border-ink-line' : 'cursor-pointer'
+            } ${isHeld ? 'scale-[1.01] border-brass shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40' : 'border-ink-line'}`}
           >
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
               <button type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
                   updateMenuCategory(businessId, c.id, { paused: !c.paused }).catch(onChange);
                 }}
@@ -163,15 +166,22 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
               >
                 {c.paused ? t('Paused') : t('Orderable')}
               </button>
-              <ActionButton
-                danger
-                onClick={() => {
-                  onCategoriesChange(categories.filter((cat) => cat.id !== c.id));
-                  deleteMenuCategory(businessId, c.id).catch(onChange);
-                }}
-              >
-                {t('Remove')}
-              </ActionButton>
+              {/* ActionButton's onClick doesn't pass through the event, so
+                  stopPropagation happens on this wrapper instead - same
+                  goal as the Orderable button above (a click inside the
+                  row must not also register as a placement/cancel tap
+                  on the row itself). */}
+              <span onClick={(e) => e.stopPropagation()}>
+                <ActionButton
+                  danger
+                  onClick={() => {
+                    onCategoriesChange(categories.filter((cat) => cat.id !== c.id));
+                    deleteMenuCategory(businessId, c.id).catch(onChange);
+                  }}
+                >
+                  {t('Remove')}
+                </ActionButton>
+              </span>
             </div>
           </div>
           );

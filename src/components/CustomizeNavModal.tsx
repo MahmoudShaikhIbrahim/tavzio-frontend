@@ -49,22 +49,22 @@ export default function CustomizeNavModal({
         <p className="mb-2 text-sm font-medium text-ivory">{t(title)}</p>
         <div className="space-y-2">
           {drag.displayItems.map((item, i) => {
-            const isDragging = drag.draggingId === item.path;
-            const isJiggling = drag.arranging && !isDragging;
+            const isHeld = drag.heldId === item.path;
+            const isPlaceTarget = drag.heldId !== null && !isHeld;
             const handlers = drag.itemHandlers(item.path);
             return (
               <div key={item.path}
                 ref={(el) => drag.registerItemRef(item.path, el)}
                 {...handlers}
-                className={`flex items-center gap-3 rounded-lg border border-ink-line bg-ink px-3 py-2.5 touch-none select-none sm:touch-auto ${
-                  isJiggling ? 'motion-safe:animate-jiggle' : ''
-                } ${isDragging ? 'z-10 border-brass/50 shadow-lg' : ''}`}
-                style={{ ...handlers.style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
+                onClick={() => drag.handleActivate(item.path)}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-all duration-200 ${
+                  isHeld ? 'scale-[1.02] border-brass bg-ink shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40 bg-ink' : 'border-ink-line bg-ink'
+                }`}
               >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-sm text-brass">{i + 1}</span>
                 <span className="flex-1 text-base text-ivory">{t(item.label)}</span>
                 <button type="button"
-                  onClick={() => onHide(item.path)}
+                  onClick={(e) => { e.stopPropagation(); onHide(item.path); }}
                   className="ms-1 shrink-0 rounded-lg border border-ink-line px-2.5 py-1.5 text-xs text-ivory-dim hover:border-danger hover:text-danger"
                 >
                   {t('Hide')}
@@ -96,7 +96,7 @@ export default function CustomizeNavModal({
               this one line removes any doubt about which end is which. */}
           <p className="mt-3 flex items-center gap-2 text-sm text-ivory-dim">
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 text-xs text-brass">1</span>
-            {t('shows first in your navigation bar. Press and hold, then drag to reorder - changes save instantly.')}
+            {t('shows first in your navigation bar. Press and hold to pick one up, then tap where you\'d like it - changes save instantly.')}
           </p>
         </div>
 

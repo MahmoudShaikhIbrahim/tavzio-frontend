@@ -668,8 +668,8 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             ))}
           </div>
         </div>
-        {itemDrag.arranging && (
-          <p className="mt-2 text-xs text-brass">{t('Drag to reorder. Release to save.')}</p>
+        {itemDrag.heldId && (
+          <p className="mt-2 text-xs text-brass">{t('Item picked up - tap where you\'d like to place it, or tap it again to cancel.')}</p>
         )}
         {/* Real fix for the explicit request: a fixed 12-item page per
             category, real pagination instead of endless scroll or an
@@ -680,21 +680,22 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             scroll, whatever else is on screen. */}
         <div className="relative mt-3">
           <div className={`grid gap-2.5 ${focusMode ? 'grid-cols-4 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'}`}>
-            {itemDrag.displayItems.map((item, i) => {
-              const isDragging = itemDrag.draggingId === item.id;
-              const isJiggling = itemDrag.arranging && !isDragging;
+            {itemDrag.displayItems.map((item) => {
+              const isHeld = itemDrag.heldId === item.id;
+              const isPlaceTarget = itemDrag.heldId !== null && !isHeld;
               const dragHandlers = itemDrag.itemHandlers(item.id);
               return (
               <div key={item.id}
                 ref={(el) => itemDrag.registerItemRef(item.id, el)}
                 {...dragHandlers}
-                className={`relative touch-none select-none sm:touch-auto ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 opacity-90 shadow-xl shadow-black/40' : ''}`}
-                style={{ ...dragHandlers.style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
+                className={`relative select-none rounded-xl transition-all duration-200 ${
+                  isHeld ? 'z-10 scale-105 shadow-xl shadow-black/50 ring-2 ring-brass' : ''
+                } ${isPlaceTarget ? 'ring-1 ring-dashed ring-brass/40' : ''}`}
               >
                 <button type="button"
-                  onClick={() => { if (!itemDrag.arranging && !itemDrag.consumeSuppressedClick(item.id)) addToCart(item); }}
+                  onClick={() => { if (!itemDrag.handleActivate(item.id)) addToCart(item); }}
                   className={`w-full overflow-hidden rounded-xl border text-left transition-colors ${
-                    itemDrag.arranging ? 'border-brass/30 bg-ink-soft' : 'border-ink-line bg-ink-soft hover:border-brass/50'
+                    isHeld ? 'border-brass bg-ink-soft' : isPlaceTarget ? 'border-brass/20 bg-ink-soft hover:border-brass' : 'border-ink-line bg-ink-soft hover:border-brass/50'
                   }`}
                 >
                   {/* Photo recognition matters at the counter - a busy
