@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search, CreditCard, ChevronLeft, ChevronRight } from 'lucide-react';
 import { isCloseMatch } from '../../lib/fuzzyMatch';
@@ -8,12 +8,13 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions, getXReport, type XReport,
-  listMenuCategories, listMenuItems, createPosOrder, getBusiness, lookupFolioByRoom,
+  listMenuCategories, listMenuItems, updateMenuItem, createPosOrder, getBusiness, lookupFolioByRoom,
   listHotelOutlets, listPayments, listOrders, listTables, assignTable,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
+import { useDragReorder } from '../../hooks/useDragReorder';
 import type { TillSession, MenuCategory, MenuItem, PaymentRow, OrderRow, FloorTable } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
@@ -154,11 +155,15 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const itemsScrollRef = useRef<HTMLDivElement>(null);
-  function scrollItems(dir: 1 | -1) {
-    itemsScrollRef.current?.scrollBy({ left: dir * 340, behavior: 'smooth' });
-  }
+  // Real fix for the explicit request: 12 items per page, real pagination
+  // (not endless horizontal scroll) - the left/right buttons only appear
+  // once a category actually has more than one page's worth. Resets to
+  // page 1 whenever the category or search changes, since staying on
+  // "page 2" of a brand new category/search would just show an empty grid.
+  const ITEMS_PER_PAGE = 12;
+  const [itemsPage, setItemsPage] = useState(0);
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  useEffect(() => { setItemsPage(0); }, [activeCategory, itemSearchQuery]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [orderType, setOrderType] = useState<'dine_in' | 'walk_in' | 'pickup' | 'delivery'>('walk_in');
   const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
@@ -383,6 +388,35 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
     ? (exactSearchResults!.length > 0 ? exactSearchResults! : fuzzySearchResults)
     : items.filter((i) => i.category_id === activeCategory && (!outletItemIds || outletItemIds.has(i.id)));
   const isFuzzyFallback = itemSearchQuery.trim() && exactSearchResults?.length === 0 && fuzzySearchResults.length > 0;
+  const totalItemPages = Math.max(1, Math.ceil(visibleItems.length / ITEMS_PER_PAGE));
+  const safeItemsPage = Math.min(itemsPage, totalItemPages - 1);
+  const pageItems = visibleItems.slice(safeItemsPage * ITEMS_PER_PAGE, safeItemsPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE);
+
+  // Real replacement for the old arrow-button reorder: press and hold an
+  // item (~500ms) to enter jiggle mode, then drag it anywhere within the
+  // current page to reorder - exactly like rearranging iPhone home
+  // screen apps. Scoped to the current page's items only (not the whole
+  // category) - deliberately, since auto-flipping pages mid-drag is real
+  // added complexity for a case that's already covered by search: the
+  // actual ask ("put the most popular item in front") means page 1,
+  // which every item can already reach a page at a time.
+  const itemDrag = useDragReorder<MenuItem>({
+    items: pageItems,
+    getId: (i) => i.id,
+    onCommit: (newPageOrder) => {
+      const fullCategoryItems = items.filter((i) => i.category_id === activeCategory);
+      const pageIds = new Set(pageItems.map((i) => i.id));
+      let ptr = 0;
+      const newFull = fullCategoryItems.map((i) => (pageIds.has(i.id) ? newPageOrder[ptr++] : i));
+      const posById = new Map(newFull.map((i, pos) => [i.id, pos]));
+      setItems((prev) => prev.map((it) => (it.category_id === activeCategory ? { ...it, sort_order: posById.get(it.id)! } : it)));
+      Promise.all(newFull.map((it, pos) => updateMenuItem(businessId, it.id, { sortOrder: pos }))).catch(() => {
+        // Re-sync with the server if the save actually failed, same
+        // fallback Categories reordering already uses.
+        listMenuItems(businessId).then(setItems).catch(() => {});
+      });
+    },
+  });
 
   function resetCartState() {
     setCart([]);
@@ -561,22 +595,22 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
         </div>
         )}
         {(isOffline || queuedCount > 0) && (
-          <div className={`mb-4 rounded-lg border px-4 py-2.5 text-sm ${isOffline ? 'border-danger/40 text-danger' : 'border-warning/40 text-warning'}`}>
+          <div className={`rounded-lg border text-sm ${focusMode ? 'mb-2 px-3 py-1.5 text-xs' : 'mb-4 px-4 py-2.5'} ${isOffline ? 'border-danger/40 text-danger' : 'border-warning/40 text-warning'}`}>
             {isOffline
               ? `${t('Offline - orders are being saved locally')}${queuedCount > 0 ? ` (${queuedCount} ${t('waiting to sync')})` : ''} ${t("and will send automatically once you're back online.")}`
               : `${t('Syncing')} ${queuedCount} ${t('order(s) saved while offline...')}`}
           </div>
         )}
         {quickPayOrders.length > 0 && (
-          <div className="mb-4">
-            <p className="mb-1.5 text-xs uppercase tracking-wide text-ivory-dim">{t('Unpaid - tap to pay')}</p>
-            <div className="flex flex-wrap gap-2">
+          <div className={focusMode ? 'mb-2' : 'mb-4'}>
+            {!focusMode && <p className="mb-1.5 text-xs uppercase tracking-wide text-ivory-dim">{t('Unpaid - tap to pay')}</p>}
+            <div className="flex flex-wrap gap-1.5">
               {quickPayOrders.map((order) => (
                 <div key={order.id} className="flex items-stretch overflow-hidden rounded-full border border-brass/40 bg-brass/5">
                   <button
                     type="button"
                     onClick={() => setQuickPayTarget(order)}
-                    className="px-3 py-1.5 text-sm text-ivory hover:bg-brass/10"
+                    className={`text-ivory hover:bg-brass/10 ${focusMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'}`}
                   >
                     {quickPayLabel(order)}
                   </button>
@@ -585,7 +619,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                       type="button"
                       onClick={() => setConvertingOrder(order)}
                       title={t('Seat this customer at a table')}
-                      className="border-s border-brass/40 px-2.5 py-1.5 text-sm text-brass hover:bg-brass/10"
+                      className={`border-s border-brass/40 text-brass hover:bg-brass/10 ${focusMode ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-sm'}`}
                     >
                       {t('Sit down')}
                     </button>
@@ -595,14 +629,14 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             </div>
           </div>
         )}
-        <div className="relative mb-3">
+        <div className={`relative ${focusMode ? 'mb-2' : 'mb-3'}`}>
           <Search size={16} strokeWidth={2} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ivory-dim" />
           <input
             type="search"
             value={itemSearchQuery}
             onChange={(e) => setItemSearchQuery(e.target.value)}
             placeholder={t('Search items...')}
-            className="w-full rounded-lg border border-ink-line bg-ink-soft py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
+            className={`w-full rounded-lg border border-ink-line bg-ink-soft ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60 ${focusMode ? 'py-1.5' : 'py-2.5'}`}
           />
         </div>
         {isFuzzyFallback && (
@@ -614,69 +648,98 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             state gets real elevation (matches .card-elevated's shadow
             language) instead of a flat color fill, so the current
             category reads as physically raised, not just recolored. */}
-        <div className={`flex gap-2.5 overflow-x-auto pb-2 ${itemSearchQuery.trim() ? 'pointer-events-none opacity-40' : ''}`}>
-          {categories.map((c) => (
-            <button type="button"
-              key={c.id}
-              onClick={() => setActiveCategory(c.id)}
-              className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
-                activeCategory === c.id ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-        {/* Real fix for the explicit request: a category with tens of
-            items used to grow this grid straight down the page,
-            endlessly - "the page will go down and down." Items within a
-            category now scroll horizontally in a single row with real
-            left/right nav buttons, so the page height never depends on
-            how many items a category has. */}
-        <div className="relative mt-4">
-          <div ref={itemsScrollRef} className="flex gap-3 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: 'none' }}>
-            {visibleItems.map((item) => (
+        <div className="flex items-center gap-2">
+          <div className={`flex flex-1 gap-2.5 overflow-x-auto pb-2 ${itemSearchQuery.trim() ? 'pointer-events-none opacity-40' : ''}`}>
+            {categories.map((c) => (
               <button type="button"
-                key={item.id}
-                onClick={() => addToCart(item)}
-                className="w-36 shrink-0 overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-colors hover:border-brass/50"
+                key={c.id}
+                onClick={() => setActiveCategory(c.id)}
+                className={`whitespace-nowrap rounded-full font-medium transition-colors ${focusMode ? 'px-3.5 py-1.5 text-xs' : 'px-5 py-2.5 text-sm'} ${
+                  activeCategory === c.id ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
+                }`}
               >
-                {/* Photo recognition matters at the counter - a busy
-                    cashier reads a picture far faster than a name, which is
-                    exactly what a plain text tile made slower. Falls back
-                    to a plain tile only if this item genuinely has no
-                    photo uploaded yet. */}
-                {item.image_url ? (
-                  <img src={item.image_url} alt={item.name} className="h-20 w-full object-cover sm:h-24" loading="lazy" />
-                ) : (
-                  <div className="flex h-20 w-full items-center justify-center bg-ink text-ivory-dim/30 sm:h-24">
-                    <UtensilsCrossed size={22} strokeWidth={1.5} />
-                  </div>
-                )}
-                <div className="p-2.5">
-                  <p className="font-display text-sm text-ivory line-clamp-1">{item.name}</p>
-                  <p className="mt-0.5 text-sm font-medium text-brass">AED {item.price.toFixed(2)}</p>
-                </div>
+                {c.name}
               </button>
             ))}
+          </div>
+        </div>
+        {itemDrag.arranging && (
+          <p className="mt-2 text-xs text-brass">{t('Drag to reorder. Release to save.')}</p>
+        )}
+        {/* Real fix for the explicit request: a fixed 12-item page per
+            category, real pagination instead of endless scroll or an
+            ever-taller grid - left/right page buttons only appear once a
+            category actually spills past one page. In focus mode the
+            grid goes denser (more columns, smaller tiles) specifically
+            so a full 12-item page still fits without the page needing to
+            scroll, whatever else is on screen. */}
+        <div className="relative mt-3">
+          <div className={`grid gap-2.5 ${focusMode ? 'grid-cols-4 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'}`}>
+            {itemDrag.displayItems.map((item, i) => {
+              const isDragging = itemDrag.draggingId === item.id;
+              const isJiggling = itemDrag.arranging && !isDragging;
+              const dragHandlers = itemDrag.itemHandlers(item.id);
+              return (
+              <div key={item.id}
+                ref={(el) => itemDrag.registerItemRef(item.id, el)}
+                {...dragHandlers}
+                className={`relative touch-none select-none sm:touch-auto ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 scale-105 opacity-80' : ''}`}
+                style={{ ...dragHandlers.style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
+              >
+                <button type="button"
+                  onClick={() => { if (!itemDrag.arranging && !itemDrag.consumeSuppressedClick(item.id)) addToCart(item); }}
+                  className={`w-full overflow-hidden rounded-xl border text-left transition-colors ${
+                    itemDrag.arranging ? 'border-brass/30 bg-ink-soft' : 'border-ink-line bg-ink-soft hover:border-brass/50'
+                  }`}
+                >
+                  {/* Photo recognition matters at the counter - a busy
+                      cashier reads a picture far faster than a name, which is
+                      exactly what a plain text tile made slower. Falls back
+                      to a plain tile only if this item genuinely has no
+                      photo uploaded yet. */}
+                  {item.image_url ? (
+                    <img src={item.image_url} alt={item.name} className={focusMode ? 'h-12 w-full object-cover' : 'h-20 w-full object-cover sm:h-24'} loading="lazy" draggable={false} />
+                  ) : (
+                    <div className={`flex w-full items-center justify-center bg-ink text-ivory-dim/30 ${focusMode ? 'h-12' : 'h-20 sm:h-24'}`}>
+                      <UtensilsCrossed size={focusMode ? 16 : 22} strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className={focusMode ? 'p-1.5' : 'p-2.5'}>
+                    <p className={`font-display text-ivory line-clamp-1 ${focusMode ? 'text-xs' : 'text-sm'}`}>{item.name}</p>
+                    <p className={`font-medium text-brass ${focusMode ? 'text-xs' : 'mt-0.5 text-sm'}`}>AED {item.price.toFixed(2)}</p>
+                  </div>
+                </button>
+              </div>
+              );
+            })}
             {visibleItems.length === 0 && <p className="text-ivory-dim">{t('No items in this category.')}</p>}
           </div>
-          {visibleItems.length > 4 && (
-            <>
-              <button type="button" onClick={() => scrollItems(-1)} aria-label={t('Scroll left')}
-                className="absolute -start-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim shadow-lg hover:text-brass sm:flex">
+          {totalItemPages > 1 && (
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <button type="button" onClick={() => setItemsPage((p) => Math.max(0, p - 1))} disabled={safeItemsPage === 0}
+                aria-label={t('Previous page')}
+                className="flex items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim hover:text-brass disabled:opacity-30">
                 <ChevronLeft size={18} strokeWidth={2} />
               </button>
-              <button type="button" onClick={() => scrollItems(1)} aria-label={t('Scroll right')}
-                className="absolute -end-2 top-1/2 hidden -translate-y-1/2 items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim shadow-lg hover:text-brass sm:flex">
+              <span className="text-xs text-ivory-dim">{safeItemsPage + 1} / {totalItemPages}</span>
+              <button type="button" onClick={() => setItemsPage((p) => Math.min(totalItemPages - 1, p + 1))} disabled={safeItemsPage === totalItemPages - 1}
+                aria-label={t('Next page')}
+                className="flex items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim hover:text-brass disabled:opacity-30">
                 <ChevronRight size={18} strokeWidth={2} />
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="divide-y divide-ink-line rounded-xl border border-ink-line bg-ink-soft">
+      {/* Real fix for the explicit request: rather than shrinking every
+          field's padding by hand (high risk of breaking something for
+          marginal gain), this panel gets a capped height with its own
+          internal scroll in focus mode - the same pattern real POS
+          systems (Toast, Square) use for the order summary sidebar. The
+          outer page itself never needs to scroll in focus mode; if a
+          long cart genuinely doesn't fit, only this panel scrolls. */}
+      <div className={`divide-y divide-ink-line rounded-xl border border-ink-line bg-ink-soft ${focusMode ? 'max-h-[calc(100vh-88px)] overflow-y-auto' : ''}`}>
         <div className="p-4">
           <Field label={t('Order type')}>
             <div className="grid grid-cols-4 gap-1.5">

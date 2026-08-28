@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
+import { useDragReorder } from '../../hooks/useDragReorder';
 import { useT } from '../../hooks/useT';
 import {
   listMenuCategories, createMenuCategory, updateMenuCategory, deleteMenuCategory,
@@ -97,22 +98,27 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
   }
 
   // Reassigns sort_order as clean sequential integers matching the new
-  // display order, rather than swapping the two categories' existing raw
-  // values - a plain swap would silently do nothing if they happened to
-  // share the same sort_order, which is exactly the current state for
-  // any category that's never been reordered before (all default equal).
-  async function moveCategory(index: number, direction: -1 | 1) {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= categories.length) return;
-    const reordered = [...categories];
-    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
-    onCategoriesChange(reordered);
+  // display order (the same reason this already had to exist before
+  // real drag: a plain swap would silently do nothing if two categories
+  // happened to share the same sort_order, which is exactly the default
+  // state for any category that's never been reordered before).
+  async function commitReorder(newOrder: MenuCategory[]) {
+    onCategoriesChange(newOrder);
     try {
-      await Promise.all(reordered.map((cat, i) => updateMenuCategory(businessId, cat.id, { sortOrder: i })));
+      await Promise.all(newOrder.map((cat, i) => updateMenuCategory(businessId, cat.id, { sortOrder: i })));
     } catch {
       onChange(); // re-sync with the server if the save actually failed
     }
   }
+  const drag = useDragReorder<MenuCategory>({
+    items: categories,
+    getId: (c) => c.id,
+    onCommit: commitReorder,
+  });
+  const isSearching = !!searchQuery.trim();
+  const visibleCategories = isSearching
+    ? categories.filter((c) => c.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+    : drag.displayItems;
 
   return (
     <Section title={t('Categories')}>
@@ -126,29 +132,28 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
           className="w-full rounded-lg border border-ink-line bg-ink py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
         />
       </div>
+      {drag.arranging && <p className="mb-2 text-xs text-brass">{t('Drag to reorder. Release to save.')}</p>}
       <div className="space-y-4">
-        {categories.filter((c) => !searchQuery.trim() || c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())).map((c) => {
-          const i = categories.indexOf(c);
+        {/* Real replacement for the old up/down buttons: press and hold
+            a category, then drag - same iPhone-home-screen-style gesture
+            as POS items and dashboard nav customization. Disabled while
+            searching - dragging a filtered subset can't map back to a
+            real position in the full list. */}
+        {visibleCategories.map((c, i) => {
+          const isDragging = drag.draggingId === c.id;
+          const isJiggling = drag.arranging && !isDragging;
+          const handlers = isSearching ? {} : drag.itemHandlers(c.id);
           return (
-          <div key={c.id} className="flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base">
+          <div key={c.id}
+            ref={isSearching ? undefined : (el) => drag.registerItemRef(c.id, el)}
+            {...handlers}
+            className={`flex items-center justify-between rounded-lg border border-ink-line px-5 py-4 text-base ${
+              isSearching ? '' : 'touch-none select-none sm:touch-auto'
+            } ${isJiggling ? 'motion-safe:animate-jiggle' : ''} ${isDragging ? 'z-10 scale-[1.01] border-brass/50 shadow-lg' : ''}`}
+            style={{ ...(handlers as { style?: React.CSSProperties }).style, animationDelay: isJiggling ? `${(i % 2) * 0.06}s` : undefined }}
+          >
             <span className="text-ivory">{c.name}</span>
             <div className="flex items-center gap-2">
-              <button type="button"
-                onClick={() => moveCategory(i, -1)}
-                disabled={i === 0}
-                className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
-                title={t('Move up')}
-              >
-                ↑
-              </button>
-              <button type="button"
-                onClick={() => moveCategory(i, 1)}
-                disabled={i === categories.length - 1}
-                className="rounded-lg border border-ink-line px-2.5 py-1.5 text-sm text-ivory-dim hover:text-ivory disabled:opacity-30"
-                title={t('Move down')}
-              >
-                ↓
-              </button>
               <button type="button"
                 onClick={() => {
                   onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
@@ -172,7 +177,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
           );
         })}
         {categories.length === 0 && <p className="text-base text-ivory-dim">{t('No categories yet — items can also exist without one.')}</p>}
-        {categories.length > 0 && searchQuery.trim() && !categories.some((c) => c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())) && (
+        {categories.length > 0 && isSearching && visibleCategories.length === 0 && (
           <p className="text-base text-ivory-dim">{t('No categories match.')}</p>
         )}
       </div>
