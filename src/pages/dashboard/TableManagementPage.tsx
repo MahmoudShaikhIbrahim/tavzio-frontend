@@ -395,6 +395,7 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
     listFloorPlanCells(businessId).then((c) => { setCells(c); setLoaded(true); }).catch(() => setLoaded(true));
   }, [businessId]);
 
+  const ORIENTATION_CYCLE: FloorPlanCell['orientation'][] = ['left', 'top', 'right', 'bottom'];
   function handleTapCell(x: number, y: number) {
     if (!armedTool) return;
     if (armedTool === 'erase') {
@@ -409,7 +410,17 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
       return;
     }
     const cellType = armedTool as FloorPlanCell['cellType'];
-    setCells((prev) => [...prev.filter((c) => !(c.gridX === x && c.gridY === y)), { id: `temp-${x}-${y}`, gridX: x, gridY: y, cellType }]);
+    // Real, explicit request: tapping an already-placed door again
+    // cycles which side it faces instead of just replacing it with a
+    // fresh, always-default-facing one - the actual "switch sides"
+    // capability, not just re-placing the same shape.
+    const existing = cells.find((c) => c.gridX === x && c.gridY === y && c.cellType === 'door');
+    if (cellType === 'door' && existing) {
+      const nextOrientation = ORIENTATION_CYCLE[(ORIENTATION_CYCLE.indexOf(existing.orientation) + 1) % ORIENTATION_CYCLE.length];
+      setCells((prev) => prev.map((c) => (c === existing ? { ...c, orientation: nextOrientation } : c)));
+      return;
+    }
+    setCells((prev) => [...prev.filter((c) => !(c.gridX === x && c.gridY === y)), { id: `temp-${x}-${y}`, gridX: x, gridY: y, cellType, orientation: 'left' }]);
   }
 
   function updateLocalTable(id: string, patch: Partial<FloorTable>) {
@@ -419,7 +430,7 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
   async function handleSave() {
     setSaving(true);
     try {
-      await setFloorPlanCells(businessId, cells.map((c) => ({ gridX: c.gridX, gridY: c.gridY, cellType: c.cellType })));
+      await setFloorPlanCells(businessId, cells.map((c) => ({ gridX: c.gridX, gridY: c.gridY, cellType: c.cellType, orientation: c.orientation })));
       // Only tables whose position/shape/zone actually changed - no
       // reason to write every table on every save.
       const changed = localTables.filter((lt) => {
@@ -441,7 +452,7 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
         <div className="flex items-center justify-between border-b border-ink-line px-5 py-4">
           <div>
             <h2 className="font-display text-xl text-ivory">{t('Arrange floor plan')}</h2>
-            <p className="text-sm text-ivory-dim">{t('Pick a table or element below, then tap a spot on the grid to place it. Tap a placed spot again to remove it.')}</p>
+            <p className="text-sm text-ivory-dim">{t('Pick a table or element below, then tap a spot on the grid to place it. Tap a placed spot again to remove it - for a door, tap it again to turn it to face a different side instead.')}</p>
           </div>
           <button type="button" onClick={onDone} className="text-ivory-dim hover:text-ivory">✕</button>
         </div>

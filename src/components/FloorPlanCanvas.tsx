@@ -191,12 +191,21 @@ export default function FloorPlanCanvas({
       {wallRects.map((r, i) => <rect key={`w${i}`} x={r.x * CELL} y={r.y * CELL} width={r.w * CELL} height={r.h * CELL} rx={4} fill={COLORS.wall} pointerEvents="none" />)}
       {windowRects.map((r, i) => <rect key={`win${i}`} x={r.x * CELL} y={r.y * CELL} width={r.w * CELL} height={r.h * CELL} rx={4} fill={COLORS.window} pointerEvents="none" />)}
       {counterRects.map((r, i) => <rect key={`c${i}`} x={r.x * CELL} y={r.y * CELL} width={r.w * CELL} height={r.h * CELL} rx={4} fill={COLORS.counter} stroke={COLORS.brass} strokeWidth={1} pointerEvents="none" />)}
-      {doorCells.map((d, i) => (
-        <g key={`d${i}`} transform={`translate(${d.gridX * CELL}, ${d.gridY * CELL})`} pointerEvents="none">
-          <rect x={-4} y={2} width={8} height={CELL - 4} rx={2} fill={COLORS.brassBright} />
-          <path d={`M -4 2 A ${CELL - 10} ${CELL - 10} 0 0 1 ${CELL - 14} ${CELL - 8}`} fill="none" stroke={COLORS.brass} strokeWidth={1.5} strokeDasharray="4,4" opacity={0.6} />
-        </g>
-      ))}
+      {doorCells.map((d, i) => {
+        // Real, explicit request: doors can now face any of the 4
+        // sides of their cell, not one fixed shape - a single base
+        // shape (hinge + swing arc, "left" orientation) rotated around
+        // the cell's own center for the other 3, rather than four
+        // separately hand-drawn paths that could drift out of sync
+        // with each other.
+        const rotation = d.orientation === 'top' ? 90 : d.orientation === 'right' ? 180 : d.orientation === 'bottom' ? -90 : 0;
+        return (
+          <g key={`d${i}`} transform={`translate(${d.gridX * CELL}, ${d.gridY * CELL}) rotate(${rotation}, ${CELL / 2}, ${CELL / 2})`} pointerEvents="none">
+            <rect x={-4} y={2} width={8} height={CELL - 4} rx={2} fill={COLORS.brassBright} />
+            <path d={`M -4 2 A ${CELL - 10} ${CELL - 10} 0 0 1 ${CELL - 14} ${CELL - 8}`} fill="none" stroke={COLORS.brass} strokeWidth={1.5} strokeDasharray="4,4" opacity={0.6} />
+          </g>
+        );
+      })}
       {plantCells.map((p, i) => (
         <g key={`p${i}`} transform={`translate(${p.gridX * CELL + CELL / 2}, ${p.gridY * CELL + CELL / 2})`} pointerEvents="none">
           <circle cx={0} cy={-6} r={11} fill={COLORS.success} opacity={0.5} />

@@ -271,8 +271,15 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
   const [quickPayOrders, setQuickPayOrders] = useState<OrderRow[]>([]);
   function reloadQuickPay() {
     listOrders(businessId).then((orders) => {
+      // Real bug fix (confirmed by explicit report): this filter
+      // excluded 'customer_tap' entirely - a customer who tapped the
+      // NFC card and ordered directly from the table never showed up
+      // here for staff to collect payment on, regardless of how the
+      // order was actually placed. Staff need to be able to record
+      // payment for ANY unpaid order, not only ones placed through POS
+      // itself or drive-through.
       setQuickPayOrders(orders.filter((o) =>
-        (o.source === 'staff_pos' || o.source === 'drive_through')
+        (o.source === 'staff_pos' || o.source === 'drive_through' || o.source === 'customer_tap')
         && o.order_items.some((i) => !i.voided && !i.paid)
       ));
     }).catch(() => {});

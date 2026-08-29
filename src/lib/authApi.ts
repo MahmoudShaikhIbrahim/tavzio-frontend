@@ -222,7 +222,7 @@ export function deleteTable(businessId: string, tableId: string) {
 export function listFloorPlanCells(businessId: string) {
   return authFetch<FloorPlanCell[]>(`/api/businesses/${businessId}/tables-floor/cells`);
 }
-export function setFloorPlanCells(businessId: string, cells: { gridX: number; gridY: number; cellType: FloorPlanCell['cellType'] }[]) {
+export function setFloorPlanCells(businessId: string, cells: { gridX: number; gridY: number; cellType: FloorPlanCell['cellType']; orientation?: FloorPlanCell['orientation'] }[]) {
   return authFetch<FloorPlanCell[]>(`/api/businesses/${businessId}/tables-floor/cells`, { method: 'PUT', body: JSON.stringify({ cells }) });
 }
 

@@ -450,22 +450,43 @@ export default function OrdersPage() {
         const merged = table.mergedWithTableId ? floorTables.find((t) => t.id === table.mergedWithTableId) : null;
         const tableLabels = merged ? [table.label, merged.label] : [table.label];
         const tableOrders = active.filter((o) => tableLabels.includes(o.table_label));
+        // Real bug fix (confirmed by explicit report, visible in the
+        // screenshots as "Record Payment" showing for a table with
+        // AED 0.00 and no items listed): an order whose every item got
+        // voided can still sit at status 'pending' forever if nobody
+        // explicitly closed the order itself - voiding items doesn't
+        // automatically complete the order. That order still counted
+        // as "active" and made tableOrders.length > 0 true, even
+        // though there was genuinely nothing left to pay. What
+        // actually matters for showing Record Payment is whether real,
+        // unpaid, non-voided items exist - not merely whether some
+        // order record for this table hasn't been formally closed.
+        const payableItems = tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided && !i.paid));
+        const displayItems = tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided));
         const { color, label: statusLabel } = tableDisplayStatus(table);
-        const total = tableOrders.reduce((sum, o) => sum + Number(o.total), 0);
+        const total = displayItems.reduce((sum, i) => sum + (i.unit_price + i.addon_total) * i.quantity, 0);
         return (
           <div className="fixed inset-0 z-modal flex items-center justify-end bg-ink/60 p-4" onClick={() => setSelectedTableId(null)}>
             <div className="w-full max-w-md rounded-2xl border-2 bg-ink-soft p-6 shadow-2xl" style={{ borderColor: color }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-2xl text-ivory">{merged ? `${t('Table')} ${tableLabels.join(' + ')}` : `${t('Table')} ${table.label}`}</h2>
+                {/* Real bug fix (confirmed by explicit report, visible
+                    in the screenshots as literal "Table Table 1" text):
+                    a table's own label already includes the word
+                    "Table" (staff are prompted "e.g. Table 5" when
+                    creating one) - prefixing it again here duplicated
+                    it on every single table, every time. */}
+                <h2 className="font-display text-2xl text-ivory">{merged ? tableLabels.join(' + ') : table.label}</h2>
                 <span className="rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide" style={{ color, backgroundColor: hexToRgba(color, 0.15) || undefined }}>{t(statusLabel)}</span>
               </div>
               {table.zone && <p className="mt-1 text-sm text-ivory-dim">{table.zone} · {table.seatCount + (merged?.seatCount || 0)} {t('seats')}</p>}
               <div className="my-4 border-t border-ink-line" />
               {tableOrders.length === 0 ? (
                 <p className="text-sm text-ivory-dim">{t('No active order at this table right now.')}</p>
+              ) : displayItems.length === 0 ? (
+                <p className="text-sm text-ivory-dim">{t('Nothing left to pay at this table.')}</p>
               ) : (
                 <div className="space-y-2">
-                  {tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided)).map((item) => (
+                  {displayItems.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="text-ivory">{item.quantity}× {item.item_name}</span>
                       <span className="font-mono text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
@@ -479,7 +500,7 @@ export default function OrdersPage() {
                 </div>
               )}
               <div className="mt-5 flex flex-col gap-2">
-                {payBillEnabled && tableOrders.length > 0 && (
+                {payBillEnabled && payableItems.length > 0 && (
                   <button type="button" onClick={() => setTableRecordPayment(true)} className="w-full rounded-lg bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90">
                     {t('Record Payment')}
                   </button>

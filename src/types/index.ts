@@ -682,7 +682,7 @@ export interface FloorTable {
   activeOrders: { id: string; card_id: string; total: number; status: string }[];
 }
 
-export interface FloorPlanCell { id: string; gridX: number; gridY: number; cellType: 'wall' | 'window' | 'door' | 'counter' | 'plant' }
+export interface FloorPlanCell { id: string; gridX: number; gridY: number; cellType: 'wall' | 'window' | 'door' | 'counter' | 'plant'; orientation: 'left' | 'right' | 'top' | 'bottom' }
 
 export interface WaitlistEntry {
   id: string;

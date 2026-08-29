@@ -28,6 +28,27 @@ let authorizedToken: string | null = null;
 export function authorizeSupabase(accessToken: string) {
   if (accessToken === authorizedToken) return client;
   authorizedToken = accessToken;
+  // Real fix for a real, confirmed bug (issue #1/#5 in the audit):
+  // swapping in a new client here without tearing down the old one is
+  // exactly what "Multiple GoTrueClient instances detected" meant - the
+  // OLD client's background token-refresh timer and realtime connection
+  // kept running even after being "replaced" here, because nothing
+  // ever told them to stop. The idempotency check above (skip if the
+  // token hasn't actually changed) only prevented ADDING a new
+  // instance for the same token - it never closed the gap for the
+  // cases that still create one: the very first authorize call
+  // (replacing the unauthenticated client from module load) and any
+  // later genuine token rotation (a normal, periodic event - Supabase
+  // access tokens expire and refresh on their own). Every one of those
+  // moments left one more orphaned client running in the background,
+  // each with its own timers and listeners - which is what eventually
+  // exhausted the backend's rate limit and froze the whole app after
+  // a long session, and exactly what reproduced when opening "Arrange
+  // floor plan" triggered a burst of requests on top of however many
+  // orphaned clients had already piled up.
+  const previousClient = client;
+  previousClient.auth.stopAutoRefresh().catch(() => {});
+  previousClient.removeAllChannels().catch(() => {});
   client = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
