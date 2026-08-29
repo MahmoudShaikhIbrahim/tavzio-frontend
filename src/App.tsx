@@ -11,6 +11,8 @@ import TapHandler from './pages/TapHandler';
 import LandingPage from './pages/LandingPage';
 import MenuPage from './pages/MenuPage';
 import BookingPage from './pages/BookingPage';
+import BookingChooserPage from './pages/BookingChooserPage';
+import DriveThroughPage from './pages/DriveThroughPage';
 import BookingArrivalPage from './pages/BookingArrivalPage';
 import BillPage from './pages/BillPage';
 import NotFound from './pages/NotFound';
@@ -268,7 +270,9 @@ export default function App() {
 
         {/* Public ordering/booking/payment - only reachable if the business has it enabled */}
         <Route path="/:slug/menu" element={<MenuPage />} />
-        <Route path="/:slug/book" element={<BookingPage />} />
+        <Route path="/:slug/book" element={<BookingChooserPage />} />
+        <Route path="/:slug/book/table" element={<BookingPage />} />
+        <Route path="/:slug/book/drive-through" element={<DriveThroughPage />} />
         <Route path="/:slug/arrival/:bookingId" element={<BookingArrivalPage />} />
         <Route path="/:slug/pay" element={<BillPage />} />
 

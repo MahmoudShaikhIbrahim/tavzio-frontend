@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
-  getBusiness, updateBusiness,
+  getBusiness, updateBusiness, updateBusinessFeatures,
   listCustomButtons, createCustomButton, updateCustomButton, deleteCustomButton,
   listGuestServices, createGuestService, updateGuestService, deleteGuestService,
   GUEST_SERVICE_ROUTING_TYPES, type HotelGuestServiceRow,
@@ -22,7 +22,7 @@ export default function LandingButtonsPage() {
   const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
-  const [tab, setTab] = useState<'landing' | 'guest-portal' | 'services'>('landing');
+  const [tab, setTab] = useState<'landing' | 'guest-portal' | 'services' | 'drive-through'>('landing');
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -35,15 +35,16 @@ export default function LandingButtonsPage() {
   return (
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-ink-line">
-        {(['landing', ...(isHotel ? ['guest-portal'] as const : []), 'services'] as const).map((tabKey) => (
+        {(['landing', ...(isHotel ? ['guest-portal'] as const : []), 'services', 'drive-through'] as const).map((tabKey) => (
           <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
-            {tabKey === 'landing' ? t('Landing Page') : tabKey === 'guest-portal' ? t('Guest Portal Services') : t('Bookable Services')}
+            {tabKey === 'landing' ? t('Landing Page') : tabKey === 'guest-portal' ? t('Guest Portal Services') : tabKey === 'services' ? t('Bookable Services') : t('Drive Through')}
           </button>
         ))}
       </div>
       {tab === 'landing' && <LandingPageButtonsSection business={business} businessId={businessId} onSaved={setBusiness} />}
       {tab === 'guest-portal' && isHotel && <GuestPortalServicesSection businessId={businessId} />}
       {tab === 'services' && <BookableServicesSection businessId={businessId} />}
+      {tab === 'drive-through' && <DriveThroughSection business={business} onSaved={setBusiness} />}
     </div>
   );
 }
@@ -210,6 +211,123 @@ function GuestServiceForm({ businessId, existing, onDone, onCancel }: {
         {onCancel && <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>}
       </div>
     </form>
+  );
+}
+
+// Real, explicit addition: the drive-through feature's own settings,
+// as its own advanced section inside "Buttons and Links" per the
+// explicit request. Payment works exactly like online booking's own
+// down payment (same enabled/mode/value shape, computed the same way
+// server-side) - no separate "pay first / pay at pickup" scheme, per
+// explicit correction: 0 = nothing charged online (order reaches the
+// kitchen immediately, full amount collected at pickup via Record
+// Payment), a percentage/fixed value = a deposit collected online that
+// unlocks the kitchen, with any remainder still collectible at pickup,
+// "full" = nothing left to collect at pickup at all.
+type DriveThroughDownPaymentMode = 'full' | 'percentage' | 'fixed';
+function DriveThroughSection({ business, onSaved }: { business: AdminBusiness; onSaved: (b: AdminBusiness) => void }) {
+  const { t } = useT();
+  const cfg = business.features?.driveThrough;
+  const [enabled, setEnabled] = useState(!!cfg?.enabled);
+  const [downPaymentEnabled, setDownPaymentEnabled] = useState(!!cfg?.downPayment?.enabled);
+  const [downPaymentMode, setDownPaymentMode] = useState<DriveThroughDownPaymentMode>(cfg?.downPayment?.mode || 'percentage');
+  const [downPaymentValue, setDownPaymentValue] = useState(cfg?.downPayment?.value ?? 20);
+  const [locationUrl, setLocationUrl] = useState(business.features?.onlineBooking?.locationUrl || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSave() {
+    setSaving(true);
+    setSaved(false);
+    setError('');
+    try {
+      // Both sent in one call - each is a shallow merge at its own
+      // top-level key (driveThrough, onlineBooking), so this never
+      // touches the OTHER online-booking settings (enabled/allowPreOrder/
+      // downPayment) configured from the separate Bookings page.
+      const updated = await updateBusinessFeatures(business.id, {
+        driveThrough: {
+          enabled,
+          downPayment: { enabled: downPaymentEnabled, mode: downPaymentMode, value: downPaymentValue },
+        },
+        onlineBooking: { locationUrl: locationUrl.trim() },
+      });
+      onSaved(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Section title={t('Drive Through settings')}>
+        <label className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-base text-ivory">{t('Enable drive-through ordering')}</p>
+            <p className="text-sm text-ivory-dim">{t('Adds a Drive Through option to the online booking page, with its own menu and arrival time.')}</p>
+          </div>
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="h-5 w-5 shrink-0 accent-brass" />
+        </label>
+
+        {enabled && (
+          <div className="mt-5 border-t border-ink-line pt-4">
+            <label className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-base text-ivory">{t('Require a down payment')}</p>
+                <p className="text-sm text-ivory-dim">{t('Charged online when the order is placed, before it reaches the kitchen. Off = customer pays the full amount at pickup instead.')}</p>
+              </div>
+              <input type="checkbox" checked={downPaymentEnabled} onChange={(e) => setDownPaymentEnabled(e.target.checked)} className="h-5 w-5 shrink-0 accent-brass" />
+            </label>
+
+            {downPaymentEnabled && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <Field label={t('Type')}>
+                  <select value={downPaymentMode} onChange={(e) => setDownPaymentMode(e.target.value as DriveThroughDownPaymentMode)} className={inputClass}>
+                    <option value="full">{t('Full amount - nothing left to collect at pickup')}</option>
+                    <option value="percentage">{t('Percentage of the order total')}</option>
+                    <option value="fixed">{t('Fixed amount, every order')}</option>
+                  </select>
+                </Field>
+                {downPaymentMode !== 'full' && (
+                  <Field label={downPaymentMode === 'percentage' ? t('Percentage (%)') : t('Amount (AED)')}>
+                    <input
+                      type="number" min={0} max={downPaymentMode === 'percentage' ? 100 : undefined}
+                      value={downPaymentValue} onFocus={(e) => e.target.select()}
+                      onChange={(e) => setDownPaymentValue(Number(e.target.value))}
+                      className={inputClass}
+                    />
+                  </Field>
+                )}
+              </div>
+            )}
+            {downPaymentEnabled && downPaymentMode !== 'full' && (
+              <p className="mt-2 text-sm text-ivory-dim">{t('The remaining balance is collected at pickup through Record Payment on POS Terminal, same as any other order.')}</p>
+            )}
+          </div>
+        )}
+
+        <Field label={t('Location link')} className="mt-5">
+          <input
+            value={locationUrl} onChange={(e) => setLocationUrl(e.target.value)}
+            placeholder="https://maps.google.com/..."
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-ivory-dim">{t('Shown as a "Location" option on the same page as Book a Table / Drive Through - opens this link directly. A Google Maps link works well.')}</p>
+        </Field>
+
+        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+        <div className="mt-5">
+          <ActionButton onClick={handleSave} disabled={saving}>
+            {saving ? t('Saving...') : saved ? t('Saved') : t('Save changes')}
+          </ActionButton>
+        </div>
+      </Section>
+    </div>
   );
 }
 

@@ -222,4 +222,28 @@ export interface TranslationDict {
   tbCancelEdit: string;
   tbStatusConfirmed: string;
   tbStatusPending: string;
+
+  // Chooser page (/:slug/book) and Drive Through ordering - new for the
+  // drive-through feature. Deliberately kept separate from the tb*
+  // (table booking) keys above since the chooser sits ABOVE both
+  // booking and drive-through, not inside either one.
+  chChoosePrompt: string;
+  chBookTable: string;
+  chDriveThrough: string;
+  chLocation: string;
+  dtHeading: string;
+  dtSubtitle: string;
+  dtArrivalPrompt: string;
+  dtArrivalMinutes: string; // "{minutes} min"
+  dtHowToPay: string;
+  dtPayNow: string;
+  dtPayAtPickup: string;
+  dtPlaceOrder: string;
+  dtPlacingOrder: string;
+  dtOrderConfirmed: string;
+  dtOrderConfirmedDesc: string; // "See you in {minutes} minutes."
+  dtOrderFailed: string;
+  dtOrderFailedDesc: string;
+  dtNotAvailable: string;
+  dtNotAvailableDesc: string;
 }

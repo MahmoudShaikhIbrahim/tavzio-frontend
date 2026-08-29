@@ -1,6 +1,9 @@
 import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Utensils, Star, Calendar, BarChart3, CreditCard, ShieldCheck, Ban, Building2, Menu, X, ArrowRight } from 'lucide-react';
+import {
+  Utensils, Star, Calendar, CreditCard, ShieldCheck, Ban, Building2, Menu, X, ArrowRight,
+  Nfc, MonitorSmartphone, ChefHat, Car, Map, Boxes, Users, Languages, Radio, QrCode, Link2, Zap,
+} from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
 import { submitLead } from '../lib/api';
 import { useScrollReveal } from '../hooks/useScrollReveal';
@@ -8,12 +11,37 @@ import Logo from '../components/Logo';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
-const FEATURES = [
-  { n: '01', icon: Utensils, title: 'Ordering', text: 'Customers browse the menu and order straight from the table, no app required.' },
-  { n: '02', icon: CreditCard, title: 'Pay Bill', text: 'Apple Pay and Google Pay at the table, with split-bill built in.' },
-  { n: '03', icon: Star, title: 'Loyalty', text: 'Stamps, points, tiers, or spend-based rewards, tracked automatically.' },
-  { n: '04', icon: Calendar, title: 'Booking', text: 'Salons, clinics, and gyms can take appointment requests the same way.' },
-  { n: '05', icon: BarChart3, title: 'Live analytics', text: 'See exactly which table or spot gets the most engagement.' },
+// Real, explicit request: every prime feature actually built into the
+// platform, not the original 5-item placeholder list this replaces -
+// that list predated Drive Through, Tables Map, POS Terminal, Kitchen,
+// multi-language, and native inventory entirely. The first two are
+// deliberately the "hero" pair (wider cards) - NFC tap ordering and
+// real-time everywhere are the two things that most concretely
+// differentiate this from a typical QR-based or periodically-synced
+// system, so they lead rather than sitting alphabetically in a list.
+const PRIME_FEATURES = [
+  { icon: Nfc, title: 'NFC tap ordering', text: 'One tap on a real card opens the menu, the bill, a loyalty stamp, or a room request - no QR code, no camera, no app to download.', hero: true },
+  { icon: Radio, title: 'Real-time, everywhere', text: 'Kitchen, Orders, POS, and Tables Map all update the instant something happens - a new order reaches the kitchen live, not on the next refresh.', hero: true },
+  { icon: MonitorSmartphone, title: 'POS Terminal', text: 'A full point of sale built into the same platform - not a separate system bolted on afterward.' },
+  { icon: ChefHat, title: 'Live Kitchen Display', text: 'Real-time tickets, routed automatically to the right station.' },
+  { icon: Car, title: 'Drive Through & pickup', text: 'Customers order ahead, pick an arrival time, and staff see it coming with a live countdown.' },
+  { icon: Map, title: 'Tables Map', text: 'A real spatial floor plan - shaped, seat-sized tables, walls and windows drawn to match the actual room.' },
+  { icon: Calendar, title: 'Online Booking', text: 'Reservations with a configurable deposit - full, a percentage, or nothing at all.' },
+  { icon: Star, title: 'Loyalty', text: 'Stamps, points, or tiers, tracked automatically with every tap.' },
+  { icon: Boxes, title: 'Inventory & Purchase Orders', text: 'Stock tracking and supplier ordering built in from day one, not added years later as a partnership.' },
+  { icon: Users, title: 'Staff & HR', text: 'Shifts, roles, and permissions, managed from the same dashboard as everything else.' },
+  { icon: Languages, title: 'Genuinely multi-language', text: 'Arabic, English, and more - every customer and staff screen, not just the menu.' },
+  { icon: CreditCard, title: 'Pay Bill, any gateway', text: 'Split-bill payments through whichever payment provider you already have - never locked to one processor.' },
+];
+
+// Real, defensible comparison points - each grounded in an actual,
+// factual product difference (not a vague "we're better" claim), and
+// deliberately not naming any specific competitor by name.
+const COMPARISON = [
+  { icon: QrCode, us: 'A physical NFC tap - instant, no camera, no fumbling', them: 'A QR code - open the camera, hope the scan lands, hope the page loads' },
+  { icon: Boxes, us: 'Inventory built into the same platform from day one', them: 'Inventory bolted on later through a separate integration or partner' },
+  { icon: Link2, us: 'Works with whichever payment gateway you already use', them: 'Often locked to the vendor\'s own payment processing' },
+  { icon: Zap, us: 'Every screen - Kitchen, Orders, POS, Tables Map - updates live', them: 'Periodic sync, refresh-to-see-it-update' },
 ];
 
 const STEPS = [
@@ -374,25 +402,50 @@ export default function Home() {
         </div>
       </RevealSection>
 
-      {/* Features - an indexed list, not a grid of matched icon cards.
-          The numbering ties back to the same editorial device used for
-          "How it works", so the page reads as
-          one considered system rather than five separate templates
-          bolted together. */}
-      <RevealSection className="border-b border-ink-line px-6 py-20">
-        <div className="mx-auto max-w-3xl">
+      {/* Features - a real bento grid, not a plain indexed list: the two
+          most concretely differentiating things (NFC tap ordering,
+          real-time everywhere) lead as wider "hero" cards, everything
+          else built into the platform follows at even weight. Every
+          card is a real, currently-shipping feature, not a roadmap
+          item. */}
+      <RevealSection className="border-b border-ink-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">What's built in</p>
-          <div className="mt-12 divide-y divide-ink-line border-y border-ink-line">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="group flex items-start gap-5 py-6 transition-colors duration-200 hover:bg-ink-soft/40 sm:gap-8 sm:px-4">
-                <p className="font-mono text-sm text-brass/50 transition-colors duration-200 group-hover:text-brass">{f.n}</p>
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass">
-                  <f.icon size={16} strokeWidth={1.75} />
+          <p className="mx-auto mt-4 max-w-xl text-center font-display text-2xl text-ivory">Everything a table, a counter, or a front desk actually needs — in one system.</p>
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {PRIME_FEATURES.map((f) => (
+              <div key={f.title} className={`card-elevated rounded-2xl border border-ink-line bg-ink-soft p-8 transition-colors duration-200 hover:border-brass/40 ${f.hero ? 'sm:col-span-2' : ''}`}>
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass">
+                  <f.icon size={19} strokeWidth={1.75} />
                 </span>
-                <div>
-                  <p className="font-display text-lg text-ivory">{f.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-ivory-dim">{f.text}</p>
-                </div>
+                <p className={`mt-5 font-display text-ivory ${f.hero ? 'text-2xl' : 'text-lg'}`}>{f.title}</p>
+                <p className="mt-3 text-sm leading-relaxed text-ivory-dim">{f.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </RevealSection>
+
+      {/* How Tavzio differs - real, factual product distinctions, never
+          a specific competitor named (nothing here needs to be, since
+          each point stands on its own as a real feature difference,
+          not a disparaging claim about anyone in particular). */}
+      <RevealSection className="border-b border-ink-line px-6 py-24">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">How Tavzio is different</p>
+          <div className="mt-12 overflow-hidden rounded-2xl border border-ink-line">
+            <div className="grid grid-cols-[auto_1fr_1fr] items-center gap-x-6 gap-y-0 bg-ink-soft px-6 py-4 text-xs font-medium uppercase tracking-wide text-ivory-dim sm:gap-x-10">
+              <span />
+              <span className="text-brass">Tavzio</span>
+              <span>A typical system</span>
+            </div>
+            {COMPARISON.map((c, i) => (
+              <div key={c.us} className={`grid grid-cols-[auto_1fr_1fr] items-center gap-x-6 px-6 py-5 sm:gap-x-10 ${i % 2 === 1 ? 'bg-ink-soft/40' : ''}`}>
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-brass/40 text-brass">
+                  <c.icon size={16} strokeWidth={1.75} />
+                </span>
+                <p className="text-sm leading-relaxed text-ivory">{c.us}</p>
+                <p className="text-sm leading-relaxed text-ivory-dim">{c.them}</p>
               </div>
             ))}
           </div>

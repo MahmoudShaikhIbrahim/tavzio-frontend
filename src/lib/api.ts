@@ -176,6 +176,13 @@ export interface BookingConfig {
   }[];
   operatingHours: Record<string, { open: string; close: string } | null> | null;
   bookingHours: Record<string, { open: string; close: string } | null> | null;
+  // New for the drive-through feature: bookingEnabled is separate from
+  // driveThrough.enabled since either can be on independently - the
+  // chooser page only shows a button for whichever is actually on.
+  bookingEnabled: boolean;
+  driveThrough: { enabled: boolean; downPayment: { enabled: boolean; mode?: 'full' | 'percentage' | 'fixed'; value?: number } };
+  locationUrl: string;
+  logoUrl: string;
 }
 export function getBookingConfig(slug: string) {
   return request<BookingConfig>(`/api/public/business/${slug}/booking-config`);
@@ -190,6 +197,28 @@ export function requestBookingOtp(slug: string, phone: string) {
 export function verifyBookingOtp(slug: string, phone: string, code: string) {
   return request<{ message: string }>(`/api/public/business/${slug}/booking-otp/verify`, {
     method: 'POST', body: JSON.stringify({ phone, code }),
+  });
+}
+
+export interface CreateDriveThroughOrderResponse {
+  order?: { id: string; total: number };
+  paymentRequired: boolean;
+  redirectUrl?: string;
+  paymentId?: string;
+  orderId?: string;
+}
+export function createDriveThroughOrder(slug: string, payload: {
+  phone: string; items: { menuItemId: string; quantity: number; note?: string }[];
+  arrivalMinutes: number; note?: string;
+}) {
+  return request<CreateDriveThroughOrderResponse>(`/api/public/business/${slug}/drive-through/orders`, {
+    method: 'POST', body: JSON.stringify(payload),
+  });
+}
+
+export function confirmDriveThroughPayment(paymentId: string) {
+  return request<{ status: string; order: { id: string; total: number }; receipt?: Receipt }>(`/api/public/drive-through/orders/confirm-payment`, {
+    method: 'POST', body: JSON.stringify({ paymentId }),
   });
 }
 

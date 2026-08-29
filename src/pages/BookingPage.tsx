@@ -63,7 +63,10 @@ function getEffectiveHoursFor(dateStr: string, operatingHours: BookingConfig['op
 // pattern already used for notification buttons elsewhere in the app
 // (tap to expand, optional note, confirm) instead of a bare Add button
 // with no way for the guest to say "no onions" before it's in the cart.
-function BookingMenuItemRow({ item, cart, onAdd, t }: {
+// Exported for reuse by DriveThroughPage.tsx - the exact same item row
+// (image, name, price, expandable note, add-to-cart) drive-through
+// needs, not a rebuilt lookalike.
+export function BookingMenuItemRow({ item, cart, onAdd, t }: {
   item: BookingConfig['menu'][number];
   cart: { menuItemId: string; note: string; quantity: number }[];
   onAdd: (item: BookingConfig['menu'][number], note?: string) => void;

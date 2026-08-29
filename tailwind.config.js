@@ -24,6 +24,7 @@ export default {
         success: 'rgb(var(--color-success) / <alpha-value>)',
         info: 'rgb(var(--color-info) / <alpha-value>)',
         warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        drivethrough: 'rgb(var(--color-drivethrough) / <alpha-value>)',
         'status-text': 'rgb(var(--color-status-text) / <alpha-value>)',
       },
       fontFamily: {

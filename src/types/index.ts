@@ -113,6 +113,25 @@ export interface BusinessFeatures {
       mode?: 'full' | 'percentage' | 'fixed';
       value?: number;
     };
+    // Real, explicit addition for the drive-through feature: shown as
+    // a "Location" option on the same chooser page as Book a Table /
+    // Drive Through - not drive-through-specific itself (it's part of
+    // the shared chooser), but edited from within the Drive Through
+    // settings section per the explicit request.
+    locationUrl?: string;
+  };
+  // Real, explicit addition: drive-through ordering, configured as its
+  // own advanced section inside "Buttons and Links" (see
+  // LandingButtonsPage.tsx) - separate from onlineBooking/booking above
+  // since it's a genuinely different flow (no table, no reservation,
+  // reaches the kitchen like a normal order), not a variant of either.
+  driveThrough?: {
+    enabled: boolean;
+    downPayment: {
+      enabled: boolean;
+      mode?: 'full' | 'percentage' | 'fixed';
+      value?: number;
+    };
   };
   loyalty: boolean;
   staffAccounts: boolean;
@@ -652,9 +671,18 @@ export interface FloorTable {
   seatCount: number;
   status: 'available' | 'occupied' | 'reserved' | 'cleaning';
   mergedWithTableId: string | null;
+  // Real, explicit addition for the floor plan feature: null until a
+  // business actually arranges their map - the list/card view stays
+  // the fallback for any table that hasn't been placed yet.
+  gridX: number | null;
+  gridY: number | null;
+  shape: 'round' | 'long';
+  zone: string;
   card: { id: string; uid: string; status: string } | null;
   activeOrders: { id: string; card_id: string; total: number; status: string }[];
 }
+
+export interface FloorPlanCell { id: string; gridX: number; gridY: number; cellType: 'wall' | 'window' | 'door' | 'counter' | 'plant' }
 
 export interface WaitlistEntry {
   id: string;
@@ -937,7 +965,8 @@ export interface OrderRow {
   business_id: string;
   card_id: string | null;
   table_label: string;
-  order_type: 'dine_in' | 'walk_in' | 'pickup' | 'delivery';
+  order_type: 'dine_in' | 'walk_in' | 'pickup' | 'delivery' | 'drive_through';
+  arrival_at?: string | null;
   status: OrderStatus;
   ready_ack: boolean;
   request_type: OrderRequestType;
@@ -954,7 +983,7 @@ export interface OrderRow {
   prep_started_at?: string | null;
   ready_at?: string | null;
   order_items: OrderItemRow[];
-  source: 'customer_tap' | 'staff_pos' | 'delivery';
+  source: 'customer_tap' | 'staff_pos' | 'delivery' | 'drive_through';
   delivery_platform?: string | null;
 }
 

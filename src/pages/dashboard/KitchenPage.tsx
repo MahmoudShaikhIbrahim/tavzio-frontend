@@ -36,6 +36,17 @@ function TicketAge({ createdAt }: { createdAt: string }) {
   return <span className={`font-mono text-sm ${color}`}>{minutes < 1 ? t('just now') : `${minutes} min`}</span>;
 }
 
+// Real, explicit request: a drive-through ticket must be unmistakable
+// at a glance among normal tickets - a distinct color (violet, used
+// nowhere else on this screen) plus a live countdown to when the
+// customer is actually arriving, not just when the order was placed.
+function ArrivalCountdown({ arrivalAt }: { arrivalAt: string }) {
+  const { t } = useT();
+  const minutes = Math.round((new Date(arrivalAt).getTime() - Date.now()) / 60000);
+  const label = minutes <= 0 ? t('Arriving now') : `${minutes} ${t('min')}`;
+  return <span className="font-mono text-sm text-drivethrough">{label}</span>;
+}
+
 // Kitchen is deliberately the simplest page in the whole dashboard: one
 // job, no distractions. Every order stays genuinely separate here (no
 // grouping, no merging) so kitchen staff always know exactly what's new
@@ -182,15 +193,25 @@ export default function KitchenPage() {
           // for which course, so the kitchen can pace itself.
           const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
           return (
-            <div key={order.id} className="overflow-hidden rounded-lg border border-ink-line bg-ink-soft">
+            <div key={order.id} className={`overflow-hidden rounded-lg border bg-ink-soft ${order.order_type === 'drive_through' ? 'border-drivethrough' : 'border-ink-line'}`}>
               {/* A colored top strip reads faster than a thin border at
                   the distance a KDS screen is actually viewed from
                   across a kitchen - the same real convention commercial
                   kitchen displays (Toast, Square, Lightspeed) already
                   use to signal an aging ticket, just implemented here
-                  with a genuine block of color instead of a 2px line. */}
-              <div className={`h-1 ${urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
+                  with a genuine block of color instead of a 2px line.
+                  Drive-through always shows its own violet strip
+                  regardless of age - unmistakable at a glance, per the
+                  explicit request, rather than competing with the same
+                  red/yellow urgency colors every other ticket uses. */}
+              <div className={`h-1 ${order.order_type === 'drive_through' ? 'bg-drivethrough' : urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
               <div className="p-2.5">
+                {order.order_type === 'drive_through' && (
+                  <div className="mb-2 flex items-center justify-between rounded-lg bg-drivethrough/10 px-2 py-1">
+                    <span className="text-xs font-medium uppercase tracking-wide text-drivethrough">{t('Drive Through')}</span>
+                    {order.arrival_at && <ArrivalCountdown arrivalAt={order.arrival_at} />}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {firedItems.map((item) => (
                     <div key={item.id} className="flex gap-1.5">
@@ -207,7 +228,7 @@ export default function KitchenPage() {
                   ))}
                 </div>
                 <div className="mt-2 flex items-center justify-between border-t border-ink-line pt-2">
-                  <p className="text-sm text-ivory-dim">{order.table_label || t('No table')}</p>
+                  <p className="text-sm text-ivory-dim">{order.order_type === 'drive_through' ? t('Drive Through') : (order.table_label || t('No table'))}</p>
                   <div className="flex items-center gap-1.5">
                     {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-[10px] font-medium text-brass">{t('Preparing')}</span>}
                     <TicketAge createdAt={order.created_at} />

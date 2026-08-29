@@ -13,7 +13,7 @@ import type {
   Contract, Supplier, Ingredient, RecipeLine, PurchaseOrder, PurchaseOrderReceipt, LowStockIngredient, InventoryValuation, WasteReport,
   FoodCostReport, ActualFoodCostReport, StaffSchedule, ScheduleReport, LaborCostReport, MySchedule,
   SalesForecast, BusinessBudget, BudgetVsActual,
-  Lead, TillSession, FloorTable, WaitlistEntry,
+  Lead, TillSession, FloorTable, FloorPlanCell, WaitlistEntry,
   HotelRoom, HotelGuest, HotelReservation, HotelFolio, HotelFolioCharge, HotelOutlet, HotelBookingGroup,
   DigitalCard, DigitalCardAnalytics,
   SalaryStructure, PayrollRun, Payslip, PayslipDeduction, WpsExport,
@@ -208,12 +208,22 @@ export function createTable(businessId: string, payload: { label: string; seatCo
   return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
-export function updateTable(businessId: string, tableId: string, payload: { label?: string; seatCount?: number; status?: 'available' | 'occupied' | 'reserved' | 'cleaning' }) {
+export function updateTable(businessId: string, tableId: string, payload: {
+  label?: string; seatCount?: number; status?: 'available' | 'occupied' | 'reserved' | 'cleaning';
+  gridX?: number | null; gridY?: number | null; shape?: 'round' | 'long'; zone?: string;
+}) {
   return authFetch<FloorTable>(`/api/businesses/${businessId}/tables-floor/${tableId}`, { method: 'PATCH', body: JSON.stringify(payload) });
 }
 
 export function deleteTable(businessId: string, tableId: string) {
   return authFetch<{ message: string }>(`/api/businesses/${businessId}/tables-floor/${tableId}`, { method: 'DELETE' });
+}
+
+export function listFloorPlanCells(businessId: string) {
+  return authFetch<FloorPlanCell[]>(`/api/businesses/${businessId}/tables-floor/cells`);
+}
+export function setFloorPlanCells(businessId: string, cells: { gridX: number; gridY: number; cellType: FloorPlanCell['cellType'] }[]) {
+  return authFetch<FloorPlanCell[]>(`/api/businesses/${businessId}/tables-floor/cells`, { method: 'PUT', body: JSON.stringify({ cells }) });
 }
 
 export function connectCardToTable(businessId: string, tableId: string, cardId: string) {

@@ -6,18 +6,20 @@ import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
   voidOrderItem, clearTable, fireCourse,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
-  getPaymentIntegration,
+  getPaymentIntegration, listTables, listFloorPlanCells,
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { hexToRgba } from '../../lib/color';
 import { playNotificationSound } from '../../lib/soundPlayer';
-import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim } from '../../types';
+import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim, FloorTable, FloorPlanCell } from '../../types';
 import ExportButtons from '../../components/ExportButtons';
 import { useConfirm } from '../../components/ConfirmDialog';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import RecordPaymentFlow from '../../components/RecordPaymentFlow';
+import FloorPlanCanvas, { tableDisplayStatus } from '../../components/FloorPlanCanvas';
+import { Map as MapIcon, ListOrdered } from 'lucide-react';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   // listOrders filters awaiting_payment out server-side - this view never
@@ -43,6 +45,18 @@ const STATUS_STYLE: Record<OrderStatus, string> = {
 
 const RECENT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+// Same component/logic as Kitchen's own ArrivalCountdown (a live
+// countdown to when the drive-through customer actually arrives, not
+// when the order was placed) - defined here separately rather than
+// imported, since KitchenPage.tsx doesn't export it and the two pages
+// have no other shared-component relationship to build on.
+function ArrivalCountdown({ arrivalAt }: { arrivalAt: string }) {
+  const { t } = useT();
+  const minutes = Math.round((new Date(arrivalAt).getTime() - Date.now()) / 60000);
+  const label = minutes <= 0 ? t('Arriving now') : `${minutes} ${t('min')}`;
+  return <span className="font-mono text-sm text-drivethrough">{label}</span>;
+}
+
 export default function OrdersPage() {
   const { user } = useSession();
   const { t } = useT();
@@ -54,6 +68,17 @@ export default function OrdersPage() {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
   const [payBillEnabled, setPayBillEnabled] = useState(false);
   const [showRecordPayment, setShowRecordPayment] = useState(false);
+
+  // Real, explicit addition: the flip page. "view" swaps between the
+  // exact same Orders content that's always been here and the new
+  // spatial Tables Map - both read the same live orders/tables data,
+  // this is genuinely one data layer with two renderers, not two
+  // separate pages duplicating logic.
+  const [view, setView] = useState<'orders' | 'map'>('orders');
+  const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
+  const [floorCells, setFloorCells] = useState<FloorPlanCell[]>([]);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [tableRecordPayment, setTableRecordPayment] = useState(false);
 
   // Attention panel state - same four sources as the old Requests page,
   // now living at the top of Orders instead, plus the new "order ready"
@@ -74,11 +99,34 @@ export default function OrdersPage() {
   function reloadCashPending() {
     if (businessId) listCashPendingItems(businessId).then(setCashPending);
   }
+  // Only fetched/subscribed when the map view is actually in use -
+  // most businesses will spend most of their time on the Orders side,
+  // no reason to keep this live for a view nobody's looking at.
+  function reloadFloorTables() {
+    if (businessId) listTables(businessId).then(setFloorTables);
+  }
+  function reloadFloorCells() {
+    if (businessId) listFloorPlanCells(businessId).then(setFloorCells);
+  }
 
   useEffect(reload, [businessId]);
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
   useEffect(reloadCashPending, [businessId]);
+  // Fetched once view becomes 'map' (not eagerly on page load - most
+  // shifts will mostly use Orders, no reason to pull floor plan data
+  // nobody's looking at), then kept live via the same realtime +
+  // polling-fallback pattern every other data source on this page uses.
+  useEffect(() => {
+    if (view !== 'map' || !businessId) return;
+    reloadFloorTables();
+    reloadFloorCells();
+    const unsubTables = subscribeToBusinessTable(businessId, 'tables', reloadFloorTables);
+    const unsubCells = subscribeToBusinessTable(businessId, 'floor_plan_cells', reloadFloorCells);
+    return () => { unsubTables(); unsubCells(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, businessId]);
+  usePollingFallback(() => { if (view === 'map') { reloadFloorTables(); reloadFloorCells(); } }, view === 'map' && !!businessId);
   // Explicit, system-wide request: an independent 5-second poll of all
   // four of this page's own reload functions, completely separate from
   // the realtime subscriptions below - a safety net so a missed/dropped
@@ -189,8 +237,16 @@ export default function OrdersPage() {
   // Grouped by table - one card per table, each order inside it shown as
   // its own labeled section (never merged at the data level - each order
   // stays a real, separate record, this is purely a display grouping).
+  // Real fix made while adding drive-through: every drive-through order
+  // has an empty table_label (there's no table at all) - grouping by
+  // that label alone would have silently merged multiple simultaneous
+  // drive-through orders together, and merged them with any other
+  // no-table order too. Each drive-through order gets its own real key
+  // (its own id) so it always renders as its own separate card,
+  // regardless of how many are active at once. Every other order type's
+  // existing grouping behavior is untouched.
   const tableGroups = active.reduce<Record<string, OrderRow[]>>((acc, o) => {
-    const key = o.table_label || t('No table');
+    const key = o.order_type === 'drive_through' ? `drive-through-${o.id}` : (o.table_label || t('No table'));
     (acc[key] ||= []).push(o);
     return acc;
   }, {});
@@ -218,7 +274,23 @@ export default function OrdersPage() {
           <h1 className="font-display text-3xl text-ivory">{t('Orders')}</h1>
           {newOrderPulse && <span className="h-2 w-2 animate-pulse rounded-full bg-brass" />}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* The flip toggle - big, thumb-reachable, touch-first (not a
+              keyboard shortcut), per the explicit requirement. Orders
+              and Tables Map read the exact same live data underneath;
+              this only changes which side is currently shown. */}
+          <div className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-1">
+            <button type="button" onClick={() => setView('orders')}
+              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${view === 'orders' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
+            >
+              <ListOrdered size={15} strokeWidth={2} /> {t('Orders')}
+            </button>
+            <button type="button" onClick={() => setView('map')}
+              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${view === 'map' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
+            >
+              <MapIcon size={15} strokeWidth={2} /> {t('Tables Map')}
+            </button>
+          </div>
           {/* Order creation now lives only in POS Terminal (see #8) - this
               used to open its own duplicate "staff order" form here too,
               which was exactly the confusing overlap between Orders and
@@ -311,15 +383,118 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {Object.keys(tableGroups).length === 0 ? (
-        <p className="text-base text-ivory-dim">{t('No active orders right now.')}</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {Object.keys(tableGroups).map((table) => (
-            <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
-          ))}
+      {/* The actual flip: Orders content is completely unchanged below
+          (same tableGroups grid, same cards, same everything), it's
+          just now conditionally shown - a real 3D card-flip transition,
+          not an instant swap, so it visually reads as "same data, other
+          side of the card" the way it was explicitly asked for. */}
+      <div style={{ perspective: 2000 }}>
+        <div
+          className="transition-transform duration-500"
+          style={{ transformStyle: 'preserve-3d', transform: view === 'map' ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+        >
+          <div style={{ backfaceVisibility: 'hidden', display: view === 'orders' ? 'block' : 'none' }}>
+            {Object.keys(tableGroups).length === 0 ? (
+              <p className="text-base text-ivory-dim">{t('No active orders right now.')}</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {Object.keys(tableGroups).map((table) => (
+                  <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', display: view === 'map' ? 'block' : 'none' }}>
+            {/* Orders with no table at all (drive-through/walk-in/pickup)
+                have nowhere to sit on a spatial map - a strip here, not
+                on the map itself, so "the map has everything too" holds
+                without inventing a fake position for them. */}
+            {(() => {
+              const noTableOrders = active.filter((o) => !o.table_label && o.order_type !== 'dine_in');
+              return noTableOrders.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {noTableOrders.map((o) => (
+                    <div key={o.id} className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm ${
+                      o.order_type === 'drive_through' ? 'border-drivethrough bg-drivethrough/10 text-drivethrough' : 'border-brass/40 bg-brass/5 text-ivory'
+                    }`}>
+                      {o.order_type === 'drive_through' ? t('Drive Through') : o.order_type === 'pickup' ? t('Pickup') : t('Walk-in')}
+                      {o.order_type === 'drive_through' && o.arrival_at && (
+                        <span>— {Math.max(0, Math.round((new Date(o.arrival_at).getTime() - Date.now()) / 60000))} {t('min')}</span>
+                      )}
+                      <span className="font-mono">AED {o.total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {floorTables.filter((ft) => ft.gridX !== null).length === 0 ? (
+              <div className="rounded-xl border border-ink-line bg-ink-soft p-8 text-center">
+                <p className="text-base text-ivory">{t('No tables placed on the map yet')}</p>
+                <p className="mt-1 text-sm text-ivory-dim">{t('Arrange your floor plan in Table Setup to see it here.')}</p>
+                <button type="button" onClick={() => navigate('/admin/dashboard/tables')} className="mt-3 rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
+                  {t('Go to Table Setup')}
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-ink-line">
+                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} />
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
+
+      {selectedTableId && (() => {
+        const table = floorTables.find((t) => t.id === selectedTableId);
+        if (!table) return null;
+        const merged = table.mergedWithTableId ? floorTables.find((t) => t.id === table.mergedWithTableId) : null;
+        const tableLabels = merged ? [table.label, merged.label] : [table.label];
+        const tableOrders = active.filter((o) => tableLabels.includes(o.table_label));
+        const { color, label: statusLabel } = tableDisplayStatus(table);
+        const total = tableOrders.reduce((sum, o) => sum + Number(o.total), 0);
+        return (
+          <div className="fixed inset-0 z-modal flex items-center justify-end bg-ink/60 p-4" onClick={() => setSelectedTableId(null)}>
+            <div className="w-full max-w-md rounded-2xl border-2 bg-ink-soft p-6 shadow-2xl" style={{ borderColor: color }} onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-2xl text-ivory">{merged ? `${t('Table')} ${tableLabels.join(' + ')}` : `${t('Table')} ${table.label}`}</h2>
+                <span className="rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide" style={{ color, backgroundColor: hexToRgba(color, 0.15) || undefined }}>{t(statusLabel)}</span>
+              </div>
+              {table.zone && <p className="mt-1 text-sm text-ivory-dim">{table.zone} · {table.seatCount + (merged?.seatCount || 0)} {t('seats')}</p>}
+              <div className="my-4 border-t border-ink-line" />
+              {tableOrders.length === 0 ? (
+                <p className="text-sm text-ivory-dim">{t('No active order at this table right now.')}</p>
+              ) : (
+                <div className="space-y-2">
+                  {tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided)).map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-ivory">{item.quantity}× {item.item_name}</span>
+                      <span className="font-mono text-ivory-dim">{((item.unit_price + item.addon_total) * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className="my-2 border-t border-ink-line" />
+                  <div className="flex justify-between text-base">
+                    <span className="text-ivory">{t('Total')}</span>
+                    <span className="font-mono text-brass">AED {total.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+              <div className="mt-5 flex flex-col gap-2">
+                {payBillEnabled && tableOrders.length > 0 && (
+                  <button type="button" onClick={() => setTableRecordPayment(true)} className="w-full rounded-lg bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90">
+                    {t('Record Payment')}
+                  </button>
+                )}
+                <button type="button" onClick={() => setSelectedTableId(null)} className="w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:text-ivory">
+                  {t('Close')}
+                </button>
+              </div>
+            </div>
+            {tableRecordPayment && (
+              <RecordPaymentFlow businessId={businessId} orders={tableOrders} onClose={() => setTableRecordPayment(false)} onDone={() => { setTableRecordPayment(false); setSelectedTableId(null); reload(); }} />
+            )}
+          </div>
+        );
+      })()}
 
       {past.length > 0 && (
         <div>
@@ -369,6 +544,13 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   // Any of these orders' card_id works to identify the table for clearing.
   const cardId = orders[0]?.card_id;
   const tableTotal = orders.reduce((sum, o) => sum + Number(o.total), 0);
+  // Real, explicit request: unmistakable among normal order cards, same
+  // violet used on Kitchen's own drive-through tickets - and a real
+  // display label instead of the internal grouping key (see the real
+  // fix in the parent component for why drive-through's group key is
+  // never a real table name).
+  const isDriveThrough = orders[0]?.order_type === 'drive_through';
+  const arrivalAt = orders[0]?.arrival_at;
 
   // Flattened across every order for this table, oldest first - this is
   // what actually makes a later order "land in the same square" instead
@@ -407,7 +589,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
   async function handleClearTable() {
     if (!cardId) return;
-    if (!(await confirm({ title: t('Clear table?'), message: `${t('Clear')} ${table}? ${t('This voids everything currently unpaid at this table.')}`, confirmLabel: t('Clear'), danger: true }))) return;
+    if (!(await confirm({ title: t('Clear table?'), message: `${t('Clear')} ${isDriveThrough ? t('Order') : table}? ${t('This voids everything currently unpaid at this table.')}`, confirmLabel: t('Clear'), danger: true }))) return;
     setClearing(true);
     // Matches the backend's own rule exactly: skip only an order that's
     // genuinely fully paid already (that belongs to Mark Completed). An
@@ -446,7 +628,13 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   }
 
   return (
-    <div id={`table-${encodeURIComponent(table)}`} className="w-full scroll-mt-24 rounded-xl border border-ink-line bg-ink-soft p-3">
+    <div id={`table-${encodeURIComponent(table)}`} className={`w-full scroll-mt-24 rounded-xl border bg-ink-soft p-3 ${isDriveThrough ? 'border-drivethrough' : 'border-ink-line'}`}>
+      {isDriveThrough && (
+        <div className="mb-2 flex items-center justify-between rounded-lg bg-drivethrough/10 px-2.5 py-1.5">
+          <span className="text-sm font-medium uppercase tracking-wide text-drivethrough">{t('Drive Through')}</span>
+          {arrivalAt && <ArrivalCountdown arrivalAt={arrivalAt} />}
+        </div>
+      )}
       <div className="space-y-2 text-sm">
         {heldByCourse.size > 0 && (
           <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
@@ -506,7 +694,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
 
       <div className="mb-3 mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-3">
         <div>
-          <h2 className="text-sm text-ivory-dim">{table}</h2>
+          <h2 className="text-sm text-ivory-dim">{isDriveThrough ? t('Order') : table}</h2>
           <p className="text-sm text-ivory-dim">
             {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
           </p>
