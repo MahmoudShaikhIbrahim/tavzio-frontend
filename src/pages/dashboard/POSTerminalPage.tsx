@@ -35,7 +35,7 @@ export default function POSTerminalPage() {
   const { focusMode } = useOutletContext<{ focusMode?: boolean }>();
 
   function reloadTill() {
-    if (businessId) getMyOpenTill(businessId).then(setTill);
+    if (businessId) getMyOpenTill(businessId).then(setTill).catch(() => {});
   }
   useEffect(reloadTill, [businessId]);
 
@@ -1091,7 +1091,7 @@ function RefundsPanel({ businessId }: { businessId: string }) {
   const [filter, setFilter] = useState<'all' | 'refundable' | 'refunded'>('refundable');
 
   function reload() {
-    listPayments(businessId).then(setPayments).finally(() => setLoading(false));
+    listPayments(businessId).then(setPayments).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
   usePollingFallback(reload, !!businessId);

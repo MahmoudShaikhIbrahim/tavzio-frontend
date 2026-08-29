@@ -367,10 +367,15 @@ export default function DemoPage() {
               <>
                 <p className="mt-3 text-sm text-ivory-dim">Every Call Waiter or Request the Bill tap on the left appears here live.</p>
                 <div className="mt-4 space-y-3">
-                  {requests.map((r) => (
+                  {/* Real, explicit request: acknowledging a notification
+                      now clears it from view immediately, rather than
+                      leaving it sitting there dimmed with a "Done" label -
+                      the list only ever shows what's still waiting on
+                      staff. */}
+                  {requests.filter((r) => r.status === 'pending').map((r) => (
                     <div
                       key={r.id}
-                      className={`animate-hero-rise flex items-center justify-between gap-3 rounded-lg border p-4 ${r.status === 'pending' ? 'border-brass/30 bg-ink' : 'border-ink-line bg-ink opacity-60'}`}
+                      className="animate-hero-rise flex items-center justify-between gap-3 rounded-lg border border-brass/30 bg-ink p-4"
                     >
                       <div className="flex items-center gap-3">
                         {r.type === 'call_waiter' ? <Bell size={18} strokeWidth={1.75} className="text-brass" /> : <Receipt size={18} strokeWidth={1.75} className="text-brass" />}
@@ -379,13 +384,9 @@ export default function DemoPage() {
                           <p className="text-xs text-ivory-dim">Table 4 · {new Date(r.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</p>
                         </div>
                       </div>
-                      {r.status === 'pending' ? (
-                        <button type="button" onClick={() => handleAcknowledgeRequest(r.id)} className="shrink-0 rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10">
-                          Acknowledge
-                        </button>
-                      ) : (
-                        <span className="shrink-0 text-xs text-ivory-dim">Done</span>
-                      )}
+                      <button type="button" onClick={() => handleAcknowledgeRequest(r.id)} className="shrink-0 rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10">
+                        Acknowledge
+                      </button>
                     </div>
                   ))}
                   {requests.length === 0 && (

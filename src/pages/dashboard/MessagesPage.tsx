@@ -16,7 +16,7 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   function reload() {
-    if (businessId) listMessages(businessId).then(setMessages);
+    if (businessId) listMessages(businessId).then(setMessages).catch(() => {});
   }
 
   useEffect(reload, [businessId]);

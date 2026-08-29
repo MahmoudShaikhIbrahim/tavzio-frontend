@@ -135,13 +135,24 @@ function MergedTableShape({ a, b, onTap }: { a: FloorTable; b: FloorTable; onTap
 }
 
 export default function FloorPlanCanvas({
-  tables, cells, onTapTable, onTapCell, editMode,
+  tables, cells, onTapTable, onTapCell, editMode, bounds,
 }: {
   tables: FloorTable[];
   cells: FloorPlanCell[];
   onTapTable?: (tableId: string) => void;
   onTapCell?: (gridX: number, gridY: number) => void;
   editMode?: boolean;
+  // Real, explicit fix: the grid used to always start at (0,0) and
+  // only ever grow right/down to fit whatever was already placed -
+  // there was no way to add a table or wall further left or higher up
+  // than whatever the leftmost/topmost thing already there happened to
+  // be. When the editor passes real bounds (which it can expand in any
+  // direction), the canvas honors them directly instead of silently
+  // re-deriving its own, content-only bounds. View mode (no bounds
+  // passed) keeps the old tight auto-fit behavior, which is correct
+  // there - the live map has no reason to show empty padding nobody
+  // asked for.
+  bounds?: { minX: number; minY: number; maxX: number; maxY: number };
 }) {
   const placed = tables.filter((t) => t.gridX !== null && t.gridY !== null);
   const wallRects = computeRuns(cells, 'wall');
@@ -159,10 +170,18 @@ export default function FloorPlanCanvas({
     }
   }
 
-  const allX = [0, ...placed.map((t) => (t.gridX || 0) + (tableDims(t).w / CELL) + 1), ...cells.map((c) => c.gridX + 1)];
-  const allY = [0, ...placed.map((t) => (t.gridY || 0) + (tableDims(t).h / CELL) + 1), ...cells.map((c) => c.gridY + 1)];
-  const cols = Math.max(14, Math.ceil(Math.max(...allX)) + 1);
-  const rows = Math.max(8, Math.ceil(Math.max(...allY)) + 1);
+  let minX: number, minY: number, maxX: number, maxY: number;
+  if (bounds) {
+    ({ minX, minY, maxX, maxY } = bounds);
+  } else {
+    const allX = [0, ...placed.map((t) => (t.gridX || 0) + (tableDims(t).w / CELL) + 1), ...cells.map((c) => c.gridX + 1)];
+    const allY = [0, ...placed.map((t) => (t.gridY || 0) + (tableDims(t).h / CELL) + 1), ...cells.map((c) => c.gridY + 1)];
+    minX = 0; minY = 0;
+    maxX = Math.max(14, Math.ceil(Math.max(...allX)) + 1);
+    maxY = Math.max(8, Math.ceil(Math.max(...allY)) + 1);
+  }
+  const cols = maxX - minX;
+  const rows = maxY - minY;
 
   // Zones: group placed tables by their own zone string, label at the
   // top-left-most table in that zone - anchored to real tables rather
@@ -178,11 +197,15 @@ export default function FloorPlanCanvas({
 
   const editableCellGrid: { x: number; y: number }[] = [];
   if (editMode) {
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) editableCellGrid.push({ x, y });
+    for (let y = minY; y < maxY; y++) for (let x = minX; x < maxX; x++) editableCellGrid.push({ x, y });
   }
 
   return (
-    <svg width={cols * CELL} height={rows * CELL} style={{ background: COLORS.ink, display: 'block' }}>
+    <svg
+      width={cols * CELL} height={rows * CELL}
+      viewBox={`${minX * CELL} ${minY * CELL} ${cols * CELL} ${rows * CELL}`}
+      style={{ background: COLORS.ink, display: 'block' }}
+    >
       {editMode && editableCellGrid.map((c) => (
         <rect key={`grid-${c.x}-${c.y}`} x={c.x * CELL} y={c.y * CELL} width={CELL} height={CELL}
           fill="transparent" stroke={COLORS.inkLine} strokeWidth={0.5}

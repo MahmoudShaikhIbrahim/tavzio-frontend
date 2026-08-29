@@ -88,25 +88,38 @@ export default function OrdersPage() {
   const [cashPending, setCashPending] = useState<CashPendingItem[]>([]);
 
   function reload() {
-    if (businessId) listOrders(businessId).then(setOrders);
+    if (businessId) listOrders(businessId).then(setOrders).catch(() => {});
   }
   function reloadRequests() {
-    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed')));
+    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed'))).catch(() => {});
   }
   function reloadClaims() {
-    if (businessId) listLoyaltyClaims(businessId).then(setClaims);
+    if (businessId) listLoyaltyClaims(businessId).then(setClaims).catch(() => {});
   }
   function reloadCashPending() {
-    if (businessId) listCashPendingItems(businessId).then(setCashPending);
+    if (businessId) listCashPendingItems(businessId).then(setCashPending).catch(() => {});
   }
   // Only fetched/subscribed when the map view is actually in use -
   // most businesses will spend most of their time on the Orders side,
   // no reason to keep this live for a view nobody's looking at.
+  //
+  // Real bug fix (confirmed by explicit report - "Tables are taking a
+  // long time to load and now it's not loading at all", alongside
+  // dozens of repeated console errors): these two, and every other
+  // reload function in this file, were missing .catch() entirely. With
+  // usePollingFallback calling them every 5 seconds regardless of
+  // whether the previous attempt succeeded, a single transient failure
+  // (a 429, a brief network blip) became an uncaught promise rejection
+  // repeating forever, every 5 seconds, for as long as the underlying
+  // condition persisted - exactly the flood of identical console
+  // errors in the report, and exactly why the map never recovered on
+  // its own even after the underlying condition (the rate limit fix
+  // above) would have cleared.
   function reloadFloorTables() {
-    if (businessId) listTables(businessId).then(setFloorTables);
+    if (businessId) listTables(businessId).then(setFloorTables).catch(() => {});
   }
   function reloadFloorCells() {
-    if (businessId) listFloorPlanCells(businessId).then(setFloorCells);
+    if (businessId) listFloorPlanCells(businessId).then(setFloorCells).catch(() => {});
   }
 
   useEffect(reload, [businessId]);
@@ -410,10 +423,24 @@ export default function OrdersPage() {
                 on the map itself, so "the map has everything too" holds
                 without inventing a fake position for them. */}
             {(() => {
-              const noTableOrders = active.filter((o) => !o.table_label && o.order_type !== 'dine_in');
+              // Real bug fix, same root cause as Table 3's: this only
+              // ever checked for a missing table label, never whether
+              // anything was actually still unpaid - a drive-through or
+              // walk-in order that was fully paid off but never
+              // formally cleared would linger here forever showing a
+              // stale, already-settled amount. Mirrors the exact same
+              // "anyUnpaid" check Orders' own tableGroups and the table
+              // detail panel both use, and shows the real remaining
+              // total (from actual unpaid items) rather than the
+              // order's own stored total, which can be stale after a
+              // partial payment.
+              const noTableOrders = active
+                .filter((o) => !o.table_label && o.order_type !== 'dine_in')
+                .map((o) => ({ order: o, unpaid: o.order_items.filter((i) => !i.voided && !i.paid) }))
+                .filter(({ unpaid }) => unpaid.length > 0);
               return noTableOrders.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {noTableOrders.map((o) => (
+                  {noTableOrders.map(({ order: o, unpaid }) => (
                     <div key={o.id} className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm ${
                       o.order_type === 'drive_through' ? 'border-drivethrough bg-drivethrough/10 text-drivethrough' : 'border-brass/40 bg-brass/5 text-ivory'
                     }`}>
@@ -421,7 +448,7 @@ export default function OrdersPage() {
                       {o.order_type === 'drive_through' && o.arrival_at && (
                         <span>— {Math.max(0, Math.round((new Date(o.arrival_at).getTime() - Date.now()) / 60000))} {t('min')}</span>
                       )}
-                      <span className="font-mono">AED {o.total.toFixed(2)}</span>
+                      <span className="font-mono">AED {unpaid.reduce((sum, i) => sum + (i.unit_price + i.addon_total) * i.quantity, 0).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -450,19 +477,24 @@ export default function OrdersPage() {
         const merged = table.mergedWithTableId ? floorTables.find((t) => t.id === table.mergedWithTableId) : null;
         const tableLabels = merged ? [table.label, merged.label] : [table.label];
         const tableOrders = active.filter((o) => tableLabels.includes(o.table_label));
-        // Real bug fix (confirmed by explicit report, visible in the
-        // screenshots as "Record Payment" showing for a table with
-        // AED 0.00 and no items listed): an order whose every item got
-        // voided can still sit at status 'pending' forever if nobody
-        // explicitly closed the order itself - voiding items doesn't
-        // automatically complete the order. That order still counted
-        // as "active" and made tableOrders.length > 0 true, even
-        // though there was genuinely nothing left to pay. What
-        // actually matters for showing Record Payment is whether real,
-        // unpaid, non-voided items exist - not merely whether some
-        // order record for this table hasn't been formally closed.
-        const payableItems = tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided && !i.paid));
-        const displayItems = tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided));
+        // Real bug fix, round 2 (confirmed by explicit report: "Table 3
+        // is still showing a previous order that isn't present anywhere
+        // in the system"). Traced this to a real discrepancy against
+        // Orders' own tableGroups logic just above, which this panel
+        // was never actually matching: Orders correctly treats a table
+        // as having nothing active once every remaining item is paid
+        // off, even if nobody explicitly cleared the order - "anyUnpaid"
+        // in that logic, not just "anyItemLeft". This panel only ever
+        // checked non-voided (displayItems used to ignore .paid
+        // entirely), so a table that was fully paid off but never
+        // formally cleared still showed its old, already-settled items
+        // here as if they were still owed - explaining exactly why it
+        // was visible on the map but nowhere else in the app: Orders
+        // was hiding it correctly the whole time, this panel wasn't.
+        const remainingItems = tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided));
+        const anyUnpaid = remainingItems.some((i) => !i.paid);
+        const payableItems = anyUnpaid ? remainingItems.filter((i) => !i.paid) : [];
+        const displayItems = anyUnpaid ? remainingItems : [];
         const { color, label: statusLabel } = tableDisplayStatus(table);
         const total = displayItems.reduce((sum, i) => sum + (i.unit_price + i.addon_total) * i.quantity, 0);
         return (

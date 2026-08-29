@@ -66,9 +66,9 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
   const [priority, setPriority] = useState<'normal' | 'urgent'>('normal');
 
   function reload() {
-    listHousekeepingTasks(businessId).then(setTasks);
-    listRooms(businessId).then(setRooms);
-    getHousekeepingPerformance(businessId, 7).then(setPerformance);
+    listHousekeepingTasks(businessId).then(setTasks).catch(() => {});
+    listRooms(businessId).then(setRooms).catch(() => {});
+    getHousekeepingPerformance(businessId, 7).then(setPerformance).catch(() => {});
   }
   useEffect(reload, [businessId]);
   usePollingFallback(reload, !!businessId);
@@ -200,9 +200,9 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
   const [estimatedCost, setEstimatedCost] = useState('');
 
   function reload() {
-    listMaintenanceTickets(businessId).then(setTickets);
-    listRooms(businessId).then(setRooms);
-    getMaintenancePerformance(businessId, 30).then(setPerformance);
+    listMaintenanceTickets(businessId).then(setTickets).catch(() => {});
+    listRooms(businessId).then(setRooms).catch(() => {});
+    getMaintenancePerformance(businessId, 30).then(setPerformance).catch(() => {});
   }
   useEffect(reload, [businessId]);
   usePollingFallback(reload, !!businessId);
@@ -324,7 +324,7 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
   const { t } = useT();
   const [requests, setRequests] = useState<GuestServiceRequest[]>([]);
 
-  function reload() { listGuestRequests(businessId).then(setRequests); }
+  function reload() { listGuestRequests(businessId).then(setRequests).catch(() => {}); }
   useEffect(reload, [businessId]);
   usePollingFallback(reload, !!businessId);
 

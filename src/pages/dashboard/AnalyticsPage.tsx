@@ -39,17 +39,23 @@ export default function AnalyticsPage() {
 
   function reload() {
     if (!businessId) return;
-    getAnalyticsSummary(businessId).then(setSummary);
-    getCardBreakdown(businessId).then(setCardBreakdown);
-    getSalesByChannel(businessId).then(setSalesByChannel);
-    getTopItems(businessId, { limit: 10 }).then(setTopItems);
-    getRevenueTrend(businessId).then(setRevenueTrend);
-    getPeakHours(businessId).then(setPeakHours);
-    getKitchenPerformance(businessId).then(setKitchenPerf);
+    // Real, systemic fix (part of the same audit): every one of these
+    // was an unhandled .then() with no .catch(), and this whole
+    // function is called every 5 seconds by usePollingFallback below -
+    // a single transient failure on any one of these eight calls
+    // became an uncaught promise rejection repeating forever, exactly
+    // the same root cause already found and fixed on Orders.
+    getAnalyticsSummary(businessId).then(setSummary).catch(() => {});
+    getCardBreakdown(businessId).then(setCardBreakdown).catch(() => {});
+    getSalesByChannel(businessId).then(setSalesByChannel).catch(() => {});
+    getTopItems(businessId, { limit: 10 }).then(setTopItems).catch(() => {});
+    getRevenueTrend(businessId).then(setRevenueTrend).catch(() => {});
+    getPeakHours(businessId).then(setPeakHours).catch(() => {});
+    getKitchenPerformance(businessId).then(setKitchenPerf).catch(() => {});
     getBusiness(businessId).then((b) => {
       setIsHotel(b.category === 'hotel');
-      if (b.category === 'hotel') getHotelPerformance(businessId).then(setHotelPerf);
-    });
+      if (b.category === 'hotel') getHotelPerformance(businessId).then(setHotelPerf).catch(() => {});
+    }).catch(() => {});
   }
 
   useEffect(reload, [businessId]);

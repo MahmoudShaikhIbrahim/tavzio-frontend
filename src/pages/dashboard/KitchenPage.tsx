@@ -71,7 +71,7 @@ export default function KitchenPage() {
     // whatever order the API happens to return.
     if (businessId) listOrders(businessId, 'pending').then((rows) => {
       setOrders([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-    });
+    }).catch(() => {});
     // Also pick up anything already 'preparing' - a ticket started but
     // not yet ready still needs to be visible on this screen, not just
     // freshly-pending ones.
@@ -80,7 +80,7 @@ export default function KitchenPage() {
         const pendingOnly = prev.filter((o) => o.status !== 'preparing');
         return [...pendingOnly, ...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       });
-    });
+    }).catch(() => {});
   }
 
   useEffect(reload, [businessId]);
@@ -90,7 +90,7 @@ export default function KitchenPage() {
   // event is never more than 5s stale, with no manual refresh needed.
   usePollingFallback(reload, !!businessId);
   useEffect(() => {
-    if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
+    if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings)).catch(() => {});
   }, [businessId]);
 
   // Real-time, instant - a new order appears, or an order someone else

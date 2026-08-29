@@ -526,7 +526,7 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
 
   function reload() {
     if (!businessId) return;
-    listStaffShifts(businessId, { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` }).then(setShifts);
+    listStaffShifts(businessId, { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` }).then(setShifts).catch(() => {});
   }
   useEffect(reload, [businessId, from, to]);
 

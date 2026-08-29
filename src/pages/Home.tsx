@@ -1,8 +1,9 @@
-import { useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Utensils, Star, Calendar, CreditCard, ShieldCheck, Ban, Building2, Menu, X, ArrowRight,
-  Nfc, MonitorSmartphone, ChefHat, Car, Map, Boxes, Users, Languages, Radio, QrCode, Link2, Zap,
+  Nfc, MonitorSmartphone, ChefHat, Car, Map, Boxes, Users, Languages, Radio, Link2, Zap,
+  BedDouble, Sparkles, Wrench, ConciergeBell, Receipt,
 } from 'lucide-react';
 import { useLiveSystemTheme } from '../lib/ThemeContext';
 import { submitLead } from '../lib/api';
@@ -11,37 +12,52 @@ import Logo from '../components/Logo';
 
 const CATEGORIES = ['restaurant', 'cafe', 'retail', 'hotel', 'salon', 'clinic', 'gym', 'other'];
 
-// Real, explicit request: every prime feature actually built into the
-// platform, not the original 5-item placeholder list this replaces -
-// that list predated Drive Through, Tables Map, POS Terminal, Kitchen,
-// multi-language, and native inventory entirely. The first two are
-// deliberately the "hero" pair (wider cards) - NFC tap ordering and
-// real-time everywhere are the two things that most concretely
-// differentiate this from a typical QR-based or periodically-synced
-// system, so they lead rather than sitting alphabetically in a list.
-const PRIME_FEATURES = [
-  { icon: Nfc, title: 'NFC tap ordering', text: 'One tap on a real card opens the menu, the bill, a loyalty stamp, or a room request - no QR code, no camera, no app to download.', hero: true },
-  { icon: Radio, title: 'Real-time, everywhere', text: 'Kitchen, Orders, POS, and Tables Map all update the instant something happens - a new order reaches the kitchen live, not on the next refresh.', hero: true },
-  { icon: MonitorSmartphone, title: 'POS Terminal', text: 'A full point of sale built into the same platform - not a separate system bolted on afterward.' },
+// Real, explicit request: "Built for" folded directly into Features -
+// these are now what the two toggle buttons above the moving list
+// switch between, not a separate section a visitor has to read twice.
+// Every line is a real, currently-shipping feature, not a roadmap item.
+const RESTAURANT_FEATURES = [
+  { icon: Nfc, title: 'Tap or scan, either way', text: 'An NFC card and a QR code on the same stand - the menu, the bill, or a loyalty stamp opens instantly, however a guest prefers.' },
+  { icon: Radio, title: 'Real-time, everywhere', text: 'Kitchen, Orders, POS, and Tables Map all update the instant something happens.' },
+  { icon: MonitorSmartphone, title: 'POS Terminal', text: 'A full point of sale built into the same platform, not bolted on afterward.' },
   { icon: ChefHat, title: 'Live Kitchen Display', text: 'Real-time tickets, routed automatically to the right station.' },
-  { icon: Car, title: 'Drive Through & pickup', text: 'Customers order ahead, pick an arrival time, and staff see it coming with a live countdown.' },
-  { icon: Map, title: 'Tables Map', text: 'A real spatial floor plan - shaped, seat-sized tables, walls and windows drawn to match the actual room.' },
+  { icon: Car, title: 'Drive Through & pickup', text: 'Order ahead, pick an arrival time, staff see it coming with a live countdown.' },
+  { icon: Map, title: 'Tables Map', text: 'A real spatial floor plan - shaped, seat-sized tables, walls and windows drawn to match the room.' },
   { icon: Calendar, title: 'Online Booking', text: 'Reservations with a configurable deposit - full, a percentage, or nothing at all.' },
   { icon: Star, title: 'Loyalty', text: 'Stamps, points, or tiers, tracked automatically with every tap.' },
-  { icon: Boxes, title: 'Inventory & Purchase Orders', text: 'Stock tracking and supplier ordering built in from day one, not added years later as a partnership.' },
-  { icon: Users, title: 'Staff & HR', text: 'Shifts, roles, and permissions, managed from the same dashboard as everything else.' },
-  { icon: Languages, title: 'Genuinely multi-language', text: 'Arabic, English, and more - every customer and staff screen, not just the menu.' },
-  { icon: CreditCard, title: 'Pay Bill, any gateway', text: 'Split-bill payments through whichever payment provider you already have - never locked to one processor.' },
+  { icon: Boxes, title: 'Inventory & Purchase Orders', text: 'Stock tracking and supplier ordering built in from day one.' },
+  { icon: Users, title: 'Staff & HR', text: 'Shifts, roles, and permissions, from the same dashboard as everything else.' },
+  { icon: Languages, title: 'Genuinely multi-language', text: 'Arabic, English, and more - every screen, not just the menu.' },
+  { icon: CreditCard, title: 'Pay Bill, any gateway', text: 'Split-bill payments through whichever payment provider you already use.' },
+];
+
+const HOTEL_FEATURES = [
+  { icon: Nfc, title: 'Tap or scan, by the bed', text: 'An NFC card and a QR code in every room - room service, requests, or the bill open instantly, however a guest prefers.' },
+  { icon: Radio, title: 'Real-time, everywhere', text: 'Requests, Kitchen, and Housekeeping all update the instant something happens.' },
+  { icon: ConciergeBell, title: 'Guest requests', text: 'Housekeeping, amenities, maintenance - every request routed live to the right team.' },
+  { icon: ChefHat, title: 'In-room ordering & room service', text: 'Routes to the same live Kitchen Display as any other order - nothing separate to manage.' },
+  { icon: Calendar, title: 'Reservations', text: 'A configurable deposit - full, a percentage, or nothing at all.' },
+  { icon: Receipt, title: 'Charged to the room', text: 'Room service and requests land straight on the guest folio, not a separate bill to chase down.' },
+  { icon: Star, title: 'Loyalty', text: 'Stamps, points, or tiers, tracked automatically with every tap.' },
+  { icon: Sparkles, title: 'Housekeeping', text: 'Task tracking per room, so nothing gets missed on a busy turnover day.' },
+  { icon: Wrench, title: 'Maintenance tickets', text: 'Logged, assigned, and tracked to resolution - not a note that gets lost.' },
+  { icon: BedDouble, title: 'Staff & HR', text: 'Shifts, roles, and permissions, from the same dashboard as everything else.' },
+  { icon: Languages, title: 'Genuinely multi-language', text: 'Arabic, English, and more - every guest and staff screen.' },
+  { icon: Boxes, title: 'Inventory & Purchase Orders', text: 'Stock tracking and supplier ordering built in from day one.' },
 ];
 
 // Real, defensible comparison points - each grounded in an actual,
 // factual product difference (not a vague "we're better" claim), and
-// deliberately not naming any specific competitor by name.
+// deliberately not naming any specific competitor by name. The NFC-vs-
+// QR point was removed: Tavzio's own stand carries both, so it's no
+// longer a real point of difference - replaced with distinctions that
+// still hold.
 const COMPARISON = [
-  { icon: QrCode, us: 'A physical NFC tap - instant, no camera, no fumbling', them: 'A QR code - open the camera, hope the scan lands, hope the page loads' },
   { icon: Boxes, us: 'Inventory built into the same platform from day one', them: 'Inventory bolted on later through a separate integration or partner' },
   { icon: Link2, us: 'Works with whichever payment gateway you already use', them: 'Often locked to the vendor\'s own payment processing' },
   { icon: Zap, us: 'Every screen - Kitchen, Orders, POS, Tables Map - updates live', them: 'Periodic sync, refresh-to-see-it-update' },
+  { icon: Map, us: 'A real floor plan - staff glance and know exactly where a table is', them: 'A flat list of table names to scroll and search through' },
+  { icon: Car, us: 'Drive-through and pickup built in natively, from day one', them: 'Usually a separate add-on, or not supported at all' },
 ];
 
 const STEPS = [
@@ -79,6 +95,86 @@ function RevealSection({ id, className, children }: { id?: string; className?: s
   return (
     <div id={id} ref={ref} className={`${className || ''} ${revealClass}`}>
       {children}
+    </div>
+  );
+}
+
+// Real, explicit request: a horizontally, slowly self-scrolling list -
+// browsable by aiming the mouse at it and using the scroll wheel, a
+// trackpad swipe, or a touch swipe, on top of the constant slow drift.
+// Two real technical points worth being deliberate about:
+// - The content is rendered twice back-to-back and scrollLeft wraps at
+//   the halfway point, so the loop is seamless in either direction.
+// - React attaches onWheel as a passive listener by default, which
+//   silently no-ops any e.preventDefault() called from it - redirecting
+//   the vertical wheel into horizontal motion needs a real native
+//   { passive: false } listener instead, not React's synthetic prop.
+// Trackpad and touch swipes already scroll a horizontal-overflow div
+// natively; only the plain-mouse-wheel case needs this at all.
+function FeatureMarquee({ features }: { features: { icon: typeof Nfc; title: string; text: string }[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const resumeTimer = useRef<number>();
+
+  useEffect(() => {
+    let raf: number;
+    function tick() {
+      const el = scrollRef.current;
+      if (el && !pausedRef.current) {
+        el.scrollLeft += 0.6;
+        const half = el.scrollWidth / 2;
+        if (half > 0 && el.scrollLeft >= half) el.scrollLeft -= half;
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  function pause() {
+    pausedRef.current = true;
+    if (resumeTimer.current) window.clearTimeout(resumeTimer.current);
+  }
+  function scheduleResume() {
+    if (resumeTimer.current) window.clearTimeout(resumeTimer.current);
+    resumeTimer.current = window.setTimeout(() => { pausedRef.current = false; }, 1200);
+  }
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function onWheel(e: WheelEvent) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el!.scrollLeft += e.deltaY;
+        pause();
+        scheduleResume();
+      }
+    }
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
+  return (
+    <div
+      ref={scrollRef}
+      onPointerDown={pause}
+      onPointerUp={scheduleResume}
+      onPointerLeave={scheduleResume}
+      onTouchStart={pause}
+      onTouchEnd={scheduleResume}
+      className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{ cursor: 'grab' }}
+    >
+      {[...features, ...features].map((f, i) => (
+        <div key={i} className="card-elevated flex w-72 shrink-0 flex-col rounded-2xl border border-ink-line bg-ink-soft p-7 transition-colors duration-200 hover:border-brass/40">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass">
+            <f.icon size={19} strokeWidth={1.75} />
+          </span>
+          <p className="mt-5 font-display text-lg text-ivory">{f.title}</p>
+          <p className="mt-3 text-sm leading-relaxed text-ivory-dim">{f.text}</p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -131,7 +227,7 @@ function PrimaryLink({ to, href, onClick, type, disabled, className, children }:
 // stacked list, echoing the same numbered-editorial device already
 // used for "How it works" and the feature list further down the page.
 const MOBILE_LINKS = [
-  { n: '01', label: 'Solutions', href: '#solutions' },
+  { n: '01', label: 'Features', href: '#features' },
   { n: '02', label: 'How it works', href: '#how-it-works' },
   { n: '03', label: 'Demo', to: '/demo' },
 ];
@@ -211,6 +307,10 @@ export default function Home() {
   const tapIndex = useTapCycle();
   const scrolled = useScrolledPast(24);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Which of the two feature lists the marquee shows - a business kind
+  // a visitor picks, not a scroll-tracked state, so it stays put until
+  // they choose otherwise.
+  const [featureCategory, setFeatureCategory] = useState<'restaurant' | 'hotel'>('restaurant');
 
   return (
     <div data-theme={theme} className="min-h-screen bg-ink">
@@ -230,7 +330,7 @@ export default function Home() {
           <Logo />
         </a>
         <nav className="hidden items-center gap-12 text-sm text-ivory-dim md:flex">
-          <a href="#solutions" className="transition-colors hover:text-ivory">Solutions</a>
+          <a href="#features" className="transition-colors hover:text-ivory">Features</a>
           <a href="#how-it-works" className="transition-colors hover:text-ivory">How it works</a>
           <Link to="/demo" className="transition-colors hover:text-ivory">Demo</Link>
         </nav>
@@ -279,11 +379,11 @@ export default function Home() {
               For restaurants & hotels in the UAE
             </p>
             <h1 className="mt-5 animate-hero-rise font-display text-[2.25rem] leading-[1.1] text-ivory [animation-delay:80ms] sm:text-5xl lg:text-6xl">
-              Every request. <em className="not-italic text-brass">One tap.</em>
+              One tap. <em className="not-italic text-brass">That's the whole system.</em>
             </h1>
             <p className="mx-auto mt-6 max-w-md animate-hero-rise text-[15px] leading-relaxed text-ivory-dim [animation-delay:160ms] lg:mx-0">
-              A single NFC card on the table or the nightstand becomes the menu, the bill, the loyalty program,
-              and the request line — so guests get instant service, and your staff stop repeating the same answers all day.
+              A single card on the table or the nightstand opens the menu, takes the bill, tracks loyalty, and handles requests —
+              everything a guest needs, and everything your staff used to repeat by hand, all day.
             </p>
             <div className="mt-9 flex animate-hero-rise flex-wrap items-center justify-center gap-5 [animation-delay:240ms] lg:justify-start">
               <PrimaryLink href="#get-started">Get started</PrimaryLink>
@@ -313,50 +413,43 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Editorial statement - a real pause between the hero and the
-          solutions grid, not filler. Designed first in Figma (see the
-          brand-token setup and section-by-section build in that file)
-          before being translated here - same mixed regular/italic type
-          treatment, same real content, no functional interactivity
-          needed so the translation is a direct one-to-one port. */}
-      <RevealSection className="border-b border-ink-line px-6 py-24">
+      {/* Features - real, explicit request: positioned right here, "The
+          point" 's own spot right after the hero (a visitor sees what's
+          actually built before reading five more sections), and "Built
+          for" folded directly in as the two category toggles rather
+          than living as a separate section a visitor has to read twice.
+          The list scrolls itself, slowly, and a visitor can also aim
+          the mouse at it and browse with the scroll wheel, a trackpad
+          swipe, or a touch swipe - see FeatureMarquee above for how
+          each of those actually works. */}
+      <RevealSection id="features" className="border-b border-ink-line px-6 py-24">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">The point</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">What's built in</p>
           <p className="mx-auto mt-7 max-w-3xl font-display text-3xl leading-[1.35] text-ivory sm:text-4xl">
             The best technology in hospitality is the kind a guest never has to think about —{' '}
             <em className="font-light italic text-ivory">it just works.</em>
           </p>
-          <p className="mt-6 text-sm text-ivory-dim">Built for restaurants and hotels across the UAE.</p>
-        </div>
-      </RevealSection>
-
-      {/* Built for restaurants & hotels - real audience clarity right
-          after the hero, so a visitor immediately sees themselves in
-          one of the two, rather than reading five more sections before
-          finding out if this product even fits their kind of business. */}
-      <RevealSection id="solutions" className="border-b border-ink-line px-6 py-24">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Built for</p>
-          <div className="mt-12 grid gap-8 sm:grid-cols-2">
-            <div className="card-elevated rounded-2xl border border-ink-line bg-ink-soft p-10">
-              <Utensils size={22} strokeWidth={1.75} className="text-brass" />
-              <p className="mt-5 font-display text-xl text-ivory">Restaurants & cafés</p>
-              <p className="mt-4 text-sm leading-relaxed text-ivory-dim">
-                Table ordering, Pay Bill with split-bill, loyalty stamps, and a live kitchen display — priced per table.
-              </p>
-            </div>
-            {/* Distinct offset position, not a matched pair - the same
-                editorial device already used for the stand photography
-                further down, applied here too so the asymmetry reads
-                as a system, not a one-off. */}
-            <div className="card-elevated rounded-2xl border border-ink-line bg-ink-soft p-10 sm:mt-12">
-              <Building2 size={22} strokeWidth={1.75} className="text-brass" />
-              <p className="mt-5 font-display text-xl text-ivory">Hotels</p>
-              <p className="mt-4 text-sm leading-relaxed text-ivory-dim">
-                In-room requests, room service ordering charged straight to the folio, and a guest portal that replaces the printed directory — priced per room.
-              </p>
-            </div>
+          <div className="mt-9 flex justify-center gap-2">
+            <button
+              type="button" onClick={() => setFeatureCategory('restaurant')}
+              className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-colors ${
+                featureCategory === 'restaurant' ? 'border-brass bg-brass text-ink' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'
+              }`}
+            >
+              <Utensils size={15} strokeWidth={1.75} /> Restaurants & cafés
+            </button>
+            <button
+              type="button" onClick={() => setFeatureCategory('hotel')}
+              className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium transition-colors ${
+                featureCategory === 'hotel' ? 'border-brass bg-brass text-ink' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'
+              }`}
+            >
+              <Building2 size={15} strokeWidth={1.75} /> Hotels
+            </button>
           </div>
+        </div>
+        <div className="mx-auto mt-10 max-w-6xl">
+          <FeatureMarquee features={featureCategory === 'restaurant' ? RESTAURANT_FEATURES : HOTEL_FEATURES} />
         </div>
       </RevealSection>
 
@@ -396,30 +489,6 @@ export default function Home() {
                 <p className="font-mono text-2xl text-brass">{step.n}</p>
                 <p className="mt-3 font-display text-xl text-ivory">{step.title}</p>
                 <p className="mt-1.5 text-sm leading-relaxed text-ivory-dim">{step.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </RevealSection>
-
-      {/* Features - a real bento grid, not a plain indexed list: the two
-          most concretely differentiating things (NFC tap ordering,
-          real-time everywhere) lead as wider "hero" cards, everything
-          else built into the platform follows at even weight. Every
-          card is a real, currently-shipping feature, not a roadmap
-          item. */}
-      <RevealSection className="border-b border-ink-line px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-center font-mono text-[11px] uppercase tracking-[0.22em] text-brass">What's built in</p>
-          <p className="mx-auto mt-4 max-w-xl text-center font-display text-2xl text-ivory">Everything a table, a counter, or a front desk actually needs — in one system.</p>
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {PRIME_FEATURES.map((f) => (
-              <div key={f.title} className={`card-elevated rounded-2xl border border-ink-line bg-ink-soft p-8 transition-colors duration-200 hover:border-brass/40 ${f.hero ? 'sm:col-span-2' : ''}`}>
-                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass">
-                  <f.icon size={19} strokeWidth={1.75} />
-                </span>
-                <p className={`mt-5 font-display text-ivory ${f.hero ? 'text-2xl' : 'text-lg'}`}>{f.title}</p>
-                <p className="mt-3 text-sm leading-relaxed text-ivory-dim">{f.text}</p>
               </div>
             ))}
           </div>

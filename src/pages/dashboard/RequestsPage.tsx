@@ -39,13 +39,13 @@ export default function RequestsPage() {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
 
   function reloadRequests() {
-    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed')));
+    if (businessId) listRequests(businessId).then((all) => setRequests(all.filter((r) => r.status !== 'completed'))).catch(() => {});
   }
   function reloadClaims() {
-    if (businessId) listLoyaltyClaims(businessId).then(setClaims);
+    if (businessId) listLoyaltyClaims(businessId).then(setClaims).catch(() => {});
   }
   function reloadCashPending() {
-    if (businessId) listCashPendingItems(businessId).then(setCashPending);
+    if (businessId) listCashPendingItems(businessId).then(setCashPending).catch(() => {});
   }
 
   // Real fix: these used to wait for the full round trip before the

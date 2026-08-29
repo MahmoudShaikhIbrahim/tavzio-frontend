@@ -14,7 +14,7 @@ export default function CardsPage() {
   const [cards, setCards] = useState<Card[]>([]);
 
   function reload() {
-    if (businessId) listCards(businessId).then(setCards);
+    if (businessId) listCards(businessId).then(setCards).catch(() => {});
   }
 
   useEffect(reload, [businessId]);

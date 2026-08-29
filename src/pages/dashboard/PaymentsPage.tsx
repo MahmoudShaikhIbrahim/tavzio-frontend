@@ -17,7 +17,7 @@ export default function PaymentsPage() {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
 
   function reload() {
-    if (businessId) listPayments(businessId).then(setPayments);
+    if (businessId) listPayments(businessId).then(setPayments).catch(() => {});
   }
   useEffect(reload, [businessId]);
   usePollingFallback(reload, !!businessId);

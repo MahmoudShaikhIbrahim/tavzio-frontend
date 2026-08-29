@@ -390,6 +390,35 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
   const [armedTool, setArmedTool] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Real, explicit fix: the grid used to always start at (0,0) and only
+  // ever grow to the right/down to fit whatever was already placed -
+  // there was no way to add anything further left or higher than
+  // whatever the leftmost/topmost item happened to be. Real, expandable
+  // bounds now, padded generously on every side from the start (not
+  // just the two sides content happened to grow toward), with explicit
+  // controls to add more room in any direction, any time.
+  const [bounds, setBounds] = useState(() => {
+    const placedX = tables.filter((tt) => tt.gridX !== null).map((tt) => tt.gridX as number);
+    const placedY = tables.filter((tt) => tt.gridY !== null).map((tt) => tt.gridY as number);
+    const contentMinX = placedX.length ? Math.min(...placedX) : 0;
+    const contentMaxX = placedX.length ? Math.max(...placedX) : 0;
+    const contentMinY = placedY.length ? Math.min(...placedY) : 0;
+    const contentMaxY = placedY.length ? Math.max(...placedY) : 0;
+    return {
+      minX: Math.min(0, contentMinX) - 4,
+      maxX: Math.max(14, contentMaxX + 4) + 4,
+      minY: Math.min(0, contentMinY) - 3,
+      maxY: Math.max(8, contentMaxY + 3) + 3,
+    };
+  });
+  function expandBounds(direction: 'left' | 'right' | 'top' | 'bottom') {
+    setBounds((prev) => {
+      if (direction === 'left') return { ...prev, minX: prev.minX - 4 };
+      if (direction === 'right') return { ...prev, maxX: prev.maxX + 4 };
+      if (direction === 'top') return { ...prev, minY: prev.minY - 3 };
+      return { ...prev, maxY: prev.maxY + 3 };
+    });
+  }
 
   useEffect(() => {
     listFloorPlanCells(businessId).then((c) => { setCells(c); setLoaded(true); }).catch(() => setLoaded(true));
@@ -498,11 +527,38 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
             </button>
           </div>
 
-          {/* Grid */}
-          <div className="flex-1 overflow-auto p-4">
-            {loaded && (
-              <FloorPlanCanvas tables={localTables} cells={cells} editMode onTapCell={handleTapCell} />
-            )}
+          {/* Grid - explicit expand controls on every side, since the
+              canvas is only ever as big as these bounds say, never
+              implicitly limited by wherever existing content happens
+              to end. */}
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex justify-center border-b border-ink-line py-1.5">
+              <button type="button" onClick={() => expandBounds('top')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass">
+                {t('+ Add space above')}
+              </button>
+            </div>
+            <div className="flex flex-1 overflow-hidden">
+              <div className="flex items-center border-e border-ink-line px-1.5">
+                <button type="button" onClick={() => expandBounds('left')} className="rounded-lg border border-ink-line px-1.5 py-4 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass" style={{ writingMode: 'vertical-rl' }}>
+                  {t('+ Add space left')}
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                {loaded && (
+                  <FloorPlanCanvas tables={localTables} cells={cells} editMode onTapCell={handleTapCell} bounds={bounds} />
+                )}
+              </div>
+              <div className="flex items-center border-s border-ink-line px-1.5">
+                <button type="button" onClick={() => expandBounds('right')} className="rounded-lg border border-ink-line px-1.5 py-4 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass" style={{ writingMode: 'vertical-rl' }}>
+                  {t('+ Add space right')}
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-center border-t border-ink-line py-1.5">
+              <button type="button" onClick={() => expandBounds('bottom')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass">
+                {t('+ Add space below')}
+              </button>
+            </div>
           </div>
         </div>
 
