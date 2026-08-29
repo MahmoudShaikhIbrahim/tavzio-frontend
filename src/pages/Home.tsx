@@ -101,20 +101,35 @@ function RevealSection({ id, className, children }: { id?: string; className?: s
 
 // Real, explicit request: a horizontally, slowly self-scrolling list -
 // browsable by aiming the mouse at it and using the scroll wheel, a
-// trackpad swipe, or a touch swipe, on top of the constant slow drift.
-// Two real technical points worth being deliberate about:
-// - The content is rendered twice back-to-back and scrollLeft wraps at
-//   the halfway point, so the loop is seamless in either direction.
-// - React attaches onWheel as a passive listener by default, which
-//   silently no-ops any e.preventDefault() called from it - redirecting
-//   the vertical wheel into horizontal motion needs a real native
-//   { passive: false } listener instead, not React's synthetic prop.
-// Trackpad and touch swipes already scroll a horizontal-overflow div
-// natively; only the plain-mouse-wheel case needs this at all.
+// trackpad swipe, a touch swipe, or a genuine click-and-drag with the
+// mouse itself. The last one was the real, confirmed bug: this used to
+// set cursor:grab without ever actually implementing drag - there was
+// no pointermove tracking at all, so a mouse drag did nothing while
+// the auto-scroll kept quietly resuming underneath the user's cursor,
+// which is exactly what read as "breaking and hanging". Rebuilt against
+// Apple's own WebKit/Safari event-handling guidance and the Pointer
+// Events spec: setPointerCapture on pointerdown so the drag keeps
+// tracking even if the cursor leaves the element mid-gesture (the
+// actual fix for the "even swiping doesn't work" half of the report -
+// without capture, a fast drag can outrun the element's own bounds and
+// silently stop receiving move events), and pointercancel handled
+// identically to pointerup - the Pointer Events spec is explicit that
+// skipping pointercancel is what causes a "persistent drag state",
+// i.e. exactly a permanently stuck/hung interaction.
+//
+// Custom drag logic is scoped to pointerType === 'mouse' only. Touch
+// and pen already get correct, native, momentum-scrolled dragging for
+// free from the browser on a horizontal-overflow element - adding a
+// second, custom-JS drag implementation on top of that native one is
+// what usually causes touch interactions to fight themselves and feel
+// broken, so this deliberately leaves touch/pen alone.
 function FeatureMarquee({ features }: { features: { icon: typeof Nfc; title: string; text: string }[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
   const resumeTimer = useRef<number>();
+  const dragRef = useRef<{ active: boolean; pointerId: number | null; startX: number; startScrollLeft: number }>({
+    active: false, pointerId: null, startX: 0, startScrollLeft: 0,
+  });
 
   useEffect(() => {
     let raf: number;
@@ -155,15 +170,47 @@ function FeatureMarquee({ features }: { features: { icon: typeof Nfc; title: str
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== 'mouse') return;
+    const el = scrollRef.current;
+    if (!el) return;
+    dragRef.current = { active: true, pointerId: e.pointerId, startX: e.clientX, startScrollLeft: el.scrollLeft };
+    el.setPointerCapture(e.pointerId);
+    el.style.cursor = 'grabbing';
+    // Stops the browser from starting a native text-selection or
+    // drag-ghost image mid-drag, which is what "breaking" looked like
+    // visually even on the rare pointermove that did land.
+    e.preventDefault();
+    pause();
+  }
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollRef.current;
+    const drag = dragRef.current;
+    if (!el || !drag.active || drag.pointerId !== e.pointerId) return;
+    el.scrollLeft = drag.startScrollLeft - (e.clientX - drag.startX);
+  }
+  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
+    const el = scrollRef.current;
+    const drag = dragRef.current;
+    if (drag.pointerId !== null && el) {
+      try { el.releasePointerCapture(drag.pointerId); } catch { /* already released */ }
+      el.style.cursor = 'grab';
+    }
+    dragRef.current.active = false;
+    dragRef.current.pointerId = null;
+    if (e.pointerType === 'mouse') scheduleResume();
+  }
+
   return (
     <div
       ref={scrollRef}
-      onPointerDown={pause}
-      onPointerUp={scheduleResume}
-      onPointerLeave={scheduleResume}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       onTouchStart={pause}
       onTouchEnd={scheduleResume}
-      className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex select-none gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={{ cursor: 'grab' }}
     >
       {[...features, ...features].map((f, i) => (
