@@ -487,8 +487,8 @@ export default function OrdersPage() {
                 </button>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-ink-line">
-                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} />
+              <div className="rounded-xl border border-ink-line">
+                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} capWidthOnly />
               </div>
             )}
           </div>

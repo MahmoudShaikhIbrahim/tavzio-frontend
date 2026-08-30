@@ -135,7 +135,7 @@ function MergedTableShape({ a, b, onTap }: { a: FloorTable; b: FloorTable; onTap
 }
 
 export default function FloorPlanCanvas({
-  tables, cells, onTapTable, onTapCell, editMode, bounds, fitTo,
+  tables, cells, onTapTable, onTapCell, editMode, bounds, fitTo, capWidthOnly,
 }: {
   tables: FloorTable[];
   cells: FloorPlanCell[];
@@ -161,6 +161,15 @@ export default function FloorPlanCanvas({
   // fit), not a manual transform this component has to compute or
   // maintain itself.
   fitTo?: { width: number; height: number };
+  // Real, explicit, deliberately narrow request: only the live map
+  // wants this - "fitter so I can scroll up and down only, not up,
+  // down, right and left" - a small nudge just wide enough to remove
+  // horizontal scroll, not a full fit-to-box. Width-only, height left
+  // completely free to scroll for whatever doesn't fit vertically.
+  // Kept as its own separate opt-in rather than folded into fitTo, so
+  // the editor's "Actual size" mode (which also passes no fitTo, and
+  // was JUST fixed to render fully uncapped) is never touched by this.
+  capWidthOnly?: boolean;
 }) {
   const placed = tables.filter((t) => t.gridX !== null && t.gridY !== null);
   const wallRects = computeRuns(cells, 'wall');
@@ -244,7 +253,18 @@ export default function FloorPlanCanvas({
       // meaningful - and only applied - when a fit was actually
       // requested; "Actual size" gets no CSS constraint at all now, so
       // it genuinely renders at true, large, clear pixel size again.
-      style={fitTo ? { background: COLORS.ink, display: 'block', maxWidth: '100%', maxHeight: '100%' } : { background: COLORS.ink, display: 'block' }}
+      // capWidthOnly is the third, separate case: width alone capped to
+      // its container (removing horizontal scroll), height left as
+      // "auto" so it scales down only exactly as much as the width did
+      // (preserving the real aspect ratio) and the page is free to
+      // scroll vertically for whatever that leaves.
+      style={
+        fitTo
+          ? { background: COLORS.ink, display: 'block', maxWidth: '100%', maxHeight: '100%' }
+          : capWidthOnly
+            ? { background: COLORS.ink, display: 'block', maxWidth: '100%', height: 'auto' }
+            : { background: COLORS.ink, display: 'block' }
+      }
     >
       {editMode && editableCellGrid.map((c) => (
         <rect key={`grid-${c.x}-${c.y}`} x={c.x * CELL} y={c.y * CELL} width={CELL} height={CELL}
