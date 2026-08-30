@@ -38,7 +38,7 @@ export const ar: TranslationDict = {
   menuNotAvailableDesc: 'لم يقم هذا العمل بإعداد نظام الطلب بعد.',
   orderSent: 'تم إرسال الطلب',
   orderSentDesc: 'طلبك في طريقه إلى المطبخ.',
-  backTo: 'العودة إلى {slug}',
+  backTo: 'العودة إلى {name}',
   orderingNeedsFreshTap: 'الطلب يتطلب لمسة جديدة',
   orderingNeedsFreshTapDesc: 'اضغط على البطاقة مرة أخرى للطلب من القائمة.',
   addonsAvailable: 'تتوفر إضافات',

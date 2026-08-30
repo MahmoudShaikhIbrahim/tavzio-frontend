@@ -38,7 +38,7 @@ export const ru: TranslationDict = {
   menuNotAvailableDesc: 'Это заведение ещё не настроило приём заказов.',
   orderSent: 'Заказ отправлен',
   orderSentDesc: 'Ваш заказ уже передан на кухню.',
-  backTo: 'Назад к {slug}',
+  backTo: 'Назад к {name}',
   orderingNeedsFreshTap: 'Для заказа нужна новая приложенная карта',
   orderingNeedsFreshTapDesc: 'Приложите карту снова, чтобы сделать заказ из меню.',
   addonsAvailable: 'Доступны дополнения',

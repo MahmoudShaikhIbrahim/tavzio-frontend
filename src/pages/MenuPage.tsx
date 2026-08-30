@@ -275,7 +275,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           onClick={() => navigate(`/${slug}`)}
           className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
         >
-          {t('backTo', { slug })}
+          {t('backTo', { name: business?.name || slug })}
         </button>
       </div>
     );
@@ -293,7 +293,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           onClick={() => navigate(`/${slug}`)}
           className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
         >
-          {t('backTo', { slug })}
+          {t('backTo', { name: business?.name || slug })}
         </button>
       </div>
     );

@@ -38,7 +38,7 @@ export const fr: TranslationDict = {
   menuNotAvailableDesc: "Cet établissement n'a pas encore configuré les commandes.",
   orderSent: 'Commande envoyée',
   orderSentDesc: 'Votre commande est en route vers la cuisine.',
-  backTo: 'Retour à {slug}',
+  backTo: 'Retour à {name}',
   orderingNeedsFreshTap: 'La commande nécessite un nouveau tap',
   orderingNeedsFreshTapDesc: 'Retapez la carte pour commander depuis le menu.',
   addonsAvailable: 'Suppléments disponibles',

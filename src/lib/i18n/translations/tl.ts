@@ -38,7 +38,7 @@ export const tl: TranslationDict = {
   menuNotAvailableDesc: 'Hindi pa naka-set up ng negosyong ito ang pag-order.',
   orderSent: 'Naipadala ang order',
   orderSentDesc: 'Papunta na sa kusina ang order mo.',
-  backTo: 'Bumalik sa {slug}',
+  backTo: 'Bumalik sa {name}',
   orderingNeedsFreshTap: 'Kailangan ng bagong tap para mag-order',
   orderingNeedsFreshTapDesc: 'I-tap muli ang card para mag-order mula sa menu.',
   addonsAvailable: 'May mga add-on',

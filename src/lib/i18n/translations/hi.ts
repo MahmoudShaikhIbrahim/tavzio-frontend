@@ -38,7 +38,7 @@ export const hi: TranslationDict = {
   menuNotAvailableDesc: 'इस बिज़नेस ने अभी ऑर्डरिंग सेट अप नहीं की है।',
   orderSent: 'ऑर्डर भेज दिया गया',
   orderSentDesc: 'आपका ऑर्डर रसोई की ओर जा रहा है।',
-  backTo: '{slug} पर वापस जाएँ',
+  backTo: '{name} पर वापस जाएँ',
   orderingNeedsFreshTap: 'ऑर्डर करने के लिए नया टैप चाहिए',
   orderingNeedsFreshTapDesc: 'मेन्यू से ऑर्डर करने के लिए कार्ड फिर से टैप करें।',
   addonsAvailable: 'ऐड-ऑन उपलब्ध हैं',

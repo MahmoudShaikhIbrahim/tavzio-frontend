@@ -38,7 +38,7 @@ export const es: TranslationDict = {
   menuNotAvailableDesc: 'Este negocio aún no ha configurado los pedidos.',
   orderSent: 'Pedido enviado',
   orderSentDesc: 'Tu pedido va camino de la cocina.',
-  backTo: 'Volver a {slug}',
+  backTo: 'Volver a {name}',
   orderingNeedsFreshTap: 'Pedir requiere un nuevo acercamiento de la tarjeta',
   orderingNeedsFreshTapDesc: 'Vuelve a acercar la tarjeta para pedir del menú.',
   addonsAvailable: 'Extras disponibles',

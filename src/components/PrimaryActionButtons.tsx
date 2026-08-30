@@ -177,7 +177,15 @@ function QuickRequestButton({ slug, tapEventId, button }: {
     return (
       <div className={`${buttonClass} cursor-default`}>
         {iconEl}
-        <span className="font-body text-[15px] font-medium text-brass">{t('staffNotified')}</span>
+        {/* Real bug fix (confirmed by direct report: this text stayed
+            gold/brass in both light and dark theme, unlike every other
+            label in this same component - buttonClass and the expanded
+            note view above both correctly use text-ivory, which is the
+            one that actually flips white/black with the business's own
+            theme; text-brass never does, in either mode - see
+            index.css's own --color-ivory vs --color-brass definitions
+            under [data-theme='light'] and [data-theme='dark']). */}
+        <span className="font-body text-[15px] font-medium text-ivory">{t('staffNotified')}</span>
       </div>
     );
   }

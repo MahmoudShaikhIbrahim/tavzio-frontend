@@ -38,7 +38,7 @@ export const en: TranslationDict = {
   menuNotAvailableDesc: "This business hasn't set up ordering.",
   orderSent: 'Order sent',
   orderSentDesc: "Your order is on its way to the kitchen.",
-  backTo: 'Back to {slug}',
+  backTo: 'Back to {name}',
   orderingNeedsFreshTap: 'Ordering needs a fresh tap',
   orderingNeedsFreshTapDesc: 'Tap the card again to order from the menu.',
   addonsAvailable: 'Add-ons available',

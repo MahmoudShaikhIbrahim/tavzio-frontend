@@ -188,6 +188,23 @@ export function getBookingConfig(slug: string) {
   return request<BookingConfig>(`/api/public/business/${slug}/booking-config`);
 }
 
+// Real, explicit performance fix: the chooser page only ever reads
+// these five fields (see its own component for the full reasoning) -
+// this is deliberately its own separate type and endpoint, not a
+// slice of BookingConfig above, so it can never accidentally start
+// carrying menu/services data again later just because someone reused
+// the bigger type out of convenience.
+export interface BookingChooserConfig {
+  businessName: string;
+  bookingEnabled: boolean;
+  driveThrough: { enabled: boolean };
+  locationUrl: string;
+  logoUrl: string;
+}
+export function getBookingChooserConfig(slug: string) {
+  return request<BookingChooserConfig>(`/api/public/business/${slug}/booking-chooser`);
+}
+
 export function requestBookingOtp(slug: string, phone: string) {
   return request<{ message: string }>(`/api/public/business/${slug}/booking-otp/request`, {
     method: 'POST', body: JSON.stringify({ phone }),

@@ -374,7 +374,7 @@ function BillPageContent({ slug }: { slug: string }) {
             View live bill
           </button>
           <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden">
-            {t('backTo', { slug })}
+            {t('backTo', { name: business?.name || slug })}
           </button>
         </div>
       </div>

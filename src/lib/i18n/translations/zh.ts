@@ -38,7 +38,7 @@ export const zh: TranslationDict = {
   menuNotAvailableDesc: '该商家尚未开通点餐功能。',
   orderSent: '订单已发送',
   orderSentDesc: '您的订单正在送往厨房。',
-  backTo: '返回 {slug}',
+  backTo: '返回 {name}',
   orderingNeedsFreshTap: '点餐需要重新刷卡',
   orderingNeedsFreshTapDesc: '请再次刷卡以从菜单点餐。',
   addonsAvailable: '可选加料',
