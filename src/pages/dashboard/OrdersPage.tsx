@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -61,7 +61,7 @@ export default function OrdersPage() {
   const { user } = useSession();
   const { t } = useT();
   const navigate = useNavigate();
-  const { focusMode, payBillEnabled } = useOutletContext<{ focusMode?: boolean; payBillEnabled: boolean | null }>();
+  const { payBillEnabled } = useOutletContext<{ focusMode?: boolean; payBillEnabled: boolean | null }>();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [recentOpen, setRecentOpen] = useState(false);
@@ -75,26 +75,6 @@ export default function OrdersPage() {
   // this is genuinely one data layer with two renderers, not two
   // separate pages duplicating logic.
   const [view, setView] = useState<'orders' | 'map'>('orders');
-  // Real, explicit request: the live map used to render at its natural
-  // size regardless of the available screen, forcing a scroll to see
-  // tables further out - especially bad in focus mode, which exists
-  // specifically to give a page more room, not less. Same real fit-to-
-  // container approach the floor plan editor already uses (measure the
-  // actual visible area, scale the SVG down to fit it, never scale up
-  // past real size) rather than a fixed guess at what "big enough"
-  // means on any given screen.
-  const mapFitContainerRef = useRef<HTMLDivElement>(null);
-  const [mapFitSize, setMapFitSize] = useState({ width: 800, height: 500 });
-  useEffect(() => {
-    const el = mapFitContainerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      if (width > 0 && height > 0) setMapFitSize({ width: width - 4, height: height - 4 });
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
   const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
   const [floorDataLoaded, setFloorDataLoaded] = useState(false);
   const [floorCells, setFloorCells] = useState<FloorPlanCell[]>([]);
@@ -507,8 +487,8 @@ export default function OrdersPage() {
                 </button>
               </div>
             ) : (
-              <div ref={mapFitContainerRef} className="mx-auto flex max-w-4xl items-center justify-center overflow-hidden rounded-xl border border-ink-line p-2" style={{ height: focusMode ? 'calc(100vh - 180px)' : '70vh' }}>
-                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} fitTo={mapFitSize} />
+              <div className="overflow-x-auto rounded-xl border border-ink-line">
+                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} />
               </div>
             )}
           </div>
