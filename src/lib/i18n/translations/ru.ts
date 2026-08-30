@@ -143,6 +143,7 @@ export const ru: TranslationDict = {
   tbConfirming: 'Подтверждение...',
   tbConfirmBooking: 'Подтвердить бронирование',
   tbResendCode: 'Отправить код повторно',
+  verify: 'Подтвердить',
   tbBookATable: 'Забронировать столик',
   tbYourName: 'Ваше имя',
   tbDate: 'Дата',

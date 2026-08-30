@@ -1,18 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { LoyaltyProgram, LoyaltyMembership, RewardInfo, TierReward } from '../types';
-import { loyaltyCheckin, loyaltyStatus, claimReward } from '../lib/api';
+import { loyaltyCheckin, loyaltyStatus, claimReward, requestBookingOtp, verifyBookingOtp } from '../lib/api';
 import { getSavedPhone, setSavedPhone } from '../lib/loyaltyStorage';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface Props {
   slug: string;
+  businessId: string;
   program: LoyaltyProgram;
   tapEventId: number | null;
 }
 
-export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
+export default function LoyaltyWidget({ slug, businessId, program, tapEventId }: Props) {
   const { t } = useLanguage();
   const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
   const [membership, setMembership] = useState<LoyaltyMembership | null>(null);
   const [rewardReady, setRewardReady] = useState(false);
   const [reward, setReward] = useState<RewardInfo | null>(null);
@@ -20,6 +22,12 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
   const [pendingClaim, setPendingClaim] = useState(false);
   const [alreadyCounted, setAlreadyCounted] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  // Separate from status: which form is showing. A failed OTP send
+  // goes back to the phone form; a failed OTP verify (wrong code)
+  // stays on the OTP form so the customer can just retry the code,
+  // not re-enter their whole number - status alone couldn't tell
+  // those two failure cases apart.
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [error, setError] = useState('');
   const [claiming, setClaiming] = useState(false);
   // True only while the SILENT auto-checkin (recognized device + fresh tap)
@@ -51,7 +59,7 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
   // would always fail. This remembers that per tapEventId and switches to
   // a plain status fetch instead - same progress shown, no failed write.
   useEffect(() => {
-    const saved = getSavedPhone(slug);
+    const saved = getSavedPhone(businessId);
     if (!saved) return;
     setPhone(saved);
 
@@ -77,14 +85,42 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
         .catch(() => setStatus('idle'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, tapEventId]);
+  }, [slug, businessId, tapEventId]);
 
+  // Real, explicit fix (confirmed by direct report: there was no OTP
+  // at all for loyalty - any phone number worked, with nothing to
+  // prove it was actually the customer's own). This is the FIRST-TIME
+  // path only: a phone with no saved record on this device requests a
+  // real OTP (the same shared send/verify endpoints Booking already
+  // uses - see requestBookingOtp/verifyBookingOtp) before the check-in
+  // itself is ever attempted, matching the backend's own new
+  // enforcement (isPhoneVerified) that now rejects an unverified
+  // number outright. Once verified here, setSavedPhone below means
+  // this exact flow never runs again on this device - every future
+  // visit goes straight through the silent auto-checkin effect above,
+  // which is the entire point: verify once, remembered forever after.
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!phone.trim()) return;
     setStatus('loading');
     setError('');
     try {
+      await requestBookingOtp(slug, phone.trim());
+      setStep('otp');
+      setStatus('idle');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send verification code');
+      setStatus('error');
+    }
+  }
+
+  async function handleVerifyOtp(e: FormEvent) {
+    e.preventDefault();
+    if (!otp.trim()) return;
+    setStatus('loading');
+    setError('');
+    try {
+      await verifyBookingOtp(slug, phone.trim(), otp.trim());
       if (tapEventId) {
         const res = await loyaltyCheckin(slug, phone.trim(), tapEventId);
         applyResponse(res);
@@ -93,10 +129,12 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
         const res = await loyaltyStatus(slug, phone.trim());
         if (res.membership) applyResponse({ ...res, membership: res.membership });
       }
-      setSavedPhone(slug, phone.trim());
+      setSavedPhone(businessId, phone.trim());
+      setOtp('');
+      setStep('phone');
       setStatus('idle');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Incorrect code');
       setStatus('error');
     }
   }
@@ -129,7 +167,7 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
     <div className="rounded-xl border border-brass/30 bg-ink-soft p-5">
       <p className="font-mono text-[11px] uppercase tracking-wider text-brass">{t('loyalty')}</p>
 
-      {!membership ? (
+      {!membership && step === 'phone' && (
         <form onSubmit={handleSubmit} className="mt-3 space-y-3">
           <p className="text-sm text-ivory-dim">
             {tapEventId ? t('loyaltyStartPrompt') : t('loyaltyCheckPrompt')}
@@ -154,7 +192,49 @@ export default function LoyaltyWidget({ slug, program, tapEventId }: Props) {
             {status === 'loading' ? t('checking') : tapEventId ? t('startEarning') : t('checkStatus')}
           </button>
         </form>
-      ) : (
+      )}
+
+      {!membership && step === 'otp' && (
+        <form onSubmit={handleVerifyOtp} className="mt-3 space-y-3">
+          <p className="text-sm text-ivory-dim">{t('tbCodeSentTo', { phone })}</p>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            autoFocus
+            autoComplete="one-time-code"
+            placeholder={t('tbEnterCode')}
+            value={otp}
+            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-center text-xl tracking-[0.3em] text-ivory placeholder:text-sm placeholder:tracking-normal placeholder:text-ivory-dim/60
+                       focus:border-brass"
+          />
+          {error && <p className="text-sm text-danger">{error}</p>}
+          <button
+            type="submit"
+            disabled={status === 'loading'}
+            className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity
+                       hover:opacity-90 disabled:opacity-50"
+          >
+            {status === 'loading' ? t('checking') : t('verify')}
+          </button>
+          <div className="flex items-center justify-between text-xs">
+            <button type="button" onClick={() => { setStep('phone'); setOtp(''); setError(''); setStatus('idle'); }} className="text-ivory-dim hover:underline">
+              {t('back')}
+            </button>
+            <button
+              type="button"
+              onClick={async () => { setError(''); try { await requestBookingOtp(slug, phone.trim()); } catch { /* silent */ } }}
+              className="text-brass hover:underline"
+            >
+              {t('tbResendCode')}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {membership && (
         <div className="mt-3 space-y-3">
           {/* Threshold reward - one-time, claimed then reset */}
           {rewardReady && !pendingClaim && (

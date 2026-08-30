@@ -174,6 +174,7 @@ export interface TranslationDict {
   tbConfirming: string;
   tbConfirmBooking: string;
   tbResendCode: string;
+  verify: string;
   tbBookATable: string;
   tbYourName: string;
   tbDate: string;

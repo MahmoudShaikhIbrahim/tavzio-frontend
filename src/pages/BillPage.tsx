@@ -87,13 +87,25 @@ function BillPageContent({ slug }: { slug: string }) {
   const returningPaymentId = searchParams.get('paymentId');
   useEffect(() => {
     if (!returningPaymentId) return;
+    // Real fix, part of the same business-id re-keying above: this
+    // used to fire the instant the page mounted, which could genuinely
+    // run before the business fetch below had resolved - reading
+    // getSavedPhone(business.id) at that moment would silently find
+    // nothing, even though a real saved number existed, just because
+    // business.id wasn't known yet. Waiting for business to actually
+    // be loaded (and re-running once it is, via the dependency below)
+    // means this always has the real id in hand before it ever reads
+    // or needs it - a fraction-of-a-second wait that's genuinely
+    // unnoticeable against a multi-second real redirect round trip to
+    // an external payment gateway and back.
+    if (!business) return;
     // The gateway itself has now resolved this one way or another -
     // it's no longer an abandoned attempt, whatever confirmBillPayment
     // below finds out.
     sessionStorage.removeItem(`tavzio_pending_payment_${slug}`);
     setPendingCancelPaymentId(null);
     setLoading(true);
-    const savedPhone = getSavedPhone(slug) || undefined;
+    const savedPhone = getSavedPhone(business.id) || undefined;
     confirmBillPayment(slug, returningPaymentId, savedPhone)
       .then((res) => {
         if (res.status === 'completed') {
@@ -105,15 +117,15 @@ function BillPageContent({ slug }: { slug: string }) {
       .catch((err) => setError(err instanceof Error ? err.message : 'Payment was not completed'))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [returningPaymentId]);
+  }, [returningPaymentId, business]);
 
   useEffect(() => {
     getBusiness(slug).then((b) => { setProvider(b.paymentProvider || 'tap'); setBusiness(b); }).catch(() => {});
   }, [slug]);
 
   function loadBill() {
-    if (!tapEventId) return;
-    const savedPhone = getSavedPhone(slug) || undefined;
+    if (!tapEventId || !business) return;
+    const savedPhone = getSavedPhone(business.id) || undefined;
     getBill(slug, tapEventId, savedPhone)
       .then((res) => {
         setItems(res.items);
@@ -125,7 +137,7 @@ function BillPageContent({ slug }: { slug: string }) {
       .finally(() => setLoading(false));
   }
 
-  useEffect(loadBill, [slug, tapEventId]);
+  useEffect(loadBill, [slug, tapEventId, business]);
   // Explicit, system-wide request, and a real fix for a false claim this
   // comment used to make: there was no actual safety-net timer here at
   // all before now, just this comment describing one that didn't exist.
@@ -223,7 +235,7 @@ function BillPageContent({ slug }: { slug: string }) {
     setPaying(true);
     setError('');
     try {
-      const savedPhone = getSavedPhone(slug) || undefined;
+      const savedPhone = (business && getSavedPhone(business.id)) || undefined;
       const itemIds = payingSpecificItems ? itemsToPay.map((i) => i.id) : null;
 
       // Redirect providers (Telr / N-Genius / Ziina): the provider's own

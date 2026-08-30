@@ -2,10 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { Search, UtensilsCrossed } from 'lucide-react';
 import {
-  getBookingConfig, requestBookingOtp, verifyBookingOtp,
+  getBookingConfig, requestBookingOtp, verifyBookingOtp, getBusiness,
   createDriveThroughOrder, confirmDriveThroughPayment, type BookingConfig,
 } from '../lib/api';
-import type { Receipt } from '../types';
+import type { Receipt, Business } from '../types';
+import { getSavedPhone, setSavedPhone } from '../lib/loyaltyStorage';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import { BookingMenuItemRow } from './BookingPage';
 
@@ -29,6 +30,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
   const { isRtl, t } = useLanguage();
   const [searchParams] = useSearchParams();
   const [config, setConfig] = useState<BookingConfig | null>(null);
+  const [business, setBusiness] = useState<Business | null>(null);
   const [step, setStep] = useState<Step>('loading');
   const [error, setError] = useState('');
 
@@ -44,6 +46,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
 
   useEffect(() => {
+    getBusiness(slug).then(setBusiness).catch(() => {});
     getBookingConfig(slug)
       .then((res) => {
         setConfig(res);
@@ -51,6 +54,18 @@ function DriveThroughContent({ slug }: { slug: string }) {
       })
       .catch(() => setStep('notAvailable'));
   }, [slug]);
+
+  // Same "remember this device" extension as BookingPage.tsx - pre-fills
+  // a returning customer's own number so they never retype it, without
+  // touching the actual OTP requirement itself (see that file's own
+  // comment on why: createPublicBooking's verification window is a
+  // real, intentional boundary for the moment an order actually gets
+  // placed, not something to silently skip).
+  useEffect(() => {
+    if (!business) return;
+    const saved = getSavedPhone(business.id);
+    if (saved) setPhone(saved);
+  }, [business]);
 
   // Real, explicit case: the customer is landing back here after a
   // redirect-based payment (Telr/N-Genius/Ziina's own hosted page) -
@@ -111,6 +126,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
     setSubmitting(true);
     try {
       await verifyBookingOtp(slug, phone, otp);
+      if (business) setSavedPhone(business.id, phone);
       const result = await createDriveThroughOrder(slug, {
         phone,
         items: cart.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity, note: l.note })),

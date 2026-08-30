@@ -143,6 +143,7 @@ export const es: TranslationDict = {
   tbConfirming: 'Confirmando...',
   tbConfirmBooking: 'Confirmar reserva',
   tbResendCode: 'Reenviar código',
+  verify: 'Verificar',
   tbBookATable: 'Reservar una mesa',
   tbYourName: 'Tu nombre',
   tbDate: 'Fecha',

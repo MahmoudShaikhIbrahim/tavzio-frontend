@@ -143,6 +143,7 @@ export const hi: TranslationDict = {
   tbConfirming: 'पुष्टि की जा रही है...',
   tbConfirmBooking: 'बुकिंग की पुष्टि करें',
   tbResendCode: 'कोड फिर से भेजें',
+  verify: 'सत्यापित करें',
   tbBookATable: 'टेबल बुक करें',
   tbYourName: 'आपका नाम',
   tbDate: 'तारीख',

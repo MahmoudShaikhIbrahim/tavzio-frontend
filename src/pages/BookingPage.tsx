@@ -6,6 +6,7 @@ import {
   listMyBookings, reschedulePublicBooking, cancelPublicBookingService, type MyBooking,
   getBookingPaymentStatus, getBusiness, type BookingConfig,
 } from '../lib/api';
+import { getSavedPhone, setSavedPhone } from '../lib/loyaltyStorage';
 import { buildBusinessThemeVars } from '../lib/businessTheme';
 import { AdvancedDatePicker, AdvancedTimePicker } from '../components/AdvancedDateTimePicker';
 import type { Business } from '../types';
@@ -172,6 +173,28 @@ function BookingPageContent({ slug }: { slug: string }) {
       .catch(() => setStep('notAvailable'));
   }, [slug]);
 
+  // Real, explicit extension of the same "remember this device" pattern
+  // already built for loyalty: pre-fills a returning customer's own
+  // phone number so they never have to type it again on this device.
+  // Deliberately does NOT skip the OTP step itself the way loyalty
+  // does - createPublicBooking's own verification window (see
+  // VERIFIED_WINDOW_MINUTES in bookingPublicController.js) is a real,
+  // intentional security boundary for actually reserving a table, not
+  // an oversight: a stale verification from an old visit shouldn't be
+  // enough to make a brand new reservation on its own. This still
+  // removes the actual friction (remembering and typing a phone
+  // number) while leaving that boundary genuinely intact - a fresh
+  // code still has to land on their phone and be entered for every new
+  // booking.
+  useEffect(() => {
+    if (!business) return;
+    const saved = getSavedPhone(business.id);
+    if (saved) {
+      setPhone(saved);
+      setManagePhone(saved);
+    }
+  }, [business]);
+
   // Real fix for the explicit request: the service date defaults to
   // the same date as the table booking itself ("obviously the same
   // date") and stays in sync if the guest changes the main date later -
@@ -259,6 +282,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     setSubmitting(true);
     try {
       await verifyBookingOtp(slug, phone, otp);
+      if (business) setSavedPhone(business.id, phone);
 
       const requestedAt = new Date(`${date}T${time}`).toISOString();
       const result = await submitPublicBooking(slug, {
@@ -303,6 +327,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     setError('');
     try {
       await verifyBookingOtp(slug, managePhone.trim(), manageOtp);
+      if (business) setSavedPhone(business.id, managePhone.trim());
       const bookings = await listMyBookings(slug, managePhone.trim());
       setMyBookings(bookings);
       setStep('manageList');

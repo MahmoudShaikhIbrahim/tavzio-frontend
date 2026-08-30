@@ -143,6 +143,7 @@ export const zh: TranslationDict = {
   tbConfirming: '正在确认...',
   tbConfirmBooking: '确认预订',
   tbResendCode: '重新发送验证码',
+  verify: '验证',
   tbBookATable: '预订餐桌',
   tbYourName: '您的姓名',
   tbDate: '日期',

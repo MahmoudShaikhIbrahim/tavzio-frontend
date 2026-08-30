@@ -143,6 +143,7 @@ export const ur: TranslationDict = {
   tbConfirming: 'تصدیق ہو رہی ہے...',
   tbConfirmBooking: 'بکنگ کی تصدیق کریں',
   tbResendCode: 'کوڈ دوبارہ بھیجیں',
+  verify: 'تصدیق کریں',
   tbBookATable: 'میز بک کریں',
   tbYourName: 'آپ کا نام',
   tbDate: 'تاریخ',

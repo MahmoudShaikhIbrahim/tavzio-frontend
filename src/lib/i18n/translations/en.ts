@@ -143,6 +143,7 @@ export const en: TranslationDict = {
   tbConfirming: 'Confirming...',
   tbConfirmBooking: 'Confirm booking',
   tbResendCode: 'Resend code',
+  verify: 'Verify',
   tbBookATable: 'Book a table',
   tbYourName: 'Your name',
   tbDate: 'Date',

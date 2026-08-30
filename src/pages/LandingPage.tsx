@@ -119,7 +119,7 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
         {/* Loyalty */}
         {business.loyaltyProgram && (
           <div className="mt-6">
-            <LoyaltyWidget slug={business.slug} program={business.loyaltyProgram} tapEventId={tapEventId} />
+            <LoyaltyWidget slug={business.slug} businessId={business.id} program={business.loyaltyProgram} tapEventId={tapEventId} />
           </div>
         )}
 

@@ -143,6 +143,7 @@ export const tl: TranslationDict = {
   tbConfirming: 'Kinukumpirma...',
   tbConfirmBooking: 'Kumpirmahin ang booking',
   tbResendCode: 'Ipadala ulit ang code',
+  verify: 'I-verify',
   tbBookATable: 'Mag-book ng mesa',
   tbYourName: 'Iyong pangalan',
   tbDate: 'Petsa',

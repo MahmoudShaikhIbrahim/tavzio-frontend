@@ -143,6 +143,7 @@ export const ar: TranslationDict = {
   tbConfirming: 'جارٍ التأكيد...',
   tbConfirmBooking: 'تأكيد الحجز',
   tbResendCode: 'إعادة إرسال الرمز',
+  verify: 'تحقق',
   tbBookATable: 'احجز طاولة',
   tbYourName: 'اسمك',
   tbDate: 'التاريخ',
