@@ -99,8 +99,8 @@ function DocumentsTab({ businessId }: { businessId: string }) {
   const [error, setError] = useState('');
 
   function reload() {
-    listStaff(businessId).then(setStaff);
-    listStaffDocuments(businessId).then(setDocuments);
+    listStaff(businessId).then(setStaff).catch(() => {});
+    listStaffDocuments(businessId).then(setDocuments).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -196,8 +196,8 @@ function CommissionTab({ businessId }: { businessId: string }) {
   const [rateValue, setRateValue] = useState(0);
 
   function reload() {
-    listStaff(businessId).then(setStaff);
-    getCommissionReport(businessId).then((r) => { setReport(r.report); setTotalCommission(r.totalCommission); });
+    listStaff(businessId).then(setStaff).catch(() => {});
+    getCommissionReport(businessId).then((r) => { setReport(r.report); setTotalCommission(r.totalCommission); }).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -289,13 +289,13 @@ function SchedulingTab({ businessId }: { businessId: string }) {
   const [error, setError] = useState('');
 
   function reload() {
-    listStaff(businessId).then(setStaff);
+    listStaff(businessId).then(setStaff).catch(() => {});
     listSchedules(businessId, { from: `${rangeFrom}T00:00:00.000Z`, to: `${rangeTo}T23:59:59.999Z` }).then((r) => {
       setSchedules(r.schedules);
       setTotalHours(r.totalHours);
       setTotalForecastCostAed(r.totalForecastCostAed);
       setUntrackedShiftCount(r.untrackedShiftCount);
-    });
+    }).catch(() => {});
   }
   useEffect(reload, [businessId, rangeFrom, rangeTo]);
 
@@ -395,7 +395,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listStaff(businessId).then(setStaff);
+    listStaff(businessId).then(setStaff).catch(() => {});
     const to = new Date().toISOString();
     const from = new Date(Date.now() - days * 86400000).toISOString();
     getLaborCostReport(businessId, { from, to }).then((r) => {
@@ -403,7 +403,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
       const map: Record<string, number | null> = {};
       for (const s of r.byStaff) map[s.staffId] = s.hourlyRateAed;
       setWages((prev) => ({ ...prev, ...map }));
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId, days]);
 
@@ -507,8 +507,8 @@ function TipsTab({ businessId }: { businessId: string }) {
   const [error, setError] = useState('');
 
   function reload() {
-    listStaff(businessId).then(setStaff);
-    listTipDistributions(businessId).then(setDistributions);
+    listStaff(businessId).then(setStaff).catch(() => {});
+    listTipDistributions(businessId).then(setDistributions).catch(() => {});
   }
   useEffect(reload, [businessId]);
 

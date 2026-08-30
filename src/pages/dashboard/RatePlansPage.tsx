@@ -32,7 +32,7 @@ export default function RatePlansPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   function reload() {
-    if (businessId) listRatePlans(businessId).then(setPlans);
+    if (businessId) listRatePlans(businessId).then(setPlans).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -109,7 +109,7 @@ function RateCalendarSection({ businessId, plans }: { businessId: string; plans:
   }, [plans, ratePlanId]);
 
   function reload() {
-    if (ratePlanId) listRateOverrides(businessId, ratePlanId).then(setOverrides);
+    if (ratePlanId) listRateOverrides(businessId, ratePlanId).then(setOverrides).catch(() => {});
   }
   useEffect(reload, [businessId, ratePlanId]);
 
@@ -178,8 +178,8 @@ function PricingRulesSection({ businessId }: { businessId: string }) {
   const [error, setError] = useState('');
 
   function reload() {
-    listPricingRules(businessId).then(setRules);
-    getOccupancyForecast(businessId, 14).then(setForecast);
+    listPricingRules(businessId).then(setRules).catch(() => {});
+    getOccupancyForecast(businessId, 14).then(setForecast).catch(() => {});
   }
   useEffect(reload, [businessId]);
 

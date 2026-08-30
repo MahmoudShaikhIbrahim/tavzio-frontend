@@ -27,6 +27,16 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 const SETTLE_MS = 260;
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const TAP_MAX_MOVE_PX = 8;
+// Real, explicit request: much faster pickup. The disambiguation this
+// hold protects against (a scroll or swipe starting on an item
+// shouldn't be misread as "pick this up") is still real and still
+// needed, so this stays a hold rather than a plain tap-to-pick-up -
+// but 500ms was a generic default, not a value anything here actually
+// required. 150ms, combined with the existing move-cancels-it check
+// below, is still long enough to tell a deliberate press from a quick
+// scroll flick, while reading as instant to a person actually pressing
+// and holding.
+const PICKUP_HOLD_MS = 150;
 
 export function useDragReorder<T>({
   items,
@@ -98,7 +108,7 @@ export function useDragReorder<T>({
       heldIdRef.current = id;
       setHeldId(id);
       longPressTimer.current = null;
-    }, 500);
+    }, PICKUP_HOLD_MS);
   }
 
   function handlePointerMove(e: React.PointerEvent) {

@@ -22,7 +22,7 @@ export default function NotificationsPage() {
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
 
   function reload() {
-    if (businessId) getBusiness(businessId).then(setBusiness);
+    if (businessId) getBusiness(businessId).then(setBusiness).catch(() => {});
   }
   useEffect(reload, [businessId]);
 

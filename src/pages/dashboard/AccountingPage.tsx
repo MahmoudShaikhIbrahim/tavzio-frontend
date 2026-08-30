@@ -59,7 +59,7 @@ function ChartOfAccountsSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listAccounts(businessId).then(setAccounts).finally(() => setLoading(false));
+    listAccounts(businessId).then(setAccounts).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -142,7 +142,7 @@ function JournalEntriesSection({ businessId }: { businessId: string }) {
   function reload() {
     setLoading(true);
     Promise.all([listJournalEntries(businessId), listAccounts(businessId)])
-      .then(([e, a]) => { setEntries(e); setAccounts(a); })
+      .then(([e, a]) => { setEntries(e); setAccounts(a); }).catch(() => {})
       .finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
@@ -324,7 +324,7 @@ function VendorsAndBillsSection({ businessId }: { businessId: string }) {
   function reload() {
     setLoading(true);
     Promise.all([listVendors(businessId), listApBills(businessId)])
-      .then(([v, b]) => { setVendors(v); setBills(b); })
+      .then(([v, b]) => { setVendors(v); setBills(b); }).catch(() => {})
       .finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
@@ -417,7 +417,7 @@ function ArInvoicesSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listArInvoices(businessId).then(setInvoices).finally(() => setLoading(false));
+    listArInvoices(businessId).then(setInvoices).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

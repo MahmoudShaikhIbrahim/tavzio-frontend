@@ -39,7 +39,7 @@ export default function StockTransfersPage() {
       setIngredients(i);
       setTransfers(tr);
       setAllocations(alloc);
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

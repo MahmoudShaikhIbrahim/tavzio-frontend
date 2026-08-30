@@ -51,9 +51,9 @@ function EventsTab({ businessId, onOpenEvent }: { businessId: string; onOpenEven
   const [showNew, setShowNew] = useState(false);
 
   function reload() {
-    listEvents(businessId, statusFilter ? { status: statusFilter } : undefined).then(setEvents);
-    listEventSpaces(businessId).then(setSpaces);
-    getEventPipelineSummary(businessId).then(setSummary);
+    listEvents(businessId, statusFilter ? { status: statusFilter } : undefined).then(setEvents).catch(() => {});
+    listEventSpaces(businessId).then(setSpaces).catch(() => {});
+    getEventPipelineSummary(businessId).then(setSummary).catch(() => {});
   }
   useEffect(reload, [businessId, statusFilter]);
 
@@ -178,7 +178,7 @@ function EventSpacesTab({ businessId }: { businessId: string }) {
   const [description, setDescription] = useState('');
 
   function reload() {
-    listEventSpaces(businessId).then(setSpaces);
+    listEventSpaces(businessId).then(setSpaces).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -239,7 +239,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
   const [error, setError] = useState('');
 
   function reload() {
-    getEvent(businessId, eventId).then(setEvent);
+    getEvent(businessId, eventId).then(setEvent).catch(() => {});
   }
   useEffect(reload, [businessId, eventId]);
 

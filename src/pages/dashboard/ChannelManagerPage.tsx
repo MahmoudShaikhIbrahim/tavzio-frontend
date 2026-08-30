@@ -70,7 +70,7 @@ function ConnectionsSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listChannelConnections(businessId).then(setConnections).finally(() => setLoading(false));
+    listChannelConnections(businessId).then(setConnections).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -204,7 +204,7 @@ function InboundBookingsSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listChannelBookings(businessId, 'received').then(setBookings).finally(() => setLoading(false));
+    listChannelBookings(businessId, 'received').then(setBookings).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

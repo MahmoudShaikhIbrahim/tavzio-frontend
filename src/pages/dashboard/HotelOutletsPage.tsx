@@ -32,8 +32,8 @@ export default function HotelOutletsPage() {
 
   function reload() {
     if (!businessId) return;
-    listHotelOutlets(businessId).then(setOutlets);
-    listMenuItems(businessId).then(setMenuItems);
+    listHotelOutlets(businessId).then(setOutlets).catch(() => {});
+    listMenuItems(businessId).then(setMenuItems).catch(() => {});
   }
   useEffect(reload, [businessId]);
 

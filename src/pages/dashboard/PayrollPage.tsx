@@ -52,7 +52,7 @@ function SalaryStructuresSection({ businessId }: { businessId: string }) {
   function reload() {
     setLoading(true);
     Promise.all([listSalaryStructures(businessId), listStaff(businessId)])
-      .then(([s, st]) => { setStructures(s); setStaff(st); })
+      .then(([s, st]) => { setStructures(s); setStaff(st); }).catch(() => {})
       .finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
@@ -189,7 +189,7 @@ function PayrollRunsSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listPayrollRuns(businessId).then(setRuns).finally(() => setLoading(false));
+    listPayrollRuns(businessId).then(setRuns).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

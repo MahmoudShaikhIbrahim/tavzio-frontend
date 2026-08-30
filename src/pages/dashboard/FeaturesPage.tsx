@@ -21,7 +21,7 @@ export default function FeaturesPage() {
   const { refetchFeatures } = useOutletContext<{ refetchFeatures: () => void }>();
 
   function reload() {
-    if (businessId) getBusiness(businessId).then(setBusiness);
+    if (businessId) getBusiness(businessId).then(setBusiness).catch(() => {});
   }
   useEffect(reload, [businessId]);
   useEffect(() => {

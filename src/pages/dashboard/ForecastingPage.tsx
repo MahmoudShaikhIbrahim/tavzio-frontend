@@ -99,7 +99,7 @@ function BudgetSection({ businessId }: { businessId: string }) {
       setRevenueBudget(r.budget?.revenue_budget_aed != null ? String(r.budget.revenue_budget_aed) : '');
       setFoodCostBudget(r.budget?.food_cost_pct_budget != null ? String(r.budget.food_cost_pct_budget) : '');
       setLaborCostBudget(r.budget?.labor_cost_pct_budget != null ? String(r.budget.labor_cost_pct_budget) : '');
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId, month]);
 

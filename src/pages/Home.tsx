@@ -189,17 +189,43 @@ function FeatureMarquee({ features }: { features: { icon: typeof Nfc; title: str
     if (!el || !drag.active || drag.pointerId !== e.pointerId) return;
     el.scrollLeft = drag.startScrollLeft - (e.clientX - drag.startX);
   }
-  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
+  // Real, explicit hardening pass (confirmed by explicit report: the
+  // drag "worked once then needed re-pressing"). Firefox's own pointer-
+  // events bug history (bugzilla 1258804 among others) documents real,
+  // recurring timing edge cases in exactly this area - a captured
+  // element occasionally not receiving the matching pointerup/
+  // pointercancel it's owed. This can't be reliably reproduced or
+  // proven in this environment (Firefox itself isn't installable
+  // here), so rather than guess at a specific root cause, the fix is
+  // to stop depending on any single element correctly receiving that
+  // end event at all: endDrag is now a plain function callable from
+  // both the element's own pointerup/pointercancel AND a window-level
+  // fallback of the same two events. If the element-scoped one is ever
+  // missed, the window one still resets the drag state, so a stuck
+  // drag genuinely cannot survive past the next pointerup anywhere on
+  // the page.
+  function endDrag() {
     const el = scrollRef.current;
     const drag = dragRef.current;
+    if (!drag.active && drag.pointerId === null) return;
     if (drag.pointerId !== null && el) {
       try { el.releasePointerCapture(drag.pointerId); } catch { /* already released */ }
       el.style.cursor = 'grab';
     }
     dragRef.current.active = false;
     dragRef.current.pointerId = null;
-    if (e.pointerType === 'mouse') scheduleResume();
+    scheduleResume();
   }
+
+  useEffect(() => {
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    return () => {
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div

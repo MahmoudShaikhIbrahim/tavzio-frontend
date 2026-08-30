@@ -19,7 +19,7 @@ export default function ExternalHotelSystemsPage() {
   const [busyProvider, setBusyProvider] = useState<string | null>(null);
 
   function reload() {
-    if (businessId) listExternalHotelSystems(businessId).then(setSystems);
+    if (businessId) listExternalHotelSystems(businessId).then(setSystems).catch(() => {});
   }
   useEffect(reload, [businessId]);
 

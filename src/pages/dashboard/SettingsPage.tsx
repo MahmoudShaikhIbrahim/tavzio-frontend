@@ -295,7 +295,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
   const [showAddForm, setShowAddForm] = useState(false);
 
   function reloadExtras() {
-    listCustomButtons(businessId).then(setExtraButtons);
+    listCustomButtons(businessId).then(setExtraButtons).catch(() => {});
   }
   useEffect(reloadExtras, [businessId]);
 

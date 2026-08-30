@@ -76,6 +76,7 @@ export default function OrdersPage() {
   // separate pages duplicating logic.
   const [view, setView] = useState<'orders' | 'map'>('orders');
   const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
+  const [floorDataLoaded, setFloorDataLoaded] = useState(false);
   const [floorCells, setFloorCells] = useState<FloorPlanCell[]>([]);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [tableRecordPayment, setTableRecordPayment] = useState(false);
@@ -116,7 +117,7 @@ export default function OrdersPage() {
   // its own even after the underlying condition (the rate limit fix
   // above) would have cleared.
   function reloadFloorTables() {
-    if (businessId) listTables(businessId).then(setFloorTables).catch(() => {});
+    if (businessId) listTables(businessId).then((rows) => { setFloorTables(rows); setFloorDataLoaded(true); }).catch(() => setFloorDataLoaded(true));
   }
   function reloadFloorCells() {
     if (businessId) listFloorPlanCells(businessId).then(setFloorCells).catch(() => {});
@@ -126,14 +127,22 @@ export default function OrdersPage() {
   useEffect(reloadRequests, [businessId]);
   useEffect(reloadClaims, [businessId]);
   useEffect(reloadCashPending, [businessId]);
-  // Fetched once view becomes 'map' (not eagerly on page load - most
-  // shifts will mostly use Orders, no reason to pull floor plan data
-  // nobody's looking at), then kept live via the same realtime +
-  // polling-fallback pattern every other data source on this page uses.
+  // Real, explicit fix (confirmed by explicit report: a visible delay
+  // before the floor plan appears on flipping to it) - the data itself
+  // is now fetched once, eagerly, right on page load, so it's already
+  // there by the time anyone actually flips to the map. Only the
+  // ONGOING realtime subscription and 5-second poll stay gated to the
+  // map actually being the active view - that's the part that was ever
+  // meant to be conditional (continuous background cost, not this
+  // page's very first load), not the one-time initial fetch.
   useEffect(() => {
-    if (view !== 'map' || !businessId) return;
+    if (!businessId) return;
     reloadFloorTables();
     reloadFloorCells();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessId]);
+  useEffect(() => {
+    if (view !== 'map' || !businessId) return;
     const unsubTables = subscribeToBusinessTable(businessId, 'tables', reloadFloorTables);
     const unsubCells = subscribeToBusinessTable(businessId, 'floor_plan_cells', reloadFloorCells);
     return () => { unsubTables(); unsubCells(); };
@@ -454,7 +463,16 @@ export default function OrdersPage() {
                 </div>
               );
             })()}
-            {floorTables.filter((ft) => ft.gridX !== null).length === 0 ? (
+            {!floorDataLoaded ? (
+              // Real fix: without this, an empty floorTables array
+              // during the brief window before the first fetch resolves
+              // rendered the exact same "nothing placed yet" message as
+              // a business that genuinely has no floor plan at all -
+              // misleading, and exactly what read as "it loads, then
+              // pops in wrong-then-right". A neutral, momentary
+              // placeholder instead of a false claim about the data.
+              <div className="rounded-xl border border-ink-line bg-ink-soft p-8 text-center text-sm text-ivory-dim">{t('Loading...')}</div>
+            ) : floorTables.filter((ft) => ft.gridX !== null).length === 0 ? (
               <div className="rounded-xl border border-ink-line bg-ink-soft p-8 text-center">
                 <p className="text-base text-ivory">{t('No tables placed on the map yet')}</p>
                 <p className="mt-1 text-sm text-ivory-dim">{t('Arrange your floor plan in Table Setup to see it here.')}</p>

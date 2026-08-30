@@ -26,7 +26,7 @@ export default function WarehousesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   function reload() {
-    if (businessId) listWarehouses(businessId).then(setWarehouses).finally(() => setLoading(false));
+    if (businessId) listWarehouses(businessId).then(setWarehouses).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

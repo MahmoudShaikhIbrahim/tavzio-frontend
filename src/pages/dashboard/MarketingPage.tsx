@@ -52,7 +52,7 @@ function CampaignsSection({ businessId, category }: { businessId: string; catego
 
   function reload() {
     setLoading(true);
-    listCampaigns(businessId).then(setCampaigns).finally(() => setLoading(false));
+    listCampaigns(businessId).then(setCampaigns).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -87,7 +87,7 @@ function NewCampaignForm({ businessId, category, onSaved }: { businessId: string
     try {
       const res = await createCampaign(businessId, { name, channel, subject, body, audience });
       setResult(res);
-      setTimeout(onSaved, 1200);
+      onSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create campaign');
     } finally {
@@ -211,7 +211,7 @@ function TemplatesSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listMarketingTemplates(businessId).then(setTemplates).finally(() => setLoading(false));
+    listMarketingTemplates(businessId).then(setTemplates).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -278,7 +278,7 @@ function SuppressionsSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listSuppressions(businessId).then(setSuppressions).finally(() => setLoading(false));
+    listSuppressions(businessId).then(setSuppressions).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

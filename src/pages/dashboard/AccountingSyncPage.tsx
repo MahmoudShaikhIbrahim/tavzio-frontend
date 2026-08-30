@@ -22,7 +22,7 @@ export default function AccountingSyncPage() {
 
   function reload() {
     if (!businessId) return;
-    getZohoBooksStatus(businessId).then((s) => { setConnected(s.connected); setConnectedAt(s.connectedAt); }).finally(() => setLoaded(true));
+    getZohoBooksStatus(businessId).then((s) => { setConnected(s.connected); setConnectedAt(s.connectedAt); }).catch(() => {}).finally(() => setLoaded(true));
   }
   useEffect(reload, [businessId]);
 

@@ -84,7 +84,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listIngredients(businessId).then(setIngredients).finally(() => setLoading(false));
+    listIngredients(businessId).then(setIngredients).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -333,7 +333,7 @@ function ReorderTab({ businessId }: { businessId: string }) {
   function reload() {
     setLoading(true);
     Promise.all([getLowStock(businessId), getInventoryValuation(businessId)])
-      .then(([low, val]) => { setLowStock(low); setValuation(val); })
+      .then(([low, val]) => { setLowStock(low); setValuation(val); }).catch(() => {})
       .finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
@@ -416,7 +416,7 @@ function WasteTab({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    getWasteReport(businessId, days).then(setReport).finally(() => setLoading(false));
+    getWasteReport(businessId, days).then(setReport).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId, days]);
 
@@ -587,7 +587,7 @@ function SuppliersTab({ businessId }: { businessId: string }) {
   const [saving, setSaving] = useState(false);
 
   function reload() {
-    listSuppliers(businessId).then(setSuppliers);
+    listSuppliers(businessId).then(setSuppliers).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -916,7 +916,7 @@ function WarehousesTab({ businessId }: { businessId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   function reload() {
-    listWarehouses(businessId).then(setWarehouses).finally(() => setLoading(false));
+    listWarehouses(businessId).then(setWarehouses).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -1125,7 +1125,7 @@ function StockTransfersTab({ businessId }: { businessId: string }) {
       setTransferIngredients(i);
       setTransfers(tr);
       setAllocations(alloc);
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

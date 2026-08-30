@@ -62,8 +62,8 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
   const [loading, setLoading] = useState(true);
 
   function reload() {
-    listReservations(businessId).then(setReservations);
-    listRooms(businessId).then(setRooms);
+    listReservations(businessId).then(setReservations).catch(() => {});
+    listRooms(businessId).then(setRooms).catch(() => {});
   }
   useEffect(() => { setLoading(true); Promise.all([listReservations(businessId), listRooms(businessId)]).then(([r, rm]) => { setReservations(r); setRooms(rm); }).finally(() => setLoading(false)); }, [businessId]);
 
@@ -368,8 +368,8 @@ function RoomsTab({ businessId }: { businessId: string }) {
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
 
   function reload() {
-    listRooms(businessId).then(setRooms);
-    listCards(businessId).then(setCards);
+    listRooms(businessId).then(setRooms).catch(() => {});
+    listCards(businessId).then(setCards).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -831,7 +831,7 @@ function GuestsTab({ businessId }: { businessId: string }) {
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
 
   function reload() {
-    listGuests(businessId, search || undefined).then(setGuests);
+    listGuests(businessId, search || undefined).then(setGuests).catch(() => {});
   }
   useEffect(reload, [businessId, search]);
 
@@ -943,7 +943,7 @@ function CityLedgerTab({ businessId }: { businessId: string }) {
   const [reference, setReference] = useState('');
 
   function reload() {
-    listCityLedgerEntries(businessId, filter).then((r) => { setEntries(r.entries); setTotalOutstanding(r.totalOutstandingAed); });
+    listCityLedgerEntries(businessId, filter).then((r) => { setEntries(r.entries); setTotalOutstanding(r.totalOutstandingAed); }).catch(() => {});
   }
   useEffect(reload, [businessId, filter]);
 
@@ -1018,7 +1018,7 @@ function TourismDirhamTab({ businessId }: { businessId: string }) {
     getTourismDirhamReport(businessId, { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` }).then((r) => {
       setCharges(r.charges);
       setTotal(r.total);
-    });
+    }).catch(() => {});
   }
   useEffect(reload, [businessId, from, to]);
 
@@ -1068,7 +1068,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  function reload() { listBookingGroups(businessId).then(setGroups); }
+  function reload() { listBookingGroups(businessId).then(setGroups).catch(() => {}); }
   useEffect(reload, [businessId]);
 
   async function handleAdd(e: React.FormEvent) {

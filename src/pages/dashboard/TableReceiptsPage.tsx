@@ -18,7 +18,7 @@ export default function TableReceiptsPage() {
   function reload() {
     if (!businessId) return;
     setLoading(true);
-    listTablesWithUnpaid(businessId).then(setTables).finally(() => setLoading(false));
+    listTablesWithUnpaid(businessId).then(setTables).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

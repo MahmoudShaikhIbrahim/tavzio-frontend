@@ -135,7 +135,7 @@ function MergedTableShape({ a, b, onTap }: { a: FloorTable; b: FloorTable; onTap
 }
 
 export default function FloorPlanCanvas({
-  tables, cells, onTapTable, onTapCell, editMode, bounds,
+  tables, cells, onTapTable, onTapCell, editMode, bounds, fitTo,
 }: {
   tables: FloorTable[];
   cells: FloorPlanCell[];
@@ -153,6 +153,14 @@ export default function FloorPlanCanvas({
   // there - the live map has no reason to show empty padding nobody
   // asked for.
   bounds?: { minX: number; minY: number; maxX: number; maxY: number };
+  // Real, explicit request: seeing the whole floor plan at once while
+  // arranging it. Passing a max pixel size here scales the ENTIRE
+  // canvas down to fit within it while keeping every real coordinate
+  // untouched - this is SVG's own native behavior (the viewBox stays
+  // the full, real size; only the element's own width/height shrink to
+  // fit), not a manual transform this component has to compute or
+  // maintain itself.
+  fitTo?: { width: number; height: number };
 }) {
   const placed = tables.filter((t) => t.gridX !== null && t.gridY !== null);
   const wallRects = computeRuns(cells, 'wall');
@@ -174,11 +182,25 @@ export default function FloorPlanCanvas({
   if (bounds) {
     ({ minX, minY, maxX, maxY } = bounds);
   } else {
-    const allX = [0, ...placed.map((t) => (t.gridX || 0) + (tableDims(t).w / CELL) + 1), ...cells.map((c) => c.gridX + 1)];
-    const allY = [0, ...placed.map((t) => (t.gridY || 0) + (tableDims(t).h / CELL) + 1), ...cells.map((c) => c.gridY + 1)];
-    minX = 0; minY = 0;
-    maxX = Math.max(14, Math.ceil(Math.max(...allX)) + 1);
-    maxY = Math.max(8, Math.ceil(Math.max(...allY)) + 1);
+    // Real bug fix (confirmed by explicit report: windows visible in
+    // the editor never showing up on the live map): this hardcoded the
+    // top-left corner to (0,0), which was fine back when nothing could
+    // ever be placed left of or above the origin - but the editor can
+    // now place tables and cells at genuinely negative coordinates (see
+    // "Add space left/above"), and anything placed there fell outside
+    // this view's own SVG viewBox entirely, silently clipped out no
+    // matter how correctly it was actually saved. The real fix is the
+    // same idea as maxX/maxY already had, just extended to the other
+    // two corners - derive the minimum from the real content too,
+    // rather than assuming content never starts before zero.
+    const allX = [0, ...placed.map((t) => t.gridX || 0), ...cells.map((c) => c.gridX)];
+    const allY = [0, ...placed.map((t) => t.gridY || 0), ...cells.map((c) => c.gridY)];
+    const allMaxX = [0, ...placed.map((t) => (t.gridX || 0) + (tableDims(t).w / CELL) + 1), ...cells.map((c) => c.gridX + 1)];
+    const allMaxY = [0, ...placed.map((t) => (t.gridY || 0) + (tableDims(t).h / CELL) + 1), ...cells.map((c) => c.gridY + 1)];
+    minX = Math.min(0, Math.floor(Math.min(...allX)));
+    minY = Math.min(0, Math.floor(Math.min(...allY)));
+    maxX = Math.max(minX + 14, Math.ceil(Math.max(...allMaxX)) + 1);
+    maxY = Math.max(minY + 8, Math.ceil(Math.max(...allMaxY)) + 1);
   }
   const cols = maxX - minX;
   const rows = maxY - minY;
@@ -200,10 +222,17 @@ export default function FloorPlanCanvas({
     for (let y = minY; y < maxY; y++) for (let x = minX; x < maxX; x++) editableCellGrid.push({ x, y });
   }
 
+  const fullWidth = cols * CELL, fullHeight = rows * CELL;
+  // Scale down to fit within fitTo, but never scale UP past real size -
+  // a small floor plan should stay at its real, precise size for
+  // accurate tapping, not get stretched to fill a "fit" box bigger
+  // than it actually needs.
+  const fitScale = fitTo ? Math.min(1, fitTo.width / fullWidth, fitTo.height / fullHeight) : 1;
+
   return (
     <svg
-      width={cols * CELL} height={rows * CELL}
-      viewBox={`${minX * CELL} ${minY * CELL} ${cols * CELL} ${rows * CELL}`}
+      width={fullWidth * fitScale} height={fullHeight * fitScale}
+      viewBox={`${minX * CELL} ${minY * CELL} ${fullWidth} ${fullHeight}`}
       style={{ background: COLORS.ink, display: 'block' }}
     >
       {editMode && editableCellGrid.map((c) => (

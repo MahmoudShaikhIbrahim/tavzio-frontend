@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
@@ -390,6 +390,26 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
   const [armedTool, setArmedTool] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Real, explicit request: seeing the whole floor plan at once,
+  // instead of only ever seeing a scrolled slice of it. Precise mode
+  // (the default while actively placing) shows everything at real,
+  // exact size for accurate tapping; fit mode shrinks the whole thing
+  // to fit the visible area so it can all be seen together, matching
+  // FloorPlanCanvas's own fitTo prop, which does this via SVG's native
+  // scaling rather than a manual transform.
+  const [fitView, setFitView] = useState(true);
+  const fitContainerRef = useRef<HTMLDivElement>(null);
+  const [fitSize, setFitSize] = useState({ width: 800, height: 500 });
+  useEffect(() => {
+    const el = fitContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) setFitSize({ width: width - 8, height: height - 8 });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   // Real, explicit fix: the grid used to always start at (0,0) and only
   // ever grow to the right/down to fit whatever was already placed -
   // there was no way to add anything further left or higher than
@@ -532,10 +552,20 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
               implicitly limited by wherever existing content happens
               to end. */}
           <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="flex justify-center border-b border-ink-line py-1.5">
+            <div className="flex items-center justify-center gap-3 border-b border-ink-line py-1.5">
               <button type="button" onClick={() => expandBounds('top')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass">
                 {t('+ Add space above')}
               </button>
+              {/* Real, explicit request: seeing the whole floor plan at
+                  once. Fit mode shrinks everything to fit the visible
+                  area (SVG's own native scaling, not a manual one this
+                  component maintains); precise mode shows it at real
+                  size for accurate tapping while actually placing
+                  something. */}
+              <div className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-0.5">
+                <button type="button" onClick={() => setFitView(true)} className={`rounded-md px-2.5 py-1 text-xs font-medium ${fitView ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Fit view')}</button>
+                <button type="button" onClick={() => setFitView(false)} className={`rounded-md px-2.5 py-1 text-xs font-medium ${!fitView ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Actual size')}</button>
+              </div>
             </div>
             <div className="flex flex-1 overflow-hidden">
               <div className="flex items-center border-e border-ink-line px-1.5">
@@ -543,9 +573,9 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
                   {t('+ Add space left')}
                 </button>
               </div>
-              <div className="flex-1 overflow-auto p-4">
+              <div ref={fitContainerRef} className={fitView ? 'flex flex-1 items-center justify-center overflow-hidden p-4' : 'flex-1 overflow-auto p-4'}>
                 {loaded && (
-                  <FloorPlanCanvas tables={localTables} cells={cells} editMode onTapCell={handleTapCell} bounds={bounds} />
+                  <FloorPlanCanvas tables={localTables} cells={cells} editMode onTapCell={handleTapCell} bounds={bounds} fitTo={fitView ? fitSize : undefined} />
                 )}
               </div>
               <div className="flex items-center border-s border-ink-line px-1.5">

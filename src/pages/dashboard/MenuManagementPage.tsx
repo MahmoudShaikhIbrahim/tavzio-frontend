@@ -25,9 +25,9 @@ export default function MenuManagementPage() {
 
   function reload() {
     if (!businessId) return;
-    listMenuCategories(businessId).then(setCategories);
-    listMenuItems(businessId).then(setItems);
-    getBusiness(businessId).then(setBusiness);
+    listMenuCategories(businessId).then(setCategories).catch(() => {});
+    listMenuItems(businessId).then(setItems).catch(() => {});
+    getBusiness(businessId).then(setBusiness).catch(() => {});
   }
 
   useEffect(reload, [businessId]);
@@ -529,7 +529,7 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
   const [editPrice, setEditPrice] = useState(0);
 
   function reload() {
-    listAddons(businessId, itemId).then(setAddons);
+    listAddons(businessId, itemId).then(setAddons).catch(() => {});
   }
   useEffect(reload, [businessId, itemId]);
 

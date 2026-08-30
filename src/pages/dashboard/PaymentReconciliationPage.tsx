@@ -18,7 +18,7 @@ export default function PaymentReconciliationPage() {
 
   function reload() {
     if (!businessId) return;
-    getPaymentReconciliation(businessId).then((r) => { setTransactions(r.gatewayTransactions); setUnverified(r.unverifiedManualPayments); }).finally(() => setLoading(false));
+    getPaymentReconciliation(businessId).then((r) => { setTransactions(r.gatewayTransactions); setUnverified(r.unverifiedManualPayments); }).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 

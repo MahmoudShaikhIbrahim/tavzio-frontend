@@ -18,9 +18,9 @@ export default function NightAuditPage() {
 
   function reload() {
     if (!businessId) return;
-    getCurrentBusinessDate(businessId).then((r) => setBusinessDate(r.businessDate));
-    getNightAuditPreview(businessId).then(setPreview);
-    listNightAudits(businessId).then(setAudits);
+    getCurrentBusinessDate(businessId).then((r) => setBusinessDate(r.businessDate)).catch(() => {});
+    getNightAuditPreview(businessId).then(setPreview).catch(() => {});
+    listNightAudits(businessId).then(setAudits).catch(() => {});
   }
   useEffect(reload, [businessId]);
 

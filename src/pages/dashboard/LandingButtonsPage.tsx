@@ -75,7 +75,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
 
   function reload() {
     setLoading(true);
-    listGuestServices(businessId).then(setServices).finally(() => setLoading(false));
+    listGuestServices(businessId).then(setServices).catch(() => {}).finally(() => setLoading(false));
   }
   useEffect(reload, [businessId]);
 
@@ -340,7 +340,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
   const [showAddForm, setShowAddForm] = useState(false);
 
   function reloadExtras() {
-    listCustomButtons(businessId).then(setExtraButtons);
+    listCustomButtons(businessId).then(setExtraButtons).catch(() => {});
   }
   useEffect(reloadExtras, [businessId]);
 
@@ -782,7 +782,7 @@ function BookableServicesSection({ businessId }: { businessId: string }) {
   const [showForm, setShowForm] = useState(false);
 
   function reload() {
-    listServices(businessId).then(setServices);
+    listServices(businessId).then(setServices).catch(() => {});
   }
   useEffect(reload, [businessId]);
 
@@ -920,7 +920,7 @@ function ServiceOptionsManager({ businessId, serviceId }: { businessId: string; 
   const [saving, setSaving] = useState(false);
 
   function reload() {
-    listServiceOptions(businessId, serviceId).then(setOptions);
+    listServiceOptions(businessId, serviceId).then(setOptions).catch(() => {});
   }
   useEffect(reload, [businessId, serviceId]);
 
