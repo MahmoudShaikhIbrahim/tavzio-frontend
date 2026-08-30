@@ -1,92 +1,105 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { getLastDashboardPath } from './lib/lastDashboardPath';
 import { ThemeProvider } from './lib/ThemeContext';
 import { ConfirmDialogProvider } from './components/ConfirmDialog';
-import Home from './pages/Home';
-import DemoPage from './pages/DemoPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import { DashboardLanguageProvider } from './lib/i18n/DashboardLanguageContext';
-import TapHandler from './pages/TapHandler';
-import LandingPage from './pages/LandingPage';
-import MenuPage from './pages/MenuPage';
-import BookingPage from './pages/BookingPage';
-import BookingChooserPage from './pages/BookingChooserPage';
-import DriveThroughPage from './pages/DriveThroughPage';
-import BookingArrivalPage from './pages/BookingArrivalPage';
-import BillPage from './pages/BillPage';
+import RequireRole from './components/RequireRole';
+
+// Eager - the pages nearly everyone hits first (the marketing
+// homepage, the whole login/invite flow, the 404, and the three
+// layout shells every other page renders inside of), so there's no
+// real benefit to deferring these behind their own network request.
+import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import AdminLogin from './pages/AdminLogin';
 import CheckEmail from './pages/CheckEmail';
 import ConfirmDevice from './pages/ConfirmDevice';
-import RequireRole from './components/RequireRole';
-
 import SuperAdminLayout from './pages/superadmin/SuperAdminLayout';
-import BusinessesList from './pages/superadmin/BusinessesList';
-import CreateBusiness from './pages/superadmin/CreateBusiness';
-import LeadsPage from './pages/superadmin/LeadsPage';
-import BusinessDetail from './pages/superadmin/BusinessDetail';
-import MessagesInboxPage from './pages/superadmin/MessagesInboxPage';
-import BillingSettingsPage from './pages/superadmin/BillingSettingsPage';
-import DemoSettingsPage from './pages/superadmin/DemoSettingsPage';
-import AuditReportPage from './pages/superadmin/AuditReportPage';
-import OrganizationsPage from './pages/superadmin/OrganizationsPage';
-import ContractsListPage from './pages/superadmin/ContractsListPage';
-import CreateContractPage from './pages/superadmin/CreateContractPage';
-import SuperAdminDigitalCardsPage from './pages/superadmin/SuperAdminDigitalCardsPage';
-import SuperAdminCardEditorPage from './pages/superadmin/SuperAdminCardEditorPage';
 import OrgOwnerLayout from './pages/orgowner/OrgOwnerLayout';
-import OrgOverviewPage from './pages/orgowner/OrgOverviewPage';
-import OrgMenuPage from './pages/orgowner/OrgMenuPage';
-import OrgSuppliersPage from './pages/orgowner/OrgSuppliersPage';
-import OrgPurchaseOrdersPage from './pages/orgowner/OrgPurchaseOrdersPage';
-
 import DashboardLayout from './pages/dashboard/DashboardLayout';
-import AnalyticsPage from './pages/dashboard/AnalyticsPage';
-import ForecastingPage from './pages/dashboard/ForecastingPage';
-import StaffPage from './pages/dashboard/StaffPage';
-import SettingsPage from './pages/dashboard/SettingsPage';
-import BusinessProfilePage from './pages/dashboard/BusinessProfilePage';
-import PayBillSetupPage from './pages/dashboard/PayBillSetupPage';
-import PrinterSetupPage from './pages/dashboard/PrinterSetupPage';
-import CredentialsPage from './pages/dashboard/CredentialsPage';
-import LandingButtonsPage from './pages/dashboard/LandingButtonsPage';
-import MenuManagementPage from './pages/dashboard/MenuManagementPage';
-import LoyaltyPage from './pages/dashboard/LoyaltyPage';
-import CardsPage from './pages/dashboard/CardsPage';
-import NotificationsPage from './pages/dashboard/NotificationsPage';
-import OrdersPage from './pages/dashboard/OrdersPage';
-import RequestsPage from './pages/dashboard/RequestsPage';
-import KitchenPage from './pages/dashboard/KitchenPage';
-import BookingsPage from './pages/dashboard/BookingsPage';
-import FeaturesPage from './pages/dashboard/FeaturesPage';
-import PaymentsPage from './pages/dashboard/PaymentsPage';
-import TableReceiptsPage from './pages/dashboard/TableReceiptsPage';
-import AuditLogPage from './pages/dashboard/AuditLogPage';
-import MessagesPage from './pages/dashboard/MessagesPage';
-import InventoryPage from './pages/dashboard/InventoryPage';
-import POSTerminalPage from './pages/dashboard/POSTerminalPage';
-import TableManagementPage from './pages/dashboard/TableManagementPage';
-import DeliveryIntegrationPage from './pages/dashboard/DeliveryIntegrationPage';
-import FrontDeskPage from './pages/dashboard/FrontDeskPage';
-import HousekeepingPage from './pages/dashboard/HousekeepingPage';
-import ExternalHotelSystemsPage from './pages/dashboard/ExternalHotelSystemsPage';
-import HotelOutletsPage from './pages/dashboard/HotelOutletsPage';
-import SalesEventsPage from './pages/dashboard/SalesEventsPage';
-import RatePlansPage from './pages/dashboard/RatePlansPage';
-import NightAuditPage from './pages/dashboard/NightAuditPage';
-import PosIntegrationPage from './pages/dashboard/PosIntegrationPage';
-import HRPage from './pages/dashboard/HRPage';
-import PayrollPage from './pages/dashboard/PayrollPage';
-import AccountingPage from './pages/dashboard/AccountingPage';
-import ChannelManagerPage from './pages/dashboard/ChannelManagerPage';
-import MarketingPage from './pages/dashboard/MarketingPage';
-import PaymentReconciliationPage from './pages/dashboard/PaymentReconciliationPage';
-import ContractPage from './pages/dashboard/ContractPage';
-import ChangePasswordPage from './pages/dashboard/ChangePasswordPage';
-import SignContractPage from './pages/SignContractPage';
-import PublicCardPage from './pages/PublicCardPage';
-import HotelGuestPortalPage from './pages/HotelGuestPortalPage';
+
+// Real, explicit performance fix (confirmed by explicit report - every
+// page having a load delay, explicitly including the customer-facing
+// NFC page): this whole app was one single ~2.2MB JS bundle - a
+// customer just tapping a card to see a menu was downloading and
+// parsing the entire admin dashboard, the whole superadmin panel, and
+// every org-owner page first, none of which they'll ever use. Real
+// code-splitting now - each of these loads its own small chunk only
+// when actually navigated to, not upfront for everyone regardless of
+// which single page they came for.
+const DemoPage = lazy(() => import('./pages/DemoPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TapHandler = lazy(() => import('./pages/TapHandler'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const MenuPage = lazy(() => import('./pages/MenuPage'));
+const BookingPage = lazy(() => import('./pages/BookingPage'));
+const BookingChooserPage = lazy(() => import('./pages/BookingChooserPage'));
+const DriveThroughPage = lazy(() => import('./pages/DriveThroughPage'));
+const BookingArrivalPage = lazy(() => import('./pages/BookingArrivalPage'));
+const BillPage = lazy(() => import('./pages/BillPage'));
+const BusinessesList = lazy(() => import('./pages/superadmin/BusinessesList'));
+const CreateBusiness = lazy(() => import('./pages/superadmin/CreateBusiness'));
+const LeadsPage = lazy(() => import('./pages/superadmin/LeadsPage'));
+const BusinessDetail = lazy(() => import('./pages/superadmin/BusinessDetail'));
+const MessagesInboxPage = lazy(() => import('./pages/superadmin/MessagesInboxPage'));
+const BillingSettingsPage = lazy(() => import('./pages/superadmin/BillingSettingsPage'));
+const DemoSettingsPage = lazy(() => import('./pages/superadmin/DemoSettingsPage'));
+const AuditReportPage = lazy(() => import('./pages/superadmin/AuditReportPage'));
+const OrganizationsPage = lazy(() => import('./pages/superadmin/OrganizationsPage'));
+const ContractsListPage = lazy(() => import('./pages/superadmin/ContractsListPage'));
+const CreateContractPage = lazy(() => import('./pages/superadmin/CreateContractPage'));
+const SuperAdminDigitalCardsPage = lazy(() => import('./pages/superadmin/SuperAdminDigitalCardsPage'));
+const SuperAdminCardEditorPage = lazy(() => import('./pages/superadmin/SuperAdminCardEditorPage'));
+const OrgOverviewPage = lazy(() => import('./pages/orgowner/OrgOverviewPage'));
+const OrgMenuPage = lazy(() => import('./pages/orgowner/OrgMenuPage'));
+const OrgSuppliersPage = lazy(() => import('./pages/orgowner/OrgSuppliersPage'));
+const OrgPurchaseOrdersPage = lazy(() => import('./pages/orgowner/OrgPurchaseOrdersPage'));
+const AnalyticsPage = lazy(() => import('./pages/dashboard/AnalyticsPage'));
+const ForecastingPage = lazy(() => import('./pages/dashboard/ForecastingPage'));
+const StaffPage = lazy(() => import('./pages/dashboard/StaffPage'));
+const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
+const BusinessProfilePage = lazy(() => import('./pages/dashboard/BusinessProfilePage'));
+const PayBillSetupPage = lazy(() => import('./pages/dashboard/PayBillSetupPage'));
+const PrinterSetupPage = lazy(() => import('./pages/dashboard/PrinterSetupPage'));
+const CredentialsPage = lazy(() => import('./pages/dashboard/CredentialsPage'));
+const LandingButtonsPage = lazy(() => import('./pages/dashboard/LandingButtonsPage'));
+const MenuManagementPage = lazy(() => import('./pages/dashboard/MenuManagementPage'));
+const LoyaltyPage = lazy(() => import('./pages/dashboard/LoyaltyPage'));
+const CardsPage = lazy(() => import('./pages/dashboard/CardsPage'));
+const NotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
+const OrdersPage = lazy(() => import('./pages/dashboard/OrdersPage'));
+const RequestsPage = lazy(() => import('./pages/dashboard/RequestsPage'));
+const KitchenPage = lazy(() => import('./pages/dashboard/KitchenPage'));
+const BookingsPage = lazy(() => import('./pages/dashboard/BookingsPage'));
+const FeaturesPage = lazy(() => import('./pages/dashboard/FeaturesPage'));
+const PaymentsPage = lazy(() => import('./pages/dashboard/PaymentsPage'));
+const TableReceiptsPage = lazy(() => import('./pages/dashboard/TableReceiptsPage'));
+const AuditLogPage = lazy(() => import('./pages/dashboard/AuditLogPage'));
+const MessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
+const InventoryPage = lazy(() => import('./pages/dashboard/InventoryPage'));
+const POSTerminalPage = lazy(() => import('./pages/dashboard/POSTerminalPage'));
+const TableManagementPage = lazy(() => import('./pages/dashboard/TableManagementPage'));
+const DeliveryIntegrationPage = lazy(() => import('./pages/dashboard/DeliveryIntegrationPage'));
+const FrontDeskPage = lazy(() => import('./pages/dashboard/FrontDeskPage'));
+const HousekeepingPage = lazy(() => import('./pages/dashboard/HousekeepingPage'));
+const ExternalHotelSystemsPage = lazy(() => import('./pages/dashboard/ExternalHotelSystemsPage'));
+const HotelOutletsPage = lazy(() => import('./pages/dashboard/HotelOutletsPage'));
+const SalesEventsPage = lazy(() => import('./pages/dashboard/SalesEventsPage'));
+const RatePlansPage = lazy(() => import('./pages/dashboard/RatePlansPage'));
+const NightAuditPage = lazy(() => import('./pages/dashboard/NightAuditPage'));
+const PosIntegrationPage = lazy(() => import('./pages/dashboard/PosIntegrationPage'));
+const HRPage = lazy(() => import('./pages/dashboard/HRPage'));
+const PayrollPage = lazy(() => import('./pages/dashboard/PayrollPage'));
+const AccountingPage = lazy(() => import('./pages/dashboard/AccountingPage'));
+const ChannelManagerPage = lazy(() => import('./pages/dashboard/ChannelManagerPage'));
+const MarketingPage = lazy(() => import('./pages/dashboard/MarketingPage'));
+const PaymentReconciliationPage = lazy(() => import('./pages/dashboard/PaymentReconciliationPage'));
+const ContractPage = lazy(() => import('./pages/dashboard/ContractPage'));
+const ChangePasswordPage = lazy(() => import('./pages/dashboard/ChangePasswordPage'));
+const SignContractPage = lazy(() => import('./pages/SignContractPage'));
+const PublicCardPage = lazy(() => import('./pages/PublicCardPage'));
+const HotelGuestPortalPage = lazy(() => import('./pages/HotelGuestPortalPage'));
 
 // See the comment where this is rendered in App() for the full
 // reasoning - this exists specifically because Supabase's redirect
@@ -140,6 +153,7 @@ export default function App() {
           that knows how to use it - so a misconfigured allow-list
           degrades gracefully instead of silently losing the invite. */}
       <InviteHashRedirect />
+      <Suspense fallback={<div style={{ background: '#14110F', minHeight: '100vh' }} />}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/demo" element={<DemoPage />} />
@@ -281,6 +295,7 @@ export default function App() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       </BrowserRouter>
       </ConfirmDialogProvider>
     </ThemeProvider>

@@ -240,9 +240,68 @@ export default function FloorPlanCanvas({
           fill="transparent" stroke={COLORS.inkLine} strokeWidth={0.5}
           onClick={() => onTapCell?.(c.x, c.y)} style={{ cursor: 'pointer' }} />
       ))}
-      {wallRects.map((r, i) => <rect key={`w${i}`} x={r.x * CELL} y={r.y * CELL} width={r.w * CELL} height={r.h * CELL} rx={4} fill={COLORS.wall} pointerEvents="none" />)}
-      {windowRects.map((r, i) => <rect key={`win${i}`} x={r.x * CELL} y={r.y * CELL} width={r.w * CELL} height={r.h * CELL} rx={4} fill={COLORS.window} pointerEvents="none" />)}
-      {counterRects.map((r, i) => <rect key={`c${i}`} x={r.x * CELL} y={r.y * CELL} width={r.w * CELL} height={r.h * CELL} rx={4} fill={COLORS.counter} stroke={COLORS.brass} strokeWidth={1} pointerEvents="none" />)}
+      {/* Real, explicit fix (confirmed by direct report, "pathetic",
+          against real screenshots): walls and windows used to fill the
+          entire grid cell along their whole run - so a wall run one
+          cell wide but ten cells tall rendered as a solid ~500px slab,
+          not a wall. A real floor plan shows walls and windows as thin
+          lines, proportioned nothing like a table or a door - this
+          computes a real centerline through each run and draws a
+          genuinely thin bar along it instead of filling the cell.
+          Windows additionally get real pane divisions (an actual glass
+          look, not a flat color block); the counter gets a distinct
+          front-edge highlight so it reads as furniture with real
+          depth, not another wall. */}
+      {wallRects.map((r, i) => {
+        const horizontal = r.w >= r.h;
+        const t = 10;
+        const x = horizontal ? r.x * CELL : r.x * CELL + (r.w * CELL - t) / 2;
+        const y = horizontal ? r.y * CELL + (r.h * CELL - t) / 2 : r.y * CELL;
+        const w = horizontal ? r.w * CELL : t;
+        const h = horizontal ? t : r.h * CELL;
+        return <rect key={`w${i}`} x={x} y={y} width={w} height={h} rx={t / 2} fill={COLORS.wall} pointerEvents="none" />;
+      })}
+      {windowRects.map((r, i) => {
+        const horizontal = r.w >= r.h;
+        const t = 12;
+        const x = horizontal ? r.x * CELL : r.x * CELL + (r.w * CELL - t) / 2;
+        const y = horizontal ? r.y * CELL + (r.h * CELL - t) / 2 : r.y * CELL;
+        const w = horizontal ? r.w * CELL : t;
+        const h = horizontal ? t : r.h * CELL;
+        const paneCount = horizontal ? r.w : r.h;
+        return (
+          <g key={`win${i}`} pointerEvents="none">
+            <rect x={x} y={y} width={w} height={h} rx={2} fill={COLORS.window} stroke={COLORS.brassBright} strokeWidth={1} opacity={0.9} />
+            {/* Pane dividers - one real mullion line per cell the run
+                actually spans, so a wider window genuinely reads as
+                multiple panes rather than one long slab. */}
+            {Array.from({ length: paneCount - 1 }, (_, p) => (
+              horizontal
+                ? <line key={p} x1={x + (p + 1) * CELL} y1={y} x2={x + (p + 1) * CELL} y2={y + h} stroke={COLORS.ink} strokeWidth={1.5} opacity={0.6} />
+                : <line key={p} x1={x} y1={y + (p + 1) * CELL} x2={x + w} y2={y + (p + 1) * CELL} stroke={COLORS.ink} strokeWidth={1.5} opacity={0.6} />
+            ))}
+          </g>
+        );
+      })}
+      {counterRects.map((r, i) => {
+        const horizontal = r.w >= r.h;
+        const t = 26;
+        const x = horizontal ? r.x * CELL : r.x * CELL + (r.w * CELL - t) / 2;
+        const y = horizontal ? r.y * CELL + (r.h * CELL - t) / 2 : r.y * CELL;
+        const w = horizontal ? r.w * CELL : t;
+        const h = horizontal ? t : r.h * CELL;
+        return (
+          <g key={`c${i}`} pointerEvents="none">
+            <rect x={x} y={y} width={w} height={h} rx={4} fill={COLORS.counter} stroke={COLORS.brass} strokeWidth={1} />
+            {/* Front-edge highlight - a real counter has a distinct
+                trimmed edge facing the room, not just a flat fill; this
+                is what actually reads as "furniture" rather than "wall". */}
+            {horizontal
+              ? <rect x={x} y={y + h - 3} width={w} height={3} rx={1.5} fill={COLORS.brass} opacity={0.7} />
+              : <rect x={x + w - 3} y={y} width={3} height={h} rx={1.5} fill={COLORS.brass} opacity={0.7} />}
+          </g>
+        );
+      })}
       {doorCells.map((d, i) => {
         // Real, explicit request: doors can now face any of the 4
         // sides of their cell, not one fixed shape - a single base

@@ -205,7 +205,40 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
   const { t } = useT();
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategoryId, setActiveCategoryId] = useState<string | 'all'>('all');
+  // Sentinel for "items with no category at all" - a real, distinct
+  // group of its own, not folded into "All". An item's own categoryId
+  // can genuinely be null (see ItemForm below - it's an optional
+  // field), so a business with zero categories set up yet, or one that
+  // just has some uncategorized items, is a real case, not an edge
+  // case to ignore.
+  const UNCATEGORIZED = '__uncategorized__';
+  const hasUncategorized = items.some((i) => !i.category_id);
+  // Real bug fix (confirmed by explicit report: "nothing in items
+  // section" - the reorder feature genuinely existed, but defaulting
+  // to "All" hid it completely on first load, since reordering only
+  // makes sense within one specific category, and nobody would
+  // discover they needed to click a category tab first to see it at
+  // all). Auto-advances to the first real group once categories/items
+  // actually finish loading (they arrive async, from the parent, so a
+  // plain useState initializer here would just as easily get stuck on
+  // an empty "All" from before they ever arrived) - but only while
+  // nothing has been explicitly chosen yet. Once someone actually taps
+  // "All" or a specific group, that choice is real and never gets
+  // silently overridden again. A business with genuinely zero
+  // categories (only ever using uncategorized items) still gets a
+  // real, reorderable group here - "Uncategorized" - rather than being
+  // permanently stuck on "All" with no way to ever unlock reordering.
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+  const userPickedCategoryRef = useRef(false);
+  useEffect(() => {
+    if (userPickedCategoryRef.current || activeCategoryId !== 'all') return;
+    if (categories.length > 0) setActiveCategoryId(categories[0].id);
+    else if (hasUncategorized) setActiveCategoryId(UNCATEGORIZED);
+  }, [categories, activeCategoryId, hasUncategorized]);
+  function pickCategory(id: string) {
+    userPickedCategoryRef.current = true;
+    setActiveCategoryId(id);
+  }
 
   // Real fix for the explicit request: with tens/hundreds of items this
   // list used to be one long undifferentiated scroll with no way to jump
@@ -217,16 +250,19 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
   // elsewhere.
   const q = searchQuery.trim().toLowerCase();
   const matchesQuery = (item: MenuItem) => !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
-  const inActiveCategory = (item: MenuItem) => activeCategoryId === 'all' || item.category_id === activeCategoryId;
+  const inActiveCategory = (item: MenuItem) =>
+    activeCategoryId === 'all' || (activeCategoryId === UNCATEGORIZED ? !item.category_id : item.category_id === activeCategoryId);
   // Real, explicit request: reordering moved here from POS Terminal,
   // where a busy till was exactly the wrong place for staff to
   // accidentally rearrange the menu. Only makes sense within one
-  // specific, unfiltered category - "All" mixes items from different
-  // categories together, and a search result is a filtered subset that
-  // can't map back to a real position in the underlying list, same
-  // reasoning Categories' own reorder already uses for its search box.
+  // specific, unfiltered group - "All" mixes several groups together,
+  // and a search result is a filtered subset that can't map back to a
+  // real position in the underlying list, same reasoning Categories'
+  // own reorder already uses for its search box.
   const canReorder = activeCategoryId !== 'all' && !q;
-  const itemsInCategory = activeCategoryId === 'all' ? [] : items.filter((i) => i.category_id === activeCategoryId).sort((a, b) => a.sort_order - b.sort_order);
+  const itemsInCategory = activeCategoryId === 'all'
+    ? []
+    : items.filter((i) => (activeCategoryId === UNCATEGORIZED ? !i.category_id : i.category_id === activeCategoryId)).sort((a, b) => a.sort_order - b.sort_order);
   async function commitItemReorder(newOrder: MenuItem[]) {
     const posById = new Map(newOrder.map((it, i) => [it.id, i]));
     onItemsChange(items.map((it) => (posById.has(it.id) ? { ...it, sort_order: posById.get(it.id)! } : it)));
@@ -268,10 +304,10 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
           className="w-full rounded-lg border border-ink-line bg-ink py-2.5 ps-9 pe-3 text-base text-ivory placeholder:text-ivory-dim/60"
         />
       </div>
-      {categories.length > 1 && (
+      {(categories.length > 0 || hasUncategorized) && (
         <div className={`mb-4 flex gap-2 overflow-x-auto pb-1 ${q ? 'pointer-events-none opacity-40' : ''}`} style={{ scrollbarWidth: 'none' }}>
           <button type="button"
-            onClick={() => setActiveCategoryId('all')}
+            onClick={() => pickCategory('all')}
             className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
               activeCategoryId === 'all' ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
             }`}
@@ -281,7 +317,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
           {categories.map((c) => (
             <button type="button"
               key={c.id}
-              onClick={() => setActiveCategoryId(c.id)}
+              onClick={() => pickCategory(c.id)}
               className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                 activeCategoryId === c.id ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
               }`}
@@ -289,6 +325,16 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
               {c.name}
             </button>
           ))}
+          {hasUncategorized && (
+            <button type="button"
+              onClick={() => pickCategory(UNCATEGORIZED)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                activeCategoryId === UNCATEGORIZED ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
+              }`}
+            >
+              {t('Uncategorized')}
+            </button>
+          )}
         </div>
       )}
       {canReorder && itemDrag.heldId && <p className="mb-2 text-xs text-brass">{t('Item picked up - tap where you\'d like to place it, or tap it again to cancel.')}</p>}
