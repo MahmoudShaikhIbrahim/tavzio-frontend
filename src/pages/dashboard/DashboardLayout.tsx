@@ -5,7 +5,7 @@ import CustomizeNavModal from '../../components/CustomizeNavModal';
 import { saveLastDashboardPath } from '../../lib/lastDashboardPath';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, type NotificationCounts } from '../../lib/authApi';
+import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, getPaymentIntegration, type NotificationCounts } from '../../lib/authApi';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
 import AccountMenu from '../../components/AccountMenu';
@@ -45,6 +45,16 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
     selector: 'focus-mode-button',
     title: 'Focus mode',
     body: 'For a busy counter shift - hides everything except the page itself and takes over the full screen, browser chrome included. Turn it on here any time, on any page, not just POS/Kitchen/Orders. Press it again (or the Exit button once inside) to come back to normal.',
+  },
+  {
+    selector: 'orders-map-toggle',
+    title: 'Orders and Tables Map, one page',
+    body: 'Orders and Tables Map are two sides of the same live data, not two separate pages - flip between them any time. Orders is the time-ordered list; the map is for "where is table 12" at a glance.',
+  },
+  {
+    selector: 'orders-map-toggle',
+    title: 'Arranging the floor plan',
+    body: "The map only shows a table once it's been placed - set that up once in Table Setup's \"Arrange floor plan\", tap-to-place tables, walls, windows, doors and counters to match the real room. Nothing to redo here after that.",
   },
   {
     selector: 'account-menu',
@@ -285,6 +295,22 @@ function DashboardLayoutInner() {
     refetchFeatures();
   }, [user?.business_id]);
 
+  // Real, explicit fix (confirmed by explicit report: the Record
+  // Payment button visibly disappeared and reappeared every single
+  // time Orders was opened - "treat it as any button, it has to stay
+  // visible"). The real problem was WHERE this lived: fetched fresh
+  // inside OrdersPage itself, which unmounts and re-runs its own
+  // effects every time someone navigates away and back, so the brief
+  // "don't know yet" gap reopened on every single visit. Fetched once
+  // here instead, at the shell level that stays mounted for the whole
+  // session (exactly like refetchFeatures above), so by the time any
+  // page asks for it, the real answer is already sitting there - no
+  // flicker, because there's no per-visit fetch left to flicker.
+  const [payBillEnabled, setPayBillEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (user?.business_id) getPaymentIntegration(user.business_id).then((i) => setPayBillEnabled(!!i?.enabled)).catch(() => {});
+  }, [user?.business_id]);
+
   // Polling rather than realtime here deliberately - this is a red dot
   // on a tab, not something that needs to update mid-glance. A 15s
   // refresh is plenty responsive for "should I go check that tab" while
@@ -500,7 +526,14 @@ function DashboardLayoutInner() {
       dir={isRtl ? 'rtl' : 'ltr'}
       style={buildBusinessThemeVars(theme?.dashboardBackground, theme?.dashboardButton)}
     >
-      {showTour && <GuidedTour steps={DASHBOARD_TOUR_STEPS} onDone={closeTour} onSkip={closeTour} />}
+      {/* Real, explicit quality fix: without this, a hotel account (which
+          never gets a Tables tab at all - floor plans are a restaurant
+          concept) would still sit through two tour steps about a
+          feature it has no access to, pointing at an element that
+          doesn't exist for them. Filtered with the exact same
+          tabAllowed check the Tables nav tab itself uses, so this can
+          never drift out of sync with what that account actually sees. */}
+      {showTour && <GuidedTour steps={DASHBOARD_TOUR_STEPS.filter((s) => s.selector !== 'orders-map-toggle' || tabAllowed('orderingNotHotel'))} onDone={closeTour} onSkip={closeTour} />}
       {!focusMode && (
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
@@ -657,7 +690,7 @@ function DashboardLayoutInner() {
         </div>
       )}
       <main className={focusMode ? 'px-4 py-4 sm:px-6' : 'mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14'}>
-        <Outlet context={{ refetchFeatures, focusMode }} />
+        <Outlet context={{ refetchFeatures, focusMode, payBillEnabled }} />
       </main>
     </div>
   );

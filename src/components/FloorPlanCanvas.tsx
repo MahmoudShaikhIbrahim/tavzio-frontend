@@ -233,7 +233,23 @@ export default function FloorPlanCanvas({
     <svg
       width={fullWidth * fitScale} height={fullHeight * fitScale}
       viewBox={`${minX * CELL} ${minY * CELL} ${fullWidth} ${fullHeight}`}
-      style={{ background: COLORS.ink, display: 'block' }}
+      // Real, explicit fix (confirmed by direct report: the map looked
+      // "far and blurry" with "tables being cut out"). The pixel width
+      // and height above come from a JS measurement (fitTo) that
+      // starts at an arbitrary 800x500 default and only becomes
+      // accurate once a ResizeObserver has fired at least once - for
+      // one render, or on a slow layout, that's a real, if brief,
+      // mismatch between the SVG's own size and its actual container,
+      // and the container clips anything that overflows during that
+      // gap. maxWidth/maxHeight: 100% is a genuine, native-browser
+      // safety net underneath the JS number, not a duplicate of it -
+      // the SVG can never visually exceed its real container no matter
+      // what fitTo says, so nothing gets cut off even during that
+      // brief mismatch. It's also what actually fixes "blurry": SVG is
+      // vector, so letting the browser's own scaling settle the final
+      // on-screen size renders crisp at any zoom, rather than trusting
+      // an exact pixel width that can land on an awkward fraction.
+      style={{ background: COLORS.ink, display: 'block', maxWidth: '100%', maxHeight: '100%' }}
     >
       {editMode && editableCellGrid.map((c) => (
         <rect key={`grid-${c.x}-${c.y}`} x={c.x * CELL} y={c.y * CELL} width={CELL} height={CELL}

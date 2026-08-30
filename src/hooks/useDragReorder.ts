@@ -97,10 +97,23 @@ export function useDragReorder<T>({
 
   function handlePointerDown(id: string, e: React.PointerEvent) {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    // Something is already held and this press landed on a DIFFERENT
-    // item - the placement itself happens on release (onPointerUp), not
-    // here; no long-press timer is needed for a placement tap.
-    if (heldIdRef.current && heldIdRef.current !== id) return;
+    // Real bug fix (confirmed by explicit report: cancelling by
+    // tapping the already-held row again "isn't actually working").
+    // Once anything is held, the actual decision - cancel (same item)
+    // or place (a different one) - happens entirely on release in
+    // handlePointerUp below, which already handles both correctly. The
+    // bug was arming a FRESH long-press timer here specifically when
+    // the second press landed on the SAME already-held item: a real,
+    // deliberate tap-to-cancel can easily last just over
+    // PICKUP_HOLD_MS for an ordinary human press, and if it did, the
+    // timer fired again before release, silently re-marking the item
+    // as "just picked up" - which made the very next handlePointerUp
+    // treat it as the tail end of another pickup and return early
+    // instead of cancelling. No timer is needed for a press landing on
+    // an already-held item (same reasoning already applied to a press
+    // landing on a different one), so this now skips it entirely
+    // rather than re-arming.
+    if (heldIdRef.current) return;
     pressOrigin.current = { x: e.clientX, y: e.clientY };
     clearLongPress();
     longPressTimer.current = window.setTimeout(() => {

@@ -2,13 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import GuidedTour, { type TourStep } from '../../components/GuidedTour';
-import { HelpCircle } from 'lucide-react';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
   voidOrderItem, clearTable, fireCourse,
   listRequests, dismissRequest, listLoyaltyClaims, applyManualClaim, listCashPendingItems,
-  getPaymentIntegration, listTables, listFloorPlanCells,
+  listTables, listFloorPlanCells,
   type RequestRow, type CashPendingItem,
 } from '../../lib/authApi';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
@@ -59,39 +57,16 @@ function ArrivalCountdown({ arrivalAt }: { arrivalAt: string }) {
   return <span className="font-mono text-sm text-drivethrough">{label}</span>;
 }
 
-// Real, explicit addition: a genuine guided tour for the newest,
-// biggest thing added to this page - the flip between Orders and the
-// Tables Map, and the map itself - following the exact same
-// GuidedTour engine and data-tour pattern the dashboard shell's own
-// tour already established, rather than a separate, one-off system.
-// Manually launched (the "?" button below), not auto-shown once per
-// account like the shell tour - a returning user who's already seen
-// this page doesn't need it forced on them.
-const ORDERS_TOUR_STEPS: TourStep[] = [
-  {
-    selector: 'orders-map-toggle',
-    title: 'Orders and Tables Map, one page',
-    body: 'Orders and Tables Map are two sides of the same live data, not two separate pages - flip between them any time. Orders is the time-ordered list; the map is for "where is table 12" at a glance.',
-  },
-  {
-    selector: 'orders-map-toggle',
-    title: 'Arranging the floor plan',
-    body: "The map only shows a table once it's been placed - set that up once in Table Setup's \"Arrange floor plan\", tap-to-place tables, walls, windows, doors and counters to match the real room. Nothing to redo here after that.",
-    placement: 'bottom',
-  },
-];
-
 export default function OrdersPage() {
   const { user } = useSession();
   const { t } = useT();
   const navigate = useNavigate();
-  const { focusMode } = useOutletContext<{ focusMode?: boolean }>();
+  const { focusMode, payBillEnabled } = useOutletContext<{ focusMode?: boolean; payBillEnabled: boolean | null }>();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [recentOpen, setRecentOpen] = useState(false);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
-  const [payBillEnabled, setPayBillEnabled] = useState<boolean | null>(null);
   const [showRecordPayment, setShowRecordPayment] = useState(false);
 
   // Real, explicit addition: the flip page. "view" swaps between the
@@ -100,7 +75,6 @@ export default function OrdersPage() {
   // this is genuinely one data layer with two renderers, not two
   // separate pages duplicating logic.
   const [view, setView] = useState<'orders' | 'map'>('orders');
-  const [showTour, setShowTour] = useState(false);
   // Real, explicit request: the live map used to render at its natural
   // size regardless of the available screen, forcing a scroll to see
   // tables further out - especially bad in focus mode, which exists
@@ -202,9 +176,6 @@ export default function OrdersPage() {
   usePollingFallback(() => { reload(); reloadRequests(); reloadClaims(); reloadCashPending(); }, !!businessId);
   useEffect(() => {
     if (businessId) getBusiness(businessId).then((b) => setNotificationSettings(b.notification_settings));
-  }, [businessId]);
-  useEffect(() => {
-    if (businessId) getPaymentIntegration(businessId).then((i) => setPayBillEnabled(!!i?.enabled));
   }, [businessId]);
 
   // Real-time, instant, everywhere on this page - a new order, an order
@@ -336,7 +307,6 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-10">
-      {showTour && <GuidedTour steps={ORDERS_TOUR_STEPS} onDone={() => setShowTour(false)} onSkip={() => setShowTour(false)} />}
       {businessId && <SectionRequestNotifications businessId={businessId} section="orders" />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
@@ -360,11 +330,6 @@ export default function OrdersPage() {
               <MapIcon size={15} strokeWidth={2} /> {t('Tables Map')}
             </button>
           </div>
-          <button type="button" onClick={() => setShowTour(true)} aria-label={t('Show me around Orders and Tables Map')}
-            className="flex items-center justify-center rounded-lg border border-ink-line p-2 text-ivory-dim hover:border-brass/40 hover:text-brass"
-          >
-            <HelpCircle size={16} strokeWidth={1.75} />
-          </button>
           {/* Order creation now lives only in POS Terminal (see #8) - this
               used to open its own duplicate "staff order" form here too,
               which was exactly the confusing overlap between Orders and
@@ -542,7 +507,7 @@ export default function OrdersPage() {
                 </button>
               </div>
             ) : (
-              <div ref={mapFitContainerRef} className="flex items-center justify-center overflow-hidden rounded-xl border border-ink-line p-2" style={{ height: focusMode ? 'calc(100vh - 180px)' : '70vh' }}>
+              <div ref={mapFitContainerRef} className="mx-auto flex max-w-4xl items-center justify-center overflow-hidden rounded-xl border border-ink-line p-2" style={{ height: focusMode ? 'calc(100vh - 180px)' : '70vh' }}>
                 <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} fitTo={mapFitSize} />
               </div>
             )}

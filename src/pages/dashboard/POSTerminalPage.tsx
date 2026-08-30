@@ -4,6 +4,7 @@ import { UtensilsCrossed, RotateCcw, Lock, Minus, Plus, FileText, Search, Credit
 import { isCloseMatch } from '../../lib/fuzzyMatch';
 import RecordPaymentFlow from '../../components/RecordPaymentFlow';
 import PaymentModal from '../../components/PaymentModal';
+import { useConfirm } from '../../components/ConfirmDialog';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
@@ -151,6 +152,7 @@ const ORDER_TYPE_PLACEHOLDER: Record<'dine_in' | 'walk_in' | 'pickup' | 'deliver
 
 function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { businessId: string; till: TillSession; onTillClosed: () => void; focusMode: boolean }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -406,6 +408,23 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
 
   function changeQty(menuItemId: string, delta: number) {
     setCart((prev) => prev.map((l) => (l.menuItemId === menuItemId ? { ...l, quantity: Math.max(0, l.quantity + delta) } : l)).filter((l) => l.quantity > 0));
+  }
+
+  // Real, explicit request: one button that clears the whole order in
+  // progress, whether it's one item or many - the actual problem being
+  // solved is a customer changing their mind after several items are
+  // already in, which used to mean removing every single line one at a
+  // time. A real confirmation first, same as every other place in this
+  // app that can wipe out real, hard-to-redo work in one tap.
+  async function clearCart() {
+    if (cart.length === 0) return;
+    if (!(await confirm({
+      title: t('Clear this order?'),
+      message: t('Removes every item currently in the cart. This cannot be undone.'),
+      confirmLabel: t('Clear order'),
+      danger: true,
+    }))) return;
+    setCart([]);
   }
 
   const [discountType, setDiscountType] = useState<'' | 'percentage' | 'fixed'>('');
@@ -836,6 +855,22 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
           </Field>
         </div>
 
+        {/* Real, explicit request: one small button that clears the
+            whole order at once - a customer changing their mind after
+            several items are already in used to mean removing every
+            line one at a time. Only shows once there's actually
+            something to clear. */}
+        {cart.length > 0 && (
+          <div className="flex items-center justify-between border-t border-ink-line px-4 pt-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-ivory-dim">{t('Order')}</span>
+            <button type="button" onClick={clearCart} aria-label={t('Clear order')}
+              title={t('Clear order')}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-danger/50 hover:text-danger"
+            >
+              <Minus size={14} strokeWidth={2.25} />
+            </button>
+          </div>
+        )}
         <div className="max-h-96 space-y-2.5 overflow-y-auto p-4">
           {cart.map((line) => (
             <div key={line.menuItemId} className="space-y-1.5 border-b border-ink-line/50 pb-2.5 last:border-0 last:pb-0">
