@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
+import GuidedTour, { type TourStep } from '../../components/GuidedTour';
+import { HelpCircle } from 'lucide-react';
 import {
   listOrders, updateOrderStatus, getBusiness, ackOrderReady,
   voidOrderItem, clearTable, fireCourse,
@@ -57,16 +59,39 @@ function ArrivalCountdown({ arrivalAt }: { arrivalAt: string }) {
   return <span className="font-mono text-sm text-drivethrough">{label}</span>;
 }
 
+// Real, explicit addition: a genuine guided tour for the newest,
+// biggest thing added to this page - the flip between Orders and the
+// Tables Map, and the map itself - following the exact same
+// GuidedTour engine and data-tour pattern the dashboard shell's own
+// tour already established, rather than a separate, one-off system.
+// Manually launched (the "?" button below), not auto-shown once per
+// account like the shell tour - a returning user who's already seen
+// this page doesn't need it forced on them.
+const ORDERS_TOUR_STEPS: TourStep[] = [
+  {
+    selector: 'orders-map-toggle',
+    title: 'Orders and Tables Map, one page',
+    body: 'Orders and Tables Map are two sides of the same live data, not two separate pages - flip between them any time. Orders is the time-ordered list; the map is for "where is table 12" at a glance.',
+  },
+  {
+    selector: 'orders-map-toggle',
+    title: 'Arranging the floor plan',
+    body: "The map only shows a table once it's been placed - set that up once in Table Setup's \"Arrange floor plan\", tap-to-place tables, walls, windows, doors and counters to match the real room. Nothing to redo here after that.",
+    placement: 'bottom',
+  },
+];
+
 export default function OrdersPage() {
   const { user } = useSession();
   const { t } = useT();
   const navigate = useNavigate();
+  const { focusMode } = useOutletContext<{ focusMode?: boolean }>();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [recentOpen, setRecentOpen] = useState(false);
   const [newOrderPulse, setNewOrderPulse] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
-  const [payBillEnabled, setPayBillEnabled] = useState(false);
+  const [payBillEnabled, setPayBillEnabled] = useState<boolean | null>(null);
   const [showRecordPayment, setShowRecordPayment] = useState(false);
 
   // Real, explicit addition: the flip page. "view" swaps between the
@@ -75,6 +100,27 @@ export default function OrdersPage() {
   // this is genuinely one data layer with two renderers, not two
   // separate pages duplicating logic.
   const [view, setView] = useState<'orders' | 'map'>('orders');
+  const [showTour, setShowTour] = useState(false);
+  // Real, explicit request: the live map used to render at its natural
+  // size regardless of the available screen, forcing a scroll to see
+  // tables further out - especially bad in focus mode, which exists
+  // specifically to give a page more room, not less. Same real fit-to-
+  // container approach the floor plan editor already uses (measure the
+  // actual visible area, scale the SVG down to fit it, never scale up
+  // past real size) rather than a fixed guess at what "big enough"
+  // means on any given screen.
+  const mapFitContainerRef = useRef<HTMLDivElement>(null);
+  const [mapFitSize, setMapFitSize] = useState({ width: 800, height: 500 });
+  useEffect(() => {
+    const el = mapFitContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) setMapFitSize({ width: width - 4, height: height - 4 });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const [floorTables, setFloorTables] = useState<FloorTable[]>([]);
   const [floorDataLoaded, setFloorDataLoaded] = useState(false);
   const [floorCells, setFloorCells] = useState<FloorPlanCell[]>([]);
@@ -280,7 +326,7 @@ export default function OrdersPage() {
   // flips status on its own, and paying off every item shouldn't need
   // a separate confirmation once there's genuinely nothing left owing.
   for (const table of Object.keys(tableGroups)) {
-    const remainingItems = tableGroups[table].flatMap((o) => o.order_items.filter((i) => !i.voided));
+    const remainingItems = tableGroups[table].flatMap((o) => (o.order_items || []).filter((i) => !i.voided));
     const anyItemLeft = remainingItems.length > 0;
     const anyUnpaid = remainingItems.some((i) => !i.paid);
     if (!anyItemLeft || !anyUnpaid) delete tableGroups[table];
@@ -290,6 +336,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-10">
+      {showTour && <GuidedTour steps={ORDERS_TOUR_STEPS} onDone={() => setShowTour(false)} onSkip={() => setShowTour(false)} />}
       {businessId && <SectionRequestNotifications businessId={businessId} section="orders" />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
@@ -301,7 +348,7 @@ export default function OrdersPage() {
               keyboard shortcut), per the explicit requirement. Orders
               and Tables Map read the exact same live data underneath;
               this only changes which side is currently shown. */}
-          <div className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-1">
+          <div data-tour="orders-map-toggle" className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-1">
             <button type="button" onClick={() => setView('orders')}
               className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${view === 'orders' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
             >
@@ -313,6 +360,11 @@ export default function OrdersPage() {
               <MapIcon size={15} strokeWidth={2} /> {t('Tables Map')}
             </button>
           </div>
+          <button type="button" onClick={() => setShowTour(true)} aria-label={t('Show me around Orders and Tables Map')}
+            className="flex items-center justify-center rounded-lg border border-ink-line p-2 text-ivory-dim hover:border-brass/40 hover:text-brass"
+          >
+            <HelpCircle size={16} strokeWidth={1.75} />
+          </button>
           {/* Order creation now lives only in POS Terminal (see #8) - this
               used to open its own duplicate "staff order" form here too,
               which was exactly the confusing overlap between Orders and
@@ -321,7 +373,16 @@ export default function OrdersPage() {
           <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
             {t('Take an order in POS →')}
           </button>
-          {payBillEnabled && (
+          {/* Real bug fix (confirmed by explicit report: the header
+              button visibly flashed "Table Receipts" then flipped to
+              "Record payment" a moment later, every single page load).
+              payBillEnabled used to default to false, which IS "Table
+              Receipts" - so that button always rendered first no matter
+              what the real setting was, then silently swapped once the
+              actual fetch resolved. A genuine third "not known yet"
+              state means neither button (nor the wrong one) ever
+              renders before the real answer is in. */}
+          {payBillEnabled === true && (
             <button type="button"
               onClick={() => setShowRecordPayment(true)}
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
@@ -329,7 +390,7 @@ export default function OrdersPage() {
               {t('Record payment')}
             </button>
           )}
-          {!payBillEnabled && (
+          {payBillEnabled === false && (
             <button type="button"
               onClick={() => navigate('/admin/dashboard/table-receipts')}
               className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
@@ -421,7 +482,7 @@ export default function OrdersPage() {
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {Object.keys(tableGroups).map((table) => (
-                  <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
+                  <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={!!payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
                 ))}
               </div>
             )}
@@ -445,7 +506,7 @@ export default function OrdersPage() {
               // partial payment.
               const noTableOrders = active
                 .filter((o) => !o.table_label && o.order_type !== 'dine_in')
-                .map((o) => ({ order: o, unpaid: o.order_items.filter((i) => !i.voided && !i.paid) }))
+                .map((o) => ({ order: o, unpaid: (o.order_items || []).filter((i) => !i.voided && !i.paid) }))
                 .filter(({ unpaid }) => unpaid.length > 0);
               return noTableOrders.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-2">
@@ -481,8 +542,8 @@ export default function OrdersPage() {
                 </button>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-ink-line">
-                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} />
+              <div ref={mapFitContainerRef} className="flex items-center justify-center overflow-hidden rounded-xl border border-ink-line p-2" style={{ height: focusMode ? 'calc(100vh - 180px)' : '70vh' }}>
+                <FloorPlanCanvas tables={floorTables} cells={floorCells} onTapTable={setSelectedTableId} fitTo={mapFitSize} />
               </div>
             )}
           </div>
@@ -509,14 +570,14 @@ export default function OrdersPage() {
         // here as if they were still owed - explaining exactly why it
         // was visible on the map but nowhere else in the app: Orders
         // was hiding it correctly the whole time, this panel wasn't.
-        const remainingItems = tableOrders.flatMap((o) => o.order_items.filter((i) => !i.voided));
+        const remainingItems = tableOrders.flatMap((o) => (o.order_items || []).filter((i) => !i.voided));
         const anyUnpaid = remainingItems.some((i) => !i.paid);
         const payableItems = anyUnpaid ? remainingItems.filter((i) => !i.paid) : [];
         const displayItems = anyUnpaid ? remainingItems : [];
         const { color, label: statusLabel } = tableDisplayStatus(table);
         const total = displayItems.reduce((sum, i) => sum + (i.unit_price + i.addon_total) * i.quantity, 0);
         return (
-          <div className="fixed inset-0 z-modal flex items-center justify-end bg-ink/60 p-4" onClick={() => setSelectedTableId(null)}>
+          <div className="fixed inset-0 z-modal flex items-center justify-end bg-ink/60 p-4" onClick={(e) => { if (e.target === e.currentTarget) setSelectedTableId(null); }}>
             <div className="w-full max-w-md rounded-2xl border-2 bg-ink-soft p-6 shadow-2xl" style={{ borderColor: color }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between">
                 {/* Real bug fix (confirmed by explicit report, visible
@@ -628,7 +689,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   // of opening a new labeled box: there's no longer a per-order
   // container at all, just one continuous list every item joins.
   const allItems = orders.flatMap((order) =>
-    order.order_items.filter((i) => !i.voided).map((item) => ({ item, order }))
+    (order.order_items || []).filter((i) => !i.voided).map((item) => ({ item, order }))
   );
   const notes = orders.filter((o) => o.note).map((o) => o.note as string);
   const syncIssue = orders.find((o) => o.pos_sync_status === 'failed');
@@ -669,8 +730,8 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
     const affectedOrderIds = new Set(
       orders
         .filter((o) => {
-          const hasUnpaidUnvoidedItems = o.order_items.some((i) => !i.paid && !i.voided);
-          const hasPaidItems = o.order_items.some((i) => i.paid);
+          const hasUnpaidUnvoidedItems = (o.order_items || []).some((i) => !i.paid && !i.voided);
+          const hasPaidItems = (o.order_items || []).some((i) => i.paid);
           return hasUnpaidUnvoidedItems || !hasPaidItems;
         })
         .map((o) => o.id)
@@ -747,7 +808,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 onOrdersChange((prev) =>
                   prev.map((o) =>
                     o.id === order.id
-                      ? { ...o, order_items: o.order_items.map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
+                      ? { ...o, order_items: (o.order_items || []).map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
                       : o
                   )
                 );

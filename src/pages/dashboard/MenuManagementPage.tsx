@@ -218,7 +218,26 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
   const q = searchQuery.trim().toLowerCase();
   const matchesQuery = (item: MenuItem) => !q || item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
   const inActiveCategory = (item: MenuItem) => activeCategoryId === 'all' || item.category_id === activeCategoryId;
-  const visibleItems = items.filter((item) => matchesQuery(item) && (q ? true : inActiveCategory(item)));
+  // Real, explicit request: reordering moved here from POS Terminal,
+  // where a busy till was exactly the wrong place for staff to
+  // accidentally rearrange the menu. Only makes sense within one
+  // specific, unfiltered category - "All" mixes items from different
+  // categories together, and a search result is a filtered subset that
+  // can't map back to a real position in the underlying list, same
+  // reasoning Categories' own reorder already uses for its search box.
+  const canReorder = activeCategoryId !== 'all' && !q;
+  const itemsInCategory = activeCategoryId === 'all' ? [] : items.filter((i) => i.category_id === activeCategoryId).sort((a, b) => a.sort_order - b.sort_order);
+  async function commitItemReorder(newOrder: MenuItem[]) {
+    const posById = new Map(newOrder.map((it, i) => [it.id, i]));
+    onItemsChange(items.map((it) => (posById.has(it.id) ? { ...it, sort_order: posById.get(it.id)! } : it)));
+    try {
+      await Promise.all(newOrder.map((it, i) => updateMenuItem(businessId, it.id, { sortOrder: i })));
+    } catch {
+      onChange(); // re-sync with the server if the save actually failed
+    }
+  }
+  const itemDrag = useDragReorder<MenuItem>({ items: itemsInCategory, getId: (i) => i.id, onCommit: commitItemReorder });
+  const visibleItems = canReorder ? itemDrag.displayItems : items.filter((item) => matchesQuery(item) && (q ? true : inActiveCategory(item)));
 
   return (
     <Section
@@ -272,9 +291,16 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
           ))}
         </div>
       )}
+      {canReorder && itemDrag.heldId && <p className="mb-2 text-xs text-brass">{t('Item picked up - tap where you\'d like to place it, or tap it again to cancel.')}</p>}
       <div className="space-y-4">
         {visibleItems.map((item) => (
-          <ItemRow key={item.id} item={item} businessId={businessId} categories={categories} onItemsChange={onItemsChange} items={items} onChange={onChange} />
+          <ItemRow
+            key={item.id} item={item} businessId={businessId} categories={categories} onItemsChange={onItemsChange} items={items} onChange={onChange}
+            dragHandlers={canReorder ? itemDrag.itemHandlers(item.id) : undefined}
+            dragRef={canReorder ? (el) => itemDrag.registerItemRef(item.id, el) : undefined}
+            isHeld={canReorder && itemDrag.heldId === item.id}
+            isPlaceTarget={canReorder && itemDrag.heldId !== null && itemDrag.heldId !== item.id}
+          />
         ))}
         {visibleItems.length === 0 && <p className="text-base text-ivory-dim">{items.length === 0 ? t('No items yet.') : t('No items match.')}</p>}
       </div>
@@ -396,8 +422,14 @@ function ItemForm({ businessId, categories, existing, onDone }: {
   );
 }
 
-function ItemRow({ item, items, businessId, categories, onItemsChange, onChange }: {
+function ItemRow({ item, items, businessId, categories, onItemsChange, onChange, dragHandlers, dragRef, isHeld, isPlaceTarget }: {
   item: MenuItem; items: MenuItem[]; businessId: string; categories: MenuCategory[]; onItemsChange: (items: MenuItem[]) => void; onChange: () => void;
+  // Real, explicit addition: drag-to-reorder, moved here from POS
+  // Terminal (which never should have had it - a busy till is exactly
+  // the wrong place to accidentally rearrange the menu). All optional
+  // so this component works identically whether or not reordering
+  // applies right now (it doesn't while searching or on "All").
+  dragHandlers?: Record<string, unknown>; dragRef?: (el: HTMLDivElement | null) => void; isHeld?: boolean; isPlaceTarget?: boolean;
 }) {
   const { t } = useT();
   const [editing, setEditing] = useState(false);
@@ -409,11 +441,14 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange 
   }
 
   return (
-    <div className="rounded-lg border border-ink-line">
+    <div className={`rounded-lg border transition-all duration-200 ${isHeld ? 'scale-[1.01] border-brass shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40' : 'border-ink-line'}`}>
       <div className="flex flex-col gap-3 px-3.5 py-2.5 text-base sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        {/* The actual drag handle - only this part of the row picks the
+            item up, so every action button below stays a normal,
+            immediate click with no risk of triggering reorder instead. */}
+        <div ref={dragRef} {...dragHandlers} className={`flex items-center gap-3 rounded-md ${dragHandlers ? 'cursor-pointer select-none' : ''}`}>
           {item.image_url && (
-            <img src={item.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+            <img src={item.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" draggable={false} />
           )}
           <div>
             <span className="text-ivory">{item.name}</span>

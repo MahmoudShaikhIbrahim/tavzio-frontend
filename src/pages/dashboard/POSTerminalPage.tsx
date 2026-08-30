@@ -8,13 +8,12 @@ import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
   getMyOpenTill, openTill, closeTill, listTillSessions, getXReport, type XReport,
-  listMenuCategories, listMenuItems, updateMenuItem, createPosOrder, getBusiness, lookupFolioByRoom,
+  listMenuCategories, listMenuItems, createPosOrder, getBusiness, lookupFolioByRoom,
   listHotelOutlets, listPayments, listOrders, listTables, assignTable,
 } from '../../lib/authApi';
 import { queueOrder, flushQueue, cacheMenu, getCachedMenu, getQueue } from '../../lib/offlineQueue';
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
-import { useDragReorder } from '../../hooks/useDragReorder';
 import type { TillSession, MenuCategory, MenuItem, PaymentRow, OrderRow, FloorTable } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
@@ -441,32 +440,6 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
   const safeItemsPage = Math.min(itemsPage, totalItemPages - 1);
   const pageItems = visibleItems.slice(safeItemsPage * ITEMS_PER_PAGE, safeItemsPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE);
 
-  // Real replacement for the old arrow-button reorder: press and hold an
-  // item (~500ms) to enter jiggle mode, then drag it anywhere within the
-  // current page to reorder - exactly like rearranging iPhone home
-  // screen apps. Scoped to the current page's items only (not the whole
-  // category) - deliberately, since auto-flipping pages mid-drag is real
-  // added complexity for a case that's already covered by search: the
-  // actual ask ("put the most popular item in front") means page 1,
-  // which every item can already reach a page at a time.
-  const itemDrag = useDragReorder<MenuItem>({
-    items: pageItems,
-    getId: (i) => i.id,
-    onCommit: (newPageOrder) => {
-      const fullCategoryItems = items.filter((i) => i.category_id === activeCategory);
-      const pageIds = new Set(pageItems.map((i) => i.id));
-      let ptr = 0;
-      const newFull = fullCategoryItems.map((i) => (pageIds.has(i.id) ? newPageOrder[ptr++] : i));
-      const posById = new Map(newFull.map((i, pos) => [i.id, pos]));
-      setItems((prev) => prev.map((it) => (it.category_id === activeCategory ? { ...it, sort_order: posById.get(it.id)! } : it)));
-      Promise.all(newFull.map((it, pos) => updateMenuItem(businessId, it.id, { sortOrder: pos }))).catch(() => {
-        // Re-sync with the server if the save actually failed, same
-        // fallback Categories reordering already uses.
-        listMenuItems(businessId).then(setItems).catch(() => {});
-      });
-    },
-  });
-
   function resetCartState() {
     setCart([]);
     setOrderType('walk_in');
@@ -733,9 +706,11 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             ))}
           </div>
         </div>
-        {itemDrag.heldId && (
-          <p className="mt-2 text-xs text-brass">{t('Item picked up - tap where you\'d like to place it, or tap it again to cancel.')}</p>
-        )}
+        {/* Real, explicit request: no reordering here at all - a tap on
+            a POS tile always adds it to the cart immediately, nothing
+            else. Reordering the menu itself is a Menu Management concern
+            now (see that page), not something staff can accidentally
+            trigger while actually trying to ring up an order. */}
         {/* Real fix for the explicit request: a fixed 12-item page per
             category, real pagination instead of endless scroll or an
             ever-taller grid - left/right page buttons only appear once a
@@ -745,17 +720,10 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             scroll, whatever else is on screen. */}
         <div className="relative mt-3">
           <div className={`grid gap-2.5 ${focusMode ? 'grid-cols-4 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6'}`}>
-            {itemDrag.displayItems.map((item) => {
-              const isHeld = itemDrag.heldId === item.id;
-              const isPlaceTarget = itemDrag.heldId !== null && !isHeld;
-              const dragHandlers = itemDrag.itemHandlers(item.id, () => addToCart(item));
-              return (
+            {pageItems.map((item) => (
               <button type="button" key={item.id}
-                ref={(el) => itemDrag.registerItemRef(item.id, el)}
-                {...dragHandlers}
-                className={`relative select-none overflow-hidden rounded-xl border text-left transition-all duration-200 ${
-                  isHeld ? 'z-10 scale-105 border-brass bg-ink-soft shadow-xl shadow-black/50 ring-2 ring-brass' : isPlaceTarget ? 'border-brass/20 bg-ink-soft ring-1 ring-dashed ring-brass/40 hover:border-brass' : 'border-ink-line bg-ink-soft hover:border-brass/50'
-                }`}
+                onClick={() => addToCart(item)}
+                className="relative select-none overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-all duration-200 hover:border-brass/50"
               >
                   {/* Photo recognition matters at the counter - a busy
                       cashier reads a picture far faster than a name, which is
@@ -774,8 +742,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                     <p className={`font-medium text-brass ${focusMode ? 'text-xs' : 'mt-0.5 text-sm'}`}>AED {item.price.toFixed(2)}</p>
                   </div>
               </button>
-              );
-            })}
+            ))}
             {visibleItems.length === 0 && <p className="text-ivory-dim">{t('No items in this category.')}</p>}
           </div>
           {totalItemPages > 1 && (

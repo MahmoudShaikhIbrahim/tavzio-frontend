@@ -90,7 +90,6 @@ export default function CommandPalette({ items, actions = [], t, onNavigate }: {
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
         {t('Search...')}
-        <span className="ml-1 rounded border border-ink-line px-1.5 py-0.5 font-mono text-[10px] text-ivory-dim/70">⌘K</span>
       </button>
 
       {open && (
