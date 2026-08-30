@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { CalendarCheck, Car, MapPin } from 'lucide-react';
-import { getBookingChooserConfig, type BookingChooserConfig } from '../lib/api';
+import { getBookingChooserConfig, getBookingConfig, type BookingChooserConfig } from '../lib/api';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import { LogoMark } from '../components/Logo';
 
@@ -50,7 +50,44 @@ function ChooserContent({ slug }: { slug: string }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    getBookingChooserConfig(slug).then(setConfig).catch(() => setConfig(null)).finally(() => setLoaded(true));
+    let cancelled = false;
+    async function load() {
+      try {
+        const light = await getBookingChooserConfig(slug);
+        if (!cancelled) setConfig(light);
+      } catch {
+        // Real resilience fix (confirmed by direct report: the page
+        // went completely blank - generic logo, zero buttons, nothing
+        // - the moment getBookingChooserConfig failed for any reason,
+        // e.g. a backend that hasn't been redeployed with this new,
+        // lighter route yet while the frontend already has). Falls
+        // back to the original, full endpoint this page called before
+        // this optimization existed - the one entry point that's been
+        // live the whole time - so a frontend/backend deployment gap
+        // degrades to "not the fastest version yet" instead of "the
+        // whole page is dead". Only the 5 fields this page actually
+        // uses are pulled out of the full response; nothing else about
+        // that endpoint or its own callers changes.
+        try {
+          const full = await getBookingConfig(slug);
+          if (!cancelled) {
+            setConfig({
+              businessName: full.businessName,
+              bookingEnabled: full.bookingEnabled,
+              driveThrough: { enabled: full.driveThrough.enabled },
+              locationUrl: full.locationUrl,
+              logoUrl: full.logoUrl,
+            });
+          }
+        } catch {
+          if (!cancelled) setConfig(null);
+        }
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
   }, [slug]);
 
   if (!loaded) {

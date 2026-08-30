@@ -290,7 +290,7 @@ export function cancelPublicBookingService(bookingId: string, phone: string) {
 
 
 export interface BookingArrival {
-  id: string; guest_name: string; party_size: number; requested_at: string;
+  id: string; guest_name: string; party_size: number; requested_at: string; businessName: string | null;
 }
 export function getBookingArrival(bookingId: string) {
   return request<BookingArrival>(`/api/public/bookings/${bookingId}/arrival`);

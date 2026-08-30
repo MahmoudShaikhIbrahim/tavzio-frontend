@@ -44,6 +44,14 @@ export default function BookingArrivalPage() {
       <Shell>
         <p className="font-display text-xl text-ivory">Nothing to confirm here</p>
         <p className="max-w-xs text-sm text-ivory-dim">This table doesn't have a reservation waiting on arrival right now.</p>
+        {/* Real bug fix (confirmed by direct report: "Continue to
+            al-baik" - the URL slug shown as the business's own name).
+            No booking ever loaded in this specific state, so there's
+            genuinely no business name available here to fall back to -
+            the slug is the honest, unavoidable last resort only in
+            this one branch, same as the "confirmed" branch below uses
+            it only if the business's real name somehow came back
+            empty. */}
         <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10">
           Continue to {slug}
         </button>
@@ -60,7 +68,7 @@ export default function BookingArrivalPage() {
         <p className="font-display text-xl text-ivory">Arrival confirmed</p>
         <p className="text-sm text-ivory-dim">Enjoy your visit.</p>
         <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10">
-          Continue to {slug}
+          Continue to {booking?.businessName || slug}
         </button>
       </Shell>
     );
