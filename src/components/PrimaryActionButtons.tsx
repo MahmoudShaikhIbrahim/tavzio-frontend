@@ -5,6 +5,7 @@ import type { Business, CustomButton } from '../types';
 import { submitCustomButtonRequest } from '../lib/api';
 import { useLanguage } from '../lib/i18n/LanguageContext';
 import { getIcon, getIconColor } from '../lib/iconLibrary';
+import { withProtocol } from '../lib/url';
 
 interface Props {
   business: Business;
@@ -107,7 +108,7 @@ function CustomButtonItem({ btn, slug, tapEventId, onOpenGroup }: {
   const Icon = getIcon(btn.icon);
   const brandColor = getIconColor(btn.icon);
   return (
-    <a href={btn.url} target="_blank" rel="noreferrer" className={buttonClass}>
+    <a href={withProtocol(btn.url)} target="_blank" rel="noreferrer" className={buttonClass}>
       {btn.image_url ? (
         <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
           <img src={btn.image_url} alt="" className="h-full w-full object-cover" />

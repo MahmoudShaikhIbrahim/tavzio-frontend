@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LANGUAGES } from '../lib/i18n/types';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import FlagIcon from './FlagIcon';
 
 export default function LanguageSwitcher() {
   const { language, setLanguage } = useLanguage();
@@ -13,7 +14,7 @@ export default function LanguageSwitcher() {
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 rounded-lg border border-ink-line bg-ink-soft px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
       >
-        <span>{current.flag}</span>
+        <FlagIcon code={current.flagCode} />
         <span>{current.label}</span>
         <span className="text-[10px]">▾</span>
       </button>
@@ -30,7 +31,7 @@ export default function LanguageSwitcher() {
                   l.code === language ? 'text-brass' : 'text-ivory'
                 }`}
               >
-                <span>{l.flag}</span>
+                <FlagIcon code={l.flagCode} />
                 <span>{l.label}</span>
               </button>
             ))}

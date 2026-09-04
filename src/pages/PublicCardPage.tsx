@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Phone, MessageCircle, Mail, Globe } from 'lucide-react';
+import { withProtocol } from '../lib/url';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -148,7 +149,7 @@ export default function PublicCardPage() {
           <div className="mt-6 space-y-1 rounded-xl border border-white/10 p-4 text-sm text-white/70">
             {hasAddress && (
               <p>
-                {card.location_url ? <a href={card.location_url} target="_blank" rel="noreferrer" className="rounded underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{card.address}</a> : card.address}
+                {card.location_url ? <a href={withProtocol(card.location_url)} target="_blank" rel="noreferrer" className="rounded underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{card.address}</a> : card.address}
               </p>
             )}
             {card.working_hours && <p className="text-white/50">{card.working_hours}</p>}
@@ -158,7 +159,7 @@ export default function PublicCardPage() {
         {socials.length > 0 && (
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {socials.map(([network, { url }]) => (
-              <a key={network} href={url} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'social_click')} className="rounded-full border border-white/20 px-4 py-2 text-xs text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+              <a key={network} href={withProtocol(url)} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'social_click')} className="rounded-full border border-white/20 px-4 py-2 text-xs text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                 {SOCIAL_LABELS[network] || network}
               </a>
             ))}

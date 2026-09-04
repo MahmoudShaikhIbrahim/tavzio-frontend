@@ -7,6 +7,7 @@ import { useT } from '../../hooks/useT';
 import { Section, Field, inputClass } from '../../components/ui';
 import PasswordField from '../../components/PasswordField';
 import { LANGUAGES } from '../../lib/i18n/types';
+import FlagIcon from '../../components/FlagIcon';
 
 export default function ChangePasswordPage({ forced = false }: { forced?: boolean }) {
   const { user } = useSession();
@@ -110,7 +111,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
                   language === l.code ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
                 }`}
               >
-                <span>{l.flag}</span>
+                <FlagIcon code={l.flagCode} />
                 <span>{l.label}</span>
               </button>
             ))}

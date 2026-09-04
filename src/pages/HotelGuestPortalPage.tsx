@@ -9,6 +9,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import ThemeToggle from '../components/ThemeToggle';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import type { BusinessLinks } from '../types';
+import { withProtocol } from '../lib/url';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -447,7 +448,7 @@ function CustomButtonItem({ btn, portalBase, onOpenGroup }: {
   }
 
   return (
-    <a href={btn.url} target="_blank" rel="noreferrer" className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+    <a href={withProtocol(btn.url)} target="_blank" rel="noreferrer" className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
       {iconEl}
       <span>{btn.label}</span>
     </a>

@@ -1,22 +1,26 @@
+import type { FlagCode } from '../../components/FlagIcon';
+
 export type LanguageCode = 'en' | 'ar' | 'ru' | 'es' | 'hi' | 'ur' | 'tl' | 'zh' | 'fr';
 
 export interface LanguageMeta {
   code: LanguageCode;
   label: string;
+  /** @deprecated Unicode flag emoji - kept only so nothing importing it breaks. Renders as plain text on Windows; use `flagCode` + <FlagIcon> instead. */
   flag: string;
+  flagCode: FlagCode;
   rtl: boolean;
 }
 
 export const LANGUAGES: LanguageMeta[] = [
-  { code: 'en', label: 'English', flag: '🇬🇧', rtl: false },
-  { code: 'ar', label: 'العربية', flag: '🇦🇪', rtl: true },
-  { code: 'ru', label: 'Русский', flag: '🇷🇺', rtl: false },
-  { code: 'es', label: 'Español', flag: '🇪🇸', rtl: false },
-  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳', rtl: false },
-  { code: 'ur', label: 'اردو', flag: '🇵🇰', rtl: true },
-  { code: 'tl', label: 'Filipino', flag: '🇵🇭', rtl: false },
-  { code: 'zh', label: '中文', flag: '🇨🇳', rtl: false },
-  { code: 'fr', label: 'Français', flag: '🇫🇷', rtl: false },
+  { code: 'en', label: 'English', flag: '🇬🇧', flagCode: 'GB', rtl: false },
+  { code: 'ar', label: 'العربية', flag: '🇦🇪', flagCode: 'AE', rtl: true },
+  { code: 'ru', label: 'Русский', flag: '🇷🇺', flagCode: 'RU', rtl: false },
+  { code: 'es', label: 'Español', flag: '🇪🇸', flagCode: 'ES', rtl: false },
+  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳', flagCode: 'IN', rtl: false },
+  { code: 'ur', label: 'اردو', flag: '🇵🇰', flagCode: 'PK', rtl: true },
+  { code: 'tl', label: 'Filipino', flag: '🇵🇭', flagCode: 'PH', rtl: false },
+  { code: 'zh', label: '中文', flag: '🇨🇳', flagCode: 'CN', rtl: false },
+  { code: 'fr', label: 'Français', flag: '🇫🇷', flagCode: 'FR', rtl: false },
 ];
 
 // Every key that appears anywhere in the 5 customer-facing surfaces

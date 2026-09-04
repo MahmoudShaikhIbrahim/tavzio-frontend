@@ -4,6 +4,7 @@ import { CalendarCheck, Car, MapPin, ExternalLink } from 'lucide-react';
 import { getBookingChooserConfig, getBookingConfig, type BookingChooserConfig } from '../lib/api';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import { LogoMark } from '../components/Logo';
+import { withProtocol } from '../lib/url';
 
 // The real front door for both flows, per the explicit request: this
 // used to BE the table-booking form directly - now it's a real chooser,
@@ -141,7 +142,7 @@ function ChooserContent({ slug }: { slug: string }) {
         )}
         {config?.locationUrl && (
           <a
-            href={config.locationUrl}
+            href={withProtocol(config.locationUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
@@ -157,13 +158,6 @@ function ChooserContent({ slug }: { slug: string }) {
           <p className="py-6 text-sm text-ivory-dim">{t('chNothingAvailable')}</p>
         )}
       </div>
-
-      <Link
-        to={`/${slug}`}
-        className="mt-8 rounded-lg px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
-      >
-        {t('backTo', { name: config?.businessName || slug })}
-      </Link>
     </div>
   );
 }

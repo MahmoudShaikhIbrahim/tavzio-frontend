@@ -12,6 +12,7 @@ import {
 import { subscribeToBusinessTable, subscribeToOrderItemsForBusiness } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { hexToRgba } from '../../lib/color';
+import { splitRequestLabel } from '../../lib/requestLabel';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import type { OrderRow, OrderStatus, NotificationSettings, LoyaltyClaim, FloorTable, FloorPlanCell } from '../../types';
 import ExportButtons from '../../components/ExportButtons';
@@ -19,7 +20,7 @@ import { useConfirm } from '../../components/ConfirmDialog';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import RecordPaymentFlow from '../../components/RecordPaymentFlow';
 import FloorPlanCanvas, { tableDisplayStatus } from '../../components/FloorPlanCanvas';
-import { Map as MapIcon, ListOrdered } from 'lucide-react';
+import { Map as MapIcon, ListOrdered, Flame, Trash2, Check, X as XIcon } from 'lucide-react';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   // listOrders filters awaiting_payment out server-side - this view never
@@ -360,16 +361,24 @@ export default function OrdersPage() {
             </div>
           ))}
           {requests.map((r) => {
-            const customBg = r.request_color ? hexToRgba(r.request_color, 0.1) : null;
+            // Same real fix as SectionRequestNotifications: the owner's
+            // custom color only tints the card's border/background here
+            // (decorative accent). Text always uses the two theme-aware
+            // tokens below instead of that arbitrary hex, so it stays
+            // legible in both themes and the title/message split below
+            // gives the request type and the guest's own words two
+            // clearly different treatments instead of one flat color.
+            const customBg = r.request_color ? hexToRgba(r.request_color, 0.15) : null;
             const customStyle = r.request_color && customBg ? { borderColor: r.request_color, backgroundColor: customBg } : undefined;
+            const rawLabel = r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request');
+            const { title, note } = splitRequestLabel(rawLabel);
             return (
               <div key={r.id} className={`rounded-lg border p-3 ${customStyle ? '' : 'border-brass/50 bg-brass/10'}`} style={customStyle}>
-                <p className="text-sm font-medium" style={customStyle ? { color: r.request_color! } : undefined}>
-                  <span className={customStyle ? '' : 'text-brass'}>
-                    {r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request')}
-                  </span>
-                  {' — '}<span className="text-ivory">{r.table_label || t('No table')}</span>
+                <p className="text-sm font-semibold text-brass">
+                  {title}
+                  {' — '}<span className="font-normal text-ivory">{r.table_label || t('No table')}</span>
                 </p>
+                {note && <p className="mt-1 text-sm text-ivory-dim">{note}</p>}
                 <div className="mt-2 flex gap-2">
                   {r.table_label && tableGroups[r.table_label] && (
                     <a
@@ -706,48 +715,82 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   }
 
   return (
-    <div id={`table-${encodeURIComponent(table)}`} className={`w-full scroll-mt-24 rounded-xl border bg-ink-soft p-3 ${isDriveThrough ? 'border-drivethrough' : 'border-ink-line'}`}>
-      {isDriveThrough && (
-        <div className="mb-2 flex items-center justify-between rounded-lg bg-drivethrough/10 px-2.5 py-1.5">
-          <span className="text-sm font-medium uppercase tracking-wide text-drivethrough">{t('Drive Through')}</span>
-          {arrivalAt && <ArrivalCountdown arrivalAt={arrivalAt} />}
+    <div
+      id={`table-${encodeURIComponent(table)}`}
+      className={`mx-auto flex w-full max-w-sm scroll-mt-24 flex-col overflow-hidden rounded-2xl border bg-ink-soft shadow-sm ${isDriveThrough ? 'border-drivethrough/60' : 'border-ink-line'}`}
+    >
+      {/* Header: table name is the one thing that must read at a glance
+          across a wall of these cards, so it's the largest text in the
+          card - everything else (count, total) demotes to a subtitle
+          chip, the same "title big, meta small" split every chat/feed
+          app (WhatsApp, Instagram, TikTok) uses for its list rows. */}
+      <div className={`flex items-center justify-between gap-2 px-3.5 py-3 ${isDriveThrough ? 'bg-drivethrough/10' : 'bg-ink'}`}>
+        <div className="min-w-0">
+          <h2 className={`truncate font-display text-lg font-medium ${isDriveThrough ? 'text-drivethrough' : 'text-ivory'}`}>
+            {isDriveThrough ? t('Drive Through') : table}
+          </h2>
+          <p className="text-xs text-ivory-dim">
+            {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
+          </p>
+        </div>
+        {isDriveThrough && arrivalAt ? (
+          <ArrivalCountdown arrivalAt={arrivalAt} />
+        ) : (
+          <span className="shrink-0 rounded-full bg-brass/15 px-2.5 py-1 text-xs font-medium text-brass">{tableTotal.toFixed(2)}</span>
+        )}
+      </div>
+
+      {heldByCourse.size > 0 && (
+        <div className="space-y-1.5 border-b border-ink-line bg-ink px-3.5 py-2.5">
+          {[...heldByCourse.entries()].map(([course, entries]) => {
+            const count = entries.reduce((s, e) => s + e.count, 0);
+            return (
+              <div key={course} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
+                <button type="button"
+                  onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
+                  disabled={firing === course}
+                  className="flex shrink-0 items-center gap-1 rounded-full bg-brass px-3 min-h-[32px] py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                >
+                  <Flame size={13} />
+                  {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
-      <div className="space-y-2 text-sm">
-        {heldByCourse.size > 0 && (
-          <div className="space-y-1.5 rounded-lg border border-brass/30 bg-ink p-2.5">
-            {[...heldByCourse.entries()].map(([course, entries]) => {
-              const count = entries.reduce((s, e) => s + e.count, 0);
-              return (
-                <div key={course} className="flex items-center justify-between text-sm">
-                  <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
-                  <button type="button"
-                    onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
-                    disabled={firing === course}
-                    className="rounded-lg bg-brass px-3 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-                  >
-                    {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+
+      {/* Item rows: a small round quantity bubble (the same shape as a
+          chat app's unread-count badge) instead of a boxy "2×" chip, and
+          the delete action demotes to a quiet icon-only button instead
+          of a text link competing with the item name for attention. */}
+      <div className="divide-y divide-ink-line/60">
         {allItems.map(({ item, order }) => (
-          <div key={item.id} className="flex items-start justify-between gap-2 text-ivory-dim">
-            <div className="flex gap-2.5">
-              <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
-              <div>
-                <span className="font-display text-lg font-medium text-ivory">{item.item_name}</span>
-                {item.course_status === 'held' && (
-                  <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
-                )}
-                {item.cash_pending && (
-                  <span className="ml-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
-                )}
-                {item.addons.length > 0 && <span className="block text-sm text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>}
-                {item.note && <span className="block text-sm italic text-ivory">— {item.note}</span>}
-              </div>
+          <div key={item.id} className="flex items-start gap-2.5 px-3.5 py-2.5">
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-[11px] font-semibold text-brass">
+              {item.quantity}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-ivory">{item.item_name}</p>
+              {(item.course_status === 'held' || item.cash_pending) && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {item.course_status === 'held' && (
+                    <span className="rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
+                  )}
+                  {item.cash_pending && (
+                    <span className="rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
+                  )}
+                </div>
+              )}
+              {item.addons.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {item.addons.map((a, i) => (
+                    <span key={i} className="rounded-full bg-brass/10 px-2 py-0.5 text-[11px] text-brass">+ {a.name}</span>
+                  ))}
+                </div>
+              )}
+              {item.note && <p className="mt-1 text-xs italic text-ivory-dim">— {item.note}</p>}
             </div>
             <button type="button"
               onClick={async () => {
@@ -761,53 +804,47 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 );
                 voidOrderItem(businessId, order.id, item.id).catch(onChange);
               }}
-              className="flex min-h-[36px] shrink-0 items-center px-1 text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:rounded"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
               title={t('Delete just this item')}
+              aria-label={t('Delete just this item')}
             >
-              {t('Delete')}
+              <Trash2 size={14} />
             </button>
           </div>
         ))}
-        {allItems.length === 0 && <p className="text-base italic text-ivory-dim">{t('All items deleted')}</p>}
+        {allItems.length === 0 && <p className="px-3.5 py-3 text-sm italic text-ivory-dim">{t('All items deleted')}</p>}
       </div>
 
-      <div className="mb-3 mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-3">
-        <div>
-          <h2 className="text-sm text-ivory-dim">{isDriveThrough ? t('Order') : table}</h2>
-          <p className="text-sm text-ivory-dim">
-            {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
-          </p>
-        </div>
-        {cardId && (
-          <div className="flex shrink-0 gap-2">
-            {!payBillEnabled && (
-              <button type="button"
-                onClick={handleMarkCompleted}
-                disabled={completing}
-                className="rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-              >
-                {completing ? t('Completing...') : t('Mark completed')}
-              </button>
-            )}
-            <button type="button"
-              onClick={handleClearTable}
-              disabled={clearing}
-              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-            >
-              {clearing ? t('Clearing...') : t('Clear table')}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {notes.length > 0 && (
-        <div className="mt-3 space-y-1">
-          {notes.map((n, i) => <p key={i} className="text-base italic text-brass">{t('Note:')} {n}</p>)}
+      {(notes.length > 0 || syncIssue) && (
+        <div className="space-y-1 border-t border-ink-line px-3.5 py-2">
+          {notes.map((n, i) => <p key={i} className="text-xs italic text-brass">{t('Note:')} {n}</p>)}
+          {syncIssue && (
+            <p className="text-xs text-ivory-dim">{t('POS sync failed')}{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
+          )}
         </div>
       )}
 
-      {syncIssue && (
-        <p className="mt-2 text-base text-ivory-dim">{t('POS sync failed')}{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
+      {cardId && (
+        <div className="flex shrink-0 gap-2 border-t border-ink-line px-3.5 py-2.5">
+          {!payBillEnabled && (
+            <button type="button"
+              onClick={handleMarkCompleted}
+              disabled={completing}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brass/40 px-3 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            >
+              <Check size={13} />
+              {completing ? t('Completing...') : t('Mark completed')}
+            </button>
+          )}
+          <button type="button"
+            onClick={handleClearTable}
+            disabled={clearing}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-danger/40 px-3 min-h-[36px] py-1.5 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+          >
+            <XIcon size={13} />
+            {clearing ? t('Clearing...') : t('Clear table')}
+          </button>
+        </div>
       )}
     </div>
   );

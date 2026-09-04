@@ -1,4 +1,5 @@
 import type { BusinessLinks } from '../types';
+import { withProtocol } from './url';
 
 interface LinkMeta {
   label: string;
@@ -14,13 +15,13 @@ interface LinkMeta {
 // entirely per the product decision (special offers now live inside the
 // menu as a category; a phone call button added little beyond WhatsApp).
 export const LINK_META: Record<keyof BusinessLinks, LinkMeta> = {
-  googleReviews: { label: 'Leave a Google review', defaultIcon: 'star', buildHref: (v) => v },
-  instagram: { label: 'Follow on Instagram', defaultIcon: 'instagram', buildHref: (v) => v },
-  tiktok: { label: 'Follow on TikTok', defaultIcon: 'tiktok', buildHref: (v) => v },
-  facebook: { label: 'Follow on Facebook', defaultIcon: 'facebook', buildHref: (v) => v },
+  googleReviews: { label: 'Leave a Google review', defaultIcon: 'star', buildHref: withProtocol },
+  instagram: { label: 'Follow on Instagram', defaultIcon: 'instagram', buildHref: withProtocol },
+  tiktok: { label: 'Follow on TikTok', defaultIcon: 'tiktok', buildHref: withProtocol },
+  facebook: { label: 'Follow on Facebook', defaultIcon: 'facebook', buildHref: withProtocol },
   whatsapp: { label: 'Message on WhatsApp', defaultIcon: 'whatsapp', buildHref: (v) => `https://wa.me/${v.replace(/\D/g, '')}` },
-  website: { label: 'Visit website', defaultIcon: 'globe', buildHref: (v) => v },
-  directions: { label: 'Get directions', defaultIcon: 'mapPin', buildHref: (v) => v },
+  website: { label: 'Visit website', defaultIcon: 'globe', buildHref: withProtocol },
+  directions: { label: 'Get directions', defaultIcon: 'mapPin', buildHref: withProtocol },
 };
 
 // Display order - fixed, so the page has a consistent, predictable shape
