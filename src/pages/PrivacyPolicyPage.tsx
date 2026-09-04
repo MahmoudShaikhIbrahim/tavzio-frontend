@@ -139,11 +139,11 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-ink">
       <header className="border-b border-ink-line px-6 py-5">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link to="/"><Logo size="sm" /></Link>
+          <Link to="/" className="inline-flex rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"><Logo size="sm" /></Link>
           <button
             type="button"
             onClick={() => setTocOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm text-ivory-dim transition-colors hover:border-brass hover:text-brass lg:hidden"
+            className="flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm text-ivory-dim transition-colors hover:border-brass hover:text-brass lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
             Contents
@@ -164,7 +164,7 @@ export default function PrivacyPolicyPage() {
                   key={s.id}
                   type="button"
                   onClick={() => jumpTo(s.id)}
-                  className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                     activeId === s.id ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:text-ivory'
                   }`}
                 >
@@ -208,12 +208,12 @@ export default function PrivacyPolicyPage() {
           section jumps and closes the sheet. */}
       {tocOpen && (
         <div className="fixed inset-0 z-modal lg:hidden">
-          <button type="button" aria-label="Close" onClick={() => setTocOpen(false)} className="absolute inset-0 bg-black/70" />
+          <button type="button" aria-label="Close" onClick={() => setTocOpen(false)} className="absolute inset-0 bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
           <div className="absolute inset-x-0 bottom-0 max-h-[75vh] overflow-y-auto rounded-t-2xl border-t border-brass/30 bg-ink-soft p-5">
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-ink-line" />
             <div className="flex items-center justify-between">
               <p className="font-display text-xl text-ivory">Table of contents</p>
-              <button type="button" onClick={() => setTocOpen(false)} className="text-ivory-dim hover:text-ivory">✕</button>
+              <button type="button" onClick={() => setTocOpen(false)} className="text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">✕</button>
             </div>
             <nav className="mt-4 space-y-1">
               {SECTIONS.map((s) => (
@@ -221,7 +221,7 @@ export default function PrivacyPolicyPage() {
                   key={s.id}
                   type="button"
                   onClick={() => jumpTo(s.id)}
-                  className={`block w-full rounded-lg px-3 py-2.5 text-left text-base transition-colors ${
+                  className={`block w-full rounded-lg px-3 py-2.5 text-left text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                     activeId === s.id ? 'bg-brass/10 text-brass' : 'text-ivory-dim'
                   }`}
                 >

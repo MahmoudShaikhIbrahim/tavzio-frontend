@@ -77,19 +77,19 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: C
               autoFocus
               className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-base text-ivory"
             />
-            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline">{t('Save')}</button>
-            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
+            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Save')}</button>
+            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
           </>
         ) : (
           <>
             <span className="truncate text-ivory">{card.label || t('Untitled')}</span>
             <span className="shrink-0 font-mono text-base text-ivory-dim">{card.uid}</span>
-            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">{t('Rename')}</button>
+            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Rename')}</button>
           </>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {copied ? t('Copied!') : t('Copy URL')}
         </button>
         <select
@@ -99,7 +99,7 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: { card: C
             onCardsChange(cards.map((c) => (c.id === card.id ? { ...c, status } : c)));
             updateCard(businessId, card.id, { status }).catch(onChange);
           }}
-          className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim"
+          className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           <option value="active">{t('active')}</option>
           <option value="inactive">{t('inactive')}</option>

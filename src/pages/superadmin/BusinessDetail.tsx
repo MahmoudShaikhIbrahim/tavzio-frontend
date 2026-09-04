@@ -131,8 +131,8 @@ function ActionButton({ children, onClick, disabled, danger }: { children: React
     <button type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
-        danger ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
+      className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${
+        danger ? 'border-danger/40 text-danger hover:bg-danger/10 focus-visible:ring-danger' : 'border-brass/40 text-brass hover:bg-brass/10 focus-visible:ring-brass'
       }`}
     >
       {children}
@@ -152,7 +152,7 @@ function ToggleRow({ label, description, checked, onChange, disabled }: {
       <button type="button"
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`shrink-0 rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
+        className={`shrink-0 rounded-lg border px-5 py-4 text-base disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${
           checked ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
         }`}
       >
@@ -180,7 +180,7 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
     <Section
       title="Payments"
       action={
-        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + New receipt
         </button>
       }
@@ -246,16 +246,16 @@ function BusinessTypeEditor({ business, businessId, onSaved }: { business: Admin
       <span className="text-ivory-dim">Business Type:</span>
       {editing ? (
         <>
-          <select value={value} onChange={(e) => setValue(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-ivory">
+          <select value={value} onChange={(e) => setValue(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
-          <button type="button" onClick={handleSave} disabled={saving} className="text-brass hover:underline">{saving ? 'Saving...' : 'Save'}</button>
-          <button type="button" onClick={() => { setValue(business.category); setEditing(false); }} className="text-ivory-dim hover:underline">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{saving ? 'Saving...' : 'Save'}</button>
+          <button type="button" onClick={() => { setValue(business.category); setEditing(false); }} className="text-ivory-dim hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Cancel</button>
         </>
       ) : (
         <>
           <span className="capitalize text-ivory">{business.category}</span>
-          <button type="button" onClick={() => setEditing(true)} className="text-brass hover:underline">Change</button>
+          <button type="button" onClick={() => setEditing(true)} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Change</button>
         </>
       )}
     </div>
@@ -288,10 +288,10 @@ function OwnerPasswordReset({ business, businessId }: { business: AdminBusiness;
         <div className="rounded-lg border border-brass/40 bg-ink-soft p-3 text-sm">
           <p className="text-ivory">New temporary password:</p>
           <p className="mt-1 select-all rounded bg-ink px-2.5 py-1.5 font-mono text-base text-brass">{result.tempPassword}</p>
-          <button type="button" onClick={() => setResult(null)} className="mt-1 text-ivory-dim hover:text-ivory">Dismiss</button>
+          <button type="button" onClick={() => setResult(null)} className="mt-1 text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Dismiss</button>
         </div>
       ) : (
-        <button type="button" onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50">
+        <button type="button" onClick={handleReset} disabled={resetting} className="text-sm text-brass hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {resetting ? 'Resetting...' : "Reset owner's password"}
         </button>
       )}
@@ -353,8 +353,8 @@ function LinkAccountSection({ business }: { business: AdminBusiness }) {
         type="button"
         onClick={existingLink ? handleUnlink : handleLink}
         disabled={creating}
-        className={`mt-2 rounded-lg border px-3 py-2 text-sm disabled:opacity-50 ${
-          existingLink ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
+        className={`mt-2 rounded-lg border px-3 py-2 text-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${
+          existingLink ? 'border-danger/40 text-danger hover:bg-danger/10 focus-visible:ring-danger' : 'border-brass/40 text-brass hover:bg-brass/10 focus-visible:ring-brass'
         }`}
       >
         {creating ? 'Linking...' : existingLink ? 'Remove link' : 'Link to my account'}
@@ -385,10 +385,10 @@ function AdminCardIssue({ business, businessId }: { business: AdminBusiness; bus
         <div className="rounded-lg border border-brass/40 bg-ink-soft p-3 text-sm">
           <p className="text-ivory">New admin card issued - write this UID to the physical NFC card:</p>
           <p className="mt-1 select-all rounded bg-ink px-2.5 py-1.5 font-mono text-base text-brass">{issued.uid}</p>
-          <button type="button" onClick={() => setIssued(null)} className="mt-1 text-ivory-dim hover:text-ivory">Dismiss</button>
+          <button type="button" onClick={() => setIssued(null)} className="mt-1 text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Dismiss</button>
         </div>
       ) : (
-        <button type="button" onClick={handleIssue} disabled={issuing} className="text-sm text-brass hover:underline disabled:opacity-50">
+        <button type="button" onClick={handleIssue} disabled={issuing} className="text-sm text-brass hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {issuing ? 'Issuing...' : 'Reissue admin login card'}
         </button>
       )}
@@ -401,6 +401,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState('');
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   function reload() {
     listContracts(businessId).then(setContracts);
@@ -415,21 +416,23 @@ function ContractsSection({ businessId }: { businessId: string }) {
   }
 
   async function handleGenerateReceipt(contractId: string) {
+    setMessage(null);
     try {
       const receipt = await generateContractReceipt(businessId, contractId);
-      alert(`Receipt ${receipt.receipt_number} generated${receipt.ziinaError ? ` (no payment link: ${receipt.ziinaError})` : ''}`);
+      setMessage({ text: `Receipt ${receipt.receipt_number} generated${receipt.ziinaError ? ` (no payment link: ${receipt.ziinaError})` : ''}`, isError: false });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not generate receipt');
+      setMessage({ text: err instanceof Error ? err.message : 'Could not generate receipt', isError: true });
     }
   }
 
   async function handleSend(contractId: string) {
+    setMessage(null);
     try {
       const res = await sendContract(businessId, contractId);
-      alert(res.message);
+      setMessage({ text: res.message, isError: false });
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not send contract');
+      setMessage({ text: err instanceof Error ? err.message : 'Could not send contract', isError: true });
     }
   }
 
@@ -437,7 +440,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
     <Section
       title="Contracts"
       action={
-        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + New contract
         </button>
       }
@@ -447,6 +450,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
         e-sign inside their dashboard; once signed, generate installment receipts against it as payments come due.
       </p>
       {showForm && <ContractForm businessId={businessId} onDone={() => setShowForm(false)} onReload={reload} />}
+      {message && <p className={`text-sm ${message.isError ? 'text-danger' : 'text-success'}`}>{message.text}</p>}
       <div className="space-y-3">
         {contracts.map((c) => (
           <div key={c.id} className="rounded-lg border border-ink-line p-4">
@@ -472,15 +476,15 @@ function ContractsSection({ businessId }: { businessId: string }) {
               </div>
               <div className="flex gap-2">
                 {c.status === 'draft' && (
-                  <button type="button" onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline">
+                  <button type="button" onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     Send to client
                   </button>
                 )}
-                <button type="button" onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline">
+                <button type="button" onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {previewingId === c.id ? 'Hide' : 'Preview'}
                 </button>
                 {(c.status === 'signed' || c.status === 'active') && (
-                  <button type="button" onClick={() => handleGenerateReceipt(c.id)} className="text-sm text-brass hover:underline">
+                  <button type="button" onClick={() => handleGenerateReceipt(c.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     Generate next receipt
                   </button>
                 )}
@@ -536,14 +540,14 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
         </Field>
         <Field label="Payment frequency">
-          <select value={paymentFrequency} onChange={(e) => setPaymentFrequency(e.target.value as typeof paymentFrequency)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <select value={paymentFrequency} onChange={(e) => setPaymentFrequency(e.target.value as typeof paymentFrequency)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="monthly">Monthly</option>
             <option value="quarterly">Quarterly</option>
             <option value="yearly">Yearly</option>
           </select>
         </Field>
         <Field label="Plan">
-          <select value={planType} onChange={(e) => setPlanType(e.target.value as typeof planType)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <select value={planType} onChange={(e) => setPlanType(e.target.value as typeof planType)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="connect">Tavzio Connect</option>
             <option value="full">Tavzio Full</option>
           </select>
@@ -561,7 +565,7 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
         </Field>
       </div>
       {error && <p className="text-base text-danger">{error}</p>}
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? 'Creating...' : 'Create contract'}
       </button>
     </form>
@@ -682,7 +686,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-lg border border-ink-line p-4">
       <Field label="Receipt type">
-        <select value={receiptType} onChange={(e) => setReceiptType(e.target.value as typeof receiptType)} className="w-48 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+        <select value={receiptType} onChange={(e) => setReceiptType(e.target.value as typeof receiptType)} className="w-48 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value="one_time">One-time</option>
           <option value="monthly">Monthly subscription</option>
           <option value="adjustment">Adjustment</option>
@@ -697,7 +701,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
             </Field>
             <Field label="Term length">
-              <select value={termYears} onChange={(e) => setTermYears(e.target.value as typeof termYears)} className="w-36 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={termYears} onChange={(e) => setTermYears(e.target.value as typeof termYears)} className="w-36 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="1">1 year</option>
                 <option value="2">2 years</option>
                 <option value="3">3 years</option>
@@ -784,12 +788,12 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
               placeholder="AED excl. VAT"
               className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
             />
-            <button type="button" onClick={() => setExtraLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
+            <button type="button" onClick={() => setExtraLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               Remove
             </button>
           </div>
         ))}
-        <button type="button" onClick={() => setExtraLines((prev) => [...prev, { description: '', amount: 0 }])} className="text-sm text-brass hover:underline">
+        <button type="button" onClick={() => setExtraLines((prev) => [...prev, { description: '', amount: 0 }])} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + Add item
         </button>
       </div>
@@ -804,7 +808,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
           <p>VAT (5%): <span className="text-ivory-dim">AED {(total * 0.05).toFixed(2)}</span></p>
           <p>Total to charge: <span className="font-medium text-brass">AED {(total * 1.05).toFixed(2)}</span></p>
         </div>
-        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? 'Generating...' : 'Generate & send'}
         </button>
       </div>
@@ -844,7 +848,7 @@ function ReceiptRow({ receipt, businessId, onChange }: { receipt: BillingReceipt
       <div className="flex flex-wrap items-center gap-3">
         <button type="button"
           onClick={() => downloadReceiptPdf(businessId, receipt.id, receipt.receipt_number)}
-          className="rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10"
+          className="rounded-lg border border-brass/40 px-3 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           Download
         </button>
@@ -874,7 +878,7 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
         className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Label (e.g. Table 4)" value={label} onChange={(e) => setLabel(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         Add
       </button>
     </form>
@@ -909,19 +913,19 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
           <>
             <input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus
               className="w-40 rounded border border-brass/40 bg-ink px-2 py-1 text-base text-ivory" />
-            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline">Save</button>
-            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory">Cancel</button>
+            <button type="button" onClick={saveLabel} className="text-base text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Save</button>
+            <button type="button" onClick={() => { setEditing(false); setLabel(card.label); }} className="text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Cancel</button>
           </>
         ) : (
           <>
             <span className="truncate text-ivory">{card.label || 'Untitled'}</span>
             <span className="shrink-0 font-mono text-base text-ivory-dim">{card.uid}</span>
-            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline">Rename</button>
+            <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-base text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Rename</button>
           </>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={copyUrl} className="rounded border border-ink-line px-2 py-1 text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {copied ? 'Copied!' : 'Copy URL'}
         </button>
         <select
@@ -931,7 +935,7 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
             onCardsChange(cards.map((c) => (c.id === card.id ? { ...c, status } : c)));
             updateCard(businessId, card.id, { status }).catch(onChange);
           }}
-          className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim"
+          className="rounded border border-ink-line bg-ink px-2 py-1 text-base text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           <option value="active">active</option>
           <option value="inactive">inactive</option>
@@ -945,7 +949,7 @@ function CardRow({ card, cards, businessId, onCardsChange, onChange }: {
               deleteCard(businessId, card.id).catch(onChange);
             }
           }}
-          className="rounded border border-danger/40 px-2 py-1 text-base text-danger hover:bg-danger/10"
+          className="rounded border border-danger/40 px-2 py-1 text-base text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           Delete
         </button>

@@ -284,7 +284,7 @@ function PrimaryLink({ to, href, onClick, type, disabled, className, children }:
       <span className="btn-luxury-arrow"><ArrowRight size={16} strokeWidth={2} /></span>
     </>
   );
-  const cls = `btn-luxury inline-flex items-center gap-2 bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 ${className || ''}`;
+  const cls = `btn-luxury inline-flex items-center gap-2 bg-brass px-6 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${className || ''}`;
   if (to) return <Link to={to} onClick={onClick} className={cls}>{content}</Link>;
   if (href) return <a href={href} onClick={onClick} className={cls}>{content}</a>;
   return <button type={type || 'button'} onClick={onClick} disabled={disabled} className={cls}>{content}</button>;
@@ -332,7 +332,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
       >
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Menu</span>
-          <button type="button" onClick={onClose} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory">
+          <button type="button" onClick={onClose} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <X size={22} strokeWidth={1.75} />
           </button>
         </div>
@@ -345,7 +345,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <span className="font-display text-2xl text-ivory">{link.label}</span>
               </>
             );
-            const rowClass = 'grid grid-cols-[2.5rem_1fr] items-center gap-4 py-5 transition-colors hover:bg-ink-soft/40';
+            const rowClass = 'grid grid-cols-[2.5rem_1fr] items-center gap-4 py-5 transition-colors hover:bg-ink-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass';
             if (link.to) return <Link key={link.n} to={link.to} onClick={onClose} className={rowClass}>{row}</Link>;
             return (
               <a
@@ -399,18 +399,18 @@ export default function Home() {
           scrolled ? 'scale-[0.97] px-6 py-3 sm:px-10 lg:px-14' : 'px-6 py-6 sm:px-10 sm:py-7 lg:px-16'
         }`}
       >
-        <a href="/" className="flex items-center gap-2">
+        <a href="/" className="flex items-center gap-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <Logo />
         </a>
         <nav className="hidden items-center gap-12 text-sm text-ivory-dim md:flex">
-          <a href="#features" className="transition-colors hover:text-ivory">Features</a>
-          <a href="#how-it-works" className="transition-colors hover:text-ivory">How it works</a>
-          <Link to="/demo" className="transition-colors hover:text-ivory">Demo</Link>
+          <a href="#features" className="rounded transition-colors hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Features</a>
+          <a href="#how-it-works" className="rounded transition-colors hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">How it works</a>
+          <Link to="/demo" className="rounded transition-colors hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Demo</Link>
         </nav>
         <div className="flex items-center gap-3">
           <Link
             to="/admin/login"
-            className="hidden rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10 md:inline-block"
+            className="hidden rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10 md:inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             Sign In
           </Link>
@@ -418,7 +418,7 @@ export default function Home() {
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open menu"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <Menu size={22} strokeWidth={1.75} />
           </button>
@@ -621,7 +621,7 @@ export default function Home() {
             <div className="text-center sm:mt-20">
               <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-brass/40 text-brass"><ShieldCheck size={18} strokeWidth={1.75} /></span>
               <p className="mt-5 font-display text-lg text-ivory">UAE-based, PDPL compliant</p>
-              <p className="mt-3 text-sm leading-relaxed text-ivory-dim">Built and run in the UAE, in line with Federal Decree-Law No. 45 of 2021. <Link to="/legal" className="text-brass hover:underline">Read our privacy policy →</Link></p>
+              <p className="mt-3 text-sm leading-relaxed text-ivory-dim">Built and run in the UAE, in line with Federal Decree-Law No. 45 of 2021. <Link to="/legal" className="rounded text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Read our privacy policy →</Link></p>
             </div>
           </div>
         </div>
@@ -645,7 +645,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="font-mono text-[10px] uppercase tracking-widest text-ivory-dim/40">Tavzio — the tap is the interface</p>
           <div className="flex items-center gap-5 text-sm text-ivory-dim">
-            <Link to="/legal" className="hover:text-ivory">Privacy Policy</Link>
+            <Link to="/legal" className="rounded hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Privacy Policy</Link>
           </div>
         </div>
       </footer>
@@ -691,32 +691,32 @@ function LeadForm() {
     <form onSubmit={handleSubmit} className="mt-8 space-y-3 text-left">
       <input
         type="text" required placeholder="Business name" value={businessName} onChange={(e) => setBusinessName(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       />
       <input
         type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       />
       <input
         type="tel" required placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       />
       <select
         value={businessType} onChange={(e) => setBusinessType(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory"
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       >
         {CATEGORIES.map((c) => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
       </select>
       <input
         type="text" placeholder="Current POS system (or leave blank if you're new / have none yet)"
         value={currentPosSystem} onChange={(e) => setCurrentPosSystem(e.target.value)}
-        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60"
+        className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory placeholder:text-ivory-dim/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       />
       <label className="block text-sm text-ivory-dim">
         How many stands do you think you'll need?
         <input
           type="number" min={1} onFocus={(e) => e.target.select()} value={standsEstimate} onChange={(e) => setStandsEstimate(Number(e.target.value))}
-          className="mt-1 w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory"
+          className="mt-1 w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         />
       </label>
       {error && <p className="text-sm text-danger">{error}</p>}

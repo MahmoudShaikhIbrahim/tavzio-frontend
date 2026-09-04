@@ -62,7 +62,7 @@ export default function LeadsPage() {
             onClick={() => setSourceFilter(f)}
             className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
               sourceFilter === f ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
-            }`}
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
           >
             {f === 'all' ? `All (${getStartedCount + pricingInquiryCount})` : f === 'get_started' ? `Get Started (${getStartedCount})` : `Pricing inquiries (${pricingInquiryCount})`}
           </button>
@@ -93,7 +93,7 @@ export default function LeadsPage() {
             {lead.converted ? (
               <span className="text-sm text-success">Converted</span>
             ) : (
-              <button type="button" onClick={() => handleConvert(lead)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+              <button type="button" onClick={() => handleConvert(lead)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 Convert to client
               </button>
             )}

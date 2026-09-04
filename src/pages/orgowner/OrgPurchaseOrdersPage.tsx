@@ -160,7 +160,7 @@ function NewOrgPoForm({ suppliers, businesses, onSaved }: {
             </div>
 
             {items.length > 1 && (
-              <button type="button" onClick={() => removeItem(index)} className="mt-2 text-sm text-danger hover:underline">Remove item</button>
+              <button type="button" onClick={() => removeItem(index)} className="mt-2 text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Remove item</button>
             )}
           </div>
         );

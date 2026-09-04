@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Phone, MessageCircle, Mail, Globe } from 'lucide-react';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -44,6 +45,7 @@ export default function PublicCardPage() {
   const [card, setCard] = useState<PublicCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -60,7 +62,7 @@ export default function PublicCardPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#141110]"><p className="text-white/60">Loading...</p></div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-[#141110]"><div className="h-10 w-10 animate-pulse rounded-full border-2 border-white/30" /></div>;
   if (notFound || !card) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-[#141110] px-6 text-center">
@@ -87,7 +89,8 @@ export default function PublicCardPage() {
       navigator.share({ title: card!.name, url }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url);
-      alert('Link copied');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }
 
@@ -111,23 +114,23 @@ export default function PublicCardPage() {
         {/* Primary actions - immediately visible, per the spec */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           {hasPhone && (
-            <a href={`tel:${card.phone}`} onClick={() => track(card.slug, 'phone_click')} className="rounded-xl px-4 py-3 text-center text-sm font-medium text-black" style={{ background: primary }}>
-              Call
+            <a href={`tel:${card.phone}`} onClick={() => track(card.slug, 'phone_click')} className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-center text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" style={{ background: primary }}>
+              <Phone size={15} strokeWidth={2} /> Call
             </a>
           )}
           {hasWhatsapp && (
-            <a href={`https://wa.me/${card.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'whatsapp_click')} className="rounded-xl border px-4 py-3 text-center text-sm font-medium text-white" style={{ borderColor: primary }}>
-              WhatsApp
+            <a href={`https://wa.me/${card.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'whatsapp_click')} className="flex items-center justify-center gap-1.5 rounded-xl border px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" style={{ borderColor: primary }}>
+              <MessageCircle size={15} strokeWidth={2} /> WhatsApp
             </a>
           )}
           {hasEmail && (
-            <a href={`mailto:${card.email}`} onClick={() => track(card.slug, 'email_click')} className="rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white">
-              Email
+            <a href={`mailto:${card.email}`} onClick={() => track(card.slug, 'email_click')} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+              <Mail size={15} strokeWidth={2} /> Email
             </a>
           )}
           {hasWebsite && (
-            <a href={card.website} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'website_click')} className="rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white">
-              Website
+            <a href={card.website} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'website_click')} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+              <Globe size={15} strokeWidth={2} /> Website
             </a>
           )}
         </div>
@@ -135,7 +138,7 @@ export default function PublicCardPage() {
         <a
           href={`${BASE}/api/public/cards/${card.slug}/vcard`}
           onClick={() => track(card.slug, 'save_contact')}
-          className="mt-3 block rounded-xl px-4 py-3 text-center text-sm font-medium text-black"
+          className="mt-3 block rounded-xl px-4 py-3 text-center text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           style={{ background: primary }}
         >
           Save Contact
@@ -145,7 +148,7 @@ export default function PublicCardPage() {
           <div className="mt-6 space-y-1 rounded-xl border border-white/10 p-4 text-sm text-white/70">
             {hasAddress && (
               <p>
-                {card.location_url ? <a href={card.location_url} target="_blank" rel="noreferrer" className="underline">{card.address}</a> : card.address}
+                {card.location_url ? <a href={card.location_url} target="_blank" rel="noreferrer" className="rounded underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{card.address}</a> : card.address}
               </p>
             )}
             {card.working_hours && <p className="text-white/50">{card.working_hours}</p>}
@@ -155,7 +158,7 @@ export default function PublicCardPage() {
         {socials.length > 0 && (
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {socials.map(([network, { url }]) => (
-              <a key={network} href={url} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'social_click')} className="rounded-full border border-white/20 px-4 py-2 text-xs text-white/80">
+              <a key={network} href={url} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'social_click')} className="rounded-full border border-white/20 px-4 py-2 text-xs text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                 {SOCIAL_LABELS[network] || network}
               </a>
             ))}
@@ -163,8 +166,21 @@ export default function PublicCardPage() {
         )}
 
         <div className="mt-8 flex justify-center gap-4">
-          <button type="button" onClick={handleShare} className="text-sm text-white/60 underline">Share Card</button>
-          <a href={`${BASE}/api/public/cards/${card.slug}/qr.png`} target="_blank" rel="noreferrer" className="text-sm text-white/60 underline">QR Code</a>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="rounded px-2 py-1.5 text-sm text-white/60 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            {copied ? 'Copied!' : 'Share Card'}
+          </button>
+          <a
+            href={`${BASE}/api/public/cards/${card.slug}/qr.png`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded px-2 py-1.5 text-sm text-white/60 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            QR Code
+          </a>
         </div>
 
         <p className="mt-10 text-center text-[11px] uppercase tracking-widest text-white/25">Powered by Tavzio</p>

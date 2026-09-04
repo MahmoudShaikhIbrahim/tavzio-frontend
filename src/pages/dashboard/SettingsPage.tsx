@@ -10,6 +10,8 @@ import type { AdminBusiness, BusinessLinks, CustomButton, PosIntegration } from 
 import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
 import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
+import PasswordField from '../../components/PasswordField';
 import MenuManagementPage from './MenuManagementPage';
 import LoyaltyPage from './LoyaltyPage';
 import CardsPage from './CardsPage';
@@ -131,7 +133,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
           {imageUrl && <img src={imageUrl} alt="" className="h-10 w-10 rounded-full border border-ink-line object-cover" />}
           <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-ivory-dim" />
           {imageUrl && (
-            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-danger hover:underline">
+            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               Remove
             </button>
           )}
@@ -139,7 +141,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
         {uploading && <p className="mt-1 text-sm text-ivory-dim">Uploading...</p>}
       </Field>
       <Field label="URL"><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
-      <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? 'Saving...' : existing ? 'Save changes' : 'Add button'}
       </button>
       {error && <p className="text-base text-danger">{error}</p>}
@@ -150,6 +152,7 @@ function CustomButtonForm({ businessId, existing, onDone }: { businessId: string
 function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChange }: {
   button: CustomButton; buttons: CustomButton[]; businessId: string; onButtonsChange: (b: CustomButton[]) => void; onChange: () => void;
 }) {
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   if (editing) return <CustomButtonForm businessId={businessId} existing={button} onDone={() => { setEditing(false); onChange(); }} />;
 
@@ -183,7 +186,8 @@ function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChang
         <ActionButton onClick={() => setEditing(true)}>Edit</ActionButton>
         <ActionButton
           danger
-          onClick={() => {
+          onClick={async () => {
+            if (!(await confirm({ title: 'Delete this button?', message: `Delete "${button.label}"? This cannot be undone.`, confirmLabel: 'Delete', danger: true }))) return;
             onButtonsChange(buttons.filter((b) => b.id !== button.id));
             deleteCustomButton(businessId, button.id).catch(onChange);
           }}
@@ -269,7 +273,7 @@ function ProfileForm({ business, businessId, onSaved }: { business: AdminBusines
             <input value={name} onChange={(e) => setName(e.target.value)} className="w-64 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass" />
           </Field>
           <Field label="Category">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-48 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass">
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-48 rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </Field>
@@ -360,7 +364,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         <button type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {saving ? 'Saving...' : 'Save buttons'}
         </button>
@@ -384,7 +388,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                 <button
                   type="button"
                   onClick={() => toggleEnabled(key)}
-                  className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                  className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
                 >
                   {cfg.enabled ? 'On' : 'Off'}
                 </button>
@@ -411,7 +415,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                 <select
                   value={cfg.icon || meta.defaultIcon}
                   onChange={(e) => updateIcon(key, e.target.value)}
-                  className="w-auto rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+                  className="w-auto rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 >
                   {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
@@ -421,7 +425,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                   <input type="file" accept="image/*" onChange={(e) => handleImageUpload(key, e)} className="hidden" />
                 </label>
                 {cfg.imageUrl && (
-                  <button type="button" onClick={() => updateImage(key, null)} className="w-auto text-sm text-danger hover:underline">
+                  <button type="button" onClick={() => updateImage(key, null)} className="w-auto text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     Remove
                   </button>
                 )}
@@ -451,7 +455,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         ) : (
           <button type="button"
             onClick={() => setShowAddForm(true)}
-            className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10"
+            className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             + Add another link
           </button>
@@ -467,6 +471,18 @@ const PROVIDERS = [
   { key: 'ngenius', label: 'N-Genius Online (Network International)' },
   { key: 'ziina', label: 'Ziina' },
 ] as const;
+
+// Same show/hide pattern already used for the account password on
+// AdminLogin, via the shared PasswordField component - these gateway
+// secrets are just as sensitive and deserve the same masking-by-default
+// treatment, not a plain visible text box.
+function SecretField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Field label={label}>
+      <PasswordField value={value} onChange={onChange} placeholder={placeholder} required={false} autoComplete="off" />
+    </Field>
+  );
+}
 
 function PaymentProviderSetup({ businessId }: { businessId: string }) {
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
@@ -546,7 +562,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina' | '')}
-            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
+            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <option value="">Choose a provider...</option>
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
@@ -555,14 +571,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'tap' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Tap secret key">
-              <input
-                value={secretKey}
-                onChange={(e) => setSecretKey(e.target.value)}
-                placeholder="From your Tap Payments dashboard"
-                className={inputClass}
-              />
-            </Field>
+            <SecretField label="Tap secret key" value={secretKey} onChange={setSecretKey} placeholder="From your Tap Payments dashboard" />
           </div>
         )}
 
@@ -571,9 +580,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
             <Field label="Store ID">
               <input value={storeId} onChange={(e) => setStoreId(e.target.value)} placeholder="From your Telr account" className={inputClass} />
             </Field>
-            <Field label="Authentication key">
-              <input value={authKey} onChange={(e) => setAuthKey(e.target.value)} placeholder="From your Telr account" className={inputClass} />
-            </Field>
+            <SecretField label="Authentication key" value={authKey} onChange={setAuthKey} placeholder="From your Telr account" />
             <p className="text-sm text-ivory-dim">
               One extra step with Telr: live payments only work from server
               addresses Telr has pre-approved — ask Telr support to whitelist
@@ -585,9 +592,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'ngenius' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Service account API key">
-              <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="N-Genius portal → Settings → Integrations → Service Accounts" className={inputClass} />
-            </Field>
+            <SecretField label="Service account API key" value={apiKey} onChange={setApiKey} placeholder="N-Genius portal → Settings → Integrations → Service Accounts" />
             <Field label="Outlet reference">
               <input value={outletRef} onChange={(e) => setOutletRef(e.target.value)} placeholder="N-Genius portal → Settings → Organization Hierarchy" className={inputClass} />
             </Field>
@@ -596,9 +601,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'ziina' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label="Ziina API key">
-              <input value={ziinaApiKey} onChange={(e) => setZiinaApiKey(e.target.value)} placeholder="From your Ziina Business dashboard → Developers" className={inputClass} />
-            </Field>
+            <SecretField label="Ziina API key" value={ziinaApiKey} onChange={setZiinaApiKey} placeholder="From your Ziina Business dashboard → Developers" />
             <p className="text-sm text-ivory-dim">
               This is your own Ziina account, separate from Tavzio's — money
               goes straight to your Ziina balance, not through us.
@@ -621,7 +624,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
           <button type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>

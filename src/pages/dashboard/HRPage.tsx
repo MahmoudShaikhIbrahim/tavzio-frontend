@@ -78,7 +78,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button type="button"
       onClick={onClick}
-      className={`border-b-2 px-2 py-1.5 text-sm sm:px-3 sm:py-2.5 sm:text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'}`}
+      className={`border-b-2 px-2 py-1.5 text-sm sm:px-3 sm:py-2.5 sm:text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
     >
       {children}
     </button>
@@ -140,20 +140,20 @@ function DocumentsTab({ businessId }: { businessId: string }) {
     <Section title={t('Staff Documents')}>
       <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
         <Field label={t('Staff member')}>
-          <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="">{t('Select...')}</option>
             {staff.filter((s) => s.role === 'staff').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </Field>
         <Field label={t('Document type')}>
-          <select value={docType} onChange={(e) => setDocType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <select value={docType} onChange={(e) => setDocType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {DOC_TYPES.map((dt) => <option key={dt} value={dt}>{t(dt)}</option>)}
           </select>
         </Field>
         <Field label={t('Label (optional)')}><input value={label} onChange={(e) => setLabel(e.target.value)} className={inputClass} /></Field>
         <Field label={t('Expiry (optional)')}><input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
         <Field label={t('File')}><input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm text-ivory-dim" /></Field>
-        <button type="submit" disabled={uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {uploading ? t('Uploading...') : t('Upload')}
         </button>
       </form>
@@ -174,8 +174,8 @@ function DocumentsTab({ businessId }: { businessId: string }) {
                 )}
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <button type="button" onClick={() => handleView(d)} className="text-brass hover:underline">{t('View')}</button>
-                <button type="button" onClick={() => handleDelete(d)} className="text-danger hover:underline">{t('Delete')}</button>
+                <button type="button" onClick={() => handleView(d)} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('View')}</button>
+                <button type="button" onClick={() => handleDelete(d)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
               </div>
             </div>
           );
@@ -224,13 +224,13 @@ function CommissionTab({ businessId }: { businessId: string }) {
                   <span className="text-base text-ivory">{s.name}</span>
                   {editingId === s.id ? (
                     <div className="flex items-center gap-2">
-                      <select value={rateType} onChange={(e) => setRateType(e.target.value as 'percentage' | 'fixed_per_order')} className="rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory">
+                      <select value={rateType} onChange={(e) => setRateType(e.target.value as 'percentage' | 'fixed_per_order')} className="rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                         <option value="percentage">{t('% of sales')}</option>
                         <option value="fixed_per_order">{t('AED per order')}</option>
                       </select>
                       <input type="number" min={0} value={rateValue} onFocus={(e) => e.target.select()} onChange={(e) => setRateValue(Number(e.target.value))} className="w-20 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
-                      <button type="button" onClick={() => handleSave(s.id)} className="text-sm text-brass hover:underline">{t('Save')}</button>
-                      <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+                      <button type="button" onClick={() => handleSave(s.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Save')}</button>
+                      <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-3 text-sm">
@@ -239,8 +239,8 @@ function CommissionTab({ businessId }: { businessId: string }) {
                       ) : (
                         <span className="text-ivory-dim">{t('No commission set')}</span>
                       )}
-                      <button type="button" onClick={() => { setEditingId(s.id); setRateType('percentage'); setRateValue(0); }} className="text-brass hover:underline">{t('Edit')}</button>
-                      {reportRow?.commissionType && <button type="button" onClick={() => handleClear(s.id)} className="text-danger hover:underline">{t('Clear')}</button>}
+                      <button type="button" onClick={() => { setEditingId(s.id); setRateType('percentage'); setRateValue(0); }} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                      {reportRow?.commissionType && <button type="button" onClick={() => handleClear(s.id)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Clear')}</button>}
                     </div>
                   )}
                 </div>
@@ -328,7 +328,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
         <input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
         <span className="text-ivory-dim">{t('to')}</span>
         <input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">+ {t('Add shift')}</button>
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+ {t('Add shift')}</button>
       </div>
     }>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -350,7 +350,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
       {showAdd && (
         <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
           <Field label={t('Staff')}>
-            <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <option value="">{t('Select...')}</option>
               {staff.filter((s) => s.role === 'staff').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
@@ -359,7 +359,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
           <Field label={t('Start')}><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
           <Field label={t('End')}><input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
           <Field label={t('Role (optional)')}><input value={roleLabel} onChange={(e) => setRoleLabel(e.target.value)} placeholder="e.g. Floor, Kitchen" className={inputClass} /></Field>
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
         </form>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
@@ -373,7 +373,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
             </span>
             <span className="flex items-center gap-3 text-ivory-dim">
               <span>{s.hours}h{s.forecastCostAed != null ? ` · AED ${s.forecastCostAed.toFixed(2)}` : ` · ${t('no rate set')}`}</span>
-              <button type="button" onClick={() => handleDelete(s.id)} className="text-danger hover:underline">{t('Remove')}</button>
+              <button type="button" onClick={() => handleDelete(s.id)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Remove')}</button>
             </span>
           </div>
         ))}
@@ -431,14 +431,14 @@ function LaborCostTab({ businessId }: { businessId: string }) {
                 <div className="flex items-center gap-2">
                   <input type="number" min={0} value={rateValue} onFocus={(e) => e.target.select()} onChange={(e) => setRateValue(Number(e.target.value))} className="w-24 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
                   <span className="text-sm text-ivory-dim">AED/hr</span>
-                  <button type="button" onClick={() => handleSaveWage(s.id)} className="text-sm text-brass hover:underline">{t('Save')}</button>
-                  <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+                  <button type="button" onClick={() => handleSaveWage(s.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Save')}</button>
+                  <button type="button" onClick={() => setEditingId(null)} className="text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-ivory-dim">{wages[s.id] != null ? `AED ${wages[s.id]!.toFixed(2)}/hr` : t('No rate set')}</span>
-                  <button type="button" onClick={() => { setEditingId(s.id); setRateValue(wages[s.id] || 0); }} className="text-brass hover:underline">{t('Edit')}</button>
-                  {wages[s.id] != null && <button type="button" onClick={() => handleClearWage(s.id)} className="text-danger hover:underline">{t('Clear')}</button>}
+                  <button type="button" onClick={() => { setEditingId(s.id); setRateValue(wages[s.id] || 0); }} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                  {wages[s.id] != null && <button type="button" onClick={() => handleClearWage(s.id)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Clear')}</button>}
                 </div>
               )}
             </div>
@@ -448,7 +448,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
       </Section>
 
       <Section title={t('Labor cost report')} action={
-        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
+        <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value={7}>{t('Last 7 days')}</option>
           <option value={30}>{t('Last 30 days')}</option>
           <option value={90}>{t('Last 90 days')}</option>
@@ -541,7 +541,7 @@ function TipsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title={t('Tip Pooling')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Distribute tips')}</button>}>
+    <Section title={t('Tip Pooling')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Distribute tips')}</button>}>
       {showAdd && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-ink-line p-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -549,7 +549,7 @@ function TipsTab({ businessId }: { businessId: string }) {
             <Field label={t('Period end')}><input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
             <Field label={t('Total tips (AED)')}><input type="number" min={0} value={totalAmount} onFocus={(e) => e.target.select()} onChange={(e) => setTotalAmount(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
             <Field label={t('Split method')}>
-              <select value={method} onChange={(e) => setMethod(e.target.value as 'even' | 'by_hours')} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={method} onChange={(e) => setMethod(e.target.value as 'even' | 'by_hours')} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="even">{t('Even split')}</option>
                 <option value="by_hours">{t('By hours worked')}</option>
               </select>
@@ -567,7 +567,7 @@ function TipsTab({ businessId }: { businessId: string }) {
             </div>
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
-          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? t('Distributing...') : t('Distribute')}
           </button>
         </form>

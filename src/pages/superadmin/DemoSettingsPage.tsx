@@ -106,7 +106,7 @@ export default function DemoSettingsPage() {
           <Field label="Business name">
             <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} className={inputClass} />
           </Field>
-          <button type="button" onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {savingIdentity ? 'Saving...' : 'Save name'}
           </button>
         </div>
@@ -128,7 +128,7 @@ export default function DemoSettingsPage() {
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <Field label="Source business">
-            <select value={importBusinessId} onChange={(e) => setImportBusinessId(e.target.value)} className={`${inputClass} w-64`}>
+            <select value={importBusinessId} onChange={(e) => setImportBusinessId(e.target.value)} className={`${inputClass} w-64 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <option value="">Select a business...</option>
               {businesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -209,11 +209,11 @@ function DemoItemRow({ item, onToggleEnabled, onDelete, onSaved }: {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={onToggleEnabled} className="text-sm text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={onToggleEnabled} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {item.enabled ? 'Hide' : 'Show'}
         </button>
-        <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">Edit</button>
-        <button type="button" onClick={onDelete} className="text-sm text-danger hover:underline">Delete</button>
+        <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Edit</button>
+        <button type="button" onClick={onDelete} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Delete</button>
       </div>
     </div>
   );

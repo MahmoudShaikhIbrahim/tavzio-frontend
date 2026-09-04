@@ -11,7 +11,7 @@ export default function LanguageSwitcher() {
     <div className="relative">
       <button type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-lg border border-ink-line bg-ink-soft px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory"
+        className="flex items-center gap-1.5 rounded-lg border border-ink-line bg-ink-soft px-3 py-1.5 text-xs text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
       >
         <span>{current.flag}</span>
         <span>{current.label}</span>
@@ -26,7 +26,7 @@ export default function LanguageSwitcher() {
               <button type="button"
                 key={l.code}
                 onClick={() => { setLanguage(l.code); setOpen(false); }}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink ${
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass ${
                   l.code === language ? 'text-brass' : 'text-ivory'
                 }`}
               >

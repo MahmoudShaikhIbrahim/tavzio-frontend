@@ -55,11 +55,11 @@ export default function SuperAdminDigitalCardsPage() {
 
       <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-ink-line p-3">
         <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full name" className="flex-1 min-w-[10rem] rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory" />
-        <select value={newType} onChange={(e) => setNewType(e.target.value as typeof newType)} className="rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory">
+        <select value={newType} onChange={(e) => setNewType(e.target.value as typeof newType)} className="rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value="person">Person</option>
           <option value="business">Business</option>
         </select>
-        <button type="button" disabled={creating || !newName.trim()} onClick={handleCreate} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" disabled={creating || !newName.trim()} onClick={handleCreate} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {creating ? 'Creating...' : '+ Create New Card'}
         </button>
       </div>
@@ -80,11 +80,11 @@ export default function SuperAdminDigitalCardsPage() {
                 <a href={`/admin/super/digital-cards/${card.id}`} className="text-sm text-brass hover:underline">Edit</a>
                 <a href={`${SITE}/card/${card.slug}`} target="_blank" rel="noreferrer" className="text-sm text-brass hover:underline">Preview</a>
                 <a href={`${BASE}/api/public/cards/${card.slug}/qr.png`} target="_blank" rel="noreferrer" className="text-sm text-brass hover:underline">QR</a>
-                <button type="button" onClick={() => navigator.clipboard.writeText(`${SITE}/card/${card.slug}`)} className="text-sm text-ivory-dim hover:text-ivory">Copy link</button>
-                <button type="button" onClick={() => handleToggleStatus(card)} className="text-sm text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => navigator.clipboard.writeText(`${SITE}/card/${card.slug}`)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Copy link</button>
+                <button type="button" onClick={() => handleToggleStatus(card)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {card.status === 'active' ? 'Unpublish' : 'Publish'}
                 </button>
-                <button type="button" onClick={() => handleDelete(card)} className="text-sm text-danger hover:underline">Delete</button>
+                <button type="button" onClick={() => handleDelete(card)} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Delete</button>
               </div>
             </div>
           </div>

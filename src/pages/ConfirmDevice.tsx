@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { setSession, setDeviceToken } from '../lib/session';
 import { fetchWithTimeout } from '../lib/fetchWithTimeout';
 import { safeJson } from '../lib/safeJson';
@@ -30,6 +30,12 @@ export default function ConfirmDevice() {
         <p className="font-display text-xl text-ivory">Couldn't confirm this device</p>
         <p className="text-sm text-ivory-dim">{error}</p>
         <p className="text-sm text-ivory-dim">Tap the card again to get a new link.</p>
+        <Link
+          to="/admin/login"
+          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+        >
+          Back to sign in
+        </Link>
       </div>
     );
   }

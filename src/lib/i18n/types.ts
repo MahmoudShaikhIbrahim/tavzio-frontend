@@ -36,6 +36,70 @@ export interface TranslationDict {
   sending: string;
   staffNotified: string;
   tapAgainToTry: string;
+  tapRequiredForRequest: string;
+  unfinishedPaymentTitle: string;
+  unfinishedPaymentDesc: string;
+  cancelThatOrder: string;
+  payInCash: string;
+  payAtCashierTitle: string;
+  payAtCashierDesc: string;
+  payToSendOrder: string;
+  payBeforeOrderDesc: string;
+  chNothingAvailable: string;
+
+  tbAddService: string;
+  tbAddServiceDesc: string;
+  tbServiceWhenPrompt: string;
+  tbNone: string;
+  tbFood: string;
+  tbServiceDateTimeRequired: string;
+  tbCouldNotSendCode: string;
+  tbCouldNotCompleteBooking: string;
+  tbIncorrectCode: string;
+  tbCouldNotCancelBooking: string;
+  tbCouldNotCancelService: string;
+  tbCouldNotReschedule: string;
+
+  arrNothingToConfirm: string;
+  arrNothingToConfirmDesc: string;
+  arrContinueTo: string;
+  arrConfirmed: string;
+  arrEnjoyVisit: string;
+  arrConfirmArrival: string;
+  arrTableFor: string;
+  arrIfReservation: string;
+  arrYesThatsUs: string;
+  arrCouldNotConfirm: string;
+
+  dtReceiptLabel: string;
+  dtVatLabel: string;
+  dtPrintReceipt: string;
+  dtCouldNotConfirmPayment: string;
+  dtSomethingWentWrong: string;
+
+  billUnfinishedPaymentDesc: string;
+  billCancelAttempt: string;
+  billEverythingPaid: string;
+  billEverythingPaidDesc: string;
+  billCashPendingBadge: string;
+  billPaidCount: string;
+  billRewardFallback: string;
+  billMarking: string;
+  billPayInCashInstead: string;
+  billPrintReceipt: string;
+  billLeaveReview: string;
+  billViewLiveBill: string;
+  billMarkedCashMessage: string;
+  billCouldNotMarkCash: string;
+  billPaymentFailed: string;
+
+  hgTapToTryAgain: string;
+  hgNothingOnMenu: string;
+  hgChargeToRoom: string;
+  hgCouldNotPlaceOrder: string;
+  hgOrderChargedMessage: string;
+  hgCouldNotReachServer: string;
+  hgCouldNotSendRequest: string;
 
   // Loyalty widget
   loyalty: string;

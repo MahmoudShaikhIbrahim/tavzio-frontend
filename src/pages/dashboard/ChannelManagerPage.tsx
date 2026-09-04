@@ -7,6 +7,7 @@ import {
 } from '../../lib/authApi';
 import type { AdminBusiness, ChannelConnection, ChannelBooking } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import PasswordField from '../../components/PasswordField';
 
 const CHANNEL_LABELS: Record<ChannelConnection['channel'], string> = {
   booking_com: 'Booking.com',
@@ -97,10 +98,10 @@ function ConnectionsSection({ businessId }: { businessId: string }) {
                       {conn.last_synced_at ? `Last synced ${new Date(conn.last_synced_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : 'Connected, not synced yet'}
                     </p>
                     {conn.last_sync_error && <p className="text-sm text-danger">{conn.last_sync_error}</p>}
-                    <button type="button" onClick={() => handleDisconnect(channel)} className="mt-1 text-sm text-danger hover:underline">Disconnect</button>
+                    <button type="button" onClick={() => handleDisconnect(channel)} className="mt-1 text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Disconnect</button>
                   </>
                 ) : (
-                  <button type="button" onClick={() => setConnectingChannel(channel)} className="mt-1 text-sm text-brass hover:underline">Connect</button>
+                  <button type="button" onClick={() => setConnectingChannel(channel)} className="mt-1 text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Connect</button>
                 )}
               </div>
             );
@@ -140,7 +141,7 @@ function ConnectForm({ businessId, channel, onClose, onSaved }: {
     <div className="mt-3 rounded-lg border border-ink-line p-4">
       <p className="mb-3 text-base text-ivory">Connect {CHANNEL_LABELS[channel]}</p>
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="API key"><input value={apiKey} onChange={(e) => setApiKey(e.target.value)} className={`${inputClass} w-56`} /></Field>
+        <Field label="API key" className="w-56"><PasswordField value={apiKey} onChange={setApiKey} required={false} autoComplete="off" /></Field>
         <Field label={`${CHANNEL_LABELS[channel]} property/hotel ID`}><input value={hotelId} onChange={(e) => setHotelId(e.target.value)} className={`${inputClass} w-48`} /></Field>
         <PrimaryButton onClick={handleSave} disabled={saving}>{saving ? 'Connecting...' : 'Connect'}</PrimaryButton>
         <ActionButton onClick={onClose}>Cancel</ActionButton>
@@ -181,7 +182,7 @@ function RatePushSection({ businessId }: { businessId: string }) {
     <Section title="Push rates">
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Channel">
-          <select value={channel} onChange={(e) => setChannel(e.target.value as typeof channel)} className={`${inputClass} w-40`}>
+          <select value={channel} onChange={(e) => setChannel(e.target.value as typeof channel)} className={`${inputClass} w-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             {Object.entries(CHANNEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </Field>

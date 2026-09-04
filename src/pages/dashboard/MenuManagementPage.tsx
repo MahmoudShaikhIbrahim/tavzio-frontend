@@ -13,6 +13,7 @@ import { uploadBusinessFile } from '../../lib/supabaseClient';
 import MenuAiUpload from '../../components/MenuAiUpload';
 import type { AdminBusiness, MenuCategory, MenuItem, MenuItemAddon, Ingredient } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function MenuManagementPage() {
   const { user } = useSession();
@@ -48,7 +49,7 @@ export default function MenuManagementPage() {
       <h1 className="font-display text-3xl text-ivory">{t('Menu Management')}</h1>
       <div className="flex flex-wrap gap-2 border-b border-ink-line">
         {(['ordering-status', 'ai-upload', 'categories', 'items'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -65,7 +66,7 @@ export default function MenuManagementPage() {
             </div>
             <button type="button"
               onClick={togglePauseAll}
-              className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
+              className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
             >
               {business.ordering_paused ? t('Paused — tap to resume') : t('Ordering is open')}
             </button>
@@ -84,6 +85,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
   businessId: string; categories: MenuCategory[]; onCategoriesChange: (cats: MenuCategory[]) => void; onChange: () => void;
 }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -162,7 +164,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
                   onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
                   updateMenuCategory(businessId, c.id, { paused: !c.paused }).catch(onChange);
                 }}
-                className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'}`}
+                className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
               >
                 {c.paused ? t('Paused') : t('Orderable')}
               </button>
@@ -174,7 +176,8 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
               <span onPointerDown={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()}>
                 <ActionButton
                   danger
-                  onClick={() => {
+                  onClick={async () => {
+                    if (!(await confirm({ title: t('Remove this category?'), message: `${t('Remove')} "${c.name}"? ${t('Items inside it are not deleted - they just lose this category.')}`, confirmLabel: t('Remove'), danger: true }))) return;
                     onCategoriesChange(categories.filter((cat) => cat.id !== c.id));
                     deleteMenuCategory(businessId, c.id).catch(onChange);
                   }}
@@ -245,7 +248,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
       action={
         <button type="button"
           onClick={() => setShowForm((s) => !s)}
-          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {t('+ Add item')}
         </button>
@@ -272,7 +275,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
         <div className={`mb-4 flex gap-2 overflow-x-auto pb-1 ${q ? 'pointer-events-none opacity-40' : ''}`} style={{ scrollbarWidth: 'none' }}>
           <button type="button"
             onClick={() => setActiveCategoryId('all')}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
               activeCategoryId === 'all' ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
             }`}
           >
@@ -282,7 +285,7 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
             <button type="button"
               key={c.id}
               onClick={() => setActiveCategoryId(c.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                 activeCategoryId === c.id ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
               }`}
             >
@@ -370,7 +373,7 @@ function ItemForm({ businessId, categories, existing, onDone }: {
           {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}
         </div>
         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={saving}
-          className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
+          className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {imageUrl ? t('Change photo') : t('Add photo')}
         </button>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
@@ -432,6 +435,7 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange,
   dragHandlers?: Record<string, unknown>; dragRef?: (el: HTMLDivElement | null) => void; isHeld?: boolean; isPlaceTarget?: boolean;
 }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [showAddons, setShowAddons] = useState(false);
   const [showRecipe, setShowRecipe] = useState(false);
@@ -471,7 +475,8 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange,
           <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
           <ActionButton
             danger
-            onClick={() => {
+            onClick={async () => {
+              if (!(await confirm({ title: t('Remove this item?'), message: `${t('Remove')} "${item.name}"? ${t("This can't be undone.")}`, confirmLabel: t('Remove'), danger: true }))) return;
               onItemsChange(items.filter((i) => i.id !== item.id));
               deleteMenuItem(businessId, item.id).catch(onChange);
             }}
@@ -524,7 +529,7 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
           <select
             value={line.ingredientId}
             onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, ingredientId: e.target.value } : l))}
-            className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+            className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <option value="">{t('Select ingredient...')}</option>
             {ingredients.map((ing) => <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>)}
@@ -537,16 +542,16 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
             onChange={(e) => setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, quantity: e.target.value } : l))}
             className="w-32 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
           />
-          <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">
+          <button type="button" onClick={() => setLines((prev) => prev.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Remove')}
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => setLines((prev) => [...prev, { ingredientId: '', quantity: '' }])} className="text-sm text-brass hover:underline">
+      <button type="button" onClick={() => setLines((prev) => [...prev, { ingredientId: '', quantity: '' }])} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {t('+ Add ingredient')}
       </button>
       <div>
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save recipe')}
         </button>
       </div>
@@ -556,6 +561,7 @@ function RecipeManager({ businessId, menuItemId }: { businessId: string; menuIte
 
 function AddonManager({ businessId, itemId }: { businessId: string; itemId: string }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [addons, setAddons] = useState<MenuItemAddon[]>([]);
   const [name, setName] = useState('');
   const [price, setPrice] = useState(0);
@@ -601,12 +607,13 @@ function AddonManager({ businessId, itemId }: { businessId: string; itemId: stri
           </div>
         ) : (
           <div key={a.id} className="flex items-center justify-between text-base">
-            <button type="button" onClick={() => startEdit(a)} className="text-ivory-dim hover:text-ivory hover:underline">
+            <button type="button" onClick={() => startEdit(a)} className="text-ivory-dim hover:text-ivory hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {a.name} — +{a.price.toFixed(2)}
             </button>
             <ActionButton
               danger
-              onClick={() => {
+              onClick={async () => {
+                if (!(await confirm({ title: t('Remove this add-on?'), message: `${t('Remove')} "${a.name}"?`, confirmLabel: t('Remove'), danger: true }))) return;
                 setAddons((prev) => prev.filter((addon) => addon.id !== a.id));
                 deleteAddon(businessId, itemId, a.id).catch(reload);
               }}

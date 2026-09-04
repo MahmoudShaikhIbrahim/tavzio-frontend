@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UtensilsCrossed, CalendarCheck, CreditCard, ChevronRight, ArrowLeft } from 'lucide-react';
+import { UtensilsCrossed, CalendarCheck, CreditCard, ChevronRight, ArrowLeft, ExternalLink } from 'lucide-react';
 import type { Business, CustomButton } from '../types';
 import { submitCustomButtonRequest } from '../lib/api';
 import { useLanguage } from '../lib/i18n/LanguageContext';
@@ -14,7 +14,8 @@ interface Props {
 const buttonClass =
   'group flex w-full items-center gap-3 rounded-xl border border-brass/30 bg-ink-soft px-4 py-3.5 ' +
   'text-start text-ivory transition-colors duration-150 hover:border-brass active:bg-ink ' +
-  'active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)] disabled:opacity-50';
+  'active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)] disabled:opacity-50 ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink';
 
 const iconWrapClass = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass';
 
@@ -31,7 +32,7 @@ export default function PrimaryActionButtons({ business, tapEventId }: Props) {
     const children = business.customButtons.filter((b) => b.parent_button_id === openGroupId && b.enabled);
     return (
       <div className="space-y-2.5">
-        <button type="button" onClick={() => setOpenGroupId(null)} className="flex items-center gap-2 text-sm text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={() => setOpenGroupId(null)} className="flex items-center gap-2 rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
           <ArrowLeft size={15} /> {group?.label || 'Back'}
         </button>
         {children.map((btn) => <CustomButtonItem key={btn.id} btn={btn} slug={business.slug} tapEventId={tapEventId} onOpenGroup={setOpenGroupId} />)}
@@ -119,6 +120,11 @@ function CustomButtonItem({ btn, slug, tapEventId, onOpenGroup }: {
       {/* Custom button labels are owner-typed content, same reasoning
           as menu items - never auto-translated. */}
       <span className="font-body text-[15px] font-medium">{btn.label}</span>
+      {/* Distinguishes "leaves the site" links from in-page actions
+          (group buttons use a chevron, notification buttons use none) -
+          otherwise all three button types look identical and users can't
+          predict what tapping one will do. */}
+      <ExternalLink size={14} className="ml-auto shrink-0 text-ivory-dim" />
     </a>
   );
 }
@@ -126,7 +132,7 @@ function CustomButtonItem({ btn, slug, tapEventId, onOpenGroup }: {
 function QuickRequestButton({ slug, tapEventId, button }: {
   slug: string; tapEventId: number | null; button: { id: string; label: string; icon: string; image_url: string | null; allow_note?: boolean };
 }) {
-  const [state, setState] = useState<'idle' | 'expanded' | 'sending' | 'sent' | 'error'>('idle');
+  const [state, setState] = useState<'idle' | 'expanded' | 'sending' | 'sent' | 'error' | 'no-tap'>('idle');
   const [note, setNote] = useState('');
   const { t } = useLanguage();
   const Icon = getIcon(button.icon);
@@ -136,7 +142,7 @@ function QuickRequestButton({ slug, tapEventId, button }: {
 
   async function handleTap() {
     if (!allowNote) {
-      if (!tapEventId) { setState('error'); return; }
+      if (!tapEventId) { setState('no-tap'); return; }
       setState('sending');
       try {
         await submitCustomButtonRequest(slug, button.id, tapEventId);
@@ -151,7 +157,7 @@ function QuickRequestButton({ slug, tapEventId, button }: {
 
   async function handleSend() {
     if (!tapEventId) {
-      setState('error');
+      setState('no-tap');
       return;
     }
     setState('sending');
@@ -205,10 +211,10 @@ function QuickRequestButton({ slug, tapEventId, button }: {
           className="mt-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
         <div className="mt-2 flex gap-2">
-          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {state === 'sending' ? t('sending') : t('send')}
           </button>
-          <button type="button" onClick={() => setState('idle')} className="text-sm text-ivory-dim">{t('cancel')}</button>
+          <button type="button" onClick={() => setState('idle')} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">{t('cancel')}</button>
         </div>
       </div>
     );
@@ -218,7 +224,13 @@ function QuickRequestButton({ slug, tapEventId, button }: {
     <button type="button" onClick={handleTap} disabled={state === 'sending'} className={buttonClass}>
       {iconEl}
       <span className="font-body text-[15px] font-medium">
-        {state === 'sending' ? t('sending') : state === 'error' ? `${button.label} — ${t('tapAgainToTry')}` : button.label}
+        {state === 'sending'
+          ? t('sending')
+          : state === 'no-tap'
+          ? t('tapRequiredForRequest')
+          : state === 'error'
+          ? `${button.label} — ${t('tapAgainToTry')}`
+          : button.label}
       </span>
     </button>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listOrders, updateOrderStatus, getBusiness, reprintKitchenTicket } from '../../lib/authApi';
@@ -166,11 +167,11 @@ export default function KitchenPage() {
 
       {stations.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setStationFilter('all')} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${stationFilter === 'all' ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'}`}>
+          <button type="button" onClick={() => setStationFilter('all')} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${stationFilter === 'all' ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'}`}>
             {t('All stations')}
           </button>
           {stations.map((s) => (
-            <button type="button" key={s} onClick={() => setStationFilter(s)} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${stationFilter === s ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'}`}>
+            <button type="button" key={s} onClick={() => setStationFilter(s)} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${stationFilter === s ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'}`}>
               {s}
             </button>
           ))}
@@ -218,7 +219,7 @@ export default function KitchenPage() {
                       <span className="flex h-6 min-w-6 items-center justify-center rounded bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
                       <div className="text-ivory-dim">
                         <span className="font-display text-lg font-medium text-ivory">{item.item_name}</span>
-                        {item.station && <span className="ml-1 text-[10px] uppercase tracking-wide text-brass">{item.station}</span>}
+                        {item.station && <span className="ml-1 text-xs uppercase tracking-wide text-brass">{item.station}</span>}
                         {item.addons.length > 0 && (
                           <span className="block text-sm text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>
                         )}
@@ -230,7 +231,8 @@ export default function KitchenPage() {
                 <div className="mt-2 flex items-center justify-between border-t border-ink-line pt-2">
                   <p className="text-sm text-ivory-dim">{order.order_type === 'drive_through' ? t('Drive Through') : (order.table_label || t('No table'))}</p>
                   <div className="flex items-center gap-1.5">
-                    {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-[10px] font-medium text-brass">{t('Preparing')}</span>}
+                    {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-xs font-medium text-brass">{t('Preparing')}</span>}
+                    {urgency && <AlertTriangle size={13} strokeWidth={2.25} className={urgency === 'danger' ? 'text-danger' : 'text-warning'} aria-hidden="true" />}
                     <TicketAge createdAt={order.created_at} />
                   </div>
                 </div>
@@ -242,14 +244,14 @@ export default function KitchenPage() {
                   {order.status === 'pending' && (
                     <button type="button"
                       onClick={() => handleStart(order.id)}
-                      className="flex-1 rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10"
+                      className="flex-1 rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {t('Start')}
                     </button>
                   )}
                   <button type="button"
                     onClick={() => handleMarkReady(order.id)}
-                    className="flex-1 rounded-md bg-brass px-2 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90"
+                    className="flex-1 rounded-md bg-brass px-2 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
                   >
                     {t('Mark ready')}
                   </button>
@@ -257,7 +259,8 @@ export default function KitchenPage() {
                     onClick={() => handleReprint(order.id)}
                     disabled={reprintingId === order.id}
                     title={t('Reprint ticket')}
-                    className="rounded-md border border-ink-line px-2 min-h-[36px] py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50"
+                    aria-label={reprintingId === order.id ? t('Reprinting...') : t('Reprint ticket')}
+                    className="rounded-md border border-ink-line px-2 min-h-[36px] py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {reprintingId === order.id ? '…' : t('Reprint')}
                   </button>

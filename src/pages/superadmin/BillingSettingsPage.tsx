@@ -60,7 +60,7 @@ export default function BillingSettingsPage() {
         <Field label="Legal trade name (shown at the top of every receipt)">
           <div className="flex gap-2">
             <input value={legalName} onChange={(e) => setLegalName(e.target.value)} placeholder="Your registered trade name" className={`${inputClass} flex-1`} />
-            <button type="button" onClick={handleSaveName} disabled={saving === 'name'} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            <button type="button" onClick={handleSaveName} disabled={saving === 'name'} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {saving === 'name' ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -69,7 +69,7 @@ export default function BillingSettingsPage() {
         <Field label="Your TRN (required on every receipt to be a valid tax invoice)">
           <div className="flex gap-2">
             <input value={issuerTrn} onChange={(e) => setIssuerTrn(e.target.value)} placeholder="100000000000003" className={`${inputClass} flex-1`} />
-            <button type="button" onClick={handleSaveTrn} disabled={saving === 'trn'} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            <button type="button" onClick={handleSaveTrn} disabled={saving === 'trn'} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {saving === 'trn' ? 'Saving...' : 'Save'}
             </button>
           </div>

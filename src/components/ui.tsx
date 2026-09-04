@@ -16,7 +16,7 @@ import type { ReactNode, FormEvent } from 'react';
 const PRESS_FEEDBACK = 'transition-transform duration-100 active:scale-[0.97]';
 
 export const inputClass =
-  'w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass transition-colors duration-150';
+  'w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60 focus:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass/50 transition-colors duration-150';
 
 export function Field({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
@@ -71,8 +71,8 @@ export function ActionButton({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex items-center gap-1.5 rounded-lg border disabled:cursor-not-allowed disabled:opacity-50 ${sizeClass} ${PRESS_FEEDBACK} ${
-        danger ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
+      className={`inline-flex items-center gap-1.5 rounded-lg border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${sizeClass} ${PRESS_FEEDBACK} ${
+        danger ? 'border-danger/40 text-danger hover:bg-danger/10 focus-visible:ring-danger' : 'border-brass/40 text-brass hover:bg-brass/10 focus-visible:ring-brass'
       }`}
     >
       {loading && <Spinner />}
@@ -92,7 +92,7 @@ export function PrimaryButton({
       type={type}
       disabled={disabled || loading}
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg bg-brass font-medium text-ink hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${sizeClass} ${PRESS_FEEDBACK}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-lg bg-brass font-medium text-ink hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${sizeClass} ${PRESS_FEEDBACK}`}
     >
       {loading && <Spinner />}
       {children}
@@ -112,7 +112,7 @@ export function ToggleRow({ label, description, checked, onChange, disabled }: {
       <button type="button"
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`shrink-0 rounded-lg border px-3.5 py-2 text-base disabled:cursor-not-allowed disabled:opacity-50 ${PRESS_FEEDBACK} ${
+        className={`shrink-0 rounded-lg border px-3.5 py-2 text-base disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${PRESS_FEEDBACK} ${
           checked ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
         }`}
       >

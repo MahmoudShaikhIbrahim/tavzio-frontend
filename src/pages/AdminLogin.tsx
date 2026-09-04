@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { login, getMe, completeInvite } from '../lib/authApi';
 import { setSession } from '../lib/session';
@@ -43,7 +43,9 @@ function AuthShell({ children }: { children: ReactNode }) {
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_20%_10%,rgba(184,146,90,0.14),transparent)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_85%_90%,rgba(184,146,90,0.10),transparent)]" />
         <div className="relative">
-          <Logo />
+          <Link to="/" className="inline-flex rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+            <Logo />
+          </Link>
           <p className="mt-14 max-w-xs font-display text-3xl leading-tight text-ivory">
             One tap. Every guest <em className="not-italic text-brass">touchpoint.</em>
           </p>
@@ -75,7 +77,7 @@ function LuxuryButton({ children, disabled }: { children: ReactNode; disabled?: 
     <button
       type="submit"
       disabled={disabled}
-      className="btn-luxury inline-flex w-full items-center justify-center gap-2 bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+      className="btn-luxury inline-flex w-full items-center justify-center gap-2 bg-brass px-4 py-3 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
     >
       <span className="btn-luxury-label">{children}</span>
       <span className="btn-luxury-arrow"><ArrowRight size={16} strokeWidth={2} /></span>
@@ -113,6 +115,11 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  // No self-service reset endpoint exists yet - this just surfaces the
+  // real, current path (contact support) instead of linking to a flow
+  // that isn't built, or silently having no "forgot password" affordance
+  // at all.
+  const [showForgotHelp, setShowForgotHelp] = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
@@ -137,7 +144,9 @@ export default function AdminLogin() {
     <div data-theme={theme}>
       <AuthShell>
         <div className="card-elevated w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-8">
-          <Logo size="lg" className="mx-auto lg:hidden" />
+          <Link to="/" className="mx-auto flex w-fit rounded lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+            <Logo size="lg" />
+          </Link>
           <h1 className="mt-1 text-center font-display text-2xl text-ivory">Sign in</h1>
           <p className="mt-1 text-center text-sm text-ivory-dim">
             Platform administrators, business owners, and staff all sign in
@@ -148,6 +157,7 @@ export default function AdminLogin() {
             <input
               type="email"
               required
+              autoComplete="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -158,6 +168,7 @@ export default function AdminLogin() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -167,12 +178,26 @@ export default function AdminLogin() {
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute end-3 top-1/2 -translate-y-1/2 text-ivory-dim hover:text-ivory"
+                className="absolute end-3 top-1/2 -translate-y-1/2 rounded text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <div className="text-end">
+              <button
+                type="button"
+                onClick={() => setShowForgotHelp((s) => !s)}
+                className="rounded text-xs text-ivory-dim underline hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              >
+                Forgot password?
+              </button>
+            </div>
+            {showForgotHelp && (
+              <p className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-xs text-ivory-dim">
+                Contact your business owner or Tavzio support to reset your password.
+              </p>
+            )}
             {error && <p className="text-sm text-danger">{error}</p>}
             <TurnstileWidget onVerify={setTurnstileToken} />
             <LuxuryButton disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</LuxuryButton>
@@ -235,7 +260,9 @@ function SetPasswordForm({ mode, theme, onDone }: { mode: 'invite' | 'recovery';
     <div data-theme={theme}>
       <AuthShell>
         <div className="card-elevated w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-8">
-          <Logo size="lg" className="mx-auto lg:hidden" />
+          <Link to="/" className="mx-auto flex w-fit rounded lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+            <Logo size="lg" />
+          </Link>
           <h1 className="mt-1 text-center font-display text-2xl text-ivory">
             {mode === 'invite' ? 'Welcome to Tavzio' : 'Set a new password'}
           </h1>
@@ -248,6 +275,7 @@ function SetPasswordForm({ mode, theme, onDone }: { mode: 'invite' | 'recovery';
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 placeholder="New password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -257,7 +285,7 @@ function SetPasswordForm({ mode, theme, onDone }: { mode: 'invite' | 'recovery';
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute end-3 top-1/2 -translate-y-1/2 text-ivory-dim hover:text-ivory"
+                className="absolute end-3 top-1/2 -translate-y-1/2 rounded text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -266,6 +294,7 @@ function SetPasswordForm({ mode, theme, onDone }: { mode: 'invite' | 'recovery';
             <input
               type={showPassword ? 'text' : 'password'}
               required
+              autoComplete="new-password"
               placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

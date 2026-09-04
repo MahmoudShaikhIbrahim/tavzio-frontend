@@ -4,6 +4,18 @@ import { useT } from '../../hooks/useT';
 import { getPosIntegration, getPosIntegrationStatus, upsertPosIntegration, togglePosIntegration } from '../../lib/authApi';
 import type { PosProvider } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import PasswordField from '../../components/PasswordField';
+
+// Fields whose key implies a real credential, not a plain identifier -
+// masked by default with the same show/hide pattern as AdminLogin's
+// own password field, rather than sitting visible in a text box.
+const SECRET_FIELD_KEYS = new Set(['accessToken', 'authHeaderValue']);
+
+// `label` kept in the signature for call-site parity (aria context is
+// obvious from the surrounding field already) - PasswordField doesn't need it.
+function SecretField({ value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return <PasswordField value={value} onChange={onChange} required={false} autoComplete="off" />;
+}
 
 // Only the providers actually wired for 'ordering' purpose (pushing a
 // live order out to an external POS) - confirmed directly against
@@ -56,7 +68,7 @@ export default function PosIntegrationPage() {
         // "Loading..." forever with no way to tell what went wrong -
         // exactly what was happening when the encryption key was
         // missing and decrypting an existing config threw.
-        setError(err instanceof Error ? err.message : 'Could not load this integration');
+        setError(err instanceof Error ? err.message : t('Could not load this integration'));
         setLoaded(true);
       });
     getPosIntegrationStatus(businessId, 'ordering')
@@ -88,7 +100,7 @@ export default function PosIntegrationPage() {
       setConfigured(true);
       reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save this integration');
+      setError(err instanceof Error ? err.message : t('Could not save this integration'));
     } finally {
       setSaving(false);
     }
@@ -104,7 +116,7 @@ export default function PosIntegrationPage() {
       reload();
     } catch (err) {
       setEnabled(!next);
-      setToggleError(err instanceof Error ? err.message : 'Could not update this integration');
+      setToggleError(err instanceof Error ? err.message : t('Could not update this integration'));
     }
   }
 
@@ -128,7 +140,7 @@ export default function PosIntegrationPage() {
             onClick={handleToggle}
             disabled={!configured}
             title={!configured ? t('Save your connection details below first') : undefined}
-            className={`rounded-lg border px-3.5 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40 ${enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+            className={`rounded-lg border px-3.5 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-40 ${enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
           >
             {enabled ? t('Enabled') : t('Disabled')}
           </button>
@@ -153,16 +165,24 @@ export default function PosIntegrationPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {fieldsByProvider[provider].map((f) => (
             <Field key={f.key} label={t(f.label)}>
-              <input
-                value={config[f.key] || ''}
-                onChange={(e) => setConfig((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                className={inputClass}
-              />
+              {SECRET_FIELD_KEYS.has(f.key) ? (
+                <SecretField
+                  label={t(f.label)}
+                  value={config[f.key] || ''}
+                  onChange={(v) => setConfig((prev) => ({ ...prev, [f.key]: v }))}
+                />
+              ) : (
+                <input
+                  value={config[f.key] || ''}
+                  onChange={(e) => setConfig((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                  className={inputClass}
+                />
+              )}
             </Field>
           ))}
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
       </Section>

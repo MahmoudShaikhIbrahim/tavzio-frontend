@@ -42,7 +42,7 @@ export default function TableReceiptsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ivory">{t('Table Receipts')}</h1>
-        <button type="button" onClick={() => navigate('/admin/dashboard/orders')} className="text-sm text-ivory-dim hover:text-ivory">
+        <button type="button" onClick={() => navigate('/admin/dashboard/orders')} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('Back to Orders')}
         </button>
       </div>
@@ -58,7 +58,7 @@ export default function TableReceiptsPage() {
           <button type="button"
             key={tbl.cardId}
             onClick={() => setSelectedCardId(tbl.cardId)}
-            className="rounded-xl border border-ink-line p-5 text-start hover:border-brass/40"
+            className="rounded-xl border border-ink-line p-5 text-start hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <p className="font-display text-lg text-ivory">{tbl.tableLabel || t('No table')}</p>
             <p className="mt-1 text-sm text-ivory-dim">{tbl.itemCount} item{tbl.itemCount === 1 ? '' : 's'}</p>
@@ -129,7 +129,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
   if (printedResult) {
     return (
       <div className="space-y-4">
-        <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
+        <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">← Back to tables</button>
         <Section title={`${t('Receipt for')} ${tableLabel || t('this table')}`}>
           {printedResult.printed ? (
             <p className="text-base text-success">{t('Sent to the printer.')}</p>
@@ -138,7 +138,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
               {t('No printer connected')}{printedResult.printError ? ` (${printedResult.printError})` : ''} - {t("opened your browser's print dialog instead.")}
             </p>
           )}
-          <button type="button" onClick={onPrinted} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={onPrinted} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Done')}
           </button>
         </Section>
@@ -148,7 +148,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory">← Back to tables</button>
+      <button type="button" onClick={onBack} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">← Back to tables</button>
       <Section title={`${t('Receipt for')} ${tableLabel || t('this table')}`}>
         <p className="text-base text-ivory-dim">
           {t("Uncheck anything that shouldn't be on the printed receipt. This only changes what prints - it never removes the item from the order, and every removal is recorded in the audit log.")}
@@ -180,7 +180,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
         <button type="button"
           onClick={handlePrint}
           disabled={printing || finalItems.length === 0}
-          className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {printing ? t('Printing...') : t('Print')}
         </button>

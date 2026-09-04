@@ -21,7 +21,8 @@ export default function ThemeToggle({ onChange }: { onChange?: (mode: ThemeMode)
       title={`Theme: ${LABELS[mode]} — click to change`}
       className="group flex items-center gap-2 rounded-full border border-brass/40 bg-ink-soft px-3.5 py-2
                  text-ivory-dim shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all duration-200
-                 hover:border-brass hover:text-brass-bright hover:shadow-[0_0_0_1px_rgba(184,146,90,0.15)]"
+                 hover:border-brass hover:text-brass-bright hover:shadow-[0_0_0_1px_rgba(184,146,90,0.15)]
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
     >
       <Icon size={15} className="transition-transform duration-300 group-hover:rotate-12" />
       <span className="font-mono text-[11px] uppercase tracking-widest">{LABELS[mode]}</span>

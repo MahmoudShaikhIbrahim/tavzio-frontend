@@ -56,7 +56,6 @@ import LoyaltyPage from './pages/dashboard/LoyaltyPage';
 import CardsPage from './pages/dashboard/CardsPage';
 import NotificationsPage from './pages/dashboard/NotificationsPage';
 import OrdersPage from './pages/dashboard/OrdersPage';
-import RequestsPage from './pages/dashboard/RequestsPage';
 import KitchenPage from './pages/dashboard/KitchenPage';
 import BookingsPage from './pages/dashboard/BookingsPage';
 import FeaturesPage from './pages/dashboard/FeaturesPage';
@@ -234,7 +233,15 @@ export default function App() {
             <Route path="settings/cards" element={<CardsPage />} />
             <Route path="settings/notifications" element={<NotificationsPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="requests" element={<RequestsPage />} />
+            {/* Retired: Requests duplicated Orders' own attention panel
+                exactly (same call-waiter/bill/loyalty/cash-pending data,
+                same actions) - two nav entries for one queue. Requests
+                can already be routed to Orders (or Kitchen/POS/Tables/
+                Front Desk/Housekeeping) via each button's own
+                target_section, same as before. Redirects rather than a
+                hard 404 for anyone with this URL bookmarked, same
+                pattern as the other retired routes below. */}
+            <Route path="requests" element={<Navigate to="../orders" replace />} />
             <Route path="kitchen" element={<KitchenPage />} />
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="features" element={<FeaturesPage />} />

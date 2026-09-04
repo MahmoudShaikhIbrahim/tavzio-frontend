@@ -61,6 +61,7 @@ export default function ContractsListPage() {
   const [terminatingId, setTerminatingId] = useState<string | null>(null);
   const [terminationBasis, setTerminationBasis] = useState<typeof TERMINATION_BASES[number]['value']>('non_payment');
   const [terminationReason, setTerminationReason] = useState('');
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const navigate = useNavigate();
 
   function reload() {
@@ -82,12 +83,13 @@ export default function ContractsListPage() {
 
   async function handleSend(contractId: string) {
     setBusyId(contractId);
+    setMessage(null);
     try {
       const res = await sendStandaloneContract(contractId);
-      alert(res.message);
+      setMessage({ text: res.message, isError: false });
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not send contract');
+      setMessage({ text: err instanceof Error ? err.message : 'Could not send contract', isError: true });
     } finally {
       setBusyId(null);
     }
@@ -96,11 +98,12 @@ export default function ContractsListPage() {
   async function handleOnboard(contract: Contract) {
     if (!(await confirm({ title: 'Onboard business?', message: `Onboard ${contract.client_business_name}? This creates their Tavzio account and emails them a link to set their password.`, confirmLabel: 'Onboard' }))) return;
     setBusyId(contract.id);
+    setMessage(null);
     try {
       const res = await onboardContract(contract.id);
       navigate(`/admin/super/businesses/${res.business.id}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not onboard this contract');
+      setMessage({ text: err instanceof Error ? err.message : 'Could not onboard this contract', isError: true });
       setBusyId(null);
     }
   }
@@ -116,13 +119,14 @@ export default function ContractsListPage() {
     } This cannot be undone.`;
     if (!(await confirm({ title: 'Terminate contract?', message: confirmMsg, confirmLabel: 'Terminate', danger: true }))) return;
     setBusyId(contract.id);
+    setMessage(null);
     try {
       await terminateContract(contract.id, terminationBasis, terminationReason);
       setTerminatingId(null);
       setTerminationReason('');
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not terminate this contract');
+      setMessage({ text: err instanceof Error ? err.message : 'Could not terminate this contract', isError: true });
     } finally {
       setBusyId(null);
     }
@@ -131,11 +135,12 @@ export default function ContractsListPage() {
   async function handleDelete(contract: Contract) {
     if (!(await confirm({ title: 'Delete contract?', message: `Permanently delete ${contract.contract_number}? This only works because it was never signed - a signed contract can't be deleted, only terminated.`, confirmLabel: 'Delete', danger: true }))) return;
     setBusyId(contract.id);
+    setMessage(null);
     try {
       await deleteContract(contract.id);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not delete this contract');
+      setMessage({ text: err instanceof Error ? err.message : 'Could not delete this contract', isError: true });
     } finally {
       setBusyId(null);
     }
@@ -147,7 +152,7 @@ export default function ContractsListPage() {
         <h1 className="font-display text-3xl text-ivory">Contracts</h1>
         <Link
           to="/admin/super/contracts/new"
-          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90"
+          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           + Create contract
         </Link>
@@ -156,6 +161,7 @@ export default function ContractsListPage() {
         A contract exists here before any account does. Once it's signed and paid, an <span className="text-ivory">Onboard</span> action
         appears - that's the one moment the client's account actually gets created.
       </p>
+      {message && <p className={`mt-3 text-sm ${message.isError ? 'text-danger' : 'text-success'}`}>{message.text}</p>}
 
       <div className="mt-5 space-y-3">
         {contracts.map((c) => {
@@ -177,25 +183,25 @@ export default function ContractsListPage() {
                 </div>
                 <div className="flex gap-2">
                   {c.status === 'draft' && (
-                    <button type="button" disabled={busyId === c.id} onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline disabled:opacity-50">
+                    <button type="button" disabled={busyId === c.id} onClick={() => handleSend(c.id)} className="text-sm text-brass hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       Send to client
                     </button>
                   )}
-                  <button type="button" onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline">
+                  <button type="button" onClick={() => handlePreview(c.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {previewingId === c.id ? 'Hide' : 'Preview'}
                   </button>
                   {canOnboard && (
-                    <button type="button" disabled={busyId === c.id} onClick={() => handleOnboard(c)} className="text-sm font-medium text-success hover:underline disabled:opacity-50">
+                    <button type="button" disabled={busyId === c.id} onClick={() => handleOnboard(c)} className="text-sm font-medium text-success hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {busyId === c.id ? 'Onboarding...' : 'Onboard'}
                     </button>
                   )}
                   {['signed', 'paid', 'active'].includes(c.status) && (
-                    <button type="button" onClick={() => setTerminatingId(terminatingId === c.id ? null : c.id)} className="text-sm text-danger hover:underline">
+                    <button type="button" onClick={() => setTerminatingId(terminatingId === c.id ? null : c.id)} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {terminatingId === c.id ? 'Cancel' : 'Terminate'}
                     </button>
                   )}
                   {['draft', 'sent'].includes(c.status) && (
-                    <button type="button" disabled={busyId === c.id} onClick={() => handleDelete(c)} className="text-sm text-danger hover:underline disabled:opacity-50">
+                    <button type="button" disabled={busyId === c.id} onClick={() => handleDelete(c)} className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       Delete
                     </button>
                   )}
@@ -221,7 +227,7 @@ export default function ContractsListPage() {
                   <select
                     value={terminationBasis}
                     onChange={(e) => setTerminationBasis(e.target.value as typeof terminationBasis)}
-                    className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory"
+                    className="w-full rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {TERMINATION_BASES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
                   </select>
@@ -235,7 +241,7 @@ export default function ContractsListPage() {
                     type="button"
                     disabled={busyId === c.id}
                     onClick={() => handleTerminate(c)}
-                    className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-status-text hover:opacity-90 disabled:opacity-50"
+                    className="rounded-lg bg-danger px-4 py-2 text-sm font-medium text-status-text hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {busyId === c.id ? 'Terminating...' : 'Confirm termination'}
                   </button>

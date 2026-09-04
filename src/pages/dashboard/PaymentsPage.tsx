@@ -99,7 +99,7 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
       setShowRefund(false);
       onChange();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Refund failed');
+      setError(err instanceof Error ? err.message : t('Refund failed'));
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +133,7 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
           {payment.refunded ? (
             <span className="rounded-full border border-danger/40 px-2 py-0.5 text-sm text-danger">{t('Refunded')} {payment.refund_amount}</span>
           ) : !isManual ? (
-            <button type="button" onClick={() => setShowRefund((s) => !s)} className="text-base text-danger hover:underline">{t('Refund')}</button>
+            <button type="button" onClick={() => setShowRefund((s) => !s)} className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Refund')}</button>
           ) : (
             <span className="text-sm text-ivory-dim" title={t('This was a counter payment (cash or card machine) - refund it there directly, not through Tavzio.')}>
               {t('Refund on the machine/register')}
@@ -152,20 +152,20 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
               max={Number(payment.amount) + Number(payment.tip_amount)}
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-28 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
+              className="w-28 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
             />
             <input
               placeholder={t('Reason (optional)')}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="flex-1 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory"
+              className="flex-1 rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
             />
           </div>
           {error && <p className="text-base text-danger">{error}</p>}
           <button type="button"
             onClick={handleRefund}
             disabled={submitting}
-            className="w-full rounded-lg bg-danger/10 border border-danger/40 px-3 py-1.5 text-base text-danger disabled:opacity-50"
+            className="w-full rounded-lg bg-danger/10 border border-danger/40 px-3 py-1.5 text-base text-danger disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
           >
             {submitting ? t('Processing...') : `${t('Confirm refund of')} ${amount.toFixed(2)} AED`}
           </button>

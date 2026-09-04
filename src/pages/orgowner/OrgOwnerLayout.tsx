@@ -54,7 +54,7 @@ export default function OrgOwnerLayout() {
           <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
             <AccountSwitcher />
             <span>{user?.name} · Organization Owner</span>
-            <button type="button" onClick={logout} className="hover:text-ivory">Sign out</button>
+            <button type="button" onClick={logout} className="rounded hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Sign out</button>
           </div>
         </div>
         <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
@@ -62,7 +62,7 @@ export default function OrgOwnerLayout() {
             <Link
               key={t.path}
               to={`/admin/org/${t.path}`}
-              className={`border-b-2 px-3 py-2.5 text-base ${
+              className={`border-b-2 px-3 py-2.5 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                 location.pathname.startsWith(`/admin/org/${t.path}`) ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
               }`}
             >

@@ -79,7 +79,7 @@ export default function OrgMenuPage() {
       </div>
 
       <Section title="Publish to Locations" action={
-        <button type="button" onClick={handlePublish} disabled={publishing || selectedLocations.length === 0} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handlePublish} disabled={publishing || selectedLocations.length === 0} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {publishing ? 'Publishing...' : 'Publish'}
         </button>
       }>
@@ -96,14 +96,14 @@ export default function OrgMenuPage() {
       </Section>
 
       <Section title="Categories & Items" action={
-        <button type="button" onClick={() => setShowAddCategory((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowAddCategory((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + Add category
         </button>
       }>
         {showAddCategory && (
           <form onSubmit={handleAddCategory} className="flex items-end gap-2">
             <Field label="Category name"><input value={categoryName} onChange={(e) => setCategoryName(e.target.value)} required className={inputClass} /></Field>
-            <button type="submit" className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink">Add</button>
+            <button type="submit" className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Add</button>
           </form>
         )}
         <div className="space-y-4">
@@ -111,7 +111,7 @@ export default function OrgMenuPage() {
             <div key={cat.id} className="rounded-lg border border-ink-line p-4">
               <div className="flex items-center justify-between">
                 <p className="text-base text-ivory">{cat.name}</p>
-                <button type="button" onClick={() => setShowAddItem(showAddItem === cat.id ? null : cat.id)} className="text-sm text-brass hover:underline">
+                <button type="button" onClick={() => setShowAddItem(showAddItem === cat.id ? null : cat.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   + Add item
                 </button>
               </div>
@@ -119,7 +119,7 @@ export default function OrgMenuPage() {
                 <form onSubmit={(e) => handleAddItem(e, cat.id)} className="mt-2 flex items-end gap-2">
                   <input value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="Item name" required className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
                   <input type="number" min={0} value={itemPrice} onFocus={(ev) => ev.target.select()} onChange={(e) => setItemPrice(Number(e.target.value))} placeholder="Price" className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
-                  <button type="submit" className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">Add</button>
+                  <button type="submit" className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Add</button>
                 </form>
               )}
               <div className="mt-2 space-y-1.5">
@@ -159,14 +159,14 @@ function ItemRow({ item, onSaved, onDelete }: { item: { id: string; name: string
       {editing ? (
         <div className="flex items-center gap-2">
           <input type="number" min={0} value={price} onFocus={(e) => e.target.select()} onChange={(e) => setPrice(Number(e.target.value))} className="w-20 rounded border border-ink-line bg-ink px-2 py-1 text-sm text-ivory" />
-          <button type="button" onClick={handleSave} disabled={saving} className="text-brass hover:underline disabled:opacity-50">Save</button>
-          <button type="button" onClick={() => setEditing(false)} className="text-ivory-dim hover:underline">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="text-brass hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Save</button>
+          <button type="button" onClick={() => setEditing(false)} className="text-ivory-dim hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Cancel</button>
         </div>
       ) : (
         <div className="flex items-center gap-3">
           <span className="text-ivory-dim">AED {item.price.toFixed(2)}</span>
-          <button type="button" onClick={() => setEditing(true)} className="text-brass hover:underline">Edit</button>
-          <button type="button" onClick={onDelete} className="text-danger hover:underline">Delete</button>
+          <button type="button" onClick={() => setEditing(true)} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Edit</button>
+          <button type="button" onClick={onDelete} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Delete</button>
         </div>
       )}
     </div>

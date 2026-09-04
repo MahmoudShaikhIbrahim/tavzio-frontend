@@ -8,6 +8,7 @@ import { subscribeToBusinessTable } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { playNotificationSound } from '../../lib/soundPlayer';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 import WeeklyHoursEditor, { type WeeklyHours } from '../../components/WeeklyHoursEditor';
 import type { BookingRow, BookingStatus, NotificationSettings, FloorTable, AdminBusiness } from '../../types';
 
@@ -81,10 +82,10 @@ export default function BookingsPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ivory">{t('Bookings')}</h1>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setShowNewBooking((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={() => setShowNewBooking((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('+ New booking')}
           </button>
-          <button type="button" onClick={() => setShowOnlineSettings((s) => !s)} className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10">
+          <button type="button" onClick={() => setShowOnlineSettings((s) => !s)} className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {showOnlineSettings ? t('Close online booking settings') : t('Online booking settings')}
           </button>
           <ExportButtons businessId={businessId} kind="bookings" />
@@ -169,7 +170,7 @@ function NewBookingForm({ businessId, tables, onDone }: { businessId: string; ta
       </div>
       <Field label={t('Note')}><input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anniversary, high chair needed, etc." className={inputClass} /></Field>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? t('Creating...') : t('Create booking')}
       </button>
     </form>
@@ -197,11 +198,22 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
   booking: BookingRow; businessId: string; tables: FloorTable[]; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void;
 }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [confirmingArrival, setConfirmingArrival] = useState(false);
 
   function setStatus(status: BookingStatus) {
     onBookingsChange((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status } : b)));
     updateBookingStatus(businessId, booking.id, status).catch(onChange);
+  }
+
+  async function handleDecline() {
+    if (!(await confirm({
+      title: t('Decline this booking?'),
+      message: `${t('Decline')} ${booking.guest_name || t('this booking')}? ${t('This cannot be undone.')}`,
+      confirmLabel: t('Decline'),
+      danger: true,
+    }))) return;
+    setStatus('declined');
   }
 
   function setTable(tableId: string) {
@@ -292,7 +304,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       {tables.length > 0 && ['pending', 'confirmed'].includes(booking.status) && (
         <div className="mt-2 flex items-center gap-1.5 text-xs">
           <span className="text-ivory-dim">{t('Table:')}</span>
-          <select value={booking.table_id || ''} onChange={(e) => setTable(e.target.value)} className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory">
+          <select value={booking.table_id || ''} onChange={(e) => setTable(e.target.value)} className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="">{t('Not assigned')}</option>
             {tables.map((tbl) => <option key={tbl.id} value={tbl.id}>{tbl.label}</option>)}
           </select>
@@ -304,13 +316,13 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
           <div className="flex gap-1.5">
             <button type="button"
               onClick={() => setStatus('confirmed')}
-              className="flex-1 rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90"
+              className="flex-1 rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {t('Confirm')}
             </button>
             <button type="button"
-              onClick={() => setStatus('declined')}
-              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10"
+              onClick={handleDecline}
+              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {t('Decline')}
             </button>
@@ -320,15 +332,16 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
           <button type="button"
             onClick={handleConfirmArrival}
             disabled={confirmingArrival}
-            className="w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
+            title={t('I see the guest')}
+            className="w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
-            {confirmingArrival ? t('Confirming...') : t("Confirm arrival - I see the guest")}
+            {confirmingArrival ? t('Confirming...') : t('Confirm arrival')}
           </button>
         )}
         {booking.status === 'confirmed' && (
           <button type="button"
             onClick={() => setStatus('completed')}
-            className="mt-1.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10"
+            className="mt-1.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
             {t('Mark completed')}
           </button>
@@ -536,12 +549,12 @@ function ShareSection({ slug }: { slug: string }) {
           <Field label={t('Booking link')}>
             <div className="flex gap-2">
               <input readOnly value={bookingUrl} className={`${inputClass} flex-1`} />
-              <button type="button" onClick={handleCopy} className="shrink-0 rounded-lg border border-brass/40 px-3.5 py-2 text-sm text-brass hover:bg-brass/10">
+              <button type="button" onClick={handleCopy} className="shrink-0 rounded-lg border border-brass/40 px-3.5 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {copied ? t('Copied') : t('Copy link')}
               </button>
             </div>
           </Field>
-          <button type="button" onClick={handleDownload} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={handleDownload} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Download QR code')}
           </button>
         </div>

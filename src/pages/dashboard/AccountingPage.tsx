@@ -97,7 +97,7 @@ function ChartOfAccountsSection({ businessId }: { businessId: string }) {
           <Field label="Code"><input value={code} onChange={(e) => setCode(e.target.value)} className={`${inputClass} w-24`} /></Field>
           <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} w-48`} /></Field>
           <Field label="Type">
-            <select value={accountType} onChange={(e) => setAccountType(e.target.value as typeof accountType)} className={`${inputClass} w-32`}>
+            <select value={accountType} onChange={(e) => setAccountType(e.target.value as typeof accountType)} className={`${inputClass} w-32 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <option value="asset">Asset</option>
               <option value="liability">Liability</option>
               <option value="equity">Equity</option>
@@ -238,17 +238,17 @@ function NewJournalEntryForm({ businessId, accounts, onSaved }: { businessId: st
       <div className="mt-3 space-y-2">
         {lines.map((l, i) => (
           <div key={i} className="flex flex-wrap items-end gap-2">
-            <select value={l.account_id} onChange={(e) => updateLine(i, { account_id: e.target.value })} className={`${inputClass} w-56`}>
+            <select value={l.account_id} onChange={(e) => updateLine(i, { account_id: e.target.value })} className={`${inputClass} w-56 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <option value="">Select account...</option>
               {accounts.map((a) => <option key={a.id} value={a.id}>{a.code} — {a.name}</option>)}
             </select>
             <input type="number" placeholder="Debit" value={l.debit_aed || ''} onFocus={(e) => e.target.select()} onChange={(e) => updateLine(i, { debit_aed: Number(e.target.value) || 0, credit_aed: 0 })} className={`${inputClass} w-28`} />
             <input type="number" placeholder="Credit" value={l.credit_aed || ''} onFocus={(e) => e.target.select()} onChange={(e) => updateLine(i, { credit_aed: Number(e.target.value) || 0, debit_aed: 0 })} className={`${inputClass} w-28`} />
             <input placeholder="Memo" value={l.memo} onChange={(e) => updateLine(i, { memo: e.target.value })} className={`${inputClass} w-40`} />
-            {lines.length > 2 && <button type="button" onClick={() => setLines(lines.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline">remove</button>}
+            {lines.length > 2 && <button type="button" onClick={() => setLines(lines.filter((_, idx) => idx !== i))} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">remove</button>}
           </div>
         ))}
-        <button type="button" onClick={() => setLines([...lines, { account_id: '', debit_aed: 0, credit_aed: 0, memo: '' }])} className="text-sm text-brass hover:underline">+ Add line</button>
+        <button type="button" onClick={() => setLines([...lines, { account_id: '', debit_aed: 0, credit_aed: 0, memo: '' }])} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+ Add line</button>
       </div>
       <div className="mt-3 flex items-center gap-4">
         <p className={`text-sm ${balanced ? 'text-success' : 'text-ivory-dim'}`}>
@@ -365,7 +365,7 @@ function VendorsAndBillsSection({ businessId }: { businessId: string }) {
       {addingBill && (
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-3">
           <Field label="Vendor">
-            <select value={billVendorId} onChange={(e) => setBillVendorId(e.target.value)} className={`${inputClass} w-48`}>
+            <select value={billVendorId} onChange={(e) => setBillVendorId(e.target.value)} className={`${inputClass} w-48 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <option value="">Select...</option>
               {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>

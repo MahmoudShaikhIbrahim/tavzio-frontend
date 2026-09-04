@@ -36,7 +36,7 @@ export default function LandingButtonsPage() {
     <div className="space-y-6">
       <div className="flex gap-2 border-b border-ink-line">
         {(['landing', ...(isHotel ? ['guest-portal'] as const : []), 'services', 'drive-through'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             {tabKey === 'landing' ? t('Landing Page') : tabKey === 'guest-portal' ? t('Guest Portal Services') : tabKey === 'services' ? t('Bookable Services') : t('Drive Through')}
           </button>
         ))}
@@ -122,7 +122,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Guest Portal Services')} action={
-      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add service')}</button>
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Add service')}</button>
     }>
       <p className="text-sm text-ivory-dim">
         {t('These are the buttons a guest sees under "Services" in the in-room NFC portal (Extra towels, Housekeeping, and so on) - rename, reorder, disable, or add your own. Each one routes to a specific place internally (housekeeping, maintenance, or a general staff request), which you pick when adding it.')}
@@ -143,13 +143,13 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
                 </p>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <button type="button" onClick={() => handleReorder(s.id, -1)} disabled={i === 0} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↑</button>
-                <button type="button" onClick={() => handleReorder(s.id, 1)} disabled={i === sorted.length - 1} className="text-ivory-dim hover:text-ivory disabled:opacity-30">↓</button>
-                <button type="button" onClick={() => handleToggleEnabled(s)} className="text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => handleReorder(s.id, -1)} disabled={i === 0} className="text-ivory-dim hover:text-ivory disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">↑</button>
+                <button type="button" onClick={() => handleReorder(s.id, 1)} disabled={i === sorted.length - 1} className="text-ivory-dim hover:text-ivory disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">↓</button>
+                <button type="button" onClick={() => handleToggleEnabled(s)} className="text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {s.enabled ? t('Disable') : t('Enable')}
                 </button>
-                <button type="button" onClick={() => setEditingId(s.id)} className="text-brass hover:underline">{t('Edit')}</button>
-                <button type="button" onClick={() => handleDelete(s.id, s.label)} className="text-danger hover:underline">{t('Delete')}</button>
+                <button type="button" onClick={() => setEditingId(s.id)} className="text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                <button type="button" onClick={() => handleDelete(s.id, s.label)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
               </div>
             </div>
           )
@@ -205,10 +205,10 @@ function GuestServiceForm({ businessId, existing, onDone, onCancel }: {
       </Field>
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex items-center gap-3">
-        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : existing ? t('Save changes') : t('Add service')}
         </button>
-        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>}
+        {onCancel && <button type="button" onClick={onCancel} className="text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>}
       </div>
     </form>
   );
@@ -405,7 +405,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         <button type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {saving ? t('Saving...') : t('Save buttons')}
         </button>
@@ -427,7 +427,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                 <button
                   type="button"
                   onClick={() => toggleEnabled(key)}
-                  className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}
+                  className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
                 >
                   {cfg.enabled ? t('On') : t('Off')}
                 </button>
@@ -454,7 +454,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                 <select
                   value={cfg.icon || meta.defaultIcon}
                   onChange={(e) => updateIcon(key, e.target.value)}
-                  className="w-auto rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+                  className="w-auto rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 >
                   {ICON_LIBRARY.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </select>
@@ -464,7 +464,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
                   <input type="file" accept="image/*" onChange={(e) => handleImageUpload(key, e)} className="hidden" />
                 </label>
                 {cfg.imageUrl && (
-                  <button type="button" onClick={() => updateImage(key, null)} className="w-auto text-sm text-danger hover:underline">
+                  <button type="button" onClick={() => updateImage(key, null)} className="w-auto text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Remove')}
                   </button>
                 )}
@@ -496,7 +496,7 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
         ) : (
           <button type="button"
             onClick={() => setShowAddForm(true)}
-            className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10"
+            className="mt-2 rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {t('+ Add another link')}
           </button>
@@ -580,13 +580,13 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
       {!forcedParentId && (
         <Field label={t('What does this button do?')}>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setButtonType('link')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'link' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+            <button type="button" onClick={() => setButtonType('link')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'link' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               {t('Opens a link')}
             </button>
-            <button type="button" onClick={() => setButtonType('notification')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'notification' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+            <button type="button" onClick={() => setButtonType('notification')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'notification' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               {t('Notifies staff')}
             </button>
-            <button type="button" onClick={() => setButtonType('group')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'group' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+            <button type="button" onClick={() => setButtonType('group')} className={`rounded-lg border px-3.5 py-2 text-sm ${buttonType === 'group' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               {t('A list of services')}
             </button>
           </div>
@@ -611,16 +611,16 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
             }}
             className={inputClass}
           >
-            <option value="general::">{t('Everyone with Requests access')}</option>
+            <option value="general::">{t('Everyone with Orders access')}</option>
             {requestTargetSectionsFor(isHotel).map((s) => <option key={s.key} value={`general::${s.key}`}>{t(s.label)}</option>)}
             {isHotel && <option value="housekeeping_task">{t('Housekeeping')}</option>}
             {isHotel && <option value="maintenance_ticket">{t('Maintenance')}</option>}
           </select>
           {notificationDestination === 'general' && targetSection && (
-            <p className="mt-2 text-sm text-ivory-dim">{t('Lands on the Requests page, visible only to staff assigned to this section.')}</p>
+            <p className="mt-2 text-sm text-ivory-dim">{t('Lands in the Orders attention panel, visible only to staff assigned to this section.')}</p>
           )}
           {notificationDestination === 'general' && !targetSection && (
-            <p className="mt-2 text-sm text-ivory-dim">{t('Lands on the Requests page, visible to everyone with Requests access.')}</p>
+            <p className="mt-2 text-sm text-ivory-dim">{t('Lands in the Orders attention panel, visible to everyone with Orders access.')}</p>
           )}
           {notificationDestination === 'housekeeping_task' && (
             <p className="mt-2 text-sm text-ivory-dim">{t('Lands directly on the Housekeeping screen as a real task, for the room the guest tapped from.')}</p>
@@ -651,7 +651,7 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
               className={`${inputClass} w-32`}
             />
             {color && (
-              <button type="button" onClick={() => setColor('')} className="text-sm text-ivory-dim hover:text-ivory">
+              <button type="button" onClick={() => setColor('')} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {t('Use default')}
               </button>
             )}
@@ -673,7 +673,7 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
           {imageUrl && <img src={imageUrl} alt="" className="h-10 w-10 rounded-full border border-ink-line object-cover" />}
           <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="text-sm text-ivory-dim" />
           {imageUrl && (
-            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-danger hover:underline">
+            <button type="button" onClick={() => setImageUrl(null)} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {t('Remove')}
             </button>
           )}
@@ -683,7 +683,7 @@ function CustomButtonForm({ business, businessId, existing, forcedParentId, onDo
       {buttonType === 'link' && (
         <Field label={t('URL')}><input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." className={inputClass} /></Field>
       )}
-      <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
+      <button disabled={saving || uploading} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? t('Saving...') : existing ? t('Save changes') : t('Add button')}
       </button>
       {error && <p className="text-base text-danger">{error}</p>}
@@ -759,7 +759,7 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
           {addingChild ? (
             <CustomButtonForm business={business} businessId={businessId} forcedParentId={button.id} onDone={() => { setAddingChild(false); onChange(); }} />
           ) : (
-            <button type="button" onClick={() => setAddingChild(true)} className="text-sm text-brass hover:underline">
+            <button type="button" onClick={() => setAddingChild(true)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {t('+ Add a service inside')} "{button.label}"
             </button>
           )}
@@ -792,7 +792,7 @@ function BookableServicesSection({ businessId }: { businessId: string }) {
       action={
         <button type="button"
           onClick={() => setShowForm((s) => !s)}
-          className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90"
+          className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {t('+ Add service')}
         </button>
@@ -854,7 +854,7 @@ function ServiceForm({ businessId, existing, onDone }: { businessId: string; exi
         </Field>
       </div>
       <p className="text-xs text-ivory-dim">{t('Leave blank for no restriction on that side - guests will only be able to pick times inside this window when booking this service.')}</p>
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? t('Saving...') : existing ? t('Save changes') : t('Add service')}
       </button>
     </form>
@@ -947,7 +947,7 @@ function ServiceOptionsManager({ businessId, serviceId }: { businessId: string; 
               setOptions((prev) => prev.filter((o) => o.id !== opt.id));
               deleteServiceOption(businessId, serviceId, opt.id).catch(reload);
             }}
-            className="text-xs text-danger hover:underline"
+            className="text-xs text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {t('Remove')}
           </button>
@@ -960,7 +960,7 @@ function ServiceOptionsManager({ businessId, serviceId }: { businessId: string; 
         <Field label={t('Price adjustment')}>
           <input type="number" onFocus={(e) => e.target.select()} step="0.01" value={priceDelta} onChange={(e) => setPriceDelta(Number(e.target.value))} className={`${inputClass} w-32`} />
         </Field>
-        <button type="submit" disabled={saving || !label.trim()} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+        <button type="submit" disabled={saving || !label.trim()} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('+ Add option')}
         </button>
       </form>

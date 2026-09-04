@@ -4,6 +4,19 @@ import { useT } from '../../hooks/useT';
 import { getPaymentIntegration, upsertPaymentIntegration } from '../../lib/authApi';
 import type { PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import PasswordField from '../../components/PasswordField';
+
+// Same show/hide pattern already used for the account password on
+// AdminLogin, via the shared PasswordField component - these gateway
+// secrets are just as sensitive and deserve the same masking-by-default
+// treatment, not a plain visible text box.
+function SecretField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Field label={label}>
+      <PasswordField value={value} onChange={onChange} placeholder={placeholder} required={false} autoComplete="off" />
+    </Field>
+  );
+}
 
 const PROVIDERS = [
   { key: 'tap', label: 'Tap Payments' },
@@ -80,7 +93,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
       // Previously this threw uncaught and left the button stuck on
       // "Saving..." forever with zero indication anything had gone
       // wrong - now the real reason actually reaches the screen.
-      setSaveError(err instanceof Error ? err.message : 'Could not save payment settings');
+      setSaveError(err instanceof Error ? err.message : t('Could not save payment settings'));
     } finally {
       setSaving(false);
     }
@@ -103,7 +116,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as 'tap' | 'telr' | 'ngenius' | 'ziina' | '')}
-            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
+            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <option value="">{t('Choose a provider...')}</option>
             {PROVIDERS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
@@ -112,14 +125,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'tap' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label={t('Tap secret key')}>
-              <input
-                value={secretKey}
-                onChange={(e) => setSecretKey(e.target.value)}
-                placeholder={t('From your Tap Payments dashboard')}
-                className={inputClass}
-              />
-            </Field>
+            <SecretField label={t('Tap secret key')} value={secretKey} onChange={setSecretKey} placeholder={t('From your Tap Payments dashboard')} />
           </div>
         )}
 
@@ -128,9 +134,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
             <Field label={t('Store ID')}>
               <input value={storeId} onChange={(e) => setStoreId(e.target.value)} placeholder={t('From your Telr account')} className={inputClass} />
             </Field>
-            <Field label={t('Authentication key')}>
-              <input value={authKey} onChange={(e) => setAuthKey(e.target.value)} placeholder={t('From your Telr account')} className={inputClass} />
-            </Field>
+            <SecretField label={t('Authentication key')} value={authKey} onChange={setAuthKey} placeholder={t('From your Telr account')} />
             <p className="text-sm text-ivory-dim">
               {t('One extra step with Telr: live payments only work from server addresses Telr has pre-approved — ask Telr support to whitelist your Tavzio server\'s IPs when setting up. Test mode has no such restriction.')}
             </p>
@@ -139,9 +143,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'ngenius' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label={t('Service account API key')}>
-              <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="N-Genius portal → Settings → Integrations → Service Accounts" className={inputClass} />
-            </Field>
+            <SecretField label={t('Service account API key')} value={apiKey} onChange={setApiKey} placeholder="N-Genius portal → Settings → Integrations → Service Accounts" />
             <Field label={t('Outlet reference')}>
               <input value={outletRef} onChange={(e) => setOutletRef(e.target.value)} placeholder="N-Genius portal → Settings → Organization Hierarchy" className={inputClass} />
             </Field>
@@ -150,9 +152,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
 
         {provider === 'ziina' && (
           <div className="space-y-4 border-t border-ink-line pt-5">
-            <Field label={t('Ziina API key')}>
-              <input value={ziinaApiKey} onChange={(e) => setZiinaApiKey(e.target.value)} placeholder={t('From your Ziina Business dashboard → Developers')} className={inputClass} />
-            </Field>
+            <SecretField label={t('Ziina API key')} value={ziinaApiKey} onChange={setZiinaApiKey} placeholder={t('From your Ziina Business dashboard → Developers')} />
             <p className="text-sm text-ivory-dim">
               {t("This is your own Ziina account, separate from Tavzio's — money goes straight to your Ziina balance, not through us.")}
             </p>
@@ -174,7 +174,7 @@ function PaymentProviderSetup({ businessId }: { businessId: string }) {
           <button type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-brass px-5 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {saving ? t('Saving...') : t('Save')}
           </button>

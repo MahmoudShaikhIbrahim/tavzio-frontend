@@ -41,6 +41,7 @@ export default function TableManagementPage() {
   const [showAddWaitlist, setShowAddWaitlist] = useState(false);
   const [showAddTable, setShowAddTable] = useState(false);
   const [showFloorEditor, setShowFloorEditor] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   function reload() {
     if (!businessId) return;
@@ -77,11 +78,12 @@ export default function TableManagementPage() {
   async function handleDeleteTable(table: FloorTable) {
     if (!businessId) return;
     if (!(await confirm({ title: t('Delete this table?'), message: `${t('Delete')} "${table.label}"? ${t('This cannot be undone.')}`, confirmLabel: t('Delete'), danger: true }))) return;
+    setActionError('');
     try {
       await deleteTable(businessId, table.id);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : t('Could not delete this table'));
+      setActionError(err instanceof Error ? err.message : t('Could not delete this table'));
     }
   }
 
@@ -101,11 +103,12 @@ export default function TableManagementPage() {
   async function handleConnectCard(tableId: string, cardId: string) {
     if (!businessId) return;
     setConnectingId(null);
+    setActionError('');
     try {
       await connectCardToTable(businessId, tableId, cardId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : t('Could not connect that card'));
+      setActionError(err instanceof Error ? err.message : t('Could not connect that card'));
     }
   }
 
@@ -170,6 +173,12 @@ export default function TableManagementPage() {
     <div className="space-y-8">
       <SectionRequestNotifications businessId={businessId} section="tables" />
       <h1 className="font-display text-3xl text-ivory">{t('Table Management')}</h1>
+      {actionError && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm text-danger">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError('')} className="shrink-0 rounded text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger" aria-label={t('Dismiss')}>✕</button>
+        </div>
+      )}
 
       <Section title={t('Floor plan')} action={
         <div className="flex gap-2">
@@ -177,10 +186,10 @@ export default function TableManagementPage() {
               actually see on the flip page's Tables Map side - separate
               from adding/editing tables themselves, which stays exactly
               as it already works below. */}
-          <button type="button" onClick={() => setShowFloorEditor(true)} className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10">
+          <button type="button" onClick={() => setShowFloorEditor(true)} className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Arrange floor plan')}
           </button>
-          <button type="button" onClick={() => setShowAddTable((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={() => setShowAddTable((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('+ Add table')}
           </button>
         </div>
@@ -197,7 +206,13 @@ export default function TableManagementPage() {
               <div key={table.id} className={`rounded-xl border p-4 ${STATUS_COLOR[table.status]}`}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-base font-medium text-ivory">{table.label}</p>
-                  <button type="button" onClick={() => handleDeleteTable(table)} className="text-xs text-ivory-dim hover:text-danger" title={t('Delete table')}>✕</button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTable(table)}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs text-ivory-dim hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                    title={t('Delete table')}
+                    aria-label={t('Delete table')}
+                  >✕</button>
                 </div>
                 <p className="text-sm">{t(table.status)}{table.seatCount > 0 && ` · ${table.seatCount} ${t('seats')}`}</p>
 
@@ -207,12 +222,12 @@ export default function TableManagementPage() {
                 {table.card ? (
                   <div className="mt-2 flex items-center justify-between rounded-lg bg-ink/40 px-2 py-1.5">
                     <span className="text-xs text-success">{t('Connected')} · {table.card.uid}</span>
-                    <button type="button" onClick={() => handleDisconnectCard(table)} className="text-xs text-ivory-dim hover:text-danger">{t('Disconnect')}</button>
+                    <button type="button" onClick={() => handleDisconnectCard(table)} className="rounded text-xs text-ivory-dim hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Disconnect')}</button>
                   </div>
                 ) : connectingId === table.id ? (
                   <select
                     onChange={(e) => e.target.value && handleConnectCard(table.id, e.target.value)}
-                    className="mt-2 w-full rounded border border-brass/40 bg-ink px-2 py-1 text-xs text-ivory"
+                    className="mt-2 w-full rounded border border-brass/40 bg-ink px-2 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     defaultValue=""
                     autoFocus
                   >
@@ -220,7 +235,7 @@ export default function TableManagementPage() {
                     {availableCards.map((c) => <option key={c.id} value={c.id}>{c.uid}</option>)}
                   </select>
                 ) : (
-                  <button type="button" onClick={() => setConnectingId(table.id)} className="mt-2 w-full rounded-lg border border-brass/40 py-1 text-xs text-brass hover:bg-brass/10">
+                  <button type="button" onClick={() => setConnectingId(table.id)} className="mt-2 w-full rounded-lg border border-brass/40 py-1 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('+ Connect NFC card')}
                   </button>
                 )}
@@ -237,7 +252,7 @@ export default function TableManagementPage() {
                     <button type="button"
                       key={s}
                       onClick={() => handleStatusChange(table.id, s)}
-                      className={`rounded px-2 py-0.5 text-xs ${table.status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
+                      className={`rounded px-2 py-0.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${table.status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
                     >
                       {t(s)}
                     </button>
@@ -248,7 +263,7 @@ export default function TableManagementPage() {
                   {mergingId === table.id ? (
                     <select
                       onChange={(e) => e.target.value && handleMerge(table.id, e.target.value)}
-                      className="w-full rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory"
+                      className="w-full rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                       defaultValue=""
                     >
                       <option value="">{t('Merge with...')}</option>
@@ -257,7 +272,7 @@ export default function TableManagementPage() {
                       ))}
                     </select>
                   ) : (
-                    <button type="button" onClick={() => setMergingId(table.id)} className="text-xs text-brass hover:underline">{t('Merge table')}</button>
+                    <button type="button" onClick={() => setMergingId(table.id)} className="rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Merge table')}</button>
                   )}
                 </div>
               </div>
@@ -267,14 +282,14 @@ export default function TableManagementPage() {
             <div key={table.id} className="rounded-xl border border-ink-line p-4 opacity-60">
               <p className="text-base text-ivory">{table.label}</p>
               <p className="text-sm text-ivory-dim">{t('merged into another table')}</p>
-              <button type="button" onClick={() => handleUnmerge(table.id)} className="mt-2 text-xs text-brass hover:underline">{t('Unmerge')}</button>
+              <button type="button" onClick={() => handleUnmerge(table.id)} className="mt-2 rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Unmerge')}</button>
             </div>
           ))}
         </div>
       </Section>
 
       <Section title={t('Waitlist')} action={
-        <button type="button" onClick={() => setShowAddWaitlist((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowAddWaitlist((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('+ Add to waitlist')}
         </button>
       }>
@@ -291,13 +306,13 @@ export default function TableManagementPage() {
               <div className="flex items-center gap-2">
                 <select
                   onChange={(e) => e.target.value && handleSeat(entry.id, e.target.value)}
-                  className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
+                  className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   defaultValue=""
                 >
                   <option value="">{t('Seat at...')}</option>
                   {availableTables.map((tbl) => <option key={tbl.id} value={tbl.id}>{tbl.label}</option>)}
                 </select>
-                <button type="button" onClick={() => handleCancelWaitlist(entry.id)} className="text-sm text-danger hover:underline">{t('Cancel')}</button>
+                <button type="button" onClick={() => handleCancelWaitlist(entry.id)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Cancel')}</button>
               </div>
             </div>
           ))}
@@ -327,8 +342,8 @@ function AddTableForm({ onCreate, onCancel }: { onCreate: (label: string, seatCo
       <Field label={t('Seats')}>
         <input type="number" min={1} onFocus={(e) => e.target.select()} value={seatCount} onChange={(e) => setSeatCount(Number(e.target.value))} className={`${inputClass} w-24`} />
       </Field>
-      <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Create')}</button>
-      <button type="button" onClick={onCancel} className="text-sm text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
+      <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Create')}</button>
+      <button type="button" onClick={onCancel} className="rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
     </form>
   );
 }
@@ -360,7 +375,7 @@ function AddWaitlistForm({ businessId, onDone }: { businessId: string; onDone: (
       <Field label={t('Phone (optional)')}>
         <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
       </Field>
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? t('Adding...') : t('Add')}
       </button>
     </form>
@@ -503,7 +518,7 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
             <h2 className="font-display text-xl text-ivory">{t('Arrange floor plan')}</h2>
             <p className="text-sm text-ivory-dim">{t('Pick a table or element below, then tap a spot on the grid to place it. Tap a placed spot again to remove it - for a door, tap it again to turn it to face a different side instead.')}</p>
           </div>
-          <button type="button" onClick={onDone} className="text-ivory-dim hover:text-ivory">✕</button>
+          <button type="button" onClick={onDone} className="flex h-8 w-8 items-center justify-center rounded text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" aria-label={t('Close')}>✕</button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
@@ -513,15 +528,15 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
             <div className="space-y-1.5">
               {localTables.filter((tt) => !tt.mergedWithTableId).map((tt) => (
                 <div key={tt.id} className={`rounded-lg border px-2.5 py-2 ${armedTool === `table:${tt.id}` ? 'border-brass bg-brass/10' : 'border-ink-line'}`}>
-                  <button type="button" onClick={() => setArmedTool(`table:${tt.id}`)} className="flex w-full items-center justify-between text-start text-sm text-ivory">
+                  <button type="button" onClick={() => setArmedTool(`table:${tt.id}`)} className="flex w-full items-center justify-between rounded text-start text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     <span>{tt.label} <span className="text-ivory-dim">({tt.seatCount} {t('seats')})</span></span>
                     {tt.gridX !== null && <span className="text-success">✓</span>}
                   </button>
                   {armedTool === `table:${tt.id}` && (
                     <div className="mt-2 space-y-1.5">
                       <div className="flex gap-1.5">
-                        <button type="button" onClick={() => updateLocalTable(tt.id, { shape: 'round' })} className={`flex-1 rounded border px-2 py-1 text-xs ${tt.shape === 'round' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>{t('Round')}</button>
-                        <button type="button" onClick={() => updateLocalTable(tt.id, { shape: 'long' })} className={`flex-1 rounded border px-2 py-1 text-xs ${tt.shape === 'long' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>{t('Long')}</button>
+                        <button type="button" onClick={() => updateLocalTable(tt.id, { shape: 'round' })} className={`flex-1 rounded border px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tt.shape === 'round' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>{t('Round')}</button>
+                        <button type="button" onClick={() => updateLocalTable(tt.id, { shape: 'long' })} className={`flex-1 rounded border px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tt.shape === 'long' ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>{t('Long')}</button>
                       </div>
                       <input value={tt.zone} onChange={(e) => updateLocalTable(tt.id, { zone: e.target.value })} placeholder={t('Zone, e.g. By the Window')} className="w-full rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory placeholder:text-ivory-dim/60" />
                     </div>
@@ -534,14 +549,14 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
             <div className="grid grid-cols-2 gap-1.5">
               {CELL_TYPES.map((ct) => (
                 <button type="button" key={ct.type} onClick={() => setArmedTool(ct.type)}
-                  className={`rounded-lg border px-2.5 py-2 text-sm ${armedTool === ct.type ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'}`}
+                  className={`rounded-lg border px-2.5 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${armedTool === ct.type ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'}`}
                 >
                   {t(ct.label)}
                 </button>
               ))}
             </div>
             <button type="button" onClick={() => setArmedTool('erase')}
-              className={`mt-1.5 w-full rounded-lg border px-2.5 py-2 text-sm ${armedTool === 'erase' ? 'border-danger bg-danger/10 text-danger' : 'border-ink-line text-ivory-dim hover:text-ivory'}`}
+              className={`mt-1.5 w-full rounded-lg border px-2.5 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger ${armedTool === 'erase' ? 'border-danger bg-danger/10 text-danger' : 'border-ink-line text-ivory-dim hover:text-ivory'}`}
             >
               {t('Erase')}
             </button>
@@ -553,7 +568,7 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
               to end. */}
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="flex items-center justify-center gap-3 border-b border-ink-line py-1.5">
-              <button type="button" onClick={() => expandBounds('top')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass">
+              <button type="button" onClick={() => expandBounds('top')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {t('+ Add space above')}
               </button>
               {/* Real, explicit request: seeing the whole floor plan at
@@ -563,13 +578,13 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
                   size for accurate tapping while actually placing
                   something. */}
               <div className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-0.5">
-                <button type="button" onClick={() => setFitView(true)} className={`rounded-md px-2.5 py-1 text-xs font-medium ${fitView ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Fit view')}</button>
-                <button type="button" onClick={() => setFitView(false)} className={`rounded-md px-2.5 py-1 text-xs font-medium ${!fitView ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Actual size')}</button>
+                <button type="button" onClick={() => setFitView(true)} className={`rounded-md px-2.5 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${fitView ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Fit view')}</button>
+                <button type="button" onClick={() => setFitView(false)} className={`rounded-md px-2.5 py-1 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${!fitView ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Actual size')}</button>
               </div>
             </div>
             <div className="flex flex-1 overflow-hidden">
               <div className="flex items-center border-e border-ink-line px-1.5">
-                <button type="button" onClick={() => expandBounds('left')} className="rounded-lg border border-ink-line px-1.5 py-4 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass" style={{ writingMode: 'vertical-rl' }}>
+                <button type="button" onClick={() => expandBounds('left')} className="rounded-lg border border-ink-line px-1.5 py-4 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" style={{ writingMode: 'vertical-rl' }}>
                   {t('+ Add space left')}
                 </button>
               </div>
@@ -579,13 +594,13 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
                 )}
               </div>
               <div className="flex items-center border-s border-ink-line px-1.5">
-                <button type="button" onClick={() => expandBounds('right')} className="rounded-lg border border-ink-line px-1.5 py-4 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass" style={{ writingMode: 'vertical-rl' }}>
+                <button type="button" onClick={() => expandBounds('right')} className="rounded-lg border border-ink-line px-1.5 py-4 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" style={{ writingMode: 'vertical-rl' }}>
                   {t('+ Add space right')}
                 </button>
               </div>
             </div>
             <div className="flex justify-center border-t border-ink-line py-1.5">
-              <button type="button" onClick={() => expandBounds('bottom')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass">
+              <button type="button" onClick={() => expandBounds('bottom')} className="rounded-lg border border-ink-line px-4 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {t('+ Add space below')}
               </button>
             </div>
@@ -593,8 +608,8 @@ function FloorPlanEditor({ businessId, tables, onDone }: { businessId: string; t
         </div>
 
         <div className="flex justify-end gap-2 border-t border-ink-line px-5 py-4">
-          <button type="button" onClick={onDone} className="rounded-lg border border-ink-line px-4 py-2 text-sm text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
-          <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={onDone} className="rounded-lg border border-ink-line px-4 py-2 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
+          <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? t('Saving...') : t('Save floor plan')}
           </button>
         </div>

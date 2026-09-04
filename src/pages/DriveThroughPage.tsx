@@ -82,7 +82,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
         setStep('confirmed');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Payment could not be confirmed');
+        setError(err instanceof Error ? err.message : t('dtCouldNotConfirmPayment'));
         setStep('failed');
       });
   }, [orderPaymentId]);
@@ -113,7 +113,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
       await requestBookingOtp(slug, phone);
       setStep('otp');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send verification code');
+      setError(err instanceof Error ? err.message : t('tbCouldNotSendCode'));
     } finally {
       setSubmitting(false);
     }
@@ -140,7 +140,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
       setConfirmedArrival(arrivalMinutes);
       setStep('confirmed');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : t('dtSomethingWentWrong'));
       setStep('failed');
     } finally {
       setSubmitting(false);
@@ -177,7 +177,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
           </div>
 
           <div className="mt-6 rounded-xl border border-ink-line bg-ink-soft p-5 font-mono text-xs text-ivory-dim">
-            <p className="text-center text-[11px] uppercase tracking-wider text-brass">Receipt</p>
+            <p className="text-center text-[11px] uppercase tracking-wider text-brass">{t('dtReceiptLabel')}</p>
             <p className="mt-1 text-center">{new Date(receipt.paidAt).toLocaleString()}</p>
             <div className="my-3 border-t border-dashed border-ink-line" />
             {receipt.items.map((item, i) => (
@@ -195,15 +195,19 @@ function DriveThroughContent({ slug }: { slug: string }) {
               </div>
             ))}
             <div className="my-3 border-t border-dashed border-ink-line" />
-            <div className="flex justify-between"><span>Subtotal (ex VAT)</span><span>{receipt.subtotalExVat.toFixed(2)}</span></div>
-            <div className="flex justify-between"><span>VAT ({(receipt.vatRate * 100).toFixed(0)}%)</span><span>{receipt.vatAmount.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>{t('subtotalExclVat')}</span><span>{receipt.subtotalExVat.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span>{t('dtVatLabel', { percent: (receipt.vatRate * 100).toFixed(0) })}</span><span>{receipt.vatAmount.toFixed(2)}</span></div>
             <div className="my-3 border-t border-dashed border-ink-line" />
-            <div className="flex justify-between text-sm text-ivory"><span>Total</span><span>{receipt.total.toFixed(2)} AED</span></div>
+            <div className="flex justify-between text-sm text-ivory"><span>{t('tbTotal')}</span><span>{receipt.total.toFixed(2)} AED</span></div>
           </div>
 
           <div className="mt-4 print:hidden">
-            <button type="button" onClick={() => window.print()} className="w-full rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10">
-              Download receipt
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="w-full rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+            >
+              {t('dtPrintReceipt')}
             </button>
           </div>
         </Shell>
@@ -224,7 +228,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
       <Shell isRtl={isRtl}>
         <p className="font-display text-xl text-ivory">{t('dtOrderFailed')}</p>
         <p className="mt-2 text-sm text-ivory-dim">{error || t('dtOrderFailedDesc')}</p>
-        <button type="button" onClick={() => setStep('form')} className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10">
+        <button type="button" onClick={() => setStep('form')} className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
           {t('tbTryAgain')}
         </button>
       </Shell>
@@ -242,10 +246,10 @@ function DriveThroughContent({ slug }: { slug: string }) {
             className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-center text-lg tracking-widest text-ivory placeholder:text-ivory-dim/60"
           />
           {error && <p className="text-sm text-danger">{error}</p>}
-          <button type="submit" disabled={submitting || !otp} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="submit" disabled={submitting || !otp} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {submitting ? t('tbConfirming') : t('dtPlaceOrder')}
           </button>
-          <button type="button" onClick={() => requestBookingOtp(slug, phone)} className="w-full text-center text-sm text-ivory-dim hover:text-ivory">
+          <button type="button" onClick={() => requestBookingOtp(slug, phone)} className="w-full rounded text-center text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('tbResendCode')}
           </button>
         </form>
@@ -284,7 +288,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
         <div className="mt-3 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1" style={{ scrollbarWidth: 'none' }}>
           {categoryNames.map((category) => (
             <button type="button" key={category} onClick={() => setActiveCategory(category)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                 category === effectiveCategory ? 'border-brass bg-brass text-ink font-medium' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-brass'
               }`}
             >
@@ -316,10 +320,25 @@ function DriveThroughContent({ slug }: { slug: string }) {
                   {line.note && <p className="mt-0.5 text-xs italic text-brass">"{line.note}"</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <button type="button" onClick={() => changeQuantity(line.menuItemId, line.note, -1)} className="flex h-6 w-6 items-center justify-center rounded border border-ink-line text-ivory-dim hover:text-ivory">−</button>
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(line.menuItemId, line.note, -1)}
+                    aria-label={`Decrease quantity of ${line.name}`}
+                    className="flex h-8 w-8 items-center justify-center rounded border border-ink-line text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                  >−</button>
                   <span className="w-4 text-center text-sm text-ivory">{line.quantity}</span>
-                  <button type="button" onClick={() => changeQuantity(line.menuItemId, line.note, 1)} className="flex h-6 w-6 items-center justify-center rounded border border-brass/40 text-brass">+</button>
-                  <button type="button" onClick={() => removeCartLine(line.menuItemId, line.note)} className="ms-1 text-xs text-danger hover:underline">{t('tbRemove')}</button>
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(line.menuItemId, line.note, 1)}
+                    aria-label={`Increase quantity of ${line.name}`}
+                    className="flex h-8 w-8 items-center justify-center rounded border border-brass/40 text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                  >+</button>
+                  <button
+                    type="button"
+                    onClick={() => removeCartLine(line.menuItemId, line.note)}
+                    aria-label={`Remove ${line.name} from order`}
+                    className="ms-1 text-xs text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                  >{t('tbRemove')}</button>
                 </div>
               </div>
             ))}
@@ -333,7 +352,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
           <div className="mt-2 flex flex-wrap gap-2">
             {ARRIVAL_OPTIONS.map((m) => (
               <button type="button" key={m} onClick={() => setArrivalMinutes(m)}
-                className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                   m === arrivalMinutes ? 'border-brass bg-brass text-ink font-medium' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-brass'
                 }`}
               >
@@ -363,14 +382,14 @@ function DriveThroughContent({ slug }: { slug: string }) {
               className="w-full rounded-lg border border-ink-line bg-ink-soft px-4 py-3 text-ivory placeholder:text-ivory-dim/60"
             />
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button type="submit" disabled={submitting || !phone} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            <button type="submit" disabled={submitting || !phone} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
               {submitting ? t('tbSendingCode') : t('tbSendVerificationCode')}
             </button>
           </form>
         </>
       )}
 
-      <Link to={`/${slug}/book`} className="mt-6 block text-center text-sm text-ivory-dim hover:text-ivory">{t('back')}</Link>
+      <Link to={`/${slug}/book`} className="mt-6 block rounded text-center text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('back')}</Link>
     </Shell>
   );
 }

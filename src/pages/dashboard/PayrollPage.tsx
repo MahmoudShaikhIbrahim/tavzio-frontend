@@ -86,7 +86,7 @@ function SalaryStructuresSection({ businessId }: { businessId: string }) {
                       {structure ? (Number(structure.housing_allowance_aed) + Number(structure.transport_allowance_aed) + Number(structure.other_allowances_aed)).toFixed(2) : '—'}
                     </td>
                     <td className="py-2">
-                      <button type="button" onClick={() => setEditingStaffId(s.id)} className="text-sm text-brass hover:underline">
+                      <button type="button" onClick={() => setEditingStaffId(s.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                         {structure ? 'Edit' : 'Set salary'}
                       </button>
                     </td>
@@ -149,7 +149,7 @@ function SalaryStructureForm({ businessId, staffId, staffName, existing, onClose
       {existing && <p className="mb-3 text-sm text-ivory-dim">This replaces the current structure - the old one is kept on record, closed out as of today.</p>}
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Pay type">
-          <select value={payType} onChange={(e) => setPayType(e.target.value as typeof payType)} className={`${inputClass} w-32`}>
+          <select value={payType} onChange={(e) => setPayType(e.target.value as typeof payType)} className={`${inputClass} w-32 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             <option value="monthly">Monthly</option>
             <option value="hourly">Hourly</option>
             <option value="daily">Daily</option>
@@ -311,7 +311,7 @@ function PayrollRunRow({ businessId, run, expanded, onToggle, onChanged }: {
   return (
     <div className="rounded-lg border border-ink-line p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button type="button" onClick={onToggle} className="text-left">
+        <button type="button" onClick={onToggle} className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <p className="text-base text-ivory">
             {new Date(run.period_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – {new Date(run.period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
@@ -405,7 +405,7 @@ function PayslipRow({ businessId, runId, payslip, editable, onChanged }: {
         <td className="py-2 pr-4 text-ivory">{Number(payslip.gross_aed).toFixed(2)}</td>
         <td className="py-2 pr-4 text-ivory-dim">
           {Number(payslip.total_deductions_aed).toFixed(2)}
-          {editable && <button type="button" onClick={() => setEditing(!editing)} className="ml-2 text-sm text-brass hover:underline">edit</button>}
+          {editable && <button type="button" onClick={() => setEditing(!editing)} className="ml-2 text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">edit</button>}
         </td>
         <td className="py-2 text-ivory">{Number(payslip.net_aed).toFixed(2)}</td>
       </tr>
@@ -418,7 +418,7 @@ function PayslipRow({ businessId, runId, payslip, editable, onChanged }: {
                   <span>{d.label}</span>
                   <span className="flex items-center gap-2">
                     AED {d.amountAed.toFixed(2)}
-                    <button type="button" onClick={() => setDeductions(deductions.filter((_, idx) => idx !== i))} className="text-danger hover:underline">remove</button>
+                    <button type="button" onClick={() => setDeductions(deductions.filter((_, idx) => idx !== i))} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">remove</button>
                   </span>
                 </div>
               ))}

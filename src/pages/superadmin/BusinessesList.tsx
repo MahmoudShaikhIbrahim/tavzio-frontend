@@ -33,7 +33,7 @@ export default function BusinessesList() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="mt-5 w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-5 py-4 text-base
-                   text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
+                   text-ivory placeholder:text-ivory-dim/60 focus:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       />
 
       <div className="mt-5 overflow-hidden rounded-xl border border-ink-line">
@@ -58,7 +58,7 @@ export default function BusinessesList() {
             {businesses.map((b) => (
               <tr key={b.id} className="border-t border-ink-line hover:bg-ink-soft/50">
                 <td className="px-4 py-3">
-                  <Link to={`/admin/super/businesses/${b.id}`} className="text-ivory hover:text-brass">
+                  <Link to={`/admin/super/businesses/${b.id}`} className="rounded text-ivory hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {b.name}
                   </Link>
                 </td>

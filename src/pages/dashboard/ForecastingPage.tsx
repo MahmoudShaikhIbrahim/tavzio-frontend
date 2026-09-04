@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../hooks/useSession';
+import { useT } from '../../hooks/useT';
 import { getBusiness, getSalesForecast, setBudget, getBudgetVsActual } from '../../lib/authApi';
 import type { AdminBusiness, SalesForecast, BudgetVsActual } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 
 export default function ForecastingPage() {
+  const { t } = useT();
   const { user } = useSession();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
@@ -13,13 +15,13 @@ export default function ForecastingPage() {
     if (businessId) getBusiness(businessId).then(setBusiness);
   }, [businessId]);
 
-  if (!businessId || !business) return <p className="text-ivory-dim">Loading...</p>;
+  if (!businessId || !business) return <p className="text-ivory-dim">{t('Loading...')}</p>;
 
   if (!business.features.forecasting?.enabled) {
     return (
       <div className="max-w-lg space-y-3">
-        <h1 className="font-display text-3xl text-ivory">Forecasting & Budgeting</h1>
-        <p className="text-base text-ivory-dim">Turned off for your business. Turn it on under Features to see a sales forecast and set monthly budgets.</p>
+        <h1 className="font-display text-3xl text-ivory">{t('Forecasting & Budgeting')}</h1>
+        <p className="text-base text-ivory-dim">{t('Turned off for your business. Turn it on under Features to see a sales forecast and set monthly budgets.')}</p>
       </div>
     );
   }
@@ -27,8 +29,8 @@ export default function ForecastingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl text-ivory">Forecasting & Budgeting</h1>
-        <p className="mt-1 text-base text-ivory-dim">Owner-only.</p>
+        <h1 className="font-display text-3xl text-ivory">{t('Forecasting & Budgeting')}</h1>
+        <p className="mt-1 text-base text-ivory-dim">{t('Owner-only.')}</p>
       </div>
       <SalesForecastSection businessId={businessId} />
       <BudgetSection businessId={businessId} />
@@ -37,6 +39,7 @@ export default function ForecastingPage() {
 }
 
 function SalesForecastSection({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [days, setDays] = useState(7);
   const [forecast, setForecast] = useState<SalesForecast | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,32 +50,31 @@ function SalesForecastSection({ businessId }: { businessId: string }) {
   }, [businessId, days]);
 
   return (
-    <Section title="Sales forecast" action={
-      <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
-        <option value={7}>Next 7 days</option>
-        <option value={14}>Next 14 days</option>
-        <option value={30}>Next 30 days</option>
+    <Section title={t('Sales forecast')} action={
+      <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <option value={7}>{t('Next 7 days')}</option>
+        <option value={14}>{t('Next 14 days')}</option>
+        <option value={30}>{t('Next 30 days')}</option>
       </select>
     }>
-      {loading && <p className="text-ivory-dim">Loading...</p>}
+      {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
       {!loading && forecast && (
         <>
           <p className="text-sm text-ivory-dim">
-            Built from what each day of the week actually made over your last {forecast.historyWeeks} weeks of orders - not a black-box model,
-            just your own history projected forward.
+            {t('Built from what each day of the week actually made over your last')} {forecast.historyWeeks} {t('weeks of orders - not a black-box model, just your own history projected forward.')}
           </p>
           <p className="text-3xl text-brass">AED {forecast.totalForecastAed.toFixed(2)}</p>
           {forecast.lowConfidenceDays > 0 && (
             <p className="text-sm text-warning">
-              {forecast.lowConfidenceDays} day(s) below have fewer than 3 weeks of history for that weekday yet - treat those as rough estimates.
+              {forecast.lowConfidenceDays} {t('day(s) below have fewer than 3 weeks of history for that weekday yet - treat those as rough estimates.')}
             </p>
           )}
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {forecast.forecast.map((f) => (
               <div key={f.date} className={`rounded-lg border p-3 ${f.basedOnSampleSize < 3 ? 'border-warning/30 bg-warning/5' : 'border-ink-line'}`}>
                 <p className="text-sm text-ivory">{f.dayOfWeek}, {new Date(f.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                <p className="text-lg text-ivory">{f.forecastRevenueAed != null ? `AED ${f.forecastRevenueAed.toFixed(2)}` : 'No history yet'}</p>
-                <p className="text-xs text-ivory-dim">based on {f.basedOnSampleSize} past {f.dayOfWeek}{f.basedOnSampleSize === 1 ? '' : 's'}</p>
+                <p className="text-lg text-ivory">{f.forecastRevenueAed != null ? `AED ${f.forecastRevenueAed.toFixed(2)}` : t('No history yet')}</p>
+                <p className="text-xs text-ivory-dim">{t('based on')} {f.basedOnSampleSize} {t('past')} {f.dayOfWeek}{f.basedOnSampleSize === 1 ? '' : 's'}</p>
               </div>
             ))}
           </div>
@@ -83,6 +85,7 @@ function SalesForecastSection({ businessId }: { businessId: string }) {
 }
 
 function BudgetSection({ businessId }: { businessId: string }) {
+  const { t } = useT();
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [report, setReport] = useState<BudgetVsActual | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,49 +123,49 @@ function BudgetSection({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title="Budget vs actual" action={
+    <Section title={t('Budget vs actual')} action={
       <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
     }>
-      {loading && <p className="text-ivory-dim">Loading...</p>}
+      {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
       {!loading && report && (
         <>
           {editing ? (
             <div className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
-              <Field label="Revenue budget (AED)">
+              <Field label={t('Revenue budget (AED)')}>
                 <input type="number" value={revenueBudget} onFocus={(e) => e.target.select()} onChange={(e) => setRevenueBudget(e.target.value)} className={`${inputClass} w-32`} />
               </Field>
-              <Field label="Food cost % target">
+              <Field label={t('Food cost % target')}>
                 <input type="number" value={foodCostBudget} onFocus={(e) => e.target.select()} onChange={(e) => setFoodCostBudget(e.target.value)} className={`${inputClass} w-28`} />
               </Field>
-              <Field label="Labor cost % target">
+              <Field label={t('Labor cost % target')}>
                 <input type="number" value={laborCostBudget} onFocus={(e) => e.target.select()} onChange={(e) => setLaborCostBudget(e.target.value)} className={`${inputClass} w-28`} />
               </Field>
-              <button type="button" onClick={handleSaveBudget} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save budget'}
+              <button type="button" onClick={handleSaveBudget} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                {saving ? t('Saving...') : t('Save budget')}
               </button>
-              <button type="button" onClick={() => setEditing(false)} className="text-sm text-ivory-dim">Cancel</button>
+              <button type="button" onClick={() => setEditing(false)} className="text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
             </div>
           ) : (
-            <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">
-              {report.budget ? 'Edit this month\'s budget' : 'Set a budget for this month'}
+            <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              {report.budget ? t('Edit this month\'s budget') : t('Set a budget for this month')}
             </button>
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <BudgetCard
-              label="Revenue" actual={`AED ${report.actual.revenueAed.toFixed(2)}`}
+              label={t('Revenue')} actual={`AED ${report.actual.revenueAed.toFixed(2)}`}
               target={report.budget?.revenue_budget_aed != null ? `AED ${Number(report.budget.revenue_budget_aed).toFixed(2)}` : null}
               varianceAed={report.variance?.revenueAed ?? null}
               note={null}
             />
             <BudgetCard
-              label="Food cost %" actual={report.actual.foodCostPct != null ? `${report.actual.foodCostPct}%` : null}
+              label={t('Food cost %')} actual={report.actual.foodCostPct != null ? `${report.actual.foodCostPct}%` : null}
               target={report.budget?.food_cost_pct_budget != null ? `${report.budget.food_cost_pct_budget}%` : null}
               varianceAed={null} variancePct={report.variance?.foodCostPct ?? null}
               note={report.actual.foodCostNote}
             />
             <BudgetCard
-              label="Labor cost %" actual={report.actual.laborCostPct != null ? `${report.actual.laborCostPct}%` : null}
+              label={t('Labor cost %')} actual={report.actual.laborCostPct != null ? `${report.actual.laborCostPct}%` : null}
               target={report.budget?.labor_cost_pct_budget != null ? `${report.budget.labor_cost_pct_budget}%` : null}
               varianceAed={null} variancePct={report.variance?.laborCostPct ?? null}
               note={report.actual.laborCostNote}
@@ -177,6 +180,7 @@ function BudgetSection({ businessId }: { businessId: string }) {
 function BudgetCard({ label, actual, target, varianceAed, variancePct, note }: {
   label: string; actual: string | null; target: string | null; varianceAed?: number | null; variancePct?: number | null; note: string | null;
 }) {
+  const { t } = useT();
   const variance = varianceAed ?? variancePct ?? null;
   // For revenue, being OVER budget is good (positive = green). For a cost
   // percentage, being over budget is bad (positive = red) - the sign
@@ -187,10 +191,10 @@ function BudgetCard({ label, actual, target, varianceAed, variancePct, note }: {
   return (
     <div className="rounded-lg border border-ink-line p-3">
       <p className="text-xs text-ivory-dim">{label}</p>
-      <p className="text-xl text-ivory">{actual ?? 'n/a'}</p>
+      <p className="text-xl text-ivory">{actual ?? t('n/a')}</p>
       {target ? (
         <p className="text-sm text-ivory-dim">
-          target {target}
+          {t('target')} {target}
           {variance != null && (
             <span className={goodVariance ? ' text-success' : ' text-danger'}>
               {' '}({variance >= 0 ? '+' : ''}{typeof variance === 'number' ? variance.toFixed(2) : variance}{variancePct !== undefined ? '%' : ''})
@@ -198,7 +202,7 @@ function BudgetCard({ label, actual, target, varianceAed, variancePct, note }: {
           )}
         </p>
       ) : (
-        <p className="text-sm text-ivory-dim">No budget set</p>
+        <p className="text-sm text-ivory-dim">{t('No budget set')}</p>
       )}
       {note && <p className="mt-1 text-xs text-warning">{note}</p>}
     </div>

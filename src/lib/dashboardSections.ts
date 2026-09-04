@@ -19,8 +19,11 @@ export interface SectionOption {
 }
 
 export const SECTION_OPTIONS: SectionOption[] = [
+  // Requests (call waiter / request bill / loyalty claims / cash-pending)
+  // is no longer its own assignable section - it only ever surfaces
+  // inside Orders' attention panel now, so a staff member restricted to
+  // Orders already sees and can act on it.
   { key: 'orders', label: 'Orders', scope: null },
-  { key: 'requests', label: 'Requests', scope: null },
   { key: 'kitchen', label: 'Kitchen', scope: null },
   { key: 'pos', label: 'POS Terminal', scope: null },
   { key: 'bookings', label: 'Bookings', scope: null },

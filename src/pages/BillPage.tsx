@@ -114,7 +114,7 @@ function BillPageContent({ slug }: { slug: string }) {
           hasPaidThisSessionRef.current = true;
         }
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Payment was not completed'))
+      .catch((err) => setError(err instanceof Error ? err.message : t('paymentNotCompletedRetry')))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [returningPaymentId, business]);
@@ -220,11 +220,11 @@ function BillPageContent({ slug }: { slug: string }) {
     setError('');
     try {
       await markItemsCashPending(slug, tapEventId, itemsToPay.map((i) => i.id));
-      setCashMarkedMessage('Marked as cash — let your server know when they\'re free.');
+      setCashMarkedMessage(t('billMarkedCashMessage'));
       setSelected(new Set());
       loadBill();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not mark as cash');
+      setError(err instanceof Error ? err.message : t('billCouldNotMarkCash'));
     } finally {
       setMarkingCash(false);
     }
@@ -276,7 +276,7 @@ function BillPageContent({ slug }: { slug: string }) {
       setPaid(true);
       hasPaidThisSessionRef.current = true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed');
+      setError(err instanceof Error ? err.message : t('billPaymentFailed'));
     } finally {
       setPaying(false);
     }
@@ -322,7 +322,7 @@ function BillPageContent({ slug }: { slug: string }) {
             <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-brass">
               <span className="font-display text-xl text-brass">✓</span>
             </div>
-            <p className="font-display text-xl text-ivory">Payment successful</p>
+            <p className="font-display text-xl text-ivory">{t('paymentSuccessful')}</p>
           </div>
 
           <div className="mt-6 rounded-xl border border-ink-line bg-ink-soft p-5 font-mono text-xs text-ivory-dim">
@@ -345,7 +345,7 @@ function BillPageContent({ slug }: { slug: string }) {
             ))}
             <div className="my-3 border-t border-dashed border-ink-line" />
             {receipt.discountAmount > 0 && (
-              <div className="flex justify-between text-brass"><span>{receipt.rewardDescription || 'Reward'}</span><span>-{receipt.discountAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between text-brass"><span>{receipt.rewardDescription || t('billRewardFallback')}</span><span>-{receipt.discountAmount.toFixed(2)}</span></div>
             )}
             <div className="flex justify-between"><span>Subtotal (ex VAT)</span><span>{receipt.subtotalExVat.toFixed(2)}</span></div>
             <div className="flex justify-between"><span>VAT ({(receipt.vatRate * 100).toFixed(0)}%)</span><span>{receipt.vatAmount.toFixed(2)}</span></div>
@@ -364,28 +364,32 @@ function BillPageContent({ slug }: { slug: string }) {
               config the landing page itself reads from), never a
               guessed/default URL. */}
           <div className="mt-4 grid grid-cols-2 gap-2 print:hidden">
-            <button type="button" onClick={() => window.print()} className="rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10">
-              Download receipt
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+            >
+              {t('billPrintReceipt')}
             </button>
             {business?.links?.googleReviews?.enabled && business.links.googleReviews.value && (
               <a
                 href={business.links.googleReviews.value}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10"
+                className="flex items-center justify-center rounded-lg border border-brass/40 px-3 py-2.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
-                ★ Leave a review
+                ★ {t('billLeaveReview')}
               </a>
             )}
           </div>
 
           <button type="button"
             onClick={() => { setPaid(false); setReceipt(null); setSelected(new Set()); setTipPercent(0); loadBill(); }}
-            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10 print:hidden"
+            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10 print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
-            View live bill
+            {t('billViewLiveBill')}
           </button>
-          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden">
+          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {t('backTo', { name: business?.name || slug })}
           </button>
         </div>
@@ -416,15 +420,15 @@ function BillPageContent({ slug }: { slug: string }) {
 
         {pendingCancelPaymentId && !returningPaymentId && (
           <div className="mt-4 rounded-xl border border-warning/40 bg-ink-soft px-4 py-3">
-            <p className="text-sm text-ivory">You started a payment that wasn't finished.</p>
-            <p className="mt-0.5 text-xs text-ivory-dim">Those items are held for you for a few minutes - cancel to make them available again, or continue if you're still paying.</p>
+            <p className="text-sm text-ivory">{t('unfinishedPaymentTitle')}</p>
+            <p className="mt-0.5 text-xs text-ivory-dim">{t('billUnfinishedPaymentDesc')}</p>
             <button
               type="button"
               onClick={handleCancelPendingPayment}
               disabled={cancellingPending}
-              className="mt-2 rounded-lg border border-warning/60 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50"
+              className="mt-2 rounded-lg border border-warning/60 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
-              {cancellingPending ? 'Cancelling...' : 'Cancel that attempt'}
+              {cancellingPending ? t('tbCancelling') : t('billCancelAttempt')}
             </button>
           </div>
         )}
@@ -432,15 +436,15 @@ function BillPageContent({ slug }: { slug: string }) {
         <div className="mt-5 space-y-3">
           {items.length === 0 && (
             <div className="rounded-xl border border-ink-line bg-ink-soft px-5 py-6 text-center">
-              <p className="font-body text-[15px] text-ivory">Everything's been paid</p>
-              <p className="mt-1 text-xs text-ivory-dim">Check the Paid section below, or your bill again for a reference.</p>
+              <p className="font-body text-[15px] text-ivory">{t('billEverythingPaid')}</p>
+              <p className="mt-1 text-xs text-ivory-dim">{t('billEverythingPaidDesc')}</p>
             </div>
           )}
           {items.map((item) => (
             <button type="button"
               key={item.id}
               onClick={() => toggleItem(item.id)}
-              className={`flex w-full items-center justify-between rounded-xl border px-5 py-5 text-start transition-colors ${
+              className={`flex w-full items-center justify-between rounded-xl border px-5 py-5 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${
                 selected.has(item.id) ? 'border-brass bg-brass/10' : 'border-ink-line bg-ink-soft'
               }`}
             >
@@ -449,7 +453,7 @@ function BillPageContent({ slug }: { slug: string }) {
                   {item.quantity}× {item.item_name}
                   {item.cash_pending && (
                     <span className="ms-2 rounded-full border border-warning/40 px-2 py-0.5 text-[10px] font-normal text-warning">
-                      Cash pending
+                      {t('billCashPendingBadge')}
                     </span>
                   )}
                 </p>
@@ -464,9 +468,10 @@ function BillPageContent({ slug }: { slug: string }) {
           <div className="mt-4">
             <button type="button"
               onClick={() => setPaidSectionOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-sm text-ivory-dim hover:bg-ink-soft"
+              aria-expanded={paidSectionOpen}
+              className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-sm text-ivory-dim hover:bg-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
-              <span>Paid ({paidItems.length} item{paidItems.length === 1 ? '' : 's'})</span>
+              <span>{t('billPaidCount', { count: paidItems.length })}</span>
               <span className="text-xs">{paidSectionOpen ? '▲ Hide' : '▼ Show'}</span>
             </button>
             {paidSectionOpen && (
@@ -495,8 +500,8 @@ function BillPageContent({ slug }: { slug: string }) {
               <button type="button"
                 key={pct}
                 onClick={() => setTipPercent(pct)}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm ${
-                  tipPercent === pct ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  tipPercent === pct ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-brass'
                 }`}
               >
                 {pct === 0 ? t('noTip') : `${pct}%`}
@@ -531,7 +536,7 @@ function BillPageContent({ slug }: { slug: string }) {
           <button type="button"
             onClick={handlePay}
             disabled={paying}
-            className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
+            className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
             {paying ? t('processing') : t('payAmount', { amount: total.toFixed(2) })}
           </button>
@@ -539,9 +544,9 @@ function BillPageContent({ slug }: { slug: string }) {
             <button type="button"
               onClick={handleMarkCash}
               disabled={markingCash || paying}
-              className="mt-2 w-full rounded-lg border border-warning/40 px-4 py-2.5 text-sm text-warning hover:bg-warning/10 disabled:opacity-50"
+              className="mt-2 w-full rounded-lg border border-warning/40 px-4 py-2.5 text-sm text-warning hover:bg-warning/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
-              {markingCash ? 'Marking…' : 'Pay in cash instead'}
+              {markingCash ? t('billMarking') : t('billPayInCashInstead')}
             </button>
           )}
         </div>

@@ -41,7 +41,7 @@ export default function OrganizationsPage() {
           <h1 className="font-display text-3xl text-ivory">Organizations</h1>
           <p className="mt-1 text-base text-ivory-dim">Franchise/multi-outlet groups - link locations, invite an org owner.</p>
         </div>
-        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + Create organization
         </button>
       </div>
@@ -49,7 +49,7 @@ export default function OrganizationsPage() {
       {showAdd && (
         <form onSubmit={handleCreate} className="flex items-end gap-3 rounded-lg border border-ink-line p-4">
           <Field label="Organization name"><input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Costa Coffee UAE" className={inputClass} /></Field>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? 'Creating...' : 'Create'}
           </button>
         </form>
@@ -168,13 +168,13 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
           <p className="text-sm text-ivory-dim">{locationCount} location(s)</p>
         </div>
         <div className="flex items-center gap-3">
-          <button type="button" onClick={onToggle} className="text-sm text-brass hover:underline">{expanded ? 'Close' : 'Manage'}</button>
+          <button type="button" onClick={onToggle} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{expanded ? 'Close' : 'Manage'}</button>
           <button
             type="button"
             onClick={handleDelete}
             disabled={busy || locationCount > 0}
             title={locationCount > 0 ? 'Unlink every location first' : undefined}
-            className="text-sm text-danger hover:underline disabled:opacity-40 disabled:hover:no-underline"
+            className="text-sm text-danger hover:underline disabled:opacity-40 disabled:hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             Delete
           </button>
@@ -190,17 +190,17 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
               {(org.businesses || []).map((b) => (
                 <div key={b.id} className="flex items-center justify-between rounded border border-ink-line px-3 py-2 text-sm">
                   <span className="text-ivory">{b.name} <span className="text-ivory-dim">· {b.category}</span></span>
-                  <button type="button" onClick={() => handleUnlink(b.id)} disabled={busy} className="text-danger hover:underline disabled:opacity-50">Unlink</button>
+                  <button type="button" onClick={() => handleUnlink(b.id)} disabled={busy} className="text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Unlink</button>
                 </div>
               ))}
               {(org.businesses || []).length === 0 && <p className="text-sm text-ivory-dim">No locations linked yet.</p>}
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <select value={linkBusinessId} onChange={(e) => setLinkBusinessId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory">
+              <select value={linkBusinessId} onChange={(e) => setLinkBusinessId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="">Select a business to link...</option>
                 {unlinkedBusinesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-              <button type="button" onClick={handleLink} disabled={busy || !linkBusinessId} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+              <button type="button" onClick={handleLink} disabled={busy || !linkBusinessId} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 Link
               </button>
             </div>
@@ -211,7 +211,7 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
             <form onSubmit={handleInviteOwner} className="flex flex-wrap items-end gap-2">
               <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Name" className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
               <input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" placeholder="Email" className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
-              <button type="submit" disabled={busy} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">Invite</button>
+              <button type="submit" disabled={busy} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Invite</button>
             </form>
             {inviteResult && <p className="mt-1 text-sm text-ivory-dim">{inviteResult}</p>}
           </div>

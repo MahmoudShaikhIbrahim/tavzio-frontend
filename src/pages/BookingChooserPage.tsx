@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CalendarCheck, Car, MapPin } from 'lucide-react';
+import { CalendarCheck, Car, MapPin, ExternalLink } from 'lucide-react';
 import { getBookingChooserConfig, getBookingConfig, type BookingChooserConfig } from '../lib/api';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext';
 import { LogoMark } from '../components/Logo';
@@ -91,8 +91,18 @@ function ChooserContent({ slug }: { slug: string }) {
   }, [slug]);
 
   if (!loaded) {
-    return <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-ink" />;
+    // Same branded skeleton used on Landing/Menu while loading, instead
+    // of a plain blank screen - keeps the loading feel consistent across
+    // the whole booking flow.
+    return (
+      <div dir={isRtl ? 'rtl' : 'ltr'} className="flex min-h-screen flex-col items-center justify-center bg-ink px-6 py-16 text-center">
+        <div className="h-16 w-16 animate-pulse rounded-2xl bg-ink-soft" />
+        <div className="mt-4 h-6 w-40 animate-pulse rounded-full bg-ink-soft" />
+      </div>
+    );
   }
+
+  const hasAnyOption = Boolean(config?.bookingEnabled || config?.driveThrough.enabled || config?.locationUrl);
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="flex min-h-screen flex-col items-center justify-center bg-ink px-6 py-16 text-center">
@@ -110,7 +120,7 @@ function ChooserContent({ slug }: { slug: string }) {
         {config?.bookingEnabled && (
           <Link
             to={`/${slug}/book/table`}
-            className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50"
+            className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 text-brass">
               <CalendarCheck size={19} strokeWidth={1.75} />
@@ -121,7 +131,7 @@ function ChooserContent({ slug }: { slug: string }) {
         {config?.driveThrough.enabled && (
           <Link
             to={`/${slug}/book/drive-through`}
-            className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50"
+            className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 text-brass">
               <Car size={19} strokeWidth={1.75} />
@@ -134,15 +144,26 @@ function ChooserContent({ slug }: { slug: string }) {
             href={config.locationUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50"
+            className="flex items-center gap-3 rounded-xl border border-ink-line bg-ink-soft px-5 py-4 text-start transition-colors hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 text-brass">
               <MapPin size={19} strokeWidth={1.75} />
             </span>
             <span className="font-body text-base font-medium text-ivory">{t('chLocation')}</span>
+            <ExternalLink size={14} className="ms-auto shrink-0 text-ivory-dim" />
           </a>
         )}
+        {!hasAnyOption && (
+          <p className="py-6 text-sm text-ivory-dim">{t('chNothingAvailable')}</p>
+        )}
       </div>
+
+      <Link
+        to={`/${slug}`}
+        className="mt-8 rounded-lg px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+      >
+        {t('backTo', { name: config?.businessName || slug })}
+      </Link>
     </div>
   );
 }

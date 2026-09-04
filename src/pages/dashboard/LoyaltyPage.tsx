@@ -219,7 +219,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
                     <Field label={`${t('Threshold')} (${t(measureLabel)})`}>
                       <input type="number" onFocus={(e) => e.target.select()} min={1} value={tier.threshold} onChange={(e) => updateTier(i, { threshold: Number(e.target.value) })} className={`${inputClass} w-28`} />
                     </Field>
-                    <button type="button" onClick={() => removeTier(i)} className="mb-0.5 shrink-0 rounded-lg border border-danger/40 px-3 py-2.5 text-base text-danger hover:bg-danger/10">
+                    <button type="button" onClick={() => removeTier(i)} className="mb-0.5 shrink-0 rounded-lg border border-danger/40 px-3 py-2.5 text-base text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {t('Remove')}
                     </button>
                   </div>
@@ -242,7 +242,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
               ))}
               {tiers.length === 0 && <p className="text-base text-ivory-dim">{t('No tiers yet — add at least one below.')}</p>}
             </div>
-            <button type="button" onClick={addTier} className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10">
+            <button type="button" onClick={addTier} className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {t('+ Add tier')}
             </button>
           </div>

@@ -89,7 +89,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
         <button type="button"
           onClick={() => patch({ enabled: !setting.enabled })}
           disabled={saving}
-          className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 ${
+          className={`rounded-lg border px-5 py-4 text-base disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
             setting.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
           }`}
         >
@@ -104,7 +104,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
               value={setting.sound === 'custom' ? 'custom' : setting.sound}
               onChange={(e) => patch({ sound: e.target.value })}
               disabled={saving}
-              className="min-w-0 flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+              className="min-w-0 flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {SOUND_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
               {setting.customUrl && <option value="custom">{t('Custom upload')}</option>}
@@ -112,7 +112,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
             {setting.sound !== 'custom' && (
               <button type="button"
                 onClick={() => playPresetSound(setting.sound)}
-                className="shrink-0 rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory"
+                className="shrink-0 rounded-lg border border-ink-line px-3 py-2 text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 ▶ {t('Preview')}
               </button>
@@ -123,7 +123,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
             <button type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={saving}
-              className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+              className="rounded-lg border border-brass/40 px-5 py-4 text-base text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {t('Upload custom sound')}
             </button>
@@ -131,7 +131,7 @@ function NotificationEventCard({ businessId, event, setting, onOptimisticUpdate,
             {setting.customUrl && (
               <button type="button"
                 onClick={() => patch({ sound: 'default', customUrl: '' })}
-                className="text-base text-danger hover:underline"
+                className="text-base text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {t('Remove custom sound')}
               </button>

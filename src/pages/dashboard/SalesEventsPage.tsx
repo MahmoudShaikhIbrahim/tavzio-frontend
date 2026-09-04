@@ -7,6 +7,7 @@ import {
   getEventPipelineSummary, type HotelEvent, type HotelEventDetail, type EventPipelineSummary,
 } from '../../lib/authApi';
 import { Section, Field, inputClass } from '../../components/ui';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 const EVENT_TYPES = ['wedding', 'conference', 'meeting', 'corporate', 'social', 'other'];
 const STATUS_COLOR: Record<string, string> = {
@@ -31,7 +32,7 @@ export default function SalesEventsPage() {
       <h1 className="font-display text-3xl text-ivory">{t('Sales & Events')}</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['events', 'spaces'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             {tabKey === 'spaces' ? t('Event Spaces') : t('Events')}
           </button>
         ))}
@@ -63,7 +64,7 @@ function EventsTab({ businessId, onOpenEvent }: { businessId: string; onOpenEven
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {['inquiry', 'tentative', 'confirmed', 'completed', 'cancelled'].map((s) => (
             <button type="button" key={s} onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
-              className={`rounded-lg border p-3 text-left ${statusFilter === s ? 'border-brass bg-brass/10' : 'border-ink-line'}`}>
+              className={`rounded-lg border p-3 text-left ${statusFilter === s ? 'border-brass bg-brass/10' : 'border-ink-line'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <p className={`text-xs uppercase tracking-wide ${STATUS_COLOR[s]}`}>{t(s)}</p>
               <p className="text-xl text-ivory">{summary.byStatus[s] || 0}</p>
             </button>
@@ -71,12 +72,12 @@ function EventsTab({ businessId, onOpenEvent }: { businessId: string; onOpenEven
         </div>
       )}
       <Section title={t('Events (next 90 days)')} action={
-        <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New event')}</button>
+        <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ New event')}</button>
       }>
         {showNew && <NewEventForm businessId={businessId} spaces={spaces} onDone={() => { setShowNew(false); reload(); }} />}
         <div className="space-y-2">
           {events.map((e) => (
-            <button type="button" key={e.id} onClick={() => onOpenEvent(e.id)} className="block w-full rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40">
+            <button type="button" key={e.id} onClick={() => onOpenEvent(e.id)} className="block w-full rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-base text-ivory">{e.client_name} <span className="text-sm text-ivory-dim">· {t(e.event_type)}</span></p>
@@ -161,7 +162,7 @@ function NewEventForm({ businessId, spaces, onDone }: { businessId: string; spac
         </Field>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? t('Creating...') : t('Create event')}
       </button>
     </form>
@@ -200,14 +201,14 @@ function EventSpacesTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title={t('Event Spaces')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add space')}</button>}>
+    <Section title={t('Event Spaces')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Add space')}</button>}>
       {showAdd && (
         <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
           <Field label={t('Name')}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Grand Ballroom" className={inputClass} /></Field>
           <Field label={t('Capacity')}><input type="number" min={0} value={capacity} onFocus={(e) => e.target.select()} onChange={(e) => setCapacity(Number(e.target.value))} className={`${inputClass} w-24`} /></Field>
           <Field label={t('Rate (AED/hour)')}><input type="number" min={0} value={hourlyRate} onFocus={(e) => e.target.select()} onChange={(e) => setHourlyRate(Number(e.target.value))} className={`${inputClass} w-32`} /></Field>
           <Field label={t('Description ')}><input value={description} onChange={(e) => setDescription(e.target.value)} className={inputClass} /></Field>
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
         </form>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -215,7 +216,7 @@ function EventSpacesTab({ businessId }: { businessId: string }) {
           <div key={s.id} className={`rounded-xl border p-4 ${s.active ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
             <div className="flex items-center justify-between">
               <p className="text-base text-ivory">{s.name}</p>
-              <button type="button" onClick={() => handleToggleSpace(s)} className="text-sm text-ivory-dim hover:text-ivory">
+              <button type="button" onClick={() => handleToggleSpace(s)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {s.active ? t('Deactivate') : t('Reactivate')}
               </button>
             </div>
@@ -231,6 +232,7 @@ function EventSpacesTab({ businessId }: { businessId: string }) {
 
 function EventDetail({ businessId, eventId, onBack }: { businessId: string; eventId: string; onBack: () => void }) {
   const { t } = useT();
+  const confirm = useConfirm();
   const [event, setEvent] = useState<HotelEventDetail | null>(null);
   const [chargeDesc, setChargeDesc] = useState('');
   const [chargeAmount, setChargeAmount] = useState(0);
@@ -270,6 +272,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
   }
 
   async function handleDeleteCharge(chargeId: string) {
+    if (!(await confirm({ title: t('Delete charge?'), message: t('Delete this charge? The client will no longer be billed for it.'), confirmLabel: t('Delete'), danger: true }))) return;
     await deleteEventCharge(businessId, eventId, chargeId);
     reload();
   }
@@ -278,7 +281,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
 
   return (
     <div className="space-y-6">
-      <button type="button" onClick={onBack} className="text-sm text-brass hover:underline">{t('← Back to events')}</button>
+      <button type="button" onClick={onBack} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('← Back to events')}</button>
 
       <Section title={event.client_name}>
         <p className="text-sm text-ivory-dim">
@@ -291,7 +294,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
           <span className="text-sm text-ivory-dim">{t('Status:')}</span>
           {['inquiry', 'tentative', 'confirmed', 'completed', 'cancelled'].map((s) => (
             <button type="button" key={s} onClick={() => handleStatusChange(s)}
-              className={`rounded-full border px-3 py-1 text-sm ${event.status === s ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'}`}>
+              className={`rounded-full border px-3 py-1 text-sm ${event.status === s ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               {t(s)}
             </button>
           ))}
@@ -310,7 +313,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
               <span className="text-ivory-dim">{c.description} <span className="text-xs uppercase text-ivory-dim/60">({c.charge_type})</span></span>
               <span className="flex items-center gap-2">
                 <span className={c.amount_aed < 0 ? 'text-success' : 'text-ivory'}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
-                <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline">{t('Delete')}</button>
+                <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
               </span>
             </div>
           ))}
@@ -328,12 +331,12 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
               <option value="other">{t('Other')}</option>
             </select>
             <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={inputClass} />
-            <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Add')}</button>
+            <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
           </form>
           <form onSubmit={handlePayment} className="space-y-2 rounded-lg border border-ink-line p-3">
             <p className="text-sm text-ivory-dim">{t('Record payment')}</p>
             <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={inputClass} />
-            <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Record payment')}</button>
+            <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Record payment')}</button>
           </form>
         </div>
       </Section>

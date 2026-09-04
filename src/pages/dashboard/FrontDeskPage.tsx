@@ -38,7 +38,7 @@ export default function FrontDeskPage() {
       <h1 className="font-display text-3xl text-ivory">{t('Front Desk')}</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['reservations', 'rooms', 'groups', 'guests', 'city-ledger', 'tourism-dirham'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -60,6 +60,7 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState('');
 
   function reload() {
     listReservations(businessId).then(setReservations).catch(() => {});
@@ -68,20 +69,22 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
   useEffect(() => { setLoading(true); Promise.all([listReservations(businessId), listRooms(businessId)]).then(([r, rm]) => { setReservations(r); setRooms(rm); }).finally(() => setLoading(false)); }, [businessId]);
 
   async function handleCheckIn(reservationId: string, roomId?: string) {
+    setActionError('');
     try {
       await checkInReservation(businessId, reservationId, roomId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not check in');
+      setActionError(err instanceof Error ? err.message : t('Could not check in'));
     }
   }
 
   async function handleCheckOut(reservationId: string) {
+    setActionError('');
     try {
       await checkOutReservation(businessId, reservationId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not check out');
+      setActionError(err instanceof Error ? err.message : t('Could not check out'));
     }
   }
 
@@ -92,29 +95,32 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
 
   async function handleNoShow(reservationId: string) {
     if (!(await confirm({ title: t('Mark as no-show?'), message: t('Mark this reservation as a no-show?'), confirmLabel: t('Mark no-show'), danger: true }))) return;
+    setActionError('');
     try {
       await markReservationNoShow(businessId, reservationId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not mark no-show');
+      setActionError(err instanceof Error ? err.message : t('Could not mark no-show'));
     }
   }
 
   async function handleExtendStay(reservationId: string, newCheckOutDate: string) {
+    setActionError('');
     try {
       await modifyReservation(businessId, reservationId, { checkOutDate: newCheckOutDate });
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not update stay dates');
+      setActionError(err instanceof Error ? err.message : t('Could not update stay dates'));
     }
   }
 
   async function handleTransferRoom(reservationId: string, newRoomId: string) {
+    setActionError('');
     try {
       await transferReservationRoom(businessId, reservationId, newRoomId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not transfer room');
+      setActionError(err instanceof Error ? err.message : t('Could not transfer room'));
     }
   }
 
@@ -122,9 +128,10 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
 
   return (
     <Section title={t('Reservations')} action={
-      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New reservation')}</button>
+      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ New reservation')}</button>
     }>
       {showNew && <NewReservationForm businessId={businessId} rooms={rooms} onDone={() => { setShowNew(false); reload(); }} />}
+      {actionError && <p className="text-sm text-danger">{actionError}</p>}
       {loading && <p className="text-ivory-dim">Loading...</p>}
       <div className="space-y-2">
         {reservations.map((r) => (
@@ -144,13 +151,13 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
                 )}
                 {r.status === 'checked_in' && (
                   <>
-                    <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-brass hover:underline">{t('View folio')}</button>
+                    <button type="button" onClick={() => onOpenFolio(r.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('View folio')}</button>
                     <ExtendStayControl reservation={r} onExtend={handleExtendStay} />
                     <TransferRoomControl reservation={r} availableRooms={availableRooms} onTransfer={handleTransferRoom} />
-                    <button type="button" onClick={() => handleCheckOut(r.id)} className="text-sm text-brass hover:underline">{t('Check out')}</button>
+                    <button type="button" onClick={() => handleCheckOut(r.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Check out')}</button>
                   </>
                 )}
-                {r.status === 'checked_out' && <button type="button" onClick={() => onOpenFolio(r.id)} className="text-sm text-ivory-dim hover:underline">{t('View folio')}</button>}
+                {r.status === 'checked_out' && <button type="button" onClick={() => onOpenFolio(r.id)} className="rounded text-sm text-ivory-dim hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('View folio')}</button>}
                 {r.status === 'no_show' && <span className="text-sm text-danger">{t('No-show')}</span>}
               </div>
             </div>
@@ -168,14 +175,14 @@ function CheckInControl({ reservation, availableRooms, onCheckIn, onCancel, onNo
   return (
     <div className="flex items-center gap-2">
       {!reservation.room_id && (
-        <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory">
+        <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value="">{t('Assign room...')}</option>
           {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
         </select>
       )}
-      <button type="button" onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="text-sm text-brass hover:underline">{t('Check in')}</button>
-      <button type="button" onClick={onNoShow} className="text-sm text-warning hover:underline">{t('No-show')}</button>
-      <button type="button" onClick={onCancel} className="text-sm text-danger hover:underline">{t('Cancel')}</button>
+      <button type="button" onClick={() => onCheckIn(reservation.id, roomId || undefined)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Check in')}</button>
+      <button type="button" onClick={onNoShow} className="rounded text-sm text-warning hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('No-show')}</button>
+      <button type="button" onClick={onCancel} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
     </div>
   );
 }
@@ -185,13 +192,13 @@ function ExtendStayControl({ reservation, onExtend }: { reservation: HotelReserv
   const [editing, setEditing] = useState(false);
   const [date, setDate] = useState(reservation.check_out_date);
   if (!editing) {
-    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">{t('Extend/shorten stay')}</button>;
+    return <button type="button" onClick={() => setEditing(true)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Extend/shorten stay')}</button>;
   }
   return (
     <div className="flex items-center gap-1.5">
       <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory" />
-      <button type="button" onClick={() => { onExtend(reservation.id, date); setEditing(false); }} className="text-xs text-brass hover:underline">{t('Save')}</button>
-      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">{t('Cancel')}</button>
+      <button type="button" onClick={() => { onExtend(reservation.id, date); setEditing(false); }} className="rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Save')}</button>
+      <button type="button" onClick={() => setEditing(false)} className="rounded text-xs text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
     </div>
   );
 }
@@ -201,16 +208,16 @@ function TransferRoomControl({ reservation, availableRooms, onTransfer }: { rese
   const [editing, setEditing] = useState(false);
   const [newRoomId, setNewRoomId] = useState('');
   if (!editing) {
-    return <button type="button" onClick={() => setEditing(true)} className="text-sm text-brass hover:underline">{t('Transfer room')}</button>;
+    return <button type="button" onClick={() => setEditing(true)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Transfer room')}</button>;
   }
   return (
     <div className="flex items-center gap-1.5">
-      <select value={newRoomId} onChange={(e) => setNewRoomId(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory">
+      <select value={newRoomId} onChange={(e) => setNewRoomId(e.target.value)} className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         <option value="">{t('Move to...')}</option>
         {availableRooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
       </select>
-      <button type="button" disabled={!newRoomId} onClick={() => { onTransfer(reservation.id, newRoomId); setEditing(false); setNewRoomId(''); }} className="text-xs text-brass hover:underline disabled:opacity-40">{t('Move')}</button>
-      <button type="button" onClick={() => setEditing(false)} className="text-xs text-ivory-dim">{t('Cancel')}</button>
+      <button type="button" disabled={!newRoomId} onClick={() => { onTransfer(reservation.id, newRoomId); setEditing(false); setNewRoomId(''); }} className="rounded text-xs text-brass hover:underline disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Move')}</button>
+      <button type="button" onClick={() => setEditing(false)} className="rounded text-xs text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
     </div>
   );
 }
@@ -286,7 +293,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
     <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-ink-line p-4">
       <div className="flex flex-wrap gap-3">
         <Field label={t('Guest')}>
-          <select value={guestId} onChange={(e) => setGuestId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <select value={guestId} onChange={(e) => setGuestId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="">{t('New guest')}...</option>
             {guests.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
@@ -299,7 +306,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
               <div className="w-full rounded-lg border border-warning/40 bg-warning/5 p-3">
                 <p className="text-sm text-warning">{t('Already a guest with this phone number:')}</p>
                 {phoneMatches.map((g) => (
-                  <button type="button" key={g.id} onClick={() => useExistingGuest(g)} className="mt-1 block text-sm text-brass hover:underline">
+                  <button type="button" key={g.id} onClick={() => useExistingGuest(g)} className="mt-1 block rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Use')} {g.name}{g.vip ? ` (${t('VIP')})` : ''} {t('instead of creating a new profile')}
                   </button>
                 ))}
@@ -309,7 +316,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
                 shouldn't be blocked on passport details, but they're here
                 for hotels that do want to capture them up front. */}
             <Field label={t('ID type')}>
-              <select value={newGuestIdType} onChange={(e) => setNewGuestIdType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={newGuestIdType} onChange={(e) => setNewGuestIdType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="">{t('Not captured')}</option>
                 <option value="passport">{t('Passport')}</option>
                 <option value="emirates_id">{t('Emirates ID')}</option>
@@ -326,11 +333,11 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
         )}
       </div>
       <div className="flex flex-wrap gap-3">
-        <Field label={t('Check-in')}><input type="date" value={checkInDate} onChange={(e) => setCheckInDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
-        <Field label={t('Check-out')}><input type="date" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
+        <Field label={t('Check-in')}><input type="date" value={checkInDate} onChange={(e) => setCheckInDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" /></Field>
+        <Field label={t('Check-out')}><input type="date" value={checkOutDate} onChange={(e) => setCheckOutDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" /></Field>
         <Field label={t('Adults')}><input type="number" min={1} onFocus={(e) => e.target.select()} value={adults} onChange={(e) => setAdults(Number(e.target.value))} className={`${inputClass} w-20`} /></Field>
         <Field label={t('Room (optional now)')}>
-          <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+          <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="">{t('Assign later')}</option>
             {rooms.filter((r) => r.status === 'available').map((r) => (
               <option key={r.id} value={r.id}>{r.room_number}{r.cards?.[0] ? '' : ` ${t('(no stand connected)')}`}</option>
@@ -339,7 +346,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
         </Field>
         {groups.length > 0 && (
           <Field label={t('Booking group (optional)')}>
-            <select value={bookingGroupId} onChange={(e) => setBookingGroupId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <select value={bookingGroupId} onChange={(e) => setBookingGroupId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <option value="">{t('Not part of a group')}</option>
               {groups.map((g) => <option key={g.id} value={g.id}>{g.group_name}</option>)}
             </select>
@@ -347,7 +354,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
         )}
       </div>
       {error && <p className="text-base text-danger">{error}</p>}
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? t('Creating...') : t('Create reservation')}
       </button>
     </form>
@@ -407,7 +414,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
   };
 
   return (
-    <Section title={t('Rooms')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add room')}</button>}>
+    <Section title={t('Rooms')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Add room')}</button>}>
       {showAdd && (
         <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -421,7 +428,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
               room's stand work at all, not a cosmetic extra. */}
           <div className="rounded-lg border border-brass/40 bg-ink-soft p-3">
             <Field label={t("Connect this room's NFC stand now")}>
-              <select value={newRoomCardId} onChange={(e) => setNewRoomCardId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={newRoomCardId} onChange={(e) => setNewRoomCardId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="">{t("I'll connect it later from this list")}</option>
                 {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
               </select>
@@ -430,7 +437,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
               {t("A room with no stand connected can't receive orders, bills, or requests until one is - you can always connect it later from the room card below, but doing it now saves a step.")}
             </p>
           </div>
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
         </form>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -443,7 +450,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
             <div key={r.id} className={`rounded-lg border p-3 ${STATUS_COLOR[r.status]}`}>
               <div className="flex items-start justify-between gap-1">
                 <p className="text-base text-ivory">{r.room_number}</p>
-                <button type="button" onClick={() => setEditingRoomId(r.id)} className="text-xs text-brass hover:underline">{t('Edit')}</button>
+                <button type="button" onClick={() => setEditingRoomId(r.id)} className="rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
               </div>
               <p className="text-sm">{t(STATUS_LABEL[r.status] || r.status)}</p>
               <p className="text-xs text-ivory-dim">{r.room_type} · AED {r.base_rate_aed}/night</p>
@@ -451,7 +458,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
               {connectedCard ? (
                 <div className="mt-2 flex items-center justify-between gap-1 border-t border-current/20 pt-2 text-xs">
                   <span className="text-ivory-dim">{t('Stand:')} {connectedCard.label || connectedCard.uid.slice(0, 6)}</span>
-                  <button type="button" onClick={() => handleUnlink(connectedCard.id)} className="text-danger hover:underline">{t('Disconnect')}</button>
+                  <button type="button" onClick={() => handleUnlink(connectedCard.id)} className="rounded text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Disconnect')}</button>
                 </div>
               ) : linkingRoomId === r.id ? (
                 <div className="mt-2 border-t border-current/20 pt-2">
@@ -459,14 +466,14 @@ function RoomsTab({ businessId }: { businessId: string }) {
                     autoFocus
                     onChange={(e) => handleLink(r.id, e.target.value)}
                     defaultValue=""
-                    className="w-full rounded border border-ink-line bg-ink px-1.5 py-1 text-xs text-ivory"
+                    className="w-full rounded border border-ink-line bg-ink px-1.5 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     <option value="" disabled>{t('Select stand...')}</option>
                     {unassignedCards.map((c) => <option key={c.id} value={c.id}>{c.label || c.uid}</option>)}
                   </select>
                 </div>
               ) : (
-                <button type="button" onClick={() => setLinkingRoomId(r.id)} className="mt-2 w-full border-t border-current/20 pt-2 text-left text-xs text-brass hover:underline">
+                <button type="button" onClick={() => setLinkingRoomId(r.id)} className="mt-2 w-full border-t border-current/20 pt-2 text-left text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Connect stand')}
                 </button>
               )}
@@ -502,10 +509,10 @@ function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: stri
 
   return (
     <div className="space-y-2 rounded-lg border border-brass/40 bg-ink-soft p-3">
-      <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder={t('Room number')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-      <input value={roomType} onChange={(e) => setRoomType(e.target.value)} placeholder={t('Type')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-      <input type="number" min={0} value={baseRate} onFocus={(e) => e.target.select()} onChange={(e) => setBaseRate(Number(e.target.value))} placeholder={t('Rate/night (AED)')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-      <select value={status} onChange={(e) => setStatus(e.target.value as HotelRoom['status'])} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory">
+      <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} placeholder={t('Room number')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
+      <input value={roomType} onChange={(e) => setRoomType(e.target.value)} placeholder={t('Type')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
+      <input type="number" min={0} value={baseRate} onFocus={(e) => e.target.select()} onChange={(e) => setBaseRate(Number(e.target.value))} placeholder={t('Rate/night (AED)')} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
+      <select value={status} onChange={(e) => setStatus(e.target.value as HotelRoom['status'])} className="w-full rounded border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         <option value="available">{t('Available')}</option>
         <option value="occupied">{t('Occupied')}</option>
         <option value="dirty">{t('Dirty')}</option>
@@ -514,10 +521,10 @@ function RoomEditForm({ businessId, room, onDone, onCancel }: { businessId: stri
       </select>
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" onClick={handleSave} disabled={saving} className="flex-1 rounded bg-brass px-2 py-1.5 text-xs font-medium text-ink disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="flex-1 rounded bg-brass px-2 py-1.5 text-xs font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
-        <button type="button" onClick={onCancel} className="flex-1 rounded border border-ink-line px-2 py-1.5 text-xs text-ivory-dim">
+        <button type="button" onClick={onCancel} className="flex-1 rounded border border-ink-line px-2 py-1.5 text-xs text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('Cancel')}
         </button>
       </div>
@@ -531,6 +538,7 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
   const { t } = useT();
   const [folios, setFolios] = useState<HotelFolio[]>([]);
   const [selectedIds, setSelectedIds] = useState<Record<string, string[]>>({});
+  const [splitError, setSplitError] = useState('');
   // Which folio's split confirmation is currently open, if any - a
   // real, cancelable step now, not an immediate-commit prompt().
   const [splittingFolioId, setSplittingFolioId] = useState<string | null>(null);
@@ -560,7 +568,8 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
   }
 
   function startSplit(folioId: string) {
-    if ((selectedIds[folioId] || []).length === 0) { alert('Select at least one charge to split off'); return; }
+    if ((selectedIds[folioId] || []).length === 0) { setSplitError(t('Select at least one charge to split off')); return; }
+    setSplitError('');
     setSplittingFolioId(folioId);
   }
 
@@ -576,7 +585,8 @@ function FolioView({ businessId, reservationId, onClose }: { businessId: string;
 
   return (
     <div className="space-y-6">
-      <button type="button" onClick={onClose} className="text-sm text-brass hover:underline">{t('← Back to reservations')}</button>
+      <button type="button" onClick={onClose} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('← Back to reservations')}</button>
+      {splitError && <p className="text-sm text-danger">{splitError}</p>}
       {folios.map((folio) => (
         <FolioCard
           key={folio.id} businessId={businessId} folio={folio} otherFolios={folios.filter((f) => f.id !== folio.id)}
@@ -609,6 +619,8 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
   const [adjustDesc, setAdjustDesc] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [transferringChargeId, setTransferringChargeId] = useState<string | null>(null);
+  const [refundError, setRefundError] = useState('');
+  const [adjustError, setAdjustError] = useState('');
 
   async function handleAddCharge(e: React.FormEvent) {
     e.preventDefault();
@@ -642,7 +654,8 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
 
   async function handleRefund(e: React.FormEvent) {
     e.preventDefault();
-    if (!refundAmount || !refundReason.trim()) { alert('A reason is required for every refund'); return; }
+    if (!refundAmount || !refundReason.trim()) { setRefundError(t('A reason is required for every refund')); return; }
+    setRefundError('');
     await recordFolioRefund(businessId, folio.id, refundAmount, refundReason);
     setRefundAmount(0); setRefundReason('');
     onReload();
@@ -650,7 +663,8 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
 
   async function handleAdjustment(e: React.FormEvent) {
     e.preventDefault();
-    if (!adjustAmount || !adjustDesc.trim() || !adjustReason.trim()) { alert('Description and reason are both required for an adjustment'); return; }
+    if (!adjustAmount || !adjustDesc.trim() || !adjustReason.trim()) { setAdjustError(t('Description and reason are both required for an adjustment')); return; }
+    setAdjustError('');
     await recordFolioAdjustment(businessId, folio.id, adjustAmount, adjustDesc, adjustReason);
     setAdjustAmount(0); setAdjustDesc(''); setAdjustReason('');
     onReload();
@@ -696,7 +710,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim/70">{t('Charges & payments')}</p>
           {folio.status === 'open' && folio.charges.length > 0 && (
-            <button type="button" onClick={onSelectAll} className="text-xs text-brass hover:underline">
+            <button type="button" onClick={onSelectAll} className="rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {selectedIds.length === folio.charges.length ? t('Clear selection') : t('Select all')}
             </button>
           )}
@@ -713,12 +727,12 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 <span className="flex items-center gap-2">
                   <span className={`font-mono tabular-nums ${c.amount_aed < 0 ? 'text-success' : 'text-ivory'}`}>{c.amount_aed < 0 ? '-' : ''}AED {Math.abs(c.amount_aed).toFixed(2)}</span>
                   {folio.status === 'open' && otherFolios.length > 0 && (
-                    <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="text-xs text-brass hover:underline">
+                    <button type="button" onClick={() => setTransferringChargeId(transferringChargeId === c.id ? null : c.id)} className="rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {t('Transfer')}
                     </button>
                   )}
                   {folio.status === 'open' && (
-                    <button type="button" onClick={() => handleDeleteCharge(c.id)} className="text-xs text-danger hover:underline">
+                    <button type="button" onClick={() => handleDeleteCharge(c.id)} className="rounded text-xs text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">
                       {t('Delete')}
                     </button>
                   )}
@@ -729,7 +743,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                   <select
                     onChange={(e) => handleTransfer(c.id, e.target.value)}
                     defaultValue=""
-                    className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory"
+                    className="rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     <option value="" disabled>{t('Move to which folio...')}</option>
                     {otherFolios.map((f) => (
@@ -754,7 +768,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 </div>
                 <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder={t("What's it for?")} className={inputClass} />
                 <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Add charge')}</button>
+                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add charge')}</button>
               </form>
               <form onSubmit={handleRecordPayment} className="flex flex-col gap-2.5 rounded-xl border border-success/25 bg-ink p-4">
                 <div>
@@ -762,7 +776,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                   <p className="text-xs text-ivory-dim/70">{t('Log money already collected - cash, card machine, any method')}</p>
                 </div>
                 <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">{t('Record payment')}</button>
+                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Record payment')}</button>
               </form>
               <form onSubmit={handleDeposit} className="flex flex-col gap-2.5 rounded-xl border border-success/25 bg-ink p-4">
                 <div>
@@ -770,7 +784,7 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                   <p className="text-xs text-ivory-dim/70">{t('Log an advance or security deposit held against the stay')}</p>
                 </div>
                 <input type="number" onFocus={(e) => e.target.select()} value={depositAmount} onChange={(e) => setDepositAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink">{t('Record deposit')}</button>
+                <button type="submit" className="mt-auto w-full rounded-lg bg-success/80 px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Record deposit')}</button>
               </form>
               <form onSubmit={handleRefund} className="flex flex-col gap-2.5 rounded-xl border border-danger/25 bg-ink p-4">
                 <div>
@@ -779,7 +793,8 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 </div>
                 <input type="number" onFocus={(e) => e.target.select()} value={refundAmount} onChange={(e) => setRefundAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={`${inputClass} font-mono`} />
                 <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder={t('Reason (required)')} className={inputClass} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink">{t('Issue refund')}</button>
+                {refundError && <p className="text-xs text-danger">{refundError}</p>}
+                <button type="submit" className="mt-auto w-full rounded-lg bg-danger/80 px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Issue refund')}</button>
               </form>
               <form onSubmit={handleAdjustment} className="flex flex-col gap-2.5 rounded-xl border border-ink-line bg-ink p-4">
                 <div>
@@ -789,10 +804,11 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                 <input type="number" onFocus={(e) => e.target.select()} value={adjustAmount} onChange={(e) => setAdjustAmount(Number(e.target.value))} placeholder={t('Amount AED (+/-)')} className={`${inputClass} font-mono`} />
                 <input value={adjustDesc} onChange={(e) => setAdjustDesc(e.target.value)} placeholder={t('Description (required)')} className={inputClass} />
                 <input value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)} placeholder={t('Reason (required)')} className={inputClass} />
-                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink">{t('Apply adjustment')}</button>
+                {adjustError && <p className="text-xs text-danger">{adjustError}</p>}
+                <button type="submit" className="mt-auto w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Apply adjustment')}</button>
               </form>
             </div>
-            <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="mt-3 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40">
+            <button type="button" onClick={onSplit} disabled={selectedIds.length === 0} className="mt-3 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {t('Split')} {selectedIds.length > 0 ? `${selectedIds.length} ${t('selected charge(s)')}` : t('selected charges')} {t('into new folio')}
             </button>
             {splitConfirmOpen && (
@@ -808,10 +824,10 @@ function FolioCard({ businessId, folio, otherFolios, selectedIds, onToggleCharge
                   className={inputClass}
                 />
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => { onConfirmSplit(splitCompanyName); setSplitCompanyName(''); }} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">
+                  <button type="button" onClick={() => { onConfirmSplit(splitCompanyName); setSplitCompanyName(''); }} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Confirm split')}
                   </button>
-                  <button type="button" onClick={() => { onCancelSplit(); setSplitCompanyName(''); }} className="text-sm text-ivory-dim">
+                  <button type="button" onClick={() => { onCancelSplit(); setSplitCompanyName(''); }} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Cancel')}
                   </button>
                 </div>
@@ -850,7 +866,7 @@ function GuestsTab({ businessId }: { businessId: string }) {
       />
       <div className="grid gap-2 sm:grid-cols-2">
         {guests.map((g) => (
-          <button type="button" key={g.id} onClick={() => setSelectedGuestId(g.id)} className="rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40">
+          <button type="button" key={g.id} onClick={() => setSelectedGuestId(g.id)} className="rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <p className="text-base text-ivory">{g.name}{g.vip && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('VIP')}</span>}</p>
             <p className="text-sm text-ivory-dim">{[g.phone, g.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
           </button>
@@ -884,7 +900,7 @@ function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: strin
 
   return (
     <div className="space-y-6">
-      <button type="button" onClick={onBack} className="text-sm text-brass hover:underline">{t('← Back to guests')}</button>
+      <button type="button" onClick={onBack} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('← Back to guests')}</button>
 
       <Section title={guest.name}>
         <p className="text-sm text-ivory-dim">{[guest.phone, guest.email].filter(Boolean).join(' · ') || t('No contact details')}{guest.nationality && ` · ${guest.nationality}`}</p>
@@ -914,7 +930,7 @@ function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: strin
         <Field label={t('Room preference')}><input value={roomPreference} onChange={(e) => setRoomPreference(e.target.value)} placeholder="e.g. High floor, away from elevator" className={inputClass} /></Field>
         <Field label={t('Dietary notes')}><input value={dietaryNotes} onChange={(e) => setDietaryNotes(e.target.value)} placeholder="e.g. Vegetarian, nut allergy" className={inputClass} /></Field>
         <Field label={t('General notes')}><input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} /></Field>
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save preferences')}
         </button>
       </Section>
@@ -957,8 +973,8 @@ function CityLedgerTab({ businessId }: { businessId: string }) {
   return (
     <Section title={t('City Ledger')} action={
       <div className="flex rounded-lg border border-ink-line">
-        <button type="button" onClick={() => setFilter('unpaid')} className={`px-3 py-1.5 text-sm ${filter === 'unpaid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Outstanding')}</button>
-        <button type="button" onClick={() => setFilter('paid')} className={`px-3 py-1.5 text-sm ${filter === 'paid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Settled')}</button>
+        <button type="button" onClick={() => setFilter('unpaid')} className={`px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${filter === 'unpaid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Outstanding')}</button>
+        <button type="button" onClick={() => setFilter('paid')} className={`px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${filter === 'paid' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Settled')}</button>
       </div>
     }>
       <p className="text-sm text-ivory-dim">
@@ -985,14 +1001,14 @@ function CityLedgerTab({ businessId }: { businessId: string }) {
               <div className="flex items-center gap-3">
                 <span className="text-brass">AED {e.amountAed.toFixed(2)}</span>
                 {!e.paidAt && (
-                  <button type="button" onClick={() => setSettlingId(settlingId === e.id ? null : e.id)} className="text-sm text-brass hover:underline">{t('Mark settled')}</button>
+                  <button type="button" onClick={() => setSettlingId(settlingId === e.id ? null : e.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Mark settled')}</button>
                 )}
               </div>
             </div>
             {settlingId === e.id && (
               <div className="mt-2 flex items-center gap-2 border-t border-ink-line pt-2">
-                <input value={reference} onChange={(ev) => setReference(ev.target.value)} placeholder={t('Payment reference (optional)')} className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory" />
-                <button type="button" onClick={() => handleSettle(e.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">{t('Confirm')}</button>
+                <input value={reference} onChange={(ev) => setReference(ev.target.value)} placeholder={t('Payment reference (optional)')} className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
+                <button type="button" onClick={() => handleSettle(e.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Confirm')}</button>
               </div>
             )}
           </div>
@@ -1027,9 +1043,9 @@ function TourismDirhamTab({ businessId }: { businessId: string }) {
       title={t('Tourism Dirham')}
       action={
         <div className="flex items-center gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
           <span className="text-sm text-ivory-dim">{t('to')}</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
         </div>
       }
     >
@@ -1093,7 +1109,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
   return (
     <Section
       title={t('Booking Groups')}
-      action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add group')}</button>}
+      action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Add group')}</button>}
     >
       <p className="text-base text-ivory-dim">
         {t('A wedding party, a corporate block - link several reservations under one group so they can be tracked together. Create the group here, then pick it from "Booking group" when creating each reservation.')}
@@ -1103,7 +1119,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
           <Field label={t('Group name')}><input value={groupName} onChange={(e) => setGroupName(e.target.value)} required placeholder="Al Mansoori Wedding" className={inputClass} /></Field>
           <Field label={t('Contact name')}><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
           <Field label={t('Contact phone')}><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? t('Adding...') : t('Add')}
           </button>
         </form>
@@ -1120,8 +1136,8 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
                 <p className="text-base text-ivory">{g.group_name}</p>
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-ivory-dim">{reservations.length} {reservations.length === 1 ? t('room') : t('rooms')}</span>
-                  <button type="button" onClick={() => setEditingId(g.id)} className="text-brass hover:underline">{t('Edit')}</button>
-                  <button type="button" onClick={() => handleDelete(g)} className="text-danger hover:underline">{t('Delete')}</button>
+                  <button type="button" onClick={() => setEditingId(g.id)} className="rounded text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                  <button type="button" onClick={() => handleDelete(g)} className="rounded text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
                 </div>
               </div>
               {(g.contact_name || g.contact_phone) && (
@@ -1177,10 +1193,10 @@ function BookingGroupEditForm({ businessId, group, onDone, onCancel }: {
       </div>
       <Field label={t('Notes')}><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputClass} /></Field>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save changes')}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+        <button type="button" onClick={onCancel} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
       </div>
     </div>
   );

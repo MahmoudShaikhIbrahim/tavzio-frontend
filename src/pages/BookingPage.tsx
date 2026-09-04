@@ -101,7 +101,7 @@ export function BookingMenuItemRow({ item, cart, onAdd, t }: {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {totalQuantity > 0 && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{totalQuantity} {t('tbInCart')}</span>}
-          <button type="button" onClick={() => setExpanded((s) => !s)} className="rounded-lg border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10">
+          <button type="button" onClick={() => setExpanded((s) => !s)} className="rounded-lg border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {expanded ? t('tbCancel') : t('tbAdd')}
           </button>
         </div>
@@ -114,7 +114,7 @@ export function BookingMenuItemRow({ item, cart, onAdd, t }: {
             placeholder={t('tbItemNotePlaceholder')}
             className="w-full rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory placeholder:text-ivory-dim/60"
           />
-          <button type="button" onClick={handleConfirmAdd} className="mt-1.5 w-full rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={handleConfirmAdd} className="mt-1.5 w-full rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('tbAddToOrder')}
           </button>
         </div>
@@ -265,7 +265,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       setOtpSent(true);
       setStep('otp');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send verification code');
+      setError(err instanceof Error ? err.message : t('tbCouldNotSendCode'));
     } finally {
       setSubmitting(false);
     }
@@ -275,7 +275,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     e.preventDefault();
     if (!otp) return;
     if (selectedServiceId && (!serviceDate || !serviceTime)) {
-      setError('Please choose a date and time for the service you selected');
+      setError(t('tbServiceDateTimeRequired'));
       return;
     }
     setError('');
@@ -300,7 +300,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       }
       setStep('confirmed');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not complete your booking');
+      setError(err instanceof Error ? err.message : t('tbCouldNotCompleteBooking'));
     } finally {
       setSubmitting(false);
     }
@@ -315,7 +315,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       await requestBookingOtp(slug, managePhone.trim());
       setStep('manageOtp');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send verification code');
+      setError(err instanceof Error ? err.message : t('tbCouldNotSendCode'));
     } finally {
       setManageBusy(false);
     }
@@ -332,7 +332,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       setMyBookings(bookings);
       setStep('manageList');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Incorrect code');
+      setError(err instanceof Error ? err.message : t('tbIncorrectCode'));
     } finally {
       setManageBusy(false);
     }
@@ -344,7 +344,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       await cancelPublicBooking(id, managePhone.trim());
       setMyBookings((prev) => prev.filter((b) => b.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not cancel this booking');
+      setError(err instanceof Error ? err.message : t('tbCouldNotCancelBooking'));
     } finally {
       setManageBusy(false);
     }
@@ -360,7 +360,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       const updated = await cancelPublicBookingService(id, managePhone.trim());
       setMyBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not cancel this service');
+      setError(err instanceof Error ? err.message : t('tbCouldNotCancelService'));
     } finally {
       setManageBusy(false);
     }
@@ -374,7 +374,7 @@ function BookingPageContent({ slug }: { slug: string }) {
       setMyBookings((prev) => prev.map((b) => (b.id === id ? { ...b, requested_at: updated.requested_at, party_size: updated.party_size } : b)));
       setRescheduling(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not reschedule this booking');
+      setError(err instanceof Error ? err.message : t('tbCouldNotReschedule'));
     } finally {
       setManageBusy(false);
     }
@@ -438,7 +438,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     return (
       <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
         <div className="mx-auto max-w-md px-6 pt-14 pb-16">
-          <button type="button" onClick={() => setStep('form')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <button type="button" onClick={() => setStep('form')} className="rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{isRtl ? '→' : '←'} {t('back')}</button>
           <h1 className="mt-3 font-display text-2xl text-ivory">{t('tbVerifyNumber')}</h1>
           <p className="mt-1 text-sm text-ivory-dim">{t('tbCodeSentTo', { phone })}</p>
           <form onSubmit={handleVerifyAndSubmit} className="mt-6 space-y-3">
@@ -449,13 +449,13 @@ function BookingPageContent({ slug }: { slug: string }) {
               className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-3 text-center text-2xl tracking-[0.3em] text-ivory placeholder:text-base placeholder:tracking-normal placeholder:text-ivory-dim/60"
             />
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button type="submit" disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50">
+            <button type="submit" disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
               {submitting ? t('tbConfirming') : t('tbConfirmBooking')}
             </button>
             <button
               type="button"
               onClick={async () => { setError(''); try { await requestBookingOtp(slug, phone); } catch { /* silent */ } }}
-              className="w-full text-center text-sm text-ivory-dim hover:text-ivory"
+              className="w-full rounded text-center text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {t('tbResendCode')}
             </button>
@@ -469,7 +469,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     return (
       <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
         <div className="mx-auto max-w-md px-6 pt-14 pb-16">
-          <button type="button" onClick={() => setStep('form')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <button type="button" onClick={() => setStep('form')} className="rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{isRtl ? '→' : '←'} {t('back')}</button>
           <div className="mt-6 rounded-xl border border-brass/30 bg-ink-soft p-5">
             <p className="font-mono text-[11px] uppercase tracking-wider text-brass">{t('tbManageBooking')}</p>
             <p className="mt-2 text-sm text-ivory-dim">{t('tbManageBookingPrompt')}</p>
@@ -480,7 +480,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                 className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
               />
               {error && <p className="text-sm text-danger">{error}</p>}
-              <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50">
+              <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                 {manageBusy ? t('tbSendingCode') : t('tbSendVerificationCode')}
               </button>
             </form>
@@ -494,7 +494,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     return (
       <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
         <div className="mx-auto max-w-md px-6 pt-14 pb-16">
-          <button type="button" onClick={() => setStep('managePhone')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <button type="button" onClick={() => setStep('managePhone')} className="rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{isRtl ? '→' : '←'} {t('back')}</button>
           <h1 className="mt-3 font-display text-2xl text-ivory">{t('tbVerifyNumber')}</h1>
           <p className="mt-1 text-sm text-ivory-dim">{t('tbCodeSentTo', { phone: managePhone })}</p>
           <form onSubmit={handleVerifyManageOtp} className="mt-6 space-y-3">
@@ -505,7 +505,7 @@ function BookingPageContent({ slug }: { slug: string }) {
               className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-3 text-center text-2xl tracking-[0.3em] text-ivory placeholder:text-base placeholder:tracking-normal placeholder:text-ivory-dim/60"
             />
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50">
+            <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
               {manageBusy ? t('tbConfirming') : t('tbConfirmBooking')}
             </button>
           </form>
@@ -518,7 +518,7 @@ function BookingPageContent({ slug }: { slug: string }) {
     return (
       <div className="min-h-screen bg-ink" dir={isRtl ? 'rtl' : 'ltr'} style={themeStyle}>
         <div className="mx-auto max-w-md px-6 pt-14 pb-16">
-          <button type="button" onClick={() => setStep('form')} className="text-sm text-ivory-dim hover:text-ivory">{isRtl ? '→' : '←'} {t('back')}</button>
+          <button type="button" onClick={() => setStep('form')} className="rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{isRtl ? '→' : '←'} {t('back')}</button>
           <h1 className="mt-3 font-display text-2xl text-ivory">{t('tbYourBookings')}</h1>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
           <div className="mt-4 space-y-3">
@@ -536,7 +536,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                         <span className="text-ivory-dim"> · {new Date(b.service_requested_at).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })}</span>
                       )}
                     </p>
-                    <button type="button" disabled={manageBusy} onClick={() => handleCancelServiceFromList(b.id)} className="mt-1 text-xs text-danger hover:underline disabled:opacity-50">
+                    <button type="button" disabled={manageBusy} onClick={() => handleCancelServiceFromList(b.id)} className="mt-1 rounded text-xs text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">
                       {t('tbCancelServiceOnly')}
                     </button>
                   </div>
@@ -545,10 +545,10 @@ function BookingPageContent({ slug }: { slug: string }) {
                   <RescheduleForm booking={b} busy={manageBusy} onCancel={() => setRescheduling(null)} onSave={handleReschedule} operatingHours={config?.operatingHours ?? null} bookingHours={config?.bookingHours ?? null} />
                 ) : (
                   <div className="mt-3 flex gap-3">
-                    <button type="button" disabled={manageBusy} onClick={() => setRescheduling(b.id)} className="text-sm text-brass hover:underline disabled:opacity-50">
+                    <button type="button" disabled={manageBusy} onClick={() => setRescheduling(b.id)} className="rounded text-sm text-brass hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {t('tbReschedule')}
                     </button>
-                    <button type="button" disabled={manageBusy} onClick={() => handleCancelFromList(b.id)} className="text-sm text-danger hover:underline disabled:opacity-50">
+                    <button type="button" disabled={manageBusy} onClick={() => handleCancelFromList(b.id)} className="rounded text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">
                       {t('tbCancelBooking')}
                     </button>
                   </div>
@@ -570,7 +570,7 @@ function BookingPageContent({ slug }: { slug: string }) {
           <LanguageSwitcher />
         </div>
         {config?.businessName && <p className="mt-1 text-sm text-brass">{config.businessName}</p>}
-        <button type="button" onClick={() => { setError(''); setStep('managePhone'); }} className="mt-3 text-sm text-ivory-dim underline decoration-ink-line hover:text-ivory">
+        <button type="button" onClick={() => { setError(''); setStep('managePhone'); }} className="mt-3 rounded text-sm text-ivory-dim underline decoration-ink-line hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('tbManageBookingLink')}
         </button>
 
@@ -646,7 +646,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                           <button type="button"
                             key={category}
                             onClick={() => setActiveFoodCategory(category)}
-                            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                               category === effectiveCategory ? 'border-brass bg-brass text-ink font-medium' : 'border-ink-line text-ivory-dim hover:border-brass/40 hover:text-brass'
                             }`}
                           >
@@ -674,17 +674,28 @@ function BookingPageContent({ slug }: { slug: string }) {
                           {line.note && <p className="mt-0.5 text-xs italic text-brass">"{line.note}"</p>}
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          <button type="button" onClick={() => changeQuantity(line.menuItemId, line.note, -1)} className="flex h-6 w-6 items-center justify-center rounded border border-ink-line text-ivory-dim hover:text-ivory">−</button>
+                          <button
+                            type="button"
+                            onClick={() => changeQuantity(line.menuItemId, line.note, -1)}
+                            aria-label={`Decrease quantity of ${line.name}`}
+                            className="flex h-8 w-8 items-center justify-center rounded border border-ink-line text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                          >−</button>
                           <span className="w-4 text-center text-sm text-ivory">{line.quantity}</span>
-                          <button type="button" onClick={() => changeQuantity(line.menuItemId, line.note, 1)} className="flex h-6 w-6 items-center justify-center rounded border border-brass/40 text-brass">+</button>
-                          <button type="button" onClick={() => removeCartLine(line.menuItemId, line.note)} className="ms-1 text-xs text-danger hover:underline">{t('tbRemove')}</button>
+                          <button
+                            type="button"
+                            onClick={() => changeQuantity(line.menuItemId, line.note, 1)}
+                            aria-label={`Increase quantity of ${line.name}`}
+                            className="flex h-8 w-8 items-center justify-center rounded border border-brass/40 text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                          >+</button>
+                          <button
+                            type="button"
+                            onClick={() => removeCartLine(line.menuItemId, line.note)}
+                            aria-label={`Remove ${line.name} from order`}
+                            className="ms-1 text-xs text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                          >{t('tbRemove')}</button>
                         </div>
                       </div>
                     ))}
-                  </div>
-                  <div className="mt-3 flex justify-between border-t border-ink-line pt-3 text-sm">
-                    <span className="text-ivory-dim">{selectedService ? 'Food subtotal' : t('tbTotal')}</span>
-                    <span className="text-ivory">AED {cartTotal.toFixed(2)}</span>
                   </div>
                   <p className="mt-3 text-xs uppercase tracking-wide text-ivory-dim">{t('tbWhenReady')}</p>
                   <div className="mt-1.5 space-y-1.5">
@@ -702,14 +713,14 @@ function BookingPageContent({ slug }: { slug: string }) {
 
           {config && config.services.length > 0 && (
             <div className="rounded-xl border border-ink-line bg-ink-soft p-4">
-              <p className="font-display text-lg text-ivory">Add a service</p>
-              <p className="mt-0.5 text-xs text-ivory-dim">Birthday packages and other extras for your visit - optional.</p>
+              <p className="font-display text-lg text-ivory">{t('tbAddService')}</p>
+              <p className="mt-0.5 text-xs text-ivory-dim">{t('tbAddServiceDesc')}</p>
               <select
                 value={selectedServiceId}
                 onChange={(e) => { setSelectedServiceId(e.target.value); setSelectedServiceOptionId(''); }}
-                className="mt-3 w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-sm text-ivory"
+                className="mt-3 w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
-                <option value="">None</option>
+                <option value="">{t('tbNone')}</option>
                 {config.services.map((s) => (
                   <option key={s.id} value={s.id}>{s.name} — AED {s.price.toFixed(2)}</option>
                 ))}
@@ -730,7 +741,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                               type="button"
                               key={opt.id}
                               onClick={() => setSelectedServiceOptionId(isSelected ? '' : opt.id)}
-                              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                              className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                                 isSelected ? 'border-brass bg-brass text-ink font-medium' : 'border-ink-line text-ivory hover:border-brass/40'
                               }`}
                             >
@@ -740,7 +751,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                         })}
                       </div>
                     )}
-                    <p className="mt-3 text-xs text-ivory-dim">When for the service? (defaults to your booking's own date)</p>
+                    <p className="mt-3 text-xs text-ivory-dim">{t('tbServiceWhenPrompt')}</p>
                     <div className="mt-1 grid grid-cols-2 gap-3">
                       <AdvancedDatePicker value={serviceDate} onChange={(v) => { setServiceDate(v); setServiceDateTouched(true); }} />
                       <AdvancedTimePicker
@@ -761,7 +772,7 @@ function BookingPageContent({ slug }: { slug: string }) {
               <div className="space-y-1.5 text-sm">
                 {cart.length > 0 && (
                   <div className="flex justify-between text-ivory-dim">
-                    <span>Food</span>
+                    <span>{t('tbFood')}</span>
                     <span>AED {cartTotal.toFixed(2)}</span>
                   </div>
                 )}
@@ -773,7 +784,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                 )}
               </div>
               <div className="mt-2 flex justify-between border-t border-ink-line pt-2 text-sm font-medium">
-                <span className="text-ivory">Total</span>
+                <span className="text-ivory">{t('tbTotal')}</span>
                 <span className="text-brass">AED {grandTotal.toFixed(2)}</span>
               </div>
             </div>
@@ -790,7 +801,7 @@ function BookingPageContent({ slug }: { slug: string }) {
           )}
 
           {error && <p className="text-sm text-danger">{error}</p>}
-          <button type="submit" disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50">
+          <button type="submit" disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {submitting ? t('tbSendingCode') : t('tbSendVerificationCode')}
           </button>
         </form>
@@ -840,10 +851,10 @@ function RescheduleForm({ booking, busy, onCancel, onSave, operatingHours, booki
         </div>
       )}
       <div className="flex gap-3">
-        <button type="button" disabled={busy || hours.closed || !time} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+        <button type="button" disabled={busy || hours.closed || !time} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {busy ? t('tbConfirming') : t('tbSaveChanges')}
         </button>
-        <button type="button" disabled={busy} onClick={onCancel} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">
+        <button type="button" disabled={busy} onClick={onCancel} className="rounded text-sm text-ivory-dim hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('tbCancelEdit')}
         </button>
       </div>

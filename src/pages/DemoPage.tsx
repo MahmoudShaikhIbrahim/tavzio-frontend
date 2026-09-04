@@ -216,7 +216,7 @@ export default function DemoPage() {
                     type="button"
                     onClick={() => handleSendRequest('call_waiter')}
                     disabled={sendingRequest === 'call_waiter'}
-                    className="flex flex-col items-center gap-1 rounded-lg border border-ink-line px-2 py-2.5 text-xs text-ivory-dim transition-colors hover:border-brass/40 hover:text-ivory disabled:opacity-50"
+                    className="flex flex-col items-center gap-1 rounded-lg border border-ink-line px-2 py-2.5 text-xs text-ivory-dim transition-colors hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     <Bell size={16} strokeWidth={1.75} />
                     {justSentRequest === 'call_waiter' ? 'Waiter notified!' : 'Call Waiter'}
@@ -225,7 +225,7 @@ export default function DemoPage() {
                     type="button"
                     onClick={() => handleSendRequest('request_bill')}
                     disabled={sendingRequest === 'request_bill'}
-                    className="flex flex-col items-center gap-1 rounded-lg border border-ink-line px-2 py-2.5 text-xs text-ivory-dim transition-colors hover:border-brass/40 hover:text-ivory disabled:opacity-50"
+                    className="flex flex-col items-center gap-1 rounded-lg border border-ink-line px-2 py-2.5 text-xs text-ivory-dim transition-colors hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     <Receipt size={16} strokeWidth={1.75} />
                     {justSentRequest === 'request_bill' ? 'Request sent!' : 'Request the Bill'}
@@ -243,7 +243,7 @@ export default function DemoPage() {
                     type="button"
                     onClick={handlePayBill}
                     disabled={!!payingOrderId}
-                    className="mt-4 w-full rounded-lg border border-brass/40 px-3 py-2.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+                    className="mt-4 w-full rounded-lg border border-brass/40 px-3 py-2.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {payingOrderId ? 'Processing...' : `Pay Bill · AED ${unpaidTotal.toFixed(2)}`}
                   </button>
@@ -264,12 +264,12 @@ export default function DemoPage() {
                             </div>
                             {cart[item.id] ? (
                               <div className="flex shrink-0 items-center gap-2">
-                                <button type="button" onClick={() => removeFromCart(item.id)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim">-</button>
+                                <button type="button" onClick={() => removeFromCart(item.id)} className="h-6 w-6 rounded border border-ink-line text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">-</button>
                                 <span className="w-4 text-center text-sm text-ivory">{cart[item.id]}</span>
-                                <button type="button" onClick={() => addToCart(item.id)} className="h-6 w-6 rounded border border-brass/40 text-brass">+</button>
+                                <button type="button" onClick={() => addToCart(item.id)} className="h-6 w-6 rounded border border-brass/40 text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+</button>
                               </div>
                             ) : (
-                              <button type="button" onClick={() => addToCart(item.id)} className="shrink-0 rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10">
+                              <button type="button" onClick={() => addToCart(item.id)} className="shrink-0 rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                                 Add
                               </button>
                             )}
@@ -288,7 +288,7 @@ export default function DemoPage() {
                     type="button"
                     onClick={handlePlaceOrder}
                     disabled={placing}
-                    className="mt-4 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                    className="mt-4 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {placing ? 'Sending order...' : `Place order · AED ${cartTotal.toFixed(2)}`}
                   </button>
@@ -300,7 +300,7 @@ export default function DemoPage() {
           {/* RIGHT: the staff-facing side - a real tab switch between
               Kitchen Display and Notifications (Call Waiter / Request
               the Bill), same layout language as the actual staff
-              dashboard's Kitchen and Requests tabs, so the demo
+              dashboard's Kitchen tab and Orders attention panel, so the demo
               genuinely shows "this is the same product," not a mocked-up
               screenshot. */}
           <div className="rounded-2xl border border-ink-line bg-ink-soft p-5">
@@ -308,7 +308,7 @@ export default function DemoPage() {
               <button
                 type="button"
                 onClick={() => setRightTab('kitchen')}
-                className={`relative px-3 py-2 text-sm ${rightTab === 'kitchen' ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}
+                className={`relative px-3 py-2 text-sm ${rightTab === 'kitchen' ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
               >
                 Kitchen Display
                 {pendingKitchenCount > 0 && (
@@ -318,7 +318,7 @@ export default function DemoPage() {
               <button
                 type="button"
                 onClick={() => setRightTab('notifications')}
-                className={`relative px-3 py-2 text-sm ${rightTab === 'notifications' ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}
+                className={`relative px-3 py-2 text-sm ${rightTab === 'notifications' ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
               >
                 Notifications
                 {pendingRequestCount > 0 && (
@@ -335,7 +335,7 @@ export default function DemoPage() {
                     <div key={order.id} className="animate-hero-rise rounded-lg border border-brass/30 bg-ink p-4">
                       <div className="flex items-center justify-between">
                         <p className="text-sm text-brass">Table 4</p>
-                        <button type="button" onClick={() => handleMarkReady(order.id)} className="rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10">
+                        <button type="button" onClick={() => handleMarkReady(order.id)} className="rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                           Mark ready
                         </button>
                       </div>
@@ -384,7 +384,7 @@ export default function DemoPage() {
                           <p className="text-xs text-ivory-dim">Table 4 · {new Date(r.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</p>
                         </div>
                       </div>
-                      <button type="button" onClick={() => handleAcknowledgeRequest(r.id)} className="shrink-0 rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10">
+                      <button type="button" onClick={() => handleAcknowledgeRequest(r.id)} className="shrink-0 rounded-lg border border-brass/40 px-2.5 py-1 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                         Acknowledge
                       </button>
                     </div>

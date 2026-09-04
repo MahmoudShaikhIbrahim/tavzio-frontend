@@ -39,7 +39,7 @@ export default function AccountingSyncPage() {
       const { url } = await getZohoBooksConnectUrl(businessId);
       window.location.href = url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start Zoho Books connection');
+      setError(err instanceof Error ? err.message : t('Could not start Zoho Books connection'));
       setConnecting(false);
     }
   }
@@ -60,7 +60,7 @@ export default function AccountingSyncPage() {
       const result = await syncZohoBooksReceipts(businessId);
       setSyncResult(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not sync');
+      setError(err instanceof Error ? err.message : t('Could not sync'));
     } finally {
       setSyncing(false);
     }
@@ -83,7 +83,7 @@ export default function AccountingSyncPage() {
             type="button"
             onClick={handleConnect}
             disabled={connecting}
-            className="mt-3 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            className="mt-3 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {connecting ? t('Redirecting...') : t('Connect Zoho Books')}
           </button>
@@ -97,11 +97,11 @@ export default function AccountingSyncPage() {
               type="button"
               onClick={handleSync}
               disabled={syncing}
-              className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {syncing ? t('Syncing...') : t('Sync now')}
             </button>
-            <button type="button" onClick={handleDisconnect} className="text-sm text-danger hover:underline">{t('Disconnect')}</button>
+            <button type="button" onClick={handleDisconnect} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Disconnect')}</button>
           </div>
           {syncResult && (
             <div className="mt-3 rounded-lg bg-ink-soft p-3 text-sm">

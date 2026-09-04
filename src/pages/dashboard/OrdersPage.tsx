@@ -300,12 +300,12 @@ export default function OrdersPage() {
               this only changes which side is currently shown. */}
           <div data-tour="orders-map-toggle" className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-1">
             <button type="button" onClick={() => setView('orders')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${view === 'orders' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
+              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'orders' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
             >
               <ListOrdered size={15} strokeWidth={2} /> {t('Orders')}
             </button>
             <button type="button" onClick={() => setView('map')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors ${view === 'map' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
+              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'map' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
             >
               <MapIcon size={15} strokeWidth={2} /> {t('Tables Map')}
             </button>
@@ -315,7 +315,7 @@ export default function OrdersPage() {
               which was exactly the confusing overlap between Orders and
               POS. This page is now purely the live status/notifications
               feed; POS is the only place a new order gets created. */}
-          <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+          <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {t('Take an order in POS →')}
           </button>
           {/* Real bug fix (confirmed by explicit report: the header
@@ -330,7 +330,7 @@ export default function OrdersPage() {
           {payBillEnabled === true && (
             <button type="button"
               onClick={() => setShowRecordPayment(true)}
-              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
+              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
               {t('Record payment')}
             </button>
@@ -338,7 +338,7 @@ export default function OrdersPage() {
           {payBillEnabled === false && (
             <button type="button"
               onClick={() => navigate('/admin/dashboard/table-receipts')}
-              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10"
+              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
               {t('Table Receipts')}
             </button>
@@ -354,7 +354,7 @@ export default function OrdersPage() {
               <p className="text-sm font-medium text-success">
                 {t('Ready —')} <span className="text-ivory">{o.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-2 w-full rounded-md border border-success px-2 min-h-[36px] py-1.5 text-xs text-success hover:bg-success/10">
+              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-2 w-full rounded-md border border-success px-2 min-h-[36px] py-1.5 text-xs text-success hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success">
                 {t('Dismiss')}
               </button>
             </div>
@@ -374,12 +374,12 @@ export default function OrdersPage() {
                   {r.table_label && tableGroups[r.table_label] && (
                     <a
                       href={`#table-${encodeURIComponent(r.table_label)}`}
-                      className="flex-1 rounded-md border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30"
+                      className="flex-1 rounded-md border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {t('View order')}
                     </a>
                   )}
-                  <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10">
+                  <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Dismiss')}
                   </button>
                 </div>
@@ -402,7 +402,7 @@ export default function OrdersPage() {
               </p>
               <button type="button"
                 onClick={() => handleApplyClaim(c.id)}
-                className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10"
+                className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {t('Mark redeemed')}
               </button>
@@ -482,7 +482,7 @@ export default function OrdersPage() {
               <div className="rounded-xl border border-ink-line bg-ink-soft p-8 text-center">
                 <p className="text-base text-ivory">{t('No tables placed on the map yet')}</p>
                 <p className="mt-1 text-sm text-ivory-dim">{t('Arrange your floor plan in Table Setup to see it here.')}</p>
-                <button type="button" onClick={() => navigate('/admin/dashboard/tables')} className="mt-3 rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
+                <button type="button" onClick={() => navigate('/admin/dashboard/tables')} className="mt-3 rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
                   {t('Go to Table Setup')}
                 </button>
               </div>
@@ -557,11 +557,11 @@ export default function OrdersPage() {
               )}
               <div className="mt-5 flex flex-col gap-2">
                 {payBillEnabled && payableItems.length > 0 && (
-                  <button type="button" onClick={() => setTableRecordPayment(true)} className="w-full rounded-lg bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90">
+                  <button type="button" onClick={() => setTableRecordPayment(true)} className="w-full rounded-lg bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
                     {t('Record Payment')}
                   </button>
                 )}
-                <button type="button" onClick={() => setSelectedTableId(null)} className="w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => setSelectedTableId(null)} className="w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Close')}
                 </button>
               </div>
@@ -577,7 +577,8 @@ export default function OrdersPage() {
         <div>
           <button type="button"
             onClick={() => setRecentOpen((v) => !v)}
-            className="mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ivory-dim hover:text-ivory"
+            aria-expanded={recentOpen}
+            className="mb-2 flex items-center gap-2 rounded font-mono text-[11px] uppercase tracking-wider text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <span>{t('Recent, last 24h')} ({past.length})</span>
             <span>{recentOpen ? '▲' : '▼'}</span>
@@ -723,7 +724,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                   <button type="button"
                     onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
                     disabled={firing === course}
-                    className="rounded-lg bg-brass px-3 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                    className="rounded-lg bg-brass px-3 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
                   </button>
@@ -749,7 +750,8 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               </div>
             </div>
             <button type="button"
-              onClick={() => {
+              onClick={async () => {
+                if (!(await confirm({ title: t('Delete item?'), message: `${t('Delete just this item')}: ${item.item_name}?`, confirmLabel: t('Delete'), danger: true }))) return;
                 onOrdersChange((prev) =>
                   prev.map((o) =>
                     o.id === order.id
@@ -759,7 +761,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
                 );
                 voidOrderItem(businessId, order.id, item.id).catch(onChange);
               }}
-              className="shrink-0 text-sm text-danger hover:underline"
+              className="flex min-h-[36px] shrink-0 items-center px-1 text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:rounded"
               title={t('Delete just this item')}
             >
               {t('Delete')}
@@ -782,7 +784,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
               <button type="button"
                 onClick={handleMarkCompleted}
                 disabled={completing}
-                className="rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 disabled:opacity-50"
+                className="rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {completing ? t('Completing...') : t('Mark completed')}
               </button>
@@ -790,7 +792,7 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
             <button type="button"
               onClick={handleClearTable}
               disabled={clearing}
-              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
             >
               {clearing ? t('Clearing...') : t('Clear table')}
             </button>

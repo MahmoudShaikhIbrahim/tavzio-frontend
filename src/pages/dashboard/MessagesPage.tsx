@@ -82,9 +82,9 @@ export default function MessagesPage() {
           onChange={(e) => setText(e.target.value)}
           placeholder={t('Describe the issue...')}
           rows={2}
-          className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+          className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         />
-        <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50">
+        <button disabled={sending} className="shrink-0 rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('Send')}
         </button>
       </form>

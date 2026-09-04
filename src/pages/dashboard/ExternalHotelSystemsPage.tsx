@@ -40,7 +40,7 @@ export default function ExternalHotelSystemsPage() {
       setPropertyId('');
       reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save');
+      setError(err instanceof Error ? err.message : t('Could not save'));
     } finally {
       setBusyProvider(null);
     }
@@ -85,23 +85,23 @@ export default function ExternalHotelSystemsPage() {
                         autoFocus
                         className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory"
                       />
-                      <button type="button" onClick={() => handleConnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-brass hover:underline disabled:opacity-50">
+                      <button type="button" onClick={() => handleConnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-brass hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                         {busyProvider === s.provider ? t('Saving...') : t('Save')}
                       </button>
-                      <button type="button" onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline">{t('Cancel')}</button>
+                      <button type="button" onClick={() => { setEditingProvider(null); setError(''); }} className="text-sm text-ivory-dim hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                     </div>
                     {error && <p className="text-xs text-danger">{error}</p>}
                   </div>
                 ) : s.connected ? (
                   <div className="flex items-center gap-3">
                     <span className={`text-sm ${s.enabled ? 'text-success' : 'text-warning'}`}>{s.enabled ? t('Live') : t('Awaiting real credentials')}</span>
-                    <button type="button" onClick={() => startEditing(s)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
-                    <button type="button" onClick={() => handleDisconnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-danger hover:underline disabled:opacity-50">
+                    <button type="button" onClick={() => startEditing(s)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                    <button type="button" onClick={() => handleDisconnect(s.provider)} disabled={busyProvider === s.provider} className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {busyProvider === s.provider ? t('Disconnecting...') : t('Disconnect')}
                     </button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+                  <button type="button" onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Connect')}
                   </button>
                 )}

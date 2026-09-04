@@ -49,7 +49,7 @@ export default function InventoryPage() {
           <button type="button"
             key={tabKey}
             onClick={() => setTab(tabKey)}
-            className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}
+            className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}
           >
             {t(tabLabels[tabKey])}
           </button>
@@ -125,7 +125,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Ingredients')} action={
-      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {t('+ Add ingredient')}
       </button>
     }>
@@ -135,14 +135,14 @@ function IngredientsTab({ businessId }: { businessId: string }) {
             <input value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} />
           </Field>
           <Field label={t('Unit')}>
-            <select value={unit} onChange={(e) => setUnit(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <select value={unit} onChange={(e) => setUnit(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
           </Field>
           <Field label={t('Low-stock threshold')}>
             <input type="number" onFocus={(e) => e.target.select()} value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className={`${inputClass} w-32`} />
           </Field>
-          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Save')}</button>
+          <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Save')}</button>
         </form>
       )}
       {error && <p className="text-base text-danger">{error}</p>}
@@ -190,15 +190,15 @@ function IngredientsTab({ businessId }: { businessId: string }) {
                     onChange={(e) => setAdjustQty(e.target.value)}
                     className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-base text-ivory"
                   />
-                  <button type="button" onClick={() => handleAdjust(ing.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">{t('Apply')}</button>
-                  <button type="button" onClick={() => setAdjustingId(null)} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+                  <button type="button" onClick={() => handleAdjust(ing.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Apply')}</button>
+                  <button type="button" onClick={() => setAdjustingId(null)} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               ) : (
                 <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-ink-line pt-3">
-                  <button type="button" onClick={() => setAdjustingId(ing.id)} className="text-sm text-brass hover:underline">{t('Adjust stock')}</button>
-                  <button type="button" onClick={() => setWastingId(ing.id)} className="text-sm text-danger hover:underline">{t('Record waste')}</button>
-                  <button type="button" onClick={() => setEditingId(ing.id)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
-                  <button type="button" onClick={() => handleDelete(ing.id, ing.name)} className="text-sm text-danger hover:underline">{t('Delete')}</button>
+                  <button type="button" onClick={() => setAdjustingId(ing.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Adjust stock')}</button>
+                  <button type="button" onClick={() => setWastingId(ing.id)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Record waste')}</button>
+                  <button type="button" onClick={() => setEditingId(ing.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                  <button type="button" onClick={() => handleDelete(ing.id, ing.name)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
                 </div>
               )}
               {wastingId === ing.id && (
@@ -244,7 +244,7 @@ function IngredientEditForm({ businessId, ingredient, onDone, onCancel }: {
     <div className="space-y-2 rounded-xl border border-brass/40 bg-ink-soft p-4">
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Name')} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory" />
       <div className="flex gap-2">
-        <select value={unit} onChange={(e) => setUnit(e.target.value as Ingredient['unit'])} className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory">
+        <select value={unit} onChange={(e) => setUnit(e.target.value as Ingredient['unit'])} className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value="g">g</option>
           <option value="kg">kg</option>
           <option value="ml">ml</option>
@@ -255,15 +255,15 @@ function IngredientEditForm({ businessId, ingredient, onDone, onCancel }: {
           type="number" min={0} value={threshold} onFocus={(e) => e.target.select()}
           onChange={(e) => setThreshold(Number(e.target.value))}
           placeholder={t('Low stock at')}
-          className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory"
+          className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         />
       </div>
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+        <button type="button" onClick={onCancel} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
       </div>
     </div>
   );
@@ -303,7 +303,7 @@ function WasteQuickForm({ businessId, ingredient, onDone, onCancel }: {
           value={quantity} onChange={(e) => setQuantity(e.target.value)}
           className="w-28 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory"
         />
-        <select value={wasteCategory} onChange={(e) => setWasteCategory(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
+        <select value={wasteCategory} onChange={(e) => setWasteCategory(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {WASTE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{t(c.label)}</option>)}
         </select>
       </div>
@@ -313,10 +313,10 @@ function WasteQuickForm({ businessId, ingredient, onDone, onCancel }: {
       />
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-danger/80 px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-danger/80 px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Record waste')}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+        <button type="button" onClick={onCancel} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
       </div>
     </div>
   );
@@ -396,7 +396,7 @@ function ReorderTab({ businessId }: { businessId: string }) {
                 type="button"
                 onClick={() => handleQuickReorder(item)}
                 disabled={creatingPoFor === item.ingredientId}
-                className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50"
+                className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {creatingPoFor === item.ingredientId ? t('Creating...') : `${t('Reorder')} ${item.suggestedReorderQty} ${item.unit}`}
               </button>
@@ -422,7 +422,7 @@ function WasteTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Waste report')} action={
-      <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
+      <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         <option value={7}>{t('Last 7 days')}</option>
         <option value={30}>{t('Last 30 days')}</option>
         <option value={90}>{t('Last 90 days')}</option>
@@ -492,15 +492,15 @@ function FoodCostTab({ businessId }: { businessId: string }) {
     <Section title={t('Food cost')} action={
       <div className="flex items-center gap-2">
         {view === 'actual' && (
-          <select value={actualDays} onChange={(e) => setActualDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory">
+          <select value={actualDays} onChange={(e) => setActualDays(Number(e.target.value))} className="rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value={7}>{t('Last 7 days')}</option>
             <option value={30}>{t('Last 30 days')}</option>
             <option value={90}>{t('Last 90 days')}</option>
           </select>
         )}
         <div className="flex rounded-lg border border-ink-line">
-          <button type="button" onClick={() => setView('theoretical')} className={`px-3 py-1.5 text-sm ${view === 'theoretical' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('By menu')}</button>
-          <button type="button" onClick={() => setView('actual')} className={`px-3 py-1.5 text-sm ${view === 'actual' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Actual sales')}</button>
+          <button type="button" onClick={() => setView('theoretical')} className={`px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'theoretical' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('By menu')}</button>
+          <button type="button" onClick={() => setView('actual')} className={`px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'actual' ? 'bg-brass text-ink' : 'text-ivory-dim'}`}>{t('Actual sales')}</button>
         </div>
       </div>
     }>
@@ -634,7 +634,7 @@ function SuppliersTab({ businessId }: { businessId: string }) {
         <Field label={t('Name')}><input value={name} onChange={(e) => setName(e.target.value)} required className={inputClass} /></Field>
         <Field label={t('Phone')}><input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} /></Field>
         <Field label={t('Email')}><input value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
-        <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
+        <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
       </form>
       <div className="grid gap-3 sm:grid-cols-2">
         {suppliers.map((s) => (
@@ -645,10 +645,10 @@ function SuppliersTab({ businessId }: { businessId: string }) {
                 <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={t('Phone')} className={inputClass} />
                 <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder={t('Email')} className={inputClass} />
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => handleSaveEdit(s.id)} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+                  <button type="button" onClick={() => handleSaveEdit(s.id)} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {saving ? t('Saving...') : t('Save')}
                   </button>
-                  <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory">{t('Cancel')}</button>
+                  <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               </div>
             ) : (
@@ -656,8 +656,8 @@ function SuppliersTab({ businessId }: { businessId: string }) {
                 <p className="text-base text-ivory">{s.name}</p>
                 <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
                 <div className="mt-2 flex gap-3">
-                  <button type="button" onClick={() => startEdit(s)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
-                  <button type="button" onClick={() => handleDelete(s)} className="text-sm text-danger hover:underline">{t('Delete')}</button>
+                  <button type="button" onClick={() => startEdit(s)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                  <button type="button" onClick={() => handleDelete(s)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
                 </div>
               </>
             )}
@@ -746,14 +746,14 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Purchase Orders')} action={
-      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">
+      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {t('+ New purchase order')}
       </button>
     }>
       {showNew && (
         <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-ink-line p-4">
           <Field label={t('Supplier (optional)')}>
-            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+            <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <option value="">{t('None')}</option>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}{!s.email ? ` (${t('no email on file')})` : ''}</option>)}
             </select>
@@ -768,7 +768,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
               <select
                 value={item.ingredientId}
                 onChange={(e) => setItems((prev) => prev.map((it, idx) => idx === i ? { ...it, ingredientId: e.target.value } : it))}
-                className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory"
+                className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 <option value="">{t('Select ingredient...')}</option>
                 {ingredients.map((ing) => <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>)}
@@ -788,10 +788,10 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
             </div>
           ))}
           <div className="flex flex-wrap items-center gap-4">
-            <button type="button" onClick={() => setItems((prev) => [...prev, { ingredientId: '', quantity: '', unitCostAed: '' }])} className="text-sm text-brass hover:underline">
+            <button type="button" onClick={() => setItems((prev) => [...prev, { ingredientId: '', quantity: '', unitCostAed: '' }])} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {t('+ Add item')}
             </button>
-            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Create order')}</button>
+            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Create order')}</button>
           </div>
           {error && <p className="text-base text-danger">{error}</p>}
         </form>
@@ -814,13 +814,13 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                 )}
                 {(po.status === 'pending' || po.status === 'partially_received') && (
                   <>
-                    <button type="button" onClick={() => handleReceiveAll(po.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">
+                    <button type="button" onClick={() => handleReceiveAll(po.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {t('Receive all outstanding')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setReceivingId(receivingId === po.id ? null : po.id)}
-                      className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory"
+                      className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {t('Receive partially...')}
                     </button>
@@ -830,7 +830,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                   <button
                     type="button"
                     onClick={() => toggleHistory(po.id)}
-                    className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory"
+                    className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {historyId === po.id ? t('Hide history') : t('Receive history')}
                   </button>
@@ -880,8 +880,8 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                 })}
                 {error && <p className="text-xs text-danger">{error}</p>}
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => handleReceivePartial(po)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink">{t('Confirm receipt')}</button>
-                  <button type="button" onClick={() => { setReceivingId(null); setReceiveQtys({}); }} className="text-sm text-ivory-dim">{t('Cancel')}</button>
+                  <button type="button" onClick={() => handleReceivePartial(po)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Confirm receipt')}</button>
+                  <button type="button" onClick={() => { setReceivingId(null); setReceiveQtys({}); }} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               </div>
             )}
@@ -914,6 +914,7 @@ function WarehousesTab({ businessId }: { businessId: string }) {
   const [adding, setAdding] = useState(false);
   const [viewingStockFor, setViewingStockFor] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   function reload() {
     listWarehouses(businessId).then(setWarehouses).catch(() => {}).finally(() => setLoading(false));
@@ -922,11 +923,12 @@ function WarehousesTab({ businessId }: { businessId: string }) {
 
   async function handleDelete(warehouseId: string) {
     if (!(await confirm({ title: t('Delete warehouse?'), message: t('Delete this warehouse? Only possible if it has no stock left in it.'), confirmLabel: t('Delete'), danger: true }))) return;
+    setDeleteError('');
     try {
       await deleteWarehouse(businessId, warehouseId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not delete');
+      setDeleteError(err instanceof Error ? err.message : t('Could not delete'));
     }
   }
 
@@ -938,6 +940,7 @@ function WarehousesTab({ businessId }: { businessId: string }) {
 
       <Section title={t('Your locations')} action={<ActionButton onClick={() => setAdding((v) => !v)}>{adding ? t('Cancel') : t('Add warehouse')}</ActionButton>}>
         {adding && <AddWarehouseForm businessId={businessId} onSaved={() => { setAdding(false); reload(); }} />}
+        {deleteError && <p className="text-sm text-danger">{deleteError}</p>}
         {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
         <div className="space-y-2">
           {warehouses.map((w) => (
@@ -956,11 +959,11 @@ function WarehousesTab({ businessId }: { businessId: string }) {
                     <p className="text-sm text-ivory-dim">{WAREHOUSE_TYPE_LABEL[w.type] || w.type}{w.address && ` · ${w.address}`}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => setViewingStockFor(viewingStockFor === w.id ? null : w.id)} className="text-sm text-brass hover:underline">
+                    <button type="button" onClick={() => setViewingStockFor(viewingStockFor === w.id ? null : w.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {viewingStockFor === w.id ? t('Hide stock') : t('View stock')}
                     </button>
-                    <button type="button" onClick={() => setEditingId(w.id)} className="text-sm text-brass hover:underline">{t('Edit')}</button>
-                    <button type="button" onClick={() => handleDelete(w.id)} className="text-sm text-danger hover:underline">{t('Delete')}</button>
+                    <button type="button" onClick={() => setEditingId(w.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
+                    <button type="button" onClick={() => handleDelete(w.id)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
                   </div>
                 </div>
               )}
@@ -1113,6 +1116,7 @@ function StockTransfersTab({ businessId }: { businessId: string }) {
   const [allocations, setAllocations] = useState<PoAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewTransfer, setShowNewTransfer] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   function reload() {
     Promise.all([
@@ -1130,11 +1134,12 @@ function StockTransfersTab({ businessId }: { businessId: string }) {
   useEffect(reload, [businessId]);
 
   async function handleAction(action: (bId: string, id: string) => Promise<unknown>, transferId: string) {
+    setActionError('');
     try {
       await action(businessId, transferId);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Action failed');
+      setActionError(err instanceof Error ? err.message : t('Action failed'));
     }
   }
 
@@ -1161,6 +1166,7 @@ function StockTransfersTab({ businessId }: { businessId: string }) {
         {showNewTransfer && (
           <NewTransferForm businessId={businessId} warehouses={warehouses} ingredients={transferIngredients} onSaved={() => { setShowNewTransfer(false); reload(); }} />
         )}
+        {actionError && <p className="text-sm text-danger">{actionError}</p>}
         {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
         <div className="space-y-2">
           {transfers.map((tr) => (
@@ -1171,8 +1177,8 @@ function StockTransfersTab({ businessId }: { businessId: string }) {
                   <span className={`ms-2 rounded-full border px-2 py-0.5 text-xs ${TRANSFER_STATUS_STYLE[tr.status]}`}>{tr.status.replace('_', ' ')}</span>
                 </p>
                 <div className="flex items-center gap-3">
-                  {tr.status === 'requested' && <button type="button" onClick={() => handleAction(approveStockTransfer, tr.id)} className="text-sm text-brass hover:underline">{t('Approve')}</button>}
-                  {tr.status === 'approved' && tr.from_warehouse_id && <button type="button" onClick={() => handleAction(shipStockTransfer, tr.id)} className="text-sm text-brass hover:underline">{t('Mark shipped')}</button>}
+                  {tr.status === 'requested' && <button type="button" onClick={() => handleAction(approveStockTransfer, tr.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Approve')}</button>}
+                  {tr.status === 'approved' && tr.from_warehouse_id && <button type="button" onClick={() => handleAction(shipStockTransfer, tr.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Mark shipped')}</button>}
                   {(tr.status === 'in_transit' || (tr.status === 'approved' && !tr.from_warehouse_id)) && <button type="button" onClick={() => handleAction(receiveStockTransfer, tr.id)} className="text-sm text-success hover:underline">{t('Mark received')}</button>}
                   {(tr.status === 'requested' || tr.status === 'approved') && <button type="button" onClick={() => handleAction(cancelStockTransfer, tr.id)} className="text-sm text-danger hover:underline">{t('Cancel')}</button>}
                 </div>

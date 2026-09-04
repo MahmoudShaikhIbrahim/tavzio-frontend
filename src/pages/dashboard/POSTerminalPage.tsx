@@ -93,7 +93,7 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
         </p>
         {isHotel && (
           <Field label={t('Outlet - this till stays locked to it for the whole session')}>
-            <select value={outletId} onChange={(e) => setOutletId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory">
+            <select value={outletId} onChange={(e) => setOutletId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <option value="">{t('Select an outlet...')}</option>
               {outlets.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
@@ -107,7 +107,7 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
           />
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
-        <button type="button" onClick={handleOpen} disabled={saving} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleOpen} disabled={saving} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Opening...') : t('Open till & start selling')}
         </button>
       </Section>
@@ -572,7 +572,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
-          <button type="button" onClick={() => setShowRefunds(false)} className="text-sm text-brass hover:underline">{t('Back to selling')}</button>
+          <button type="button" onClick={() => setShowRefunds(false)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Back to selling')}</button>
         </div>
         <RefundsPanel businessId={businessId} />
       </div>
@@ -628,26 +628,26 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
           <div className="mb-3 flex items-center justify-between gap-3">
             <h1 className="font-display text-lg text-ivory">{t('POS Terminal')}</h1>
             <div className="flex items-center gap-3 text-ivory-dim">
-              <button type="button" onClick={() => setShowRecordPayment(true)} title={t('Record payment')} className="hover:text-ivory"><CreditCard size={16} strokeWidth={2} /></button>
-              <button type="button" onClick={() => setShowXReport(true)} title={t('X-report')} className="hover:text-ivory"><FileText size={16} strokeWidth={2} /></button>
-              <button type="button" onClick={() => setShowRefunds(true)} title={t('Refunds')} className="hover:text-danger"><RotateCcw size={16} strokeWidth={2} /></button>
-              <button type="button" onClick={() => setShowCloseTill(true)} title={t('Close till')} className="hover:text-brass"><Lock size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowRecordPayment(true)} title={t('Record payment')} className="rounded hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"><CreditCard size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowXReport(true)} title={t('X-report')} className="rounded hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"><FileText size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowRefunds(true)} title={t('Refunds')} className="rounded hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"><RotateCcw size={16} strokeWidth={2} /></button>
+              <button type="button" onClick={() => setShowCloseTill(true)} title={t('Close till')} className="rounded hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"><Lock size={16} strokeWidth={2} /></button>
             </div>
           </div>
         ) : (
         <div className="mb-5 flex items-center justify-between border-b border-ink-line pb-4">
           <h1 className="font-display text-2xl text-ivory">{t('POS Terminal')}</h1>
           <div className="flex items-center gap-5">
-            <button type="button" onClick={() => setShowRecordPayment(true)} className="flex items-center gap-1.5 text-sm text-ivory-dim hover:text-ivory">
+            <button type="button" onClick={() => setShowRecordPayment(true)} className="flex items-center gap-1.5 rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <CreditCard size={15} strokeWidth={2} />{t('Record payment')}
             </button>
-            <button type="button" onClick={() => setShowXReport(true)} className="flex items-center gap-1.5 text-sm text-ivory-dim hover:text-ivory">
+            <button type="button" onClick={() => setShowXReport(true)} className="flex items-center gap-1.5 rounded text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <FileText size={15} strokeWidth={2} />{t('X-report')}
             </button>
-            <button type="button" onClick={() => setShowRefunds(true)} className="flex items-center gap-1.5 text-sm text-danger hover:underline">
+            <button type="button" onClick={() => setShowRefunds(true)} className="flex items-center gap-1.5 rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <RotateCcw size={15} strokeWidth={2} />{t('Refunds')}
             </button>
-            <button type="button" onClick={() => setShowCloseTill(true)} className="flex items-center gap-1.5 text-sm text-brass hover:underline">
+            <button type="button" onClick={() => setShowCloseTill(true)} className="flex items-center gap-1.5 rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <Lock size={15} strokeWidth={2} />{t('Close till')}
             </button>
           </div>
@@ -671,7 +671,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                   <button
                     type="button"
                     onClick={() => setQuickPayTarget(order)}
-                    className={`${isDriveThrough ? 'text-drivethrough hover:bg-drivethrough/20' : 'text-ivory hover:bg-brass/10'} ${focusMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'}`}
+                    className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${isDriveThrough ? 'text-drivethrough hover:bg-drivethrough/20' : 'text-ivory hover:bg-brass/10'} ${focusMode ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm'}`}
                   >
                     {quickPayLabel(order)}
                   </button>
@@ -680,7 +680,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                       type="button"
                       onClick={() => setConvertingOrder(order)}
                       title={t('Seat this customer at a table')}
-                      className={`border-s border-brass/40 text-brass hover:bg-brass/10 ${focusMode ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-sm'}`}
+                      className={`border-s border-brass/40 text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${focusMode ? 'px-2 py-1 text-xs' : 'px-2.5 py-1.5 text-sm'}`}
                     >
                       {t('Sit down')}
                     </button>
@@ -716,7 +716,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               <button type="button"
                 key={c.id}
                 onClick={() => setActiveCategory(c.id)}
-                className={`whitespace-nowrap rounded-full font-medium transition-colors ${focusMode ? 'px-3.5 py-1.5 text-xs' : 'px-5 py-2.5 text-sm'} ${
+                className={`whitespace-nowrap rounded-full font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${focusMode ? 'px-3.5 py-1.5 text-xs' : 'px-5 py-2.5 text-sm'} ${
                   activeCategory === c.id ? 'card-elevated bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
                 }`}
               >
@@ -742,7 +742,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             {pageItems.map((item) => (
               <button type="button" key={item.id}
                 onClick={() => addToCart(item)}
-                className="relative select-none overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-all duration-200 hover:border-brass/50"
+                className="relative select-none overflow-hidden rounded-xl border border-ink-line bg-ink-soft text-left transition-all duration-200 hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                   {/* Photo recognition matters at the counter - a busy
                       cashier reads a picture far faster than a name, which is
@@ -768,13 +768,13 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             <div className="mt-3 flex items-center justify-center gap-3">
               <button type="button" onClick={() => setItemsPage((p) => Math.max(0, p - 1))} disabled={safeItemsPage === 0}
                 aria-label={t('Previous page')}
-                className="flex items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim hover:text-brass disabled:opacity-30">
+                className="flex items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim hover:text-brass disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <ChevronLeft size={18} strokeWidth={2} />
               </button>
               <span className="text-xs text-ivory-dim">{safeItemsPage + 1} / {totalItemPages}</span>
               <button type="button" onClick={() => setItemsPage((p) => Math.min(totalItemPages - 1, p + 1))} disabled={safeItemsPage === totalItemPages - 1}
                 aria-label={t('Next page')}
-                className="flex items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim hover:text-brass disabled:opacity-30">
+                className="flex items-center justify-center rounded-full border border-ink-line bg-ink-soft p-1.5 text-ivory-dim hover:text-brass disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <ChevronRight size={18} strokeWidth={2} />
               </button>
             </div>
@@ -798,7 +798,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                   key={type}
                   type="button"
                   onClick={() => setOrderType(type)}
-                  className={`rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors ${
+                  className={`rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                     orderType === type ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
                   }`}
                 >
@@ -865,7 +865,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             <span className="text-xs font-medium uppercase tracking-wide text-ivory-dim">{t('Order')}</span>
             <button type="button" onClick={clearCart} aria-label={t('Clear order')}
               title={t('Clear order')}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-danger/50 hover:text-danger"
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-danger/50 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
             >
               <Minus size={14} strokeWidth={2.25} />
             </button>
@@ -877,11 +877,11 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               <div className="flex items-center justify-between gap-2 text-base">
                 <span className="font-display text-ivory">{line.name}</span>
                 <div className="flex items-center gap-2.5">
-                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory">
+                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     <Minus size={14} strokeWidth={2.25} />
                   </button>
                   <span className="w-5 text-center text-ivory">{line.quantity}</span>
-                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory">
+                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     <Plus size={14} strokeWidth={2.25} />
                   </button>
                   <span className="w-16 text-right font-medium text-brass">{(line.price * line.quantity).toFixed(2)}</span>
@@ -894,7 +894,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               <select
                 value={line.course}
                 onChange={(e) => setLineCourse(line.menuItemId, e.target.value)}
-                className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory-dim"
+                className="rounded border border-ink-line bg-ink px-1.5 py-0.5 text-xs text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 <option value="">{t('Fire now')}</option>
                 <option value="Starter">{t('Hold: Starter')}</option>
@@ -911,7 +911,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             <select
               value={discountType}
               onChange={(e) => setDiscountType(e.target.value as '' | 'percentage' | 'fixed')}
-              className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+              className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               <option value="">{t('No discount')}</option>
               <option value="percentage">{t('% off')}</option>
@@ -925,7 +925,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                 value={discountValue}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => setDiscountValue(Number(e.target.value))}
-                className="w-20 rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+                className="w-20 rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               />
             )}
           </div>
@@ -966,7 +966,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               {roomFolio ? (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-ivory">Room {roomFolio.roomNumber}{roomFolio.guestName ? ` · ${roomFolio.guestName}` : ''}</span>
-                  <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="text-ivory-dim hover:text-ivory">{t('Change')}</button>
+                  <button type="button" onClick={() => { setRoomFolio(null); setRoomNumber(''); }} className="rounded text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Change')}</button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
@@ -975,9 +975,9 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                     onChange={(e) => setRoomNumber(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleRoomLookup()}
                     placeholder={t('Room number')}
-                    className="flex-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory"
+                    className="flex-1 rounded-lg border border-ink-line bg-ink-soft px-3 py-2 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   />
-                  <button type="button" onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50">
+                  <button type="button" onClick={handleRoomLookup} disabled={lookingUpRoom} className="rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {lookingUpRoom ? t('Looking up...') : t('Find')}
                   </button>
                 </div>
@@ -1000,15 +1000,15 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             <button type="button"
               onClick={handleChargeToRoom}
               disabled={checkingOut || cart.length === 0 || !roomFolio}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {t('Charge to Room')}{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
-          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-3.5 text-base font-medium text-status-text hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-3.5 text-base font-medium text-status-text hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Send to Kitchen')}
           </button>
-          <button type="button" onClick={() => handleSendToKitchen(true)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={() => handleSendToKitchen(true)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Payment')}
           </button>
         </div>
@@ -1052,10 +1052,10 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               ))}
             </select>
             <div className="mt-4 flex gap-2">
-              <button type="button" onClick={() => setConvertingOrder(null)} className="flex-1 rounded-lg border border-ink-line py-2.5 text-sm text-ivory-dim hover:text-ivory">
+              <button type="button" onClick={() => setConvertingOrder(null)} className="flex-1 rounded-lg border border-ink-line py-2.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {t('Cancel')}
               </button>
-              <button type="button" onClick={handleConvertToDineIn} disabled={!convertCardId || convertSaving} className="flex-1 rounded-lg bg-brass py-2.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+              <button type="button" onClick={handleConvertToDineIn} disabled={!convertCardId || convertSaving} className="flex-1 rounded-lg bg-brass py-2.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {convertSaving ? t('Seating...') : t('Confirm')}
               </button>
             </div>
@@ -1125,7 +1125,7 @@ function RefundsPanel({ businessId }: { businessId: string }) {
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              className={`rounded-lg border px-3 py-1.5 text-sm capitalize transition-colors ${
+              className={`rounded-lg border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                 filter === f ? 'border-danger bg-danger/10 text-danger' : 'border-ink-line text-ivory-dim hover:text-ivory'
               }`}
             >
@@ -1166,7 +1166,7 @@ function XReportPanel({ businessId, tillId, onClose }: { businessId: string; til
       <div className="w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-6 shadow-2xl shadow-black/50">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">{t('X-report')}</h2>
-          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">{t('Close')}</button>
+          <button type="button" onClick={onClose} className="rounded text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Close')}</button>
         </div>
         <p className="mb-4 text-sm text-ivory-dim">{t('A snapshot, not a close - the till stays open.')}</p>
         {error && <p className="text-sm text-danger">{error}</p>}
@@ -1222,7 +1222,7 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
             {t('Variance:')} {variance >= 0 ? '+' : ''}{variance.toFixed(2)} AED
           </p>
         </div>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90">{t('Done')}</button>
+        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Done')}</button>
       </div>
     );
   }
@@ -1239,10 +1239,10 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
         <div className="flex gap-2">
-          <button type="button" onClick={handleClose} disabled={saving} className="flex-1 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+          <button type="button" onClick={handleClose} disabled={saving} className="flex-1 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? t('Closing...') : t('Close till')}
           </button>
-          <button type="button" onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim">{t('Cancel')}</button>
+          <button type="button" onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
         </div>
       </Section>
     </div>

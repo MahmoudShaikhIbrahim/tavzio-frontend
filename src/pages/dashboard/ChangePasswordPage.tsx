@@ -60,7 +60,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
       }, 2000);
     } catch (err) {
       if (thisAttempt !== languageAttemptRef.current) return;
-      setLanguageError(err instanceof Error ? err.message : 'Could not save - please try again');
+      setLanguageError(err instanceof Error ? err.message : t('Could not save - please try again'));
     } finally {
       if (thisAttempt === languageAttemptRef.current) setSavingLanguage(false);
     }
@@ -86,7 +86,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
         setDone(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update password');
+      setError(err instanceof Error ? err.message : t('Could not update password'));
     } finally {
       setSaving(false);
     }
@@ -106,7 +106,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
                 key={l.code}
                 onClick={() => handleLanguageChange(l.code)}
                 disabled={savingLanguage}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50 ${
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                   language === l.code ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
                 }`}
               >
@@ -140,7 +140,7 @@ export default function ChangePasswordPage({ forced = false }: { forced?: boolea
               <PasswordField value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
             </Field>
             {error && <p className="text-base text-danger">{error}</p>}
-            <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+            <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {saving ? t('Saving...') : t('Set new password')}
             </button>
           </form>
@@ -186,7 +186,7 @@ function ChangePinSection() {
       setNewPin('');
       setConfirmPin('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update PIN');
+      setError(err instanceof Error ? err.message : t('Could not update PIN'));
     } finally {
       setSaving(false);
     }
@@ -209,7 +209,7 @@ function ChangePinSection() {
           <input type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} className={inputClass} />
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
-        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Update PIN')}
         </button>
       </form>
@@ -240,7 +240,7 @@ function ChangeEmailSection() {
       setCurrentPassword('');
       setNewEmail('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update email');
+      setError(err instanceof Error ? err.message : t('Could not update email'));
     } finally {
       setSaving(false);
     }
@@ -260,7 +260,7 @@ function ChangeEmailSection() {
           <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required className={inputClass} />
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
-        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Update email')}
         </button>
       </form>

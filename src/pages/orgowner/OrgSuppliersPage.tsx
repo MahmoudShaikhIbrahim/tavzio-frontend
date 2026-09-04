@@ -13,6 +13,7 @@ export default function OrgSuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   function reload() {
     listOrgSuppliers().then(setSuppliers).finally(() => setLoading(false));
@@ -21,11 +22,12 @@ export default function OrgSuppliersPage() {
 
   async function handleDelete(id: string) {
     if (!(await confirm({ title: 'Remove supplier?', message: 'Remove this supplier from the organization?', confirmLabel: 'Remove', danger: true }))) return;
+    setDeleteError('');
     try {
       await deleteOrgSupplier(id);
       reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not delete');
+      setDeleteError(err instanceof Error ? err.message : 'Could not delete');
     }
   }
 
@@ -38,6 +40,7 @@ export default function OrgSuppliersPage() {
 
       <Section title="Organization suppliers" action={<ActionButton onClick={() => setAdding((v) => !v)}>{adding ? 'Cancel' : 'Add supplier'}</ActionButton>}>
         {adding && <AddSupplierForm onSaved={() => { setAdding(false); reload(); }} />}
+        {deleteError && <p className="text-sm text-danger">{deleteError}</p>}
         {loading && <p className="text-ivory-dim">Loading...</p>}
         <div className="space-y-2">
           {suppliers.map((s) => (
@@ -55,8 +58,8 @@ export default function OrgSuppliersPage() {
                   <p className="text-sm text-ivory-dim">{[s.contact_name, s.phone, s.email].filter(Boolean).join(' · ')}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setEditingId(s.id)} className="text-sm text-brass hover:underline">Edit</button>
-                  <button type="button" onClick={() => handleDelete(s.id)} className="text-sm text-danger hover:underline">Delete</button>
+                  <button type="button" onClick={() => setEditingId(s.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Edit</button>
+                  <button type="button" onClick={() => handleDelete(s.id)} className="text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Delete</button>
                 </div>
               </div>
             )

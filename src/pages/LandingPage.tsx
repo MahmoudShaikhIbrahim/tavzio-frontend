@@ -87,7 +87,7 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
       {/* Deliberately OUTSIDE the cover's overflow-hidden box - the switcher
           just sits visually in the same spot via absolute positioning
           against the page itself, but its dropdown is never clipped now. */}
-      <div className="absolute end-4 top-4 z-dropdown flex items-center gap-2">
+      <div className="absolute end-4 top-4 z-dropdown flex items-center gap-2 rounded-full bg-ink/40 p-1 backdrop-blur-sm">
         <ThemeToggle />
         <LanguageSwitcher />
       </div>
@@ -151,10 +151,21 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
   );
 }
 
+// Mirrors the real page's cover + medallion layout so the loaded page
+// fades in rather than replacing an unrelated blank/spinner screen.
 function LoadingShell() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink">
-      <div className="h-10 w-10 animate-pulse rounded-full border-2 border-brass/40" />
+    <div className="relative min-h-screen bg-ink pb-16">
+      <div className="h-48 w-full bg-ink-soft sm:h-60" />
+      <div className="relative mx-auto max-w-md px-6">
+        <div className="relative -mt-12 flex justify-center">
+          <div className="h-24 w-24 animate-pulse rounded-full border-2 border-brass/40 bg-ink-soft" />
+        </div>
+        <div className="mt-6 flex flex-col items-center gap-2">
+          <div className="h-3 w-24 animate-pulse rounded-full bg-ink-soft" />
+          <div className="h-5 w-40 animate-pulse rounded-full bg-ink-soft" />
+        </div>
+      </div>
     </div>
   );
 }

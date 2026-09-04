@@ -114,7 +114,7 @@ export default function CreateContractPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {loading ? 'Creating...' : 'Create contract'}
         </button>
@@ -124,7 +124,7 @@ export default function CreateContractPage() {
 }
 
 const inputClass = 'w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass';
-const smallInputClass = 'rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass';
+const smallInputClass = 'rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass';
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (

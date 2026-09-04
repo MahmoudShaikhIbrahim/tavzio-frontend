@@ -273,7 +273,7 @@ function MenuPageContent({ slug }: { slug: string }) {
         <p className="text-sm text-ivory-dim">{t('orderSentDesc')}</p>
         <button type="button"
           onClick={() => navigate(`/${slug}`)}
-          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
+          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
         >
           {t('backTo', { name: business?.name || slug })}
         </button>
@@ -287,11 +287,11 @@ function MenuPageContent({ slug }: { slug: string }) {
         <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-brass">
           <span className="font-display text-2xl text-brass">AED</span>
         </div>
-        <p className="font-display text-xl text-ivory">Please pay at the cashier</p>
-        <p className="text-sm text-ivory-dim">Your order will be sent to the kitchen as soon as staff confirm your cash payment.</p>
+        <p className="font-display text-xl text-ivory">{t('payAtCashierTitle')}</p>
+        <p className="text-sm text-ivory-dim">{t('payAtCashierDesc')}</p>
         <button type="button"
           onClick={() => navigate(`/${slug}`)}
-          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10"
+          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
         >
           {t('backTo', { name: business?.name || slug })}
         </button>
@@ -415,7 +415,7 @@ function MenuPageContent({ slug }: { slug: string }) {
           <div className="flex items-center gap-2">
             <button type="button"
               onClick={toggleLayout}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:text-ivory"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               title={layoutMode === 'rows' ? 'Switch to grid view' : 'Switch to list view'}
               aria-label={layoutMode === 'rows' ? 'Switch to grid view' : 'Switch to list view'}
             >
@@ -431,15 +431,15 @@ function MenuPageContent({ slug }: { slug: string }) {
 
         {pendingCancel && !searchParams.get('orderPaymentId') && (
           <div className="mt-4 rounded-xl border border-warning/40 bg-ink-soft px-4 py-3">
-            <p className="text-sm text-ivory">You started a payment that wasn't finished.</p>
-            <p className="mt-0.5 text-xs text-ivory-dim">That order is on hold - cancel it to start fresh, or continue if you're still paying.</p>
+            <p className="text-sm text-ivory">{t('unfinishedPaymentTitle')}</p>
+            <p className="mt-0.5 text-xs text-ivory-dim">{t('unfinishedPaymentDesc')}</p>
             <button
               type="button"
               onClick={handleCancelPendingOrder}
               disabled={cancellingPending}
-              className="mt-2 rounded-lg border border-warning/60 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50"
+              className="mt-2 rounded-lg border border-warning/60 px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
-              {cancellingPending ? 'Cancelling...' : 'Cancel that order'}
+              {cancellingPending ? t('tbCancelling') : t('cancelThatOrder')}
             </button>
           </div>
         )}
@@ -458,8 +458,18 @@ function MenuPageContent({ slug }: { slug: string }) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('menuSearchPlaceholder')}
-            className="w-full rounded-lg border border-ink-line bg-ink-soft py-2.5 ps-9 pe-3 text-sm text-ivory placeholder:text-ivory-dim/60"
+            className="w-full rounded-lg border border-ink-line bg-ink-soft py-2.5 ps-9 pe-9 text-sm text-ivory placeholder:text-ivory-dim/60"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+              className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {searchQuery.trim() ? (
@@ -476,7 +486,7 @@ function MenuPageContent({ slug }: { slug: string }) {
                 <button type="button"
                   key={cat.id}
                   onClick={() => scrollToCategory(cat.id)}
-                  className="shrink-0 rounded-full border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass"
+                  className="shrink-0 rounded-full border border-ink-line px-3 py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
                 >
                   {translated(cat.name, cat.name_i18n, language)}
                 </button>
@@ -541,13 +551,18 @@ function MenuPageContent({ slug }: { slug: string }) {
             <div className="mb-2 max-h-40 space-y-1.5 overflow-y-auto text-sm">
               {cart.lines.map((l, i) => (
                 <div key={i} className="flex items-start justify-between text-ivory-dim">
-                  <button type="button" onClick={() => setEditingLineIndex(i)} className="flex-1 text-start hover:text-ivory">
+                  <button type="button" onClick={() => setEditingLineIndex(i)} className="flex-1 text-start hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
                     <span>{l.quantity}× {l.name}{l.note ? ` (${l.note})` : ''}</span>
                     {l.selectedAddons.length > 0 && (
                       <span className="block text-xs text-brass/70">+ {l.selectedAddons.map((a) => a.name).join(', ')}</span>
                     )}
                   </button>
-                  <button type="button" onClick={() => cart.removeLine(i)} className="ms-2 shrink-0 text-danger">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => cart.removeLine(i)}
+                    aria-label={`Remove ${l.name} from order`}
+                    className="ms-2 shrink-0 text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+                  >✕</button>
                 </div>
               ))}
             </div>
@@ -561,7 +576,7 @@ function MenuPageContent({ slug }: { slug: string }) {
             <button type="button"
               onClick={handleSendOrderPressed}
               disabled={submitting}
-              className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
+              className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {submitting ? t('sending') : `${t('sendOrder')} — ${cart.total.toFixed(2)}`}
             </button>
@@ -571,31 +586,39 @@ function MenuPageContent({ slug }: { slug: string }) {
 
       {showCheckout && (
         <div className="fixed inset-0 z-modal flex items-end bg-black/60" onClick={() => !submitting && setShowCheckout(false)}>
-          <div className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
-            <p className="font-display text-lg text-ivory">Pay to send your order</p>
-            <p className="mt-1 text-sm text-ivory-dim">This business requires payment before your order reaches the kitchen.</p>
-            <p className="mt-3 text-sm text-brass">Total — {cart.total.toFixed(2)}</p>
+          <div className="relative w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => !submitting && setShowCheckout(false)}
+              aria-label={t('cancel')}
+              className="absolute end-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            >
+              ✕
+            </button>
+            <p className="font-display text-lg text-ivory">{t('payToSendOrder')}</p>
+            <p className="mt-1 text-sm text-ivory-dim">{t('payBeforeOrderDesc')}</p>
+            <p className="mt-3 text-sm text-brass">{t('tbTotal')} — {cart.total.toFixed(2)}</p>
             {error && <p className="mt-2 text-sm text-danger">{error}</p>}
             <button type="button"
               onClick={handlePayByCard}
               disabled={submitting}
-              className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50"
+              className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
-              {submitting ? t('sending') : 'Pay by card'}
+              {submitting ? t('sending') : t('payByCard')}
             </button>
             <button type="button"
               onClick={handlePayInCash}
               disabled={submitting}
-              className="mt-2 w-full rounded-lg border border-brass/40 px-4 py-3 font-medium text-brass hover:bg-brass/10 disabled:opacity-50"
+              className="mt-2 w-full rounded-lg border border-brass/40 px-4 py-3 font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
-              Pay in cash
+              {t('payInCash')}
             </button>
             <button type="button"
               onClick={() => setShowCheckout(false)}
               disabled={submitting}
-              className="mt-2 w-full rounded-lg px-4 py-2 text-sm text-ivory-dim"
+              className="mt-2 w-full rounded-lg px-4 py-2 text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -633,9 +656,17 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
   return (
     <div className="fixed inset-0 z-modal flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
+        className="relative w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t('cancel')}
+          className="absolute end-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-ink/60 text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+        >
+          ✕
+        </button>
         {item.image_url && <img src={item.image_url} alt="" className="mb-3 h-40 w-full rounded-xl bg-ink-soft object-contain" />}
         <p className="font-display text-lg text-ivory">{translated(item.name, item.name_i18n, language)}</p>
         {item.description && <p className="mt-1 text-sm text-ivory-dim">{translated(item.description, item.description_i18n, language)}</p>}
@@ -662,9 +693,9 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
         )}
 
         <div className="mt-4 flex items-center gap-3">
-          <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-9 w-9 rounded-full border border-ink-line text-ivory">−</button>
+          <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="Decrease quantity" className="h-9 w-9 rounded-full border border-ink-line text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">−</button>
           <span className="w-6 text-center text-ivory">{quantity}</span>
-          <button type="button" onClick={() => setQuantity((q) => q + 1)} className="h-9 w-9 rounded-full border border-ink-line text-ivory">+</button>
+          <button type="button" onClick={() => setQuantity((q) => q + 1)} aria-label="Increase quantity" className="h-9 w-9 rounded-full border border-ink-line text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">+</button>
         </div>
 
         <input
@@ -676,7 +707,7 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
 
         <button type="button"
           onClick={() => onSave(quantity, note, selectedAddons)}
-          className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink"
+          className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
         >
           {isEditing ? t('saveChanges') : t('addToOrder')} — {lineTotal.toFixed(2)}
         </button>

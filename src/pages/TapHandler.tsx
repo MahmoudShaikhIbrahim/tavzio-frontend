@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { resolveCardTap } from '../lib/api';
 import { setSession } from '../lib/session';
+
+// No business context (and therefore no LanguageProvider) exists at this
+// point - a tap can fail before any business is even identified. This is
+// a pragmatic, best-effort RTL flip based on the browser's own language,
+// not the full t()/LanguageProvider translation system used once a
+// business context exists elsewhere in the app.
+const RTL_LANG_PREFIXES = ['ar', 'he', 'fa', 'ur'];
+function isBrowserRtl(): boolean {
+  const lang = typeof navigator !== 'undefined' ? navigator.language : '';
+  return RTL_LANG_PREFIXES.some((p) => lang.toLowerCase().startsWith(p));
+}
 
 export default function TapHandler() {
   const { cardUid } = useParams<{ cardUid: string }>();
@@ -47,9 +58,16 @@ export default function TapHandler() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-ink px-6 text-center">
+      <div dir={isBrowserRtl() ? 'rtl' : 'ltr'} className="flex min-h-screen flex-col items-center justify-center gap-2 bg-ink px-6 text-center">
         <p className="font-display text-xl text-ivory">Card not recognized</p>
-        <p className="text-sm text-ivory-dim">{error}</p>
+        <p className="mt-1 text-sm text-ivory-dim">Try tapping again, or ask a staff member for help.</p>
+        <p className="mt-2 text-xs text-ivory-dim/70">{error}</p>
+        <Link
+          to="/"
+          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+        >
+          Go to homepage
+        </Link>
       </div>
     );
   }

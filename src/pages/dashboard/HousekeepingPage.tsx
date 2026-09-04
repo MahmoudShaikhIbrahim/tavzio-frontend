@@ -43,7 +43,7 @@ export default function HousekeepingPage() {
       <h1 className="font-display text-3xl text-ivory">{t('Housekeeping & Maintenance')}</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['housekeeping', 'maintenance', 'requests'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base capitalize ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base capitalize ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             {tabKey === 'requests' ? t('Guest Requests') : t(tabKey)}
           </button>
         ))}
@@ -117,17 +117,17 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
         </div>
       </Section>
 
-      <Section title={t('Housekeeping Tasks')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New task')}</button>}>
+      <Section title={t('Housekeeping Tasks')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ New task')}</button>}>
         {showAdd && (
           <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
             <Field label={t('Room')}>
-              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="">{t('Select room...')}</option>
                 {rooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
               </select>
             </Field>
             <Field label={t('Task type')}>
-              <select value={taskType} onChange={(e) => setTaskType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={taskType} onChange={(e) => setTaskType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="cleaning">{t('Cleaning')}</option>
                 <option value="turndown">{t('Turndown')}</option>
                 <option value="inspection">{t('Inspection')}</option>
@@ -135,12 +135,12 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
               </select>
             </Field>
             <Field label={t('Priority')}>
-              <select value={priority} onChange={(e) => setPriority(e.target.value as 'normal' | 'urgent')} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+              <select value={priority} onChange={(e) => setPriority(e.target.value as 'normal' | 'urgent')} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="normal">{t('Normal')}</option>
                 <option value="urgent">{t('Urgent')}</option>
               </select>
             </Field>
-            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
+            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
           </form>
         )}
         <div className="space-y-2">
@@ -155,8 +155,8 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
               </div>
               {task.status !== 'done' && (
                 <div className="flex gap-2">
-                  {task.status === 'pending' && <button type="button" onClick={() => handleStatus(task.id, 'in_progress')} className="text-sm text-brass hover:underline">{t('Start')}</button>}
-                  <button type="button" onClick={() => handleStatus(task.id, 'done')} className="text-sm text-success hover:underline">{t('Mark done')}</button>
+                  {task.status === 'pending' && <button type="button" onClick={() => handleStatus(task.id, 'in_progress')} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Start')}</button>}
+                  <button type="button" onClick={() => handleStatus(task.id, 'done')} className="text-sm text-success hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Mark done')}</button>
                 </div>
               )}
             </div>
@@ -239,18 +239,18 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
 
   return (
     <div className="space-y-6">
-      <Section title={t('Maintenance Tickets')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ New ticket')}</button>}>
+      <Section title={t('Maintenance Tickets')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ New ticket')}</button>}>
         {showAdd && (
           <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
             <div className="flex flex-wrap items-end gap-3">
               <Field label={t('Title')}><input value={title} onChange={(e) => setTitle(e.target.value)} required className={inputClass} /></Field>
               <Field label={t('Priority')}>
-                <select value={priority} onChange={(e) => setPriority(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+                <select value={priority} onChange={(e) => setPriority(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   <option value="low">{t('Low')}</option><option value="normal">{t('Normal')}</option><option value="high">{t('High')}</option><option value="urgent">{t('Urgent')}</option>
                 </select>
               </Field>
               <Field label={t('Room (optional)')}>
-                <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
+                <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   <option value="">{t('No specific room')}</option>
                   {rooms.map((r) => <option key={r.id} value={r.id}>{r.room_number}</option>)}
                 </select>
@@ -265,7 +265,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
                 {t('Take this room out of service until resolved (blocks check-in - recommended)')}
               </label>
             )}
-            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90">{t('Add')}</button>
+            <button type="submit" className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
           </form>
         )}
         <div className="space-y-2">
@@ -283,8 +283,8 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
               </div>
               {ticket.status !== 'resolved' && (
                 <div className="flex gap-2">
-                  {ticket.status === 'open' && <button type="button" onClick={() => handleStatus(ticket.id, 'in_progress')} className="text-sm text-brass hover:underline">{t('Start')}</button>}
-                  <button type="button" onClick={() => handleStatus(ticket.id, 'resolved')} className="text-sm text-success hover:underline">{t('Resolve')}</button>
+                  {ticket.status === 'open' && <button type="button" onClick={() => handleStatus(ticket.id, 'in_progress')} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Start')}</button>}
+                  <button type="button" onClick={() => handleStatus(ticket.id, 'resolved')} className="text-sm text-success hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Resolve')}</button>
                 </div>
               )}
             </div>
@@ -355,8 +355,8 @@ function GuestRequestsTab({ businessId }: { businessId: string }) {
             </div>
             {r.status !== 'done' && (
               <div className="flex gap-2">
-                {r.status === 'pending' && <button type="button" onClick={() => handleStatus(r.id, 'in_progress')} className="text-sm text-brass hover:underline">{t('Start')}</button>}
-                <button type="button" onClick={() => handleStatus(r.id, 'done')} className="text-sm text-success hover:underline">{t('Mark done')}</button>
+                {r.status === 'pending' && <button type="button" onClick={() => handleStatus(r.id, 'in_progress')} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Start')}</button>}
+                <button type="button" onClick={() => handleStatus(r.id, 'done')} className="text-sm text-success hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Mark done')}</button>
               </div>
             )}
           </div>

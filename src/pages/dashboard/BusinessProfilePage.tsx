@@ -34,7 +34,7 @@ export default function BusinessProfilePage() {
       <h1 className="font-display text-3xl text-ivory">{t('Business Profile')}</h1>
       <div className="flex gap-2 border-b border-ink-line">
         {(['profile', 'appearance', 'account'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -244,7 +244,7 @@ function ColorPairPicker({ title, description, background, button, onChange, pre
           <button
             type="button"
             onClick={() => onChange({ background: null, button: null })}
-            className="shrink-0 text-sm text-ivory-dim hover:text-ivory"
+            className="shrink-0 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {t('Use default')}
           </button>
@@ -310,7 +310,7 @@ function AppearanceSection({ business, businessId, onSaved }: { business: AdminB
     <Section
       title={t('Appearance')}
       action={
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
       }

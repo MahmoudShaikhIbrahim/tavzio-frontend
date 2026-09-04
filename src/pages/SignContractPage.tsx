@@ -143,7 +143,7 @@ export default function SignContractPage() {
               href={`${BASE}/api/public/contracts/${token}/pdf`}
               target="_blank"
               rel="noreferrer"
-              className="shrink-0 rounded-lg border border-[#b8925a]/40 px-3.5 py-1.5 text-sm text-[#b8925a] hover:bg-[#b8925a]/10"
+              className="shrink-0 rounded-lg border border-[#b8925a]/40 px-3.5 py-1.5 text-sm text-[#b8925a] hover:bg-[#b8925a]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f1a16]"
             >
               Download PDF
             </a>
@@ -170,7 +170,7 @@ export default function SignContractPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Type your full legal name"
-              className="w-full rounded-lg border border-[#3a332c] bg-[#141110] px-3.5 py-2.5 text-base text-[#f4eee3]"
+              className="w-full rounded-lg border border-[#3a332c] bg-[#141110] px-3.5 py-2.5 text-base text-[#f4eee3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a]"
             />
             <label className="flex items-center gap-2 text-base text-[#f4eee3]">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-[#b8925a]" />
@@ -180,7 +180,7 @@ export default function SignContractPage() {
             <button type="button"
               onClick={handleSign}
               disabled={signing || !agreed}
-              className="w-full rounded-lg bg-[#b8925a] px-4 py-2.5 text-base font-medium text-[#141110] hover:opacity-90 disabled:opacity-50"
+              className="w-full rounded-lg bg-[#b8925a] px-4 py-2.5 text-base font-medium text-[#141110] hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f1a16]"
             >
               {signing ? 'Signing...' : 'Sign & continue to payment setup'}
             </button>

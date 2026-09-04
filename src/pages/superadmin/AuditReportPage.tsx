@@ -35,7 +35,7 @@ export default function AuditReportPage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory"
+            className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -44,7 +44,7 @@ export default function AuditReportPage() {
           <button type="button"
             onClick={handleIssue}
             disabled={generating}
-            className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {generating ? 'Generating...' : 'Issue Audit Report'}
           </button>

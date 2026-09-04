@@ -53,7 +53,7 @@ export default function SuperAdminCardEditorPage() {
 
   return (
     <div>
-      <button type="button" onClick={() => navigate('/admin/super/digital-cards')} className="mb-4 text-sm text-ivory-dim hover:text-ivory">&larr; Back to cards</button>
+      <button type="button" onClick={() => navigate('/admin/super/digital-cards')} className="mb-4 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">&larr; Back to cards</button>
       <h1 className="font-display text-3xl text-ivory">{form.name}</h1>
       <p className="mt-1 text-base text-ivory-dim">{SITE}/card/{form.slug}</p>
 
@@ -63,7 +63,7 @@ export default function SuperAdminCardEditorPage() {
             <a href={`${SITE}/card/${form.slug}`} target="_blank" rel="noreferrer" className="block text-sm text-brass hover:underline">Preview</a>
             <a href={`${BASE}/api/public/cards/${form.slug}/qr.png`} target="_blank" rel="noreferrer" className="block text-sm text-brass hover:underline">Download QR (PNG)</a>
             <a href={`${BASE}/api/public/cards/${form.slug}/qr.svg`} target="_blank" rel="noreferrer" className="block text-sm text-brass hover:underline">Download QR (SVG)</a>
-            <button type="button" onClick={() => navigator.clipboard.writeText(`${SITE}/card/${form.slug}`)} className="block text-sm text-ivory-dim hover:text-ivory">Copy link</button>
+            <button type="button" onClick={() => navigator.clipboard.writeText(`${SITE}/card/${form.slug}`)} className="block text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Copy link</button>
           </div>
           {analytics && (
             <div className="rounded-xl border border-ink-line p-4">
@@ -119,7 +119,7 @@ export default function SuperAdminCardEditorPage() {
           <Section title="Design">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {TEMPLATES.map((tpl) => (
-                <button type="button" key={tpl} onClick={() => setForm({ ...form, design: { ...form.design, template: tpl } })} className={`rounded-lg border px-3 py-3 text-sm capitalize ${form.design.template === tpl ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'}`}>
+                <button type="button" key={tpl} onClick={() => setForm({ ...form, design: { ...form.design, template: tpl } })} className={`rounded-lg border px-3 py-3 text-sm capitalize ${form.design.template === tpl ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
                   {tpl}
                 </button>
               ))}

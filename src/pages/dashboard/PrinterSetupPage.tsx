@@ -4,6 +4,19 @@ import { useT } from '../../hooks/useT';
 import { getPrinterIntegration, listAvailablePrinters, upsertPrinterIntegration, listKitchenStationPrinters, upsertKitchenStationPrinter, deleteKitchenStationPrinter, type KitchenStationPrinter } from '../../lib/authApi';
 import type { PosIntegration } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
+import PasswordField from '../../components/PasswordField';
+
+// Same show/hide pattern already used for the account password on
+// AdminLogin, via the shared PasswordField component - this API key is
+// just as sensitive and deserves the same masking-by-default treatment,
+// not a plain visible text box.
+function SecretField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Field label={label}>
+      <PasswordField value={value} onChange={onChange} placeholder={placeholder} required={false} autoComplete="off" />
+    </Field>
+  );
+}
 
 export default function PrinterSetupPage() {
   const { user } = useSession();
@@ -46,10 +59,10 @@ function PrinterSetup({ businessId }: { businessId: string }) {
       const res = await listAvailablePrinters(businessId, apiKey);
       setPrinters(res.printers);
       if (res.printers.length === 0) {
-        setRefreshError('No printers found - make sure the PrintNode Client is running on a computer connected to your printer.');
+        setRefreshError(t('No printers found - make sure the PrintNode Client is running on a computer connected to your printer.'));
       }
     } catch (err) {
-      setRefreshError(err instanceof Error ? err.message : 'Could not reach PrintNode with that key');
+      setRefreshError(err instanceof Error ? err.message : t('Could not reach PrintNode with that key'));
     } finally {
       setRefreshing(false);
     }
@@ -62,7 +75,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
       const updated = await upsertPrinterIntegration(businessId, { enabled, apiKey, printerId, printerName });
       setIntegration(updated);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Could not save printer settings');
+      setSaveError(err instanceof Error ? err.message : t('Could not save printer settings'));
     } finally {
       setSaving(false);
     }
@@ -82,20 +95,13 @@ function PrinterSetup({ businessId }: { businessId: string }) {
         </p>
       )}
       <div className="max-w-lg space-y-5 rounded-xl border border-ink-line p-5">
-        <Field label={t('PrintNode API key')}>
-          <input
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={t("From your PrintNode account's API Keys page")}
-            className={inputClass}
-          />
-        </Field>
+        <SecretField label={t('PrintNode API key')} value={apiKey} onChange={setApiKey} placeholder={t("From your PrintNode account's API Keys page")} />
 
         <button
           type="button"
           onClick={handleRefreshPrinters}
           disabled={refreshing || !apiKey}
-          className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50"
+          className="rounded-lg border border-brass/40 px-3.5 py-2 text-base text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {refreshing ? t('Refreshing...') : t('Refresh printers')}
         </button>
@@ -109,7 +115,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
                 setPrinterId(e.target.value);
                 setPrinterName(printers.find((p) => String(p.id) === e.target.value)?.name || '');
               }}
-              className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory"
+              className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               <option value="">{t('Select a printer...')}</option>
               {printers.map((p) => (
@@ -128,7 +134,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
         <button type="button"
           onClick={handleSave}
           disabled={saving || (enabled && !printerId)}
-          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {saving ? t('Saving...') : t('Save')}
         </button>
@@ -171,7 +177,7 @@ function KitchenStationPrinters({ businessId, printers }: {
       setPrinterId('');
       reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save this mapping');
+      setError(err instanceof Error ? err.message : t('Could not save this mapping'));
     } finally {
       setSaving(false);
     }
@@ -196,7 +202,7 @@ function KitchenStationPrinters({ businessId, printers }: {
           {mappings.map((m) => (
             <div key={m.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
               <span className="text-ivory">{m.station} <span className="text-ivory-dim">→ {m.printer_name || m.printer_id}</span></span>
-              <button type="button" onClick={() => handleRemove(m.id)} className="text-danger hover:underline">{t('Remove')}</button>
+              <button type="button" onClick={() => handleRemove(m.id)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Remove')}</button>
             </div>
           ))}
         </div>
@@ -213,13 +219,13 @@ function KitchenStationPrinters({ businessId, printers }: {
           </div>
           <div className="flex-1">
             <Field label={t('Printer')}>
-              <select value={printerId} onChange={(e) => setPrinterId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory">
+              <select value={printerId} onChange={(e) => setPrinterId(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="">{t('Select...')}</option>
                 {printers.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </Field>
           </div>
-          <button type="button" onClick={handleAdd} disabled={saving || !station.trim() || !printerId} className="rounded-lg border border-brass/40 px-4 py-2.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50">
+          <button type="button" onClick={handleAdd} disabled={saving || !station.trim() || !printerId} className="rounded-lg border border-brass/40 px-4 py-2.5 text-base text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? t('Adding...') : t('Add')}
           </button>
         </div>

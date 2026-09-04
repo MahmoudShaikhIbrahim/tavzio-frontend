@@ -288,7 +288,7 @@ export default function StaffPage() {
       {resendMessage && (
         <div className="rounded-lg border border-brass/40 bg-ink-soft px-4 py-3">
           <p className="text-base text-ivory">{resendMessage}</p>
-          <button type="button" onClick={() => setResendMessage('')} className="mt-1 text-sm text-ivory-dim hover:text-ivory">{t('Dismiss')}</button>
+          <button type="button" onClick={() => setResendMessage('')} className="mt-1 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Dismiss')}</button>
         </div>
       )}
       {resetResult && (
@@ -300,7 +300,7 @@ export default function StaffPage() {
           <p className="mt-2 text-sm text-ivory-dim">
             {t("Send this to them directly (not visible again after you leave this page). They'll be required to set their own new password the moment they log in with it.")}
           </p>
-          <button type="button" onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory">{t('Dismiss')}</button>
+          <button type="button" onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Dismiss')}</button>
         </div>
       )}
 
@@ -350,20 +350,20 @@ export default function StaffPage() {
                 </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Reset password')}
                 </button>
-                <button type="button" onClick={() => handleResetPin(s.id, s.name)} className="text-sm text-ivory-dim hover:text-ivory">
+                <button type="button" onClick={() => handleResetPin(s.id, s.name)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Reset PIN')}
                 </button>
-                <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50">
+                <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {resendingId === s.id ? t('Resending...') : t('Resend invite')}
                 </button>
                 {organization && (
                   <button type="button"
                     disabled={togglingOrgOwnerId === s.id}
                     onClick={() => handleToggleOrgOwner(s)}
-                    className={`text-sm hover:underline disabled:opacity-50 ${s.is_org_owner ? 'text-danger' : 'text-brass'}`}
+                    className={`text-sm hover:underline disabled:opacity-50 ${s.is_org_owner ? 'text-danger' : 'text-brass'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
                   >
                     {togglingOrgOwnerId === s.id ? t('Updating...') : s.is_org_owner ? t('Revoke org owner') : t('Make org owner')}
                   </button>
@@ -373,14 +373,14 @@ export default function StaffPage() {
                     <button type="button"
                       disabled={togglingActiveId === s.id}
                       onClick={() => handleToggleActive(s)}
-                      className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50"
+                      className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {togglingActiveId === s.id ? t('Updating...') : s.is_active ? t('Deactivate') : t('Reactivate')}
                     </button>
                     <button type="button"
                       disabled={deletingId === s.id}
                       onClick={() => handleDeleteStaff(s)}
-                      className="text-sm text-danger hover:underline disabled:opacity-50"
+                      className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {deletingId === s.id ? t('Deleting...') : t('Delete account')}
                     </button>
@@ -391,20 +391,20 @@ export default function StaffPage() {
                     <button type="button"
                       disabled={togglingFullAccessId === s.id}
                       onClick={() => handleToggleFullAccess(s)}
-                      className={`text-sm hover:underline disabled:opacity-50 ${s.full_access ? 'text-danger' : 'text-brass'}`}
+                      className={`text-sm hover:underline disabled:opacity-50 ${s.full_access ? 'text-danger' : 'text-brass'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
                     >
                       {togglingFullAccessId === s.id ? t('Updating...') : s.full_access ? t('Revoke full access') : t('Grant full access')}
                     </button>
                     <button type="button"
                       onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}
-                      className="text-sm text-brass hover:underline"
+                      className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {editingSectionsFor === s.id ? t('Close') : t('Assign sections')}
                     </button>
                     {isHotel && (
                       <button type="button"
                         onClick={() => setEditingOutletsFor(editingOutletsFor === s.id ? null : s.id)}
-                        className="text-sm text-brass hover:underline"
+                        className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                       >
                         {editingOutletsFor === s.id ? t('Close') : t('Assign outlets')}
                       </button>
@@ -469,7 +469,7 @@ export default function StaffPage() {
         title={t('Organization')}
         action={
           orgLoaded && (
-            <button type="button" onClick={() => setShowAppointForm((v) => !v)} className="text-sm text-brass hover:underline">
+            <button type="button" onClick={() => setShowAppointForm((v) => !v)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {showAppointForm ? t('Close') : organization ? t('Appoint another org owner') : t('Set up multi-location')}
             </button>
           )
@@ -481,7 +481,7 @@ export default function StaffPage() {
             <p className="text-base text-ivory-dim">
               {t('This business is part of')} <span className="text-ivory">{organization.name}</span>. {t('Shared menu, suppliers, and consolidated reporting are managed from the org owner account(s) listed above in Team.')}
             </p>
-            <button type="button" disabled={leavingOrg} onClick={handleLeaveOrganization} className="text-sm text-danger hover:underline disabled:opacity-50">
+            <button type="button" disabled={leavingOrg} onClick={handleLeaveOrganization} className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {leavingOrg ? t('Leaving...') : t('Leave organization')}
             </button>
             {leaveOrgError && <p className="text-sm text-danger">{leaveOrgError}</p>}
@@ -705,11 +705,11 @@ function SectionAssignmentForm({ businessId, staffMember, isHotel, onSaved }: {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
         {staffMember.assigned_sections !== null && (
-          <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
+          <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Remove restriction (sees everything)')}
           </button>
         )}
@@ -772,11 +772,11 @@ function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
         {outlets.length === 0 && <p className="text-sm text-ivory-dim">{t('No outlets set up yet - add some under F&B Outlets & Services first.')}</p>}
       </div>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
         {staffMember.assigned_outlet_ids !== null && (
-          <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory">
+          <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Remove restriction (any outlet)')}
           </button>
         )}

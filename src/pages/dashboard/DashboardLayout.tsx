@@ -67,8 +67,11 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
 // top-level - everything else, however often it's used, lives in the
 // Settings dropdown below instead of competing for space in this bar.
 const TABS = [
-  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: null },
-  { path: 'requests', label: 'Requests', ownerOnly: false, requires: 'ordering' as const, badge: 'requests' as const, badge2: null },
+  // Requests (call waiter / request bill / loyalty claims / cash-pending)
+  // now surfaces only in Orders' own attention panel - it used to also
+  // have this separate tab showing the exact same live queue, which was
+  // pure duplication (see the retired /requests route in App.tsx).
+  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
   { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: 'kitchen' as const, badge2: null },
   { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
   { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const, badge: null, badge2: null },
@@ -551,8 +554,9 @@ function DashboardLayoutInner() {
               type="button"
               data-tour="focus-mode-button"
               onClick={enterFocusMode}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line hover:border-brass/40 hover:text-ivory"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               title={t('Focus mode')}
+              aria-label={t('Focus mode')}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
             </button>
@@ -561,7 +565,8 @@ function DashboardLayoutInner() {
               type="button"
               onClick={() => setShowTour(true)}
               title={t('Show guided tour')}
-              className="flex h-7 w-7 items-center justify-center rounded-full border border-ink-line text-sm text-ivory-dim transition-all duration-150 hover:border-brass hover:text-brass active:scale-[0.9]"
+              aria-label={t('Show guided tour')}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-line text-sm text-ivory-dim transition-all duration-150 hover:border-brass hover:text-brass active:scale-[0.9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               ?
             </button>
@@ -569,7 +574,8 @@ function DashboardLayoutInner() {
               type="button"
               onClick={() => setCustomizing(true)}
               title={t('Customize navigation')}
-              className={`flex h-7 w-7 items-center justify-center rounded-full border text-sm transition-all duration-150 active:scale-[0.9] ${
+              aria-label={t('Customize navigation')}
+              className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm transition-all duration-150 active:scale-[0.9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                 customizing ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:border-brass hover:text-brass'
               }`}
             >
@@ -610,7 +616,7 @@ function DashboardLayoutInner() {
                 <Link
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
-                  className={`relative block shrink-0 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] sm:px-3 sm:py-2.5 sm:text-base ${
+                  className={`relative block shrink-0 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass sm:px-3 sm:py-2.5 sm:text-base ${
                     isTabActive(location.pathname, tab.path)
                       ? 'border-brass text-ivory'
                       : 'border-transparent text-ivory-dim hover:text-ivory'
@@ -630,7 +636,7 @@ function DashboardLayoutInner() {
           <div ref={settingsRef} data-tour="settings-dropdown" className="relative shrink-0">
             <button type="button"
               onClick={() => setSettingsOpen((v) => !v)}
-              className={`flex items-center gap-1.5 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] sm:px-3 sm:py-2.5 sm:text-base ${
+              className={`flex items-center gap-1.5 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass sm:px-3 sm:py-2.5 sm:text-base ${
                 isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
               }`}
             >
@@ -648,7 +654,7 @@ function DashboardLayoutInner() {
                       key={tab.path}
                       to={`/admin/dashboard/${tab.path}`}
                       onClick={() => setSettingsOpen(false)}
-                      className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] ${
+                      className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                         isTabActive(location.pathname, tab.path)
                           ? 'bg-brass/10 text-brass'
                           : 'text-ivory-dim hover:bg-ink hover:text-ivory'
@@ -683,7 +689,7 @@ function DashboardLayoutInner() {
           <button
             type="button"
             onClick={exitFocusMode}
-            className="rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim transition-colors hover:border-brass/50 hover:text-ivory"
+            className="rounded-lg border border-ink-line px-3.5 py-2 text-sm text-ivory-dim transition-colors hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {t('Exit focus mode')}
           </button>
