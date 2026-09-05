@@ -27,18 +27,21 @@ interface NavCustomizeItem {
 // drag it to its new spot, release to save. Replaces the old up/down
 // buttons entirely.
 export default function CustomizeNavModal({
-  mainTabs, settingsItems, hiddenTabs, onReorder, onHide, onRestore, onDone, t,
+  mainTabs, settingsItems, hiddenTabs, pinned, onReorder, onHide, onRestore, onPin, onUnpin, onDone, t,
 }: {
   mainTabs: NavCustomizeItem[];
   settingsItems: NavCustomizeItem[];
   hiddenTabs: NavCustomizeItem[];
+  pinned: string[];
   onReorder: (scope: NavCustomizeItem[], newOrder: NavCustomizeItem[]) => void;
   onHide: (path: string) => void;
   onRestore: (path: string) => void;
+  onPin: (path: string) => void;
+  onUnpin: (path: string) => void;
   onDone: () => void;
   t: (s: string) => string;
 }) {
-  function List({ title, items }: { title: string; items: NavCustomizeItem[] }) {
+  function List({ title, items, pinnable }: { title: string; items: NavCustomizeItem[]; pinnable?: boolean }) {
     const drag = useDragReorder<NavCustomizeItem>({
       items,
       getId: (i) => i.path,
@@ -52,6 +55,7 @@ export default function CustomizeNavModal({
             const isHeld = drag.heldId === item.path;
             const isPlaceTarget = drag.heldId !== null && !isHeld;
             const handlers = drag.itemHandlers(item.path);
+            const isPinned = pinned.includes(item.path);
             return (
               <div key={item.path}
                 ref={(el) => drag.registerItemRef(item.path, el)}
@@ -62,6 +66,19 @@ export default function CustomizeNavModal({
               >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-sm text-brass">{i + 1}</span>
                 <span className="flex-1 text-base text-ivory">{t(item.label)}</span>
+                {pinnable && (
+                  <button type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onPointerUp={(e) => e.stopPropagation()}
+                    onClick={() => (isPinned ? onUnpin(item.path) : onPin(item.path))}
+                    title={isPinned ? t('Unpin from main dashboard') : t('Pin to main dashboard')}
+                    className={`ms-1 shrink-0 rounded-full border px-2.5 py-1.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                      isPinned ? 'border-brass bg-brass/15 text-brass' : 'border-ink-line text-ivory-dim hover:border-brass/50 hover:text-brass'
+                    }`}
+                  >
+                    📌 {isPinned ? t('Pinned') : t('Pin')}
+                  </button>
+                )}
                 <button type="button"
                   onPointerDown={(e) => e.stopPropagation()}
                   onPointerUp={(e) => e.stopPropagation()}
@@ -99,11 +116,14 @@ export default function CustomizeNavModal({
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 text-xs text-brass">1</span>
             {t('shows first in your navigation bar. Press and hold to pick one up, then tap where you\'d like it - changes save instantly.')}
           </p>
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-ivory-dim">
+            📌 {t('Pin a Settings page to put it right on your main dashboard, next to Orders/Kitchen/etc. - everything else stays tucked away in this menu.')}
+          </p>
         </div>
 
         <div className="max-h-[60vh] space-y-6 overflow-y-auto p-5">
           <List title="Main tabs" items={mainTabs} />
-          <List title="Settings menu" items={settingsItems} />
+          <List title="Settings menu" items={settingsItems} pinnable />
 
           {hiddenTabs.length > 0 && (
             <div>

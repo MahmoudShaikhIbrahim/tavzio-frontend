@@ -4,15 +4,48 @@ import { useTheme, type ThemeMode } from '../lib/ThemeContext';
 const CYCLE: ThemeMode[] = ['dark', 'light', 'system'];
 const ICONS: Record<ThemeMode, typeof Sun> = { dark: Moon, light: Sun, system: MonitorSmartphone };
 const LABELS: Record<ThemeMode, string> = { dark: 'Dark', light: 'Light', system: 'System' };
+// Advanced/animated emoji per mode - used by the segmented variant so the
+// three options read at a glance without relying on label text alone.
+const EMOJI: Record<ThemeMode, string> = { system: '🖥️', dark: '🌙', light: '☀️' };
+const SEGMENTS: ThemeMode[] = ['system', 'dark', 'light'];
 
-export default function ThemeToggle({ onChange }: { onChange?: (mode: ThemeMode) => void }) {
+export default function ThemeToggle({ onChange, variant = 'cycle' }: { onChange?: (mode: ThemeMode) => void; variant?: 'cycle' | 'segmented' }) {
   const { mode, setMode } = useTheme();
-  const Icon = ICONS[mode];
 
-  function cycle() {
-    const next = CYCLE[(CYCLE.indexOf(mode) + 1) % CYCLE.length];
+  function select(next: ThemeMode) {
     setMode(next);
     onChange?.(next);
+  }
+
+  // Segmented: all three options visible and directly tappable at once -
+  // used at the very top of the dashboard drawer, where the whole point
+  // is picking a mode in one tap rather than cycling past ones you don't
+  // want first.
+  if (variant === 'segmented') {
+    return (
+      <div className="flex items-center gap-1.5 rounded-full border border-ink-line bg-ink p-1">
+        {SEGMENTS.map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => select(m)}
+            title={LABELS[m]}
+            aria-pressed={mode === m}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+              mode === m ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'
+            }`}
+          >
+            <span aria-hidden="true">{EMOJI[m]}</span>
+            {LABELS[m]}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  const Icon = ICONS[mode];
+  function cycle() {
+    select(CYCLE[(CYCLE.indexOf(mode) + 1) % CYCLE.length]);
   }
 
   return (

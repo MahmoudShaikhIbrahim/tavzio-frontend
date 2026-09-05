@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
+import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, setMyAvatar, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
-import { subscribeToBusinessTable } from '../../lib/supabaseClient';
+import { subscribeToBusinessTable, uploadBusinessFile } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { useConfirm } from '../../components/ConfirmDialog';
 
@@ -40,6 +40,27 @@ export default function StaffPage() {
 
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Self-service only, same as the backend enforces: a person sets their
+  // own picture so a manager can recognize their face at a glance -
+  // never someone else's, not even for an owner looking at a staff row.
+  async function handleAvatarPick(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !businessId || !user) return;
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadBusinessFile(businessId, file, `avatars/${user.id}-${Date.now()}`);
+      await setMyAvatar(businessId, user.id, url);
+      setStaff((prev) => prev.map((s) => (s.id === user.id ? { ...s, avatar_url: url } : s)));
+    } catch {
+      // Silent - the upload button itself simply stops spinning; nothing
+      // destructive happened, so there's nothing to roll back.
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   function reload() {
     if (!businessId) return;
@@ -314,10 +335,20 @@ export default function StaffPage() {
           {staff.map((s) => (
             <div key={s.id} className={`rounded-2xl border px-5 py-4 text-base shadow-sm ${s.is_active ? 'border-ink-line' : 'border-ink-line opacity-60'}`}>
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
-                  {s.name.trim()[0]?.toUpperCase() || '?'}
-                </span>
+                {s.avatar_url ? (
+                  <img src={s.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+                    {s.name.trim()[0]?.toUpperCase() || '?'}
+                  </span>
+                )}
                 <div className="min-w-0">
+                  {s.id === user?.id && (
+                    <label className="mb-0.5 block cursor-pointer text-xs font-medium text-brass hover:underline focus-within:ring-2 focus-within:ring-brass">
+                      {uploadingAvatar ? t('Uploading…') : s.avatar_url ? t('Change photo') : t('Add photo')}
+                      <input type="file" accept="image/*" className="hidden" disabled={uploadingAvatar} onChange={handleAvatarPick} />
+                    </label>
+                  )}
                   <p className="truncate text-ivory">{s.name}</p>
                   <p className="text-sm text-ivory-dim">{s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</p>
                   <div className="mt-1 flex flex-wrap gap-1">

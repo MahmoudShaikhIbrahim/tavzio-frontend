@@ -30,7 +30,7 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     selector: 'nav-drawer-button',
     title: 'Everything lives here now',
-    body: "Tap the logo to open your menu - every page you use, Settings, your account, and Customize navigation all live in one scrollable list instead of crowding the header. What you see there depends on what's enabled for your business.",
+    body: "Tap this to open your menu - every page you use, Settings, your account, and Customize navigation all live in one scrollable list instead of crowding the header. What you see there depends on what's enabled for your business.",
   },
   {
     selector: 'command-palette',
@@ -55,7 +55,7 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     selector: 'account-menu',
     title: 'Your account',
-    body: 'Business Profile, your theme (light, dark, or matching your system), and sign out all live here now, together. If you manage more than one business, switching between them without signing out lives here too.',
+    body: 'Your name and Sign out live at the very bottom of this menu. Your theme (light, dark, or matching your system) is right at the top instead, and Business Profile lives in the Settings list above.',
   },
 ];
 
@@ -174,6 +174,62 @@ function isTabActive(pathname: string, tabPath: string): boolean {
   return pathname === target || pathname.startsWith(`${target}/`);
 }
 
+// One drawer row that expands into its real subpages in place - a
+// grid-template-rows transition (0fr -> 1fr) animates smoothly without
+// ever needing to measure the children's real height in JS, which is
+// what makes this "advanced" rather than a plain instant show/hide.
+function NavGroup({ emoji, label, linkPath, items, open, onToggle, pathname, t }: {
+  emoji: string; label: string; linkPath?: string;
+  items: { path: string; label: string }[]; open: boolean; onToggle: () => void;
+  pathname: string; t: (s: string) => string;
+}) {
+  const isActive = (!!linkPath && isTabActive(pathname, linkPath)) || items.some((i) => isTabActive(pathname, i.path));
+  return (
+    <div>
+      <div className="flex items-center">
+        {linkPath ? (
+          <Link
+            to={`/admin/dashboard/${linkPath}`}
+            className={`flex-1 px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+              isActive ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+            }`}
+          >
+            {emoji} {label}
+          </Link>
+        ) : (
+          <span className={`flex-1 px-4 py-2.5 text-base ${isActive ? 'text-brass' : 'text-ivory-dim'}`}>{emoji} {label}</span>
+        )}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={open ? t('Collapse') : t('Expand')}
+          aria-expanded={open}
+          className="me-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-ink hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+        >
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
+            <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <div className="grid transition-[grid-template-rows] duration-300 ease-in-out" style={{ gridTemplateRows: open ? '1fr' : '0fr' }}>
+        <div className="overflow-hidden">
+          {items.map((item) => (
+            <Link
+              key={item.path}
+              to={`/admin/dashboard/${item.path}`}
+              className={`block py-2.5 pe-4 ps-9 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                isTabActive(pathname, item.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+              }`}
+            >
+              {t(item.label)}
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardLayout() {
   // The provider has to sit outside the component that actually
   // consumes it via useT() - a component can't read a context it
@@ -256,7 +312,7 @@ function DashboardLayoutInner() {
   // waiting on useSession's 20s cache to naturally refresh - synced from
   // the account's real saved layout once it loads, then updated
   // optimistically on every change and persisted via setMyNavLayout.
-  const [navLayoutOverride, setNavLayoutOverride] = useState<{ hidden: string[]; order: string[] } | null | undefined>(undefined);
+  const [navLayoutOverride, setNavLayoutOverride] = useState<{ hidden: string[]; order: string[]; pinned?: string[] } | null | undefined>(undefined);
 
   // Auto-opens once per account, the first time tour_completed_at is
   // genuinely null (never shown, or explicitly reset via "Restart guide"
@@ -452,6 +508,24 @@ function DashboardLayoutInner() {
   }
   const visibleTabs = applyLayout(baseVisibleTabs);
   const visibleSettingsItems = applyLayout(baseVisibleSettingsItems);
+  // Settings pages someone chose to pin directly onto the main dashboard
+  // tab row, next to Orders/Kitchen/etc., instead of only reachable from
+  // inside this drawer - everything not pinned stays exactly where it
+  // was, tucked away in Settings.
+  const pinned: string[] = navLayout?.pinned ?? [];
+  const pinnedTabs = visibleSettingsItems.filter((i) => pinned.includes(i.path));
+  const drawerSettingsItems = visibleSettingsItems.filter((i) => !pinned.includes(i.path));
+
+  // Two entries whose sub-pages genuinely belong under them rather than
+  // sitting as their own top-level rows: Organization (and the shared
+  // org pages) is a Business Profile concern, not a Staff one, and Staff
+  // itself is an HR concern - both now nest as an expandable group in
+  // the drawer instead of six flat, same-looking rows.
+  const ORG_GROUP_PATHS = ['org/overview', 'org/menu', 'org/suppliers', 'org/purchase-orders'];
+  const orgGroupItems = drawerSettingsItems.filter((i) => ORG_GROUP_PATHS.includes(i.path));
+  const hrItem = drawerSettingsItems.find((i) => i.path === 'settings/hr');
+  const staffItem = drawerSettingsItems.find((i) => i.path === 'staff');
+  const flatSettingsItems = drawerSettingsItems.filter((i) => !ORG_GROUP_PATHS.includes(i.path) && i.path !== 'staff' && (i.path !== 'settings/hr' || !hrItem));
   // Deliberately the full permission-filtered lists, not the
   // hide-filtered visibleTabs/visibleSettingsItems above - a command
   // palette exists precisely to still reach a page someone hid from
@@ -474,7 +548,7 @@ function DashboardLayoutInner() {
   // updates the local override immediately rather than waiting on a
   // fresh /me fetch - reverts the override if the save actually fails,
   // so the UI never silently drifts from what's really saved.
-  function persistLayout(next: { hidden: string[]; order: string[] }) {
+  function persistLayout(next: { hidden: string[]; order: string[]; pinned?: string[] }) {
     const previous = navLayout;
     setNavLayoutOverride(next);
     if (user?.business_id && user?.id) {
@@ -492,18 +566,25 @@ function DashboardLayoutInner() {
     const otherScope = scope === visibleTabs ? visibleSettingsItems : visibleTabs;
     const newPaths = newOrder.map((i) => i.path);
     const fullOrder = scope === visibleTabs ? [...newPaths, ...otherScope.map((i) => i.path)] : [...otherScope.map((i) => i.path), ...newPaths];
-    persistLayout({ hidden: navLayout?.hidden ?? [], order: fullOrder });
+    persistLayout({ hidden: navLayout?.hidden ?? [], order: fullOrder, pinned });
   }
 
   function hideItem(path: string) {
     const hidden = [...(navLayout?.hidden ?? []), path];
     const order = [...visibleTabs, ...visibleSettingsItems].map((i) => i.path).filter((p) => p !== path);
-    persistLayout({ hidden, order });
+    persistLayout({ hidden, order, pinned });
   }
 
   function restoreItem(path: string) {
     const hidden = (navLayout?.hidden ?? []).filter((p) => p !== path);
-    persistLayout({ hidden, order: navLayout?.order ?? [] });
+    persistLayout({ hidden, order: navLayout?.order ?? [], pinned });
+  }
+
+  function pinItem(path: string) {
+    persistLayout({ hidden: navLayout?.hidden ?? [], order: navLayout?.order ?? [], pinned: [...pinned, path] });
+  }
+  function unpinItem(path: string) {
+    persistLayout({ hidden: navLayout?.hidden ?? [], order: navLayout?.order ?? [], pinned: pinned.filter((p) => p !== path) });
   }
 
   // Real redesign, replacing the old double-click/long-press-per-tab
@@ -516,6 +597,20 @@ function DashboardLayoutInner() {
   // just browsing.
   const [customizing, setCustomizing] = useState(false);
   useEffect(() => { setCustomizing(false); setDrawerOpen(false); }, [location.pathname]);
+
+  // Which collapsible drawer groups (Business Profile's Organization
+  // pages, HR's Staff subpage) are expanded - opens on its own the
+  // moment you're actually inside one of its pages, so navigating
+  // straight to e.g. Org Menu never leaves its own group looking
+  // collapsed/hidden.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  function isGroupOpen(key: string, childPaths: string[]) {
+    if (openGroups[key] !== undefined) return openGroups[key];
+    return childPaths.some((p) => isTabActive(location.pathname, p));
+  }
+  function toggleGroup(key: string, childPaths: string[]) {
+    setOpenGroups((prev) => ({ ...prev, [key]: !isGroupOpen(key, childPaths) }));
+  }
 
   // Owner accounts start with a password the super admin set directly
   // and knows - force setting a real one before anything else in the
@@ -543,35 +638,66 @@ function DashboardLayoutInner() {
       {!focusMode && (
       <header className="border-b border-ink-line">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          {/* The one thing left in the header: everything that used to
-              compete for space here (every tab, Settings and its whole
-              contents, the account menu, Customize navigation) now
-              lives behind this single button, opened as a slide-out
+          {/* Just a small icon now, not the full wordmark - the real
+              Tavzio logo only ever appears once the drawer it opens is
+              actually open, at the top of that panel. Everything that
+              used to compete for header space (every tab, Settings and
+              its whole contents, the account menu, Customize
+              navigation) lives behind this one button as a slide-out
               menu - the same shape Instagram, TikTok and WhatsApp all
-              use for their own secondary navigation, so the header
-              itself never grows regardless of how many tabs or settings
-              a business has enabled. */}
+              use for their own secondary navigation. */}
           <button
             type="button"
             data-tour="nav-drawer-button"
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-ink-line py-1.5 pe-3 ps-1.5 transition-colors hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 text-base text-brass transition-colors hover:bg-brass/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             aria-label={t('Menu')}
           >
-            <Logo size="sm" />
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-ivory-dim"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span aria-hidden="true">☰</span>
             {totalBadgeCount > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-status-text">
+              <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-status-text">
                 {totalBadgeCount > 9 ? '9+' : totalBadgeCount}
               </span>
             )}
           </button>
 
-          <div className="flex flex-1 items-center justify-end gap-3">
-            <div data-tour="command-palette"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
+          <div className="flex flex-1 items-center justify-end gap-2.5">
+            <div data-tour="command-palette" className="min-w-0"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
+            {/* Focus mode lives right on the main page next to the
+                search bar now, not tucked a level deeper inside the
+                drawer - the whole point of a one-tap "clear the screen"
+                action is that it's actually one tap away. */}
+            <button
+              type="button"
+              data-tour="focus-mode-button"
+              onClick={enterFocusMode}
+              title={t('Focus mode')}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
+            </button>
             <ClockWidget />
           </div>
         </div>
+
+        {/* Pages pinned onto the main dashboard (see Customize
+            navigation) - reachable in one tap, right next to each
+            other, without opening the drawer at all. */}
+        {pinnedTabs.length > 0 && (
+          <div className="scrollbar-none flex gap-2 overflow-x-auto border-t border-ink-line px-4 py-2 sm:px-6">
+            {pinnedTabs.map((tab) => (
+              <Link
+                key={tab.path}
+                to={`/admin/dashboard/${tab.path}`}
+                className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  isTabActive(location.pathname, tab.path) ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
+                }`}
+              >
+                📌 {t(tab.label)}
+              </Link>
+            ))}
+          </div>
+        )}
       </header>
       )}
 
@@ -596,45 +722,17 @@ function DashboardLayoutInner() {
               </button>
             </div>
 
-            {/* Account section: name/role, theme, business profile, sign
-                out - everything the old top-right avatar dropdown held,
-                now just the top block of this same menu instead of its
-                own separate popover. */}
-            <div data-tour="account-menu" className="border-b border-ink-line px-4 py-3.5">
-              <p className="text-base text-ivory">{user?.name}</p>
-              <p className="text-sm text-ivory-dim">{isOwner ? t('Owner') : t('Staff')}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Link
-                  to="/admin/dashboard/settings/business-profile"
-                  onClick={() => setDrawerOpen(false)}
-                  className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-                >
-                  {t('Business Profile')}
-                </Link>
-                <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="rounded-full border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-                >
-                  {t('Sign out')}
-                </button>
-              </div>
+            {/* Theme, right at the very top - the one setting someone
+                reaches for before anything else, picked directly rather
+                than cycled through. */}
+            <div className="border-b border-ink-line px-4 py-3.5">
+              <ThemeToggle variant="segmented" onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
             </div>
 
-            {/* Quick actions - Focus mode, guided tour, and reordering
-                the lists below, all demoted from their own header icons
-                into one compact row here. */}
+            {/* Quick actions - guided tour and reordering the lists
+                below. Focus mode now lives on the main page itself, next
+                to the search bar, not in here. */}
             <div className="flex items-center gap-2 border-b border-ink-line px-4 py-3">
-              <button
-                type="button"
-                data-tour="focus-mode-button"
-                onClick={() => { enterFocusMode(); setDrawerOpen(false); }}
-                title={t('Focus mode')}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
-              </button>
               <button
                 type="button"
                 onClick={() => { setShowTour(true); }}
@@ -686,10 +784,69 @@ function DashboardLayoutInner() {
             </nav>
 
             {/* Everything else - one flat scrollable list instead of a
-                separate dropdown, under its own heading. */}
-            <div data-tour="settings-dropdown" className="py-1.5">
+                separate dropdown, under its own heading. A page with
+                real subpages (Business Profile's Organization, HR's
+                Staff) expands in place as a smooth accordion instead of
+                sitting as its own same-looking flat row. */}
+            <div data-tour="settings-dropdown" className="flex-1 py-1.5">
               <p className="px-4 pb-1 pt-2 text-xs uppercase tracking-wide text-ivory-dim/70">{t('Settings')}</p>
-              {visibleSettingsItems.map((tab) => (
+
+              <Link
+                to="/admin/dashboard/settings/business-profile"
+                onClick={() => setDrawerOpen(false)}
+                className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                  isTabActive(location.pathname, 'settings/business-profile') ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                }`}
+              >
+                🏢 {t('Business Profile')}
+              </Link>
+              {orgGroupItems.length > 0 && (
+                <NavGroup
+
+                  emoji="🏢"
+                  label={t('Organization')}
+                  items={orgGroupItems}
+                  open={isGroupOpen('business-profile-org', orgGroupItems.map((i) => i.path))}
+                  onToggle={() => toggleGroup('business-profile-org', orgGroupItems.map((i) => i.path))}
+                  pathname={location.pathname}
+                  t={t}
+                />
+              )}
+
+              {hrItem && staffItem && (
+                <NavGroup
+                  emoji="🧑‍🤝‍🧑"
+                  label={t(hrItem.label)}
+                  linkPath={hrItem.path}
+                  items={[staffItem]}
+                  open={isGroupOpen('hr', [hrItem.path, staffItem.path])}
+                  onToggle={() => toggleGroup('hr', [hrItem.path, staffItem.path])}
+                  pathname={location.pathname}
+                  t={t}
+                />
+              )}
+              {hrItem && !staffItem && (
+                <Link
+                  to={`/admin/dashboard/${hrItem.path}`}
+                  className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                    isTabActive(location.pathname, hrItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                  }`}
+                >
+                  {t(hrItem.label)}
+                </Link>
+              )}
+              {!hrItem && staffItem && (
+                <Link
+                  to={`/admin/dashboard/${staffItem.path}`}
+                  className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                    isTabActive(location.pathname, staffItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                  }`}
+                >
+                  {t(staffItem.label)}
+                </Link>
+              )}
+
+              {flatSettingsItems.map((tab) => (
                 <Link
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
@@ -701,6 +858,20 @@ function DashboardLayoutInner() {
                 </Link>
               ))}
             </div>
+
+            {/* Account section: name/role, sign out - moved to the very
+                bottom of the drawer, below every page it's not one of. */}
+            <div data-tour="account-menu" className="mt-auto border-t border-ink-line px-4 py-3.5">
+              <p className="text-base text-ivory">{user?.name}</p>
+              <p className="text-sm text-ivory-dim">{isOwner ? t('Owner') : t('Staff')}</p>
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-3 rounded-full border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+              >
+                {t('Sign out')}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -710,9 +881,12 @@ function DashboardLayoutInner() {
           mainTabs={visibleTabs}
           settingsItems={visibleSettingsItems}
           hiddenTabs={hiddenTabs}
+          pinned={pinned}
           onReorder={reorderScope}
           onHide={hideItem}
           onRestore={restoreItem}
+          onPin={pinItem}
+          onUnpin={unpinItem}
           onDone={() => setCustomizing(false)}
           t={t}
         />

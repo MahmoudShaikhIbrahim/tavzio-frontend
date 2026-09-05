@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { AlertTriangle, Flame, Check, Printer } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -56,6 +57,7 @@ function ArrivalCountdown({ arrivalAt }: { arrivalAt: string }) {
 // for attention on a screen that's meant to just sit in the kitchen.
 export default function KitchenPage() {
   const { user } = useSession();
+  const { focusMode } = useOutletContext<{ focusMode?: boolean }>();
   const { t } = useT();
   const businessId = user?.business_id;
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -66,22 +68,22 @@ export default function KitchenPage() {
   useTicker();
 
   function reload() {
-    // Oldest ticket first, always - the one that's been waiting longest
-    // is the one that needs eyes on it first, same reason the age badge
-    // exists at all. Sorted client-side so this holds regardless of
-    // whatever order the API happens to return.
-    if (businessId) listOrders(businessId, 'pending').then((rows) => {
-      setOrders([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
-    }).catch(() => {});
-    // Also pick up anything already 'preparing' - a ticket started but
-    // not yet ready still needs to be visible on this screen, not just
-    // freshly-pending ones.
-    if (businessId) listOrders(businessId, 'preparing').then((rows) => {
-      setOrders((prev) => {
-        const pendingOnly = prev.filter((o) => o.status !== 'preparing');
-        return [...pendingOnly, ...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      });
-    }).catch(() => {});
+    if (!businessId) return;
+    // Both statuses fetched together and merged in a single setOrders
+    // call - fetching them as two independent async calls that each
+    // called setOrders on their own was the actual bug: whichever one
+    // resolved last would overwrite the other's rows, so a ticket just
+    // moved to "preparing" could vanish back to pending the moment the
+    // slower "pending" fetch finally landed.
+    Promise.all([
+      listOrders(businessId, 'pending').catch(() => [] as OrderRow[]),
+      listOrders(businessId, 'preparing').catch(() => [] as OrderRow[]),
+    ]).then(([pendingRows, preparingRows]) => {
+      // Oldest ticket first, always - the one that's been waiting longest
+      // is the one that needs eyes on it first, same reason the age badge
+      // exists at all.
+      setOrders([...pendingRows, ...preparingRows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+    });
   }
 
   useEffect(reload, [businessId]);
@@ -191,7 +193,7 @@ export default function KitchenPage() {
       {visibleOrders.length === 0 ? (
         <p className="text-base text-ivory-dim">{t('No pending orders right now.')}</p>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className={`grid grid-cols-1 gap-6 lg:grid-cols-2 ${focusMode ? 'lg:h-[calc(100vh-7rem)]' : ''}`}>
           <KitchenLane
             title={t('New')}
             count={newTickets.length}
@@ -202,6 +204,7 @@ export default function KitchenPage() {
             onStart={handleStart}
             onMarkReady={handleMarkReady}
             onReprint={handleReprint}
+            scrollable={focusMode}
             t={t}
           />
           <KitchenLane
@@ -214,6 +217,7 @@ export default function KitchenPage() {
             onStart={handleStart}
             onMarkReady={handleMarkReady}
             onReprint={handleReprint}
+            scrollable={focusMode}
             t={t}
           />
         </div>
@@ -222,20 +226,25 @@ export default function KitchenPage() {
   );
 }
 
-function KitchenLane({ title, count, accent, tickets, stationFilter, reprintingId, onStart, onMarkReady, onReprint, t }: {
+function KitchenLane({ title, count, accent, tickets, stationFilter, reprintingId, onStart, onMarkReady, onReprint, scrollable, t }: {
   title: string; count: number; accent: 'brass' | 'warning'; tickets: OrderRow[]; stationFilter: string; reprintingId: string | null;
-  onStart: (id: string) => void; onMarkReady: (id: string) => void; onReprint: (id: string) => void; t: (s: string) => string;
+  onStart: (id: string) => void; onMarkReady: (id: string) => void; onReprint: (id: string) => void; scrollable?: boolean; t: (s: string) => string;
 }) {
   return (
-    <div>
-      <div className="mb-3 flex items-center gap-2">
+    <div className={scrollable ? 'flex min-h-0 flex-col' : ''}>
+      <div className="mb-3 flex shrink-0 items-center gap-2">
         <h2 className="font-mono text-[11px] uppercase tracking-wider text-ivory-dim">{title}</h2>
         <span className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-medium ${accent === 'brass' ? 'bg-brass text-ink' : 'bg-warning text-ink'}`}>{count}</span>
       </div>
       {tickets.length === 0 ? (
         <p className="text-sm text-ivory-dim">{t('Nothing here.')}</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        // In focus mode, each lane scrolls independently within its own
+        // fixed-height column - the actual fix for the "In progress"
+        // lane needing a page scroll just to see a ticket sitting right
+        // next to a fully-visible "New" lane: two lanes at different
+        // heights no longer fight over the same page-level scrollbar.
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${scrollable ? 'min-h-0 flex-1 content-start overflow-y-auto pe-1' : ''}`}>
           {tickets.map((order) => (
             <KitchenTicket
               key={order.id}
@@ -318,7 +327,7 @@ function KitchenTicket({ order, stationFilter, reprinting, onStart, onMarkReady,
           {order.status === 'pending' && (
             <button type="button"
               onClick={onStart}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brass/40 min-h-[38px] py-2 text-sm font-medium text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-brass/40 min-h-[38px] px-2 py-2 text-sm font-medium text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               <Flame size={14} />
               {t('Start')}
@@ -326,7 +335,7 @@ function KitchenTicket({ order, stationFilter, reprinting, onStart, onMarkReady,
           )}
           <button type="button"
             onClick={onMarkReady}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brass min-h-[38px] py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+            className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-brass min-h-[38px] px-2 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
             <Check size={14} />
             {t('Mark ready')}

@@ -254,13 +254,17 @@ export interface Profile {
   // See migration 0098, same pattern as full_access above but for
   // multi-location org duties instead of owner-equivalence.
   is_org_owner?: boolean;
-  // Per-person dashboard tab hide/reorder. null = default order,
-  // nothing hidden.
-  nav_layout?: { hidden: string[]; order: string[] } | null;
+  // Per-person dashboard tab hide/reorder, plus which Settings pages (if
+  // any) are pinned onto the main dashboard tab row. null = default
+  // order, nothing hidden, nothing pinned.
+  nav_layout?: { hidden: string[]; order: string[]; pinned?: string[] } | null;
   // NULL = tour not yet shown/completed - dashboard auto-opens it. Set
   // once completed/skipped; "Restart guide" in Business Profile clears
   // it back to null.
   tour_completed_at?: string | null;
+  // Self-service profile picture - null/undefined shows an initials
+  // circle instead.
+  avatar_url?: string | null;
 }
 
 // The full business record as seen by an authenticated admin - a superset
@@ -820,9 +824,10 @@ export interface StaffMember {
   assigned_sections: string[] | null;
   assigned_outlet_ids: string[] | null;
   full_access: boolean;
-  nav_layout: { hidden: string[]; order: string[] } | null;
+  nav_layout: { hidden: string[]; order: string[]; pinned?: string[] } | null;
   organization_id: string | null;
   is_org_owner: boolean;
+  avatar_url?: string | null;
 }
 
 export interface AnalyticsSummary {

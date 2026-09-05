@@ -1161,10 +1161,20 @@ export function setStaffFullAccess(businessId: string, userId: string, fullAcces
 
 // Self-service only - the backend enforces userId === the caller's own
 // id, so this is never used to set someone else's layout.
-export function setMyNavLayout(businessId: string, userId: string, layout: { hidden: string[]; order: string[] } | null) {
-  return authFetch<{ id: string; nav_layout: { hidden: string[]; order: string[] } | null }>(`/api/businesses/${businessId}/staff/${userId}/nav-layout`, {
+export function setMyNavLayout(businessId: string, userId: string, layout: { hidden: string[]; order: string[]; pinned?: string[] } | null) {
+  return authFetch<{ id: string; nav_layout: { hidden: string[]; order: string[]; pinned?: string[] } | null }>(`/api/businesses/${businessId}/staff/${userId}/nav-layout`, {
     method: 'PATCH',
-    body: JSON.stringify(layout ?? { hidden: null, order: null }),
+    body: JSON.stringify(layout ?? { hidden: null, order: null, pinned: null }),
+  });
+}
+
+// Self-service profile picture - same pattern as setMyNavLayout. The
+// file itself is uploaded to Supabase Storage client-side first (see
+// uploadBusinessFile); this just records the resulting URL.
+export function setMyAvatar(businessId: string, userId: string, avatarUrl: string | null) {
+  return authFetch<{ id: string; avatar_url: string | null }>(`/api/businesses/${businessId}/staff/${userId}/avatar`, {
+    method: 'PATCH',
+    body: JSON.stringify({ avatarUrl }),
   });
 }
 
