@@ -104,6 +104,13 @@ export default {
         'modal-backdrop': '30',
         modal: '40',
         toast: '50',
+        // Confirm/alert dialogs have to out-rank every other modal or
+        // drawer in the app, since they can be triggered from inside
+        // any of them (e.g. "Delete?" from inside a staff detail
+        // panel) - the actual bug this fixed: ConfirmDialog previously
+        // used 'modal-backdrop' (30), one tier BELOW plain 'modal'
+        // (40), so a real modal/drawer visually sat on top of it.
+        confirm: '60',
       },
     },
   },

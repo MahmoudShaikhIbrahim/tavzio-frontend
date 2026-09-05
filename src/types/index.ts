@@ -828,6 +828,8 @@ export interface StaffMember {
   organization_id: string | null;
   is_org_owner: boolean;
   avatar_url?: string | null;
+  email?: string | null;
+  phone?: string | null;
 }
 
 export interface AnalyticsSummary {

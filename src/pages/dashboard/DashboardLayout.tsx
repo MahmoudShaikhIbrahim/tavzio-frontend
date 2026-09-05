@@ -30,12 +30,12 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     selector: 'nav-drawer-button',
     title: 'Everything lives here now',
-    body: "Tap this to open your menu - every page you use, Settings, your account, and Customize navigation all live in one scrollable list instead of crowding the header. What you see there depends on what's enabled for your business.",
+    body: "Tap this to open your menu. Main pages and Settings are their own collapsible sections - tap either heading to fold it away, and every page has its own icon so it's quick to spot at a glance. What you see there depends on what's enabled for your business.",
   },
   {
     selector: 'command-palette',
     title: 'Jump anywhere, instantly',
-    body: "Press ⌘K (or Ctrl+K) from any screen, or tap this bar. Type a page name, or what you're trying to do - \"invite staff\" finds the real action, not just the Staff page. Even a typo still gets you there, it'll suggest the closest real match. This reaches every page and action you can access, including ones hidden from your main tabs - hiding something from the nav bar doesn't mean losing the fast way back to it.",
+    body: "Press ⌘K (or Ctrl+K) from any screen, or tap this bar. Type a page name, or what you're trying to do - \"invite staff\" finds the real action, not just the Staff tab under HR. Even a typo still gets you there, it'll suggest the closest real match. This reaches every page and action you can access, including ones hidden from your main tabs - hiding something from the nav bar doesn't mean losing the fast way back to it.",
   },
   {
     selector: 'focus-mode-button',
@@ -56,6 +56,13 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
     selector: 'account-menu',
     title: 'Your account',
     body: 'Your name, a small Business Profile icon, and Sign out live at the very bottom of this menu. Your theme (light, dark, or matching your system) is right at the top instead.',
+    // The one step whose target sits at the very bottom of the screen -
+    // the default "place the tooltip below the target" would push it
+    // straight off-screen with nothing visible to press, which was the
+    // actual "stuck at the end of the tour" bug being reported. Placed
+    // above the target instead, same as any tooltip near a screen edge
+    // should be.
+    placement: 'top',
   },
 ];
 
@@ -933,7 +940,13 @@ function DashboardLayoutInner() {
           </button>
         </div>
       )}
-      <main className={focusMode ? 'px-4 py-4 sm:px-6' : 'mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14'}>
+      {/* Real fix for the reported "wasted space" - py-10/py-14 was
+          pushing every page's actual content down by 40-56px before a
+          single pixel of real content, on every page in the dashboard.
+          Cut to a small, still-comfortable top gap; the bottom keeps a
+          bit more room so the last section never crowds the viewport
+          edge. */}
+      <main className={focusMode ? 'px-4 py-4 sm:px-6' : 'mx-auto max-w-7xl px-4 pb-10 pt-4 sm:px-8 sm:pb-14 sm:pt-6'}>
         <Outlet context={{ refetchFeatures, focusMode, payBillEnabled }} />
       </main>
     </div>

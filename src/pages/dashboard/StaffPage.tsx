@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, setMyAvatar, type StaffShift } from '../../lib/authApi';
+import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, setStaffAvatar, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
@@ -52,18 +52,18 @@ export default function StaffPage() {
     }).catch(() => {});
   }, [businessId]);
 
-  // Self-service only, same as the backend enforces: a person sets their
-  // own picture so a manager can recognize their face at a glance -
-  // never someone else's, not even for an owner looking at a staff row.
-  async function handleAvatarPick(e: ChangeEvent<HTMLInputElement>) {
+  // Owner/manager sets it, explicitly not self-service - whoever has the
+  // roster open uploads the photo for the row they're looking at, same
+  // as every other field here.
+  async function handleAvatarPick(targetUserId: string, e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !businessId || !user) return;
+    if (!file || !businessId) return;
     setUploadingAvatar(true);
     try {
-      const url = await uploadBusinessFile(businessId, file, `avatars/${user.id}-${Date.now()}`);
-      await setMyAvatar(businessId, user.id, url);
-      setStaff((prev) => prev.map((s) => (s.id === user.id ? { ...s, avatar_url: url } : s)));
+      const url = await uploadBusinessFile(businessId, file, `avatars/${targetUserId}-${Date.now()}`);
+      await setStaffAvatar(businessId, targetUserId, url);
+      setStaff((prev) => prev.map((s) => (s.id === targetUserId ? { ...s, avatar_url: url } : s)));
     } catch {
       // Silent - the upload control itself simply stops spinning.
     } finally {
@@ -146,11 +146,10 @@ export default function StaffPage() {
         <StaffDetailPanel
           businessId={businessId}
           staffMember={openStaff}
-          currentUserId={user?.id}
           isHotel={isHotel}
           outlets={outlets}
           uploadingAvatar={uploadingAvatar}
-          onAvatarPick={handleAvatarPick}
+          onAvatarPick={(e) => handleAvatarPick(openStaff.id, e)}
           onClose={() => setOpenId(null)}
           onUpdated={(updated) => setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)))}
           onDeleted={(id) => { setStaff((prev) => prev.filter((m) => m.id !== id)); setOpenId(null); }}
@@ -225,8 +224,8 @@ function InviteStaffForm({ businessId, isHotel, onInvited }: { businessId: strin
 // Permissions are genuinely separate concerns (who they are / what
 // they're allowed to see) so they get their own tabs rather than one
 // long scroll of both mixed together.
-function StaffDetailPanel({ businessId, staffMember, currentUserId, isHotel, outlets, uploadingAvatar, onAvatarPick, onClose, onUpdated, onDeleted }: {
-  businessId: string; staffMember: StaffMember; currentUserId?: string; isHotel: boolean; outlets: HotelOutlet[];
+function StaffDetailPanel({ businessId, staffMember, isHotel, outlets, uploadingAvatar, onAvatarPick, onClose, onUpdated, onDeleted }: {
+  businessId: string; staffMember: StaffMember; isHotel: boolean; outlets: HotelOutlet[];
   uploadingAvatar: boolean; onAvatarPick: (e: ChangeEvent<HTMLInputElement>) => void;
   onClose: () => void; onUpdated: (updated: StaffMember) => void; onDeleted: (id: string) => void;
 }) {
@@ -338,12 +337,12 @@ function StaffDetailPanel({ businessId, staffMember, currentUserId, isHotel, out
                 <span className={`h-1.5 w-1.5 rounded-full ${s.is_active ? 'bg-brass' : 'bg-ivory-dim/40'}`} />
                 {s.is_active ? t('Active') : t('Deactivated')}
               </p>
-              {s.id === currentUserId && (
-                <label className="mt-1 block cursor-pointer text-xs font-medium text-brass hover:underline focus-within:ring-2 focus-within:ring-brass">
-                  {uploadingAvatar ? t('Uploading…') : s.avatar_url ? t('Change photo') : t('Add photo')}
-                  <input type="file" accept="image/*" className="hidden" disabled={uploadingAvatar} onChange={onAvatarPick} />
-                </label>
-              )}
+              {/* Owner/manager sets this - never the staff member
+                  themselves, per explicit request. */}
+              <label className="mt-1 block cursor-pointer text-xs font-medium text-brass hover:underline focus-within:ring-2 focus-within:ring-brass">
+                {uploadingAvatar ? t('Uploading…') : s.avatar_url ? t('Change photo') : t('Add photo')}
+                <input type="file" accept="image/*" className="hidden" disabled={uploadingAvatar} onChange={onAvatarPick} />
+              </label>
             </div>
           </div>
           <button type="button" onClick={onClose} aria-label={t('Close')} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-ink hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">✕</button>
@@ -377,6 +376,20 @@ function StaffDetailPanel({ businessId, staffMember, currentUserId, isHotel, out
 
           {tab === 'overview' && (
             <>
+              <div className="space-y-1 text-sm">
+                <p className="flex items-center gap-2 text-ivory-dim">
+                  <span className="w-16 shrink-0 text-ivory-dim/60">{t('Email')}</span>
+                  <span className="truncate text-ivory">{s.email || '—'}</span>
+                </p>
+                <p className="flex items-center gap-2 text-ivory-dim">
+                  <span className="w-16 shrink-0 text-ivory-dim/60">{t('Phone')}</span>
+                  <span className="truncate text-ivory">{s.phone || t('Not set')}</span>
+                </p>
+              </div>
+              {/* Editable in Staff Documents, not here - contact info
+                  lives alongside the rest of this person's paperwork. */}
+              <p className="text-xs text-ivory-dim/70">{t('Set or update the phone number under HR > Staff Documents.')}</p>
+
               {s.role === 'staff' && s.full_access && (
                 <p className="text-sm text-brass">{t('Owner-equivalent access - sees and does everything the owner can, regardless of assigned sections.')}</p>
               )}

@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
-  getBusiness, listStaff,
+  getBusiness, listStaff, setStaffPhone,
   listStaffDocuments, uploadStaffDocument, deleteStaffDocument, type StaffDocument,
   setStaffCommission, getCommissionReport, type CommissionReportRow,
   listTipDistributions, createTipDistribution, type TipDistribution,
@@ -102,12 +102,31 @@ function DocumentsTab({ businessId }: { businessId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [contactStaffId, setContactStaffId] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
 
   function reload() {
     listStaff(businessId).then(setStaff).catch(() => {});
     listStaffDocuments(businessId).then(setDocuments).catch(() => {});
   }
   useEffect(reload, [businessId]);
+
+  const contactStaff = staff.find((s) => s.id === contactStaffId) || null;
+  useEffect(() => {
+    setPhoneInput(contactStaff?.phone || '');
+  }, [contactStaff?.id, contactStaff?.phone]);
+
+  async function handleSavePhone() {
+    if (!contactStaffId) return;
+    setSavingPhone(true);
+    try {
+      await setStaffPhone(businessId, contactStaffId, phoneInput.trim() || null);
+      setStaff((prev) => prev.map((s) => (s.id === contactStaffId ? { ...s, phone: phoneInput.trim() || null } : s)));
+    } finally {
+      setSavingPhone(false);
+    }
+  }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -142,7 +161,33 @@ function DocumentsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title={t('Staff Documents')}>
+    <div className="space-y-6">
+      {/* Contact info - email comes from how they signed up and isn't
+          editable here, but phone is recorded by an owner/manager, same
+          as everything else on this page. */}
+      <Section title={t('Contact info')}>
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label={t('Staff member')}>
+            <select value={contactStaffId} onChange={(e) => setContactStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              <option value="">{t('Select...')}</option>
+              {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+          {contactStaff && (
+            <>
+              <Field label={t('Email')}><p className="px-1 py-2 text-base text-ivory-dim">{contactStaff.email || '—'}</p></Field>
+              <Field label={t('Phone')}>
+                <input value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder={t('+971...')} className={inputClass} />
+              </Field>
+              <button type="button" onClick={handleSavePhone} disabled={savingPhone} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                {savingPhone ? t('Saving...') : t('Save')}
+              </button>
+            </>
+          )}
+        </div>
+      </Section>
+
+      <Section title={t('Staff Documents')}>
       <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
         <Field label={t('Staff member')}>
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
@@ -187,7 +232,8 @@ function DocumentsTab({ businessId }: { businessId: string }) {
         })}
         {documents.length === 0 && <p className="text-ivory-dim">{t('No documents uploaded yet.')}</p>}
       </div>
-    </Section>
+      </Section>
+    </div>
   );
 }
 

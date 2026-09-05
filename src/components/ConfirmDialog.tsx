@@ -42,7 +42,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
       {children}
       {state && (
         <div
-          className="fixed inset-0 z-modal-backdrop flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-confirm flex items-center justify-center bg-black/50 p-4"
           onClick={() => handle(false)}
         >
           <div

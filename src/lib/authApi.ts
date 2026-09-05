@@ -1168,13 +1168,23 @@ export function setMyNavLayout(businessId: string, userId: string, layout: { hid
   });
 }
 
-// Self-service profile picture - same pattern as setMyNavLayout. The
-// file itself is uploaded to Supabase Storage client-side first (see
+// Owner/manager sets a team member's photo - deliberately not
+// self-service (see staffController.js's setStaffAvatar). The file
+// itself is uploaded to Supabase Storage client-side first (see
 // uploadBusinessFile); this just records the resulting URL.
-export function setMyAvatar(businessId: string, userId: string, avatarUrl: string | null) {
+export function setStaffAvatar(businessId: string, userId: string, avatarUrl: string | null) {
   return authFetch<{ id: string; avatar_url: string | null }>(`/api/businesses/${businessId}/staff/${userId}/avatar`, {
     method: 'PATCH',
     body: JSON.stringify({ avatarUrl }),
+  });
+}
+
+// Same pattern as setStaffAvatar - an owner/manager records a team
+// member's contact phone number.
+export function setStaffPhone(businessId: string, userId: string, phone: string | null) {
+  return authFetch<{ id: string; phone: string | null }>(`/api/businesses/${businessId}/staff/${userId}/phone`, {
+    method: 'PATCH',
+    body: JSON.stringify({ phone }),
   });
 }
 

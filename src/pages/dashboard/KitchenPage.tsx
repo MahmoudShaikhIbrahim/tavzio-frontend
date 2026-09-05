@@ -67,29 +67,30 @@ export default function KitchenPage() {
   const [reprintingId, setReprintingId] = useState<string | null>(null);
   useTicker();
 
-  // The real, second half of the "Start reverts to New" bug: merging the
-  // two fetches into one setOrders call (below) stopped them from
-  // overwriting EACH OTHER, but a reload can still be in flight when you
-  // tap Start - the 5s polling fallback or an unrelated realtime ping
-  // fires reload() constantly in the background. That in-flight fetch
-  // started reading the database a moment BEFORE your tap reached it, so
-  // it still shows the ticket as pending; when it resolves a beat later,
-  // it stomps the optimistic "preparing" state right back to pending -
-  // exactly the flicker being reported.
+  // The real, still-unfixed half of the "Start reverts to New" bug:
+  // merging the two fetches into one setOrders call (below) stopped them
+  // from overwriting EACH OTHER, but the actual race is against the PATCH
+  // itself. The 5s polling fallback runs completely independently of any
+  // tap - if it fires a GET a moment after Start is pressed but BEFORE
+  // the PATCH has actually committed on the server, that GET still
+  // legitimately reads "pending" (the database hasn't changed yet), and
+  // there is no way to tell that apart from a genuinely fresh, correct
+  // read just by timestamps. A previous fix tried exactly that (compare
+  // when the fetch started vs. when the tap happened) and it wasn't
+  // enough - a fetch that starts AFTER the tap can still resolve with
+  // stale pre-commit data.
   //
-  // Fix: every optimistic change records what it wants (status, or
-  // "removed" for Mark ready) and when it happened. Any reload that
-  // *started* before that moment gets its result for that one ticket
-  // overridden back to the optimistic value when it resolves - it was
-  // reading stale data and has no business overwriting a newer local
-  // change. Once a reload that started AFTER the change resolves and
-  // agrees with it, the override is cleared - from then on the server is
-  // trusted again for that ticket.
-  const optimisticRef = useRef(new Map<string, { status: 'preparing' | 'removed'; at: number }>());
+  // The actual fix: don't try to guess which read is "newer" at all.
+  // Every optimistic change stays forced onto the merged result on EVERY
+  // reload, unconditionally, until a reload's real data agrees with it -
+  // only then does the override clear and the server become trusted
+  // again for that ticket. This can never go stale in the wrong
+  // direction: a still-outstanding optimistic change always wins,
+  // regardless of how many reloads land while the PATCH is in flight.
+  const optimisticRef = useRef(new Map<string, 'preparing' | 'removed'>());
 
   function reload() {
     if (!businessId) return;
-    const requestedAt = Date.now();
     // Both statuses fetched together and merged in a single setOrders
     // call - fetching them as two independent async calls that each
     // called setOrders on their own was the first half of the bug:
@@ -100,30 +101,30 @@ export default function KitchenPage() {
       listOrders(businessId, 'pending').catch(() => [] as OrderRow[]),
       listOrders(businessId, 'preparing').catch(() => [] as OrderRow[]),
     ]).then(([pendingRows, preparingRows]) => {
-      const byId = new Map([...pendingRows, ...preparingRows].map((o) => [o.id, o]));
-      optimisticRef.current.forEach((opt, id) => {
-        if (opt.at > requestedAt) {
-          // This fetch started before the optimistic change - it can't
-          // be trusted for this one ticket. Keep showing what the tap
-          // asked for.
-          if (opt.status === 'removed') byId.delete(id);
-          else {
-            const known = byId.get(id);
-            if (known) byId.set(id, { ...known, status: opt.status });
+      setOrders((prev) => {
+        const byId = new Map([...pendingRows, ...preparingRows].map((o) => [o.id, o]));
+        optimisticRef.current.forEach((wantedStatus, id) => {
+          const fetched = byId.get(id);
+          const confirmed = wantedStatus === 'removed' ? !fetched : fetched?.status === wantedStatus;
+          if (confirmed) {
+            optimisticRef.current.delete(id);
+            return;
           }
-        } else {
-          // This fetch is newer than the optimistic change - if it
-          // agrees, the change is confirmed and the override is no
-          // longer needed.
-          const known = byId.get(id);
-          const confirmed = opt.status === 'removed' ? !known : known?.status === opt.status;
-          if (confirmed) optimisticRef.current.delete(id);
-        }
+          if (wantedStatus === 'removed') {
+            byId.delete(id);
+          } else {
+            // Fall back to the last known copy of this ticket (from the
+            // previous render) if this fetch didn't include it at all -
+            // still enough to keep showing it with the right status.
+            const known = fetched ?? prev.find((o) => o.id === id);
+            if (known) byId.set(id, { ...known, status: wantedStatus });
+          }
+        });
+        // Oldest ticket first, always - the one that's been waiting
+        // longest is the one that needs eyes on it first, same reason
+        // the age badge exists at all.
+        return [...byId.values()].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       });
-      // Oldest ticket first, always - the one that's been waiting longest
-      // is the one that needs eyes on it first, same reason the age badge
-      // exists at all.
-      setOrders([...byId.values()].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
     });
   }
 
@@ -158,10 +159,11 @@ export default function KitchenPage() {
 
   async function handleStart(orderId: string) {
     if (!businessId) return;
-    optimisticRef.current.set(orderId, { status: 'preparing', at: Date.now() });
+    optimisticRef.current.set(orderId, 'preparing');
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'preparing' } : o)));
     try {
       await updateOrderStatus(businessId, orderId, 'preparing');
+      reload(); // confirm immediately rather than waiting on the next poll/realtime tick
     } catch {
       optimisticRef.current.delete(orderId);
       reload();
@@ -172,10 +174,11 @@ export default function KitchenPage() {
     if (!businessId) return;
     // Optimistic: gone from the screen the instant it's tapped, not after
     // waiting for the server to confirm and a fresh list to reload.
-    optimisticRef.current.set(orderId, { status: 'removed', at: Date.now() });
+    optimisticRef.current.set(orderId, 'removed');
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
     try {
       await updateOrderStatus(businessId, orderId, 'ready');
+      reload();
     } catch {
       optimisticRef.current.delete(orderId);
       reload(); // put it back if the request actually failed
