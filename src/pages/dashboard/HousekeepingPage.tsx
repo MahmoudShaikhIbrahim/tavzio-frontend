@@ -41,9 +41,9 @@ export default function HousekeepingPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Housekeeping & Maintenance')}</h1>
-      <div className="flex gap-2 border-b border-ink-line">
+      <div className="flex flex-wrap gap-2">
         {(['housekeeping', 'maintenance', 'requests'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base capitalize ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`rounded-full px-3.5 py-2 text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {tabKey === 'requests' ? t('Guest Requests') : t(tabKey)}
           </button>
         ))}
@@ -119,7 +119,7 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
 
       <Section title={t('Housekeeping Tasks')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ New task')}</button>}>
         {showAdd && (
-          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
             <Field label={t('Room')}>
               <select value={roomId} onChange={(e) => setRoomId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 <option value="">{t('Select room...')}</option>
@@ -168,15 +168,15 @@ function HousekeepingTab({ businessId }: { businessId: string }) {
       {performance && performance.taskCount > 0 && (
         <Section title={t('Turnover performance (7 days)')}>
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Tasks completed')}</p>
               <p className="text-xl text-ivory">{performance.completedCount} / {performance.taskCount}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Avg time in queue')}</p>
               <p className="text-xl text-ivory">{performance.avgQueueTimeMins != null ? `${performance.avgQueueTimeMins} min` : t('n/a')}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Avg clean time')}</p>
               <p className="text-xl text-brass">{performance.avgCleanTimeMins != null ? `${performance.avgCleanTimeMins} min` : t('n/a')}</p>
             </div>
@@ -241,7 +241,7 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
     <div className="space-y-6">
       <Section title={t('Maintenance Tickets')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ New ticket')}</button>}>
         {showAdd && (
-          <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
+          <form onSubmit={handleAdd} className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
             <div className="flex flex-wrap items-end gap-3">
               <Field label={t('Title')}><input value={title} onChange={(e) => setTitle(e.target.value)} required className={inputClass} /></Field>
               <Field label={t('Priority')}>
@@ -297,19 +297,19 @@ function MaintenanceTab({ businessId }: { businessId: string }) {
         <Section title={t('Maintenance performance (30 days)')}>
           {performance.urgentOpenCount > 0 && <p className="text-sm text-danger">{performance.urgentOpenCount} {t('urgent ticket(s) still open.')}</p>}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Resolved')}</p>
               <p className="text-xl text-ivory">{performance.resolvedCount} / {performance.ticketCount}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Avg time to start')}</p>
               <p className="text-xl text-ivory">{performance.avgQueueTimeMins != null ? `${performance.avgQueueTimeMins} min` : t('n/a')}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Avg repair time')}</p>
               <p className="text-xl text-ivory">{performance.avgRepairTimeMins != null ? `${performance.avgRepairTimeMins} min` : t('n/a')}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Total cost')}</p>
               <p className="text-xl text-brass">AED {performance.totalActualCostAed.toFixed(2)}</p>
             </div>

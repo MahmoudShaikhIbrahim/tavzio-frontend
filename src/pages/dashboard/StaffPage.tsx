@@ -312,14 +312,20 @@ export default function StaffPage() {
         )}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {staff.map((s) => (
-            <div key={s.id} className="rounded-lg border border-ink-line px-5 py-4 text-base">
-              <div className="flex items-center justify-between">
-                <span className="text-ivory">
-                  {s.name} <span className="text-ivory-dim">· {s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</span>
-                  {!s.is_active && <span className="ml-2 text-base text-danger">{t('deactivated')}</span>}
-                  {s.full_access && <span className="ml-2 rounded-full bg-brass/20 px-2 py-0.5 text-sm text-brass">{t('Full access')}</span>}
-                  {s.is_org_owner && <span className="ml-2 rounded-full bg-brass/20 px-2 py-0.5 text-sm text-brass">{t('Org Owner')}</span>}
+            <div key={s.id} className={`rounded-2xl border px-5 py-4 text-base shadow-sm ${s.is_active ? 'border-ink-line' : 'border-ink-line opacity-60'}`}>
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+                  {s.name.trim()[0]?.toUpperCase() || '?'}
                 </span>
+                <div className="min-w-0">
+                  <p className="truncate text-ivory">{s.name}</p>
+                  <p className="text-sm text-ivory-dim">{s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</p>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {!s.is_active && <span className="rounded-full border border-danger/40 px-2 py-0.5 text-xs text-danger">{t('deactivated')}</span>}
+                    {s.full_access && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{t('Full access')}</span>}
+                    {s.is_org_owner && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{t('Org Owner')}</span>}
+                  </div>
+                </div>
               </div>
               {s.role === 'staff' && s.full_access && (
                 <p className="mt-1 text-sm text-brass">
@@ -349,21 +355,28 @@ export default function StaffPage() {
                       : s.assigned_outlet_ids.map((id) => outlets.find((o) => o.id === id)?.name || id).join(', ')}
                 </p>
               )}
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <button type="button" onClick={() => handleResetPassword(s.id)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              {/* Real restructure: a wall of plain underlined text links
+                  all read with equal weight, whether "Reset PIN" or
+                  "Delete account" - small pill chips (the same shape
+                  every other action row in this redesign uses) give each
+                  action a real tap target and let color alone separate
+                  routine actions from destructive ones, the same way a
+                  chat app's own settings rows do. */}
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-ink-line pt-3">
+                <button type="button" onClick={() => handleResetPassword(s.id)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Reset password')}
                 </button>
-                <button type="button" onClick={() => handleResetPin(s.id, s.name)} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                <button type="button" onClick={() => handleResetPin(s.id, s.name)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Reset PIN')}
                 </button>
-                <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {resendingId === s.id ? t('Resending...') : t('Resend invite')}
                 </button>
                 {organization && (
                   <button type="button"
                     disabled={togglingOrgOwnerId === s.id}
                     onClick={() => handleToggleOrgOwner(s)}
-                    className={`text-sm hover:underline disabled:opacity-50 ${s.is_org_owner ? 'text-danger' : 'text-brass'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+                    className={`rounded-full border px-2.5 py-1 text-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${s.is_org_owner ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
                   >
                     {togglingOrgOwnerId === s.id ? t('Updating...') : s.is_org_owner ? t('Revoke org owner') : t('Make org owner')}
                   </button>
@@ -373,14 +386,14 @@ export default function StaffPage() {
                     <button type="button"
                       disabled={togglingActiveId === s.id}
                       onClick={() => handleToggleActive(s)}
-                      className="text-sm text-ivory-dim hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                      className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {togglingActiveId === s.id ? t('Updating...') : s.is_active ? t('Deactivate') : t('Reactivate')}
                     </button>
                     <button type="button"
                       disabled={deletingId === s.id}
                       onClick={() => handleDeleteStaff(s)}
-                      className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                      className="rounded-full border border-danger/40 px-2.5 py-1 text-xs text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
                     >
                       {deletingId === s.id ? t('Deleting...') : t('Delete account')}
                     </button>
@@ -391,20 +404,20 @@ export default function StaffPage() {
                     <button type="button"
                       disabled={togglingFullAccessId === s.id}
                       onClick={() => handleToggleFullAccess(s)}
-                      className={`text-sm hover:underline disabled:opacity-50 ${s.full_access ? 'text-danger' : 'text-brass'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+                      className={`rounded-full border px-2.5 py-1 text-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${s.full_access ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
                     >
                       {togglingFullAccessId === s.id ? t('Updating...') : s.full_access ? t('Revoke full access') : t('Grant full access')}
                     </button>
                     <button type="button"
                       onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}
-                      className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                      className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${editingSectionsFor === s.id ? 'border-brass bg-brass/10 text-brass' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
                     >
                       {editingSectionsFor === s.id ? t('Close') : t('Assign sections')}
                     </button>
                     {isHotel && (
                       <button type="button"
                         onClick={() => setEditingOutletsFor(editingOutletsFor === s.id ? null : s.id)}
-                        className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                        className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${editingOutletsFor === s.id ? 'border-brass bg-brass/10 text-brass' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
                       >
                         {editingOutletsFor === s.id ? t('Close') : t('Assign outlets')}
                       </button>
@@ -451,7 +464,7 @@ export default function StaffPage() {
             {t('Restrict which sections they can see, starting from their very first login')}
           </label>
           {restrictOnInvite && (
-            <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-ink-line bg-ink-soft p-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-ink-line bg-ink-soft p-3 sm:grid-cols-3">
               {sectionOptionsFor(isHotel).map((opt) => (
                 <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
                   <input type="checkbox" checked={inviteSections.includes(opt.key)} onChange={() => toggleInviteSection(opt.key)} className="accent-brass" />
@@ -552,7 +565,7 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
     >
       <div className="grid gap-3 sm:grid-cols-3">
         {Object.values(totalsByStaff).map((staffTotal) => (
-          <div key={staffTotal.name} className="rounded-lg border border-ink-line px-4 py-3">
+          <div key={staffTotal.name} className="rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
             <p className="text-base text-ivory">{staffTotal.name}</p>
             <p className="text-sm text-brass">{staffTotal.hours.toFixed(1)} hrs</p>
           </div>
@@ -617,7 +630,7 @@ function OrgOwnerAppointForm({ businessId, existingStaff, hasOrganization, onApp
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
       {!hasOrganization && (
         <Field label={t('Organization name (optional - defaults to this business\'s name)')}>
           <input value={orgName} onChange={(e) => setOrgName(e.target.value)} className={inputClass} />
@@ -694,7 +707,7 @@ function SectionAssignmentForm({ businessId, staffMember, isHotel, onSaved }: {
   }
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
+    <div className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
       <p className="text-sm text-ivory-dim">{t("Only checked sections will appear on this account's dashboard.")}</p>
       <div className="grid grid-cols-2 gap-1.5">
         {sectionOptionsFor(isHotel).map((opt) => (
@@ -758,7 +771,7 @@ function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
   }
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-ink-line bg-ink-soft p-3">
+    <div className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
       <p className="text-sm text-ivory-dim">
         {t('Only checked outlets can be selected when this account opens a till - e.g. a beach attendant checked only for "Pool Bar" can never open the Lobby\'s till.')}
       </p>

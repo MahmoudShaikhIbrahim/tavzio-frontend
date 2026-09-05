@@ -156,15 +156,15 @@ export default function LoyaltyWidget({ slug, businessId, program, tapEventId }:
 
   if (autoChecking) {
     return (
-      <div className="rounded-xl border border-brass/30 bg-ink-soft p-5">
+      <div className="rounded-2xl border border-brass/30 bg-ink-soft p-5 shadow-sm">
         <p className="font-mono text-[11px] uppercase tracking-wider text-brass">{t('loyalty')}</p>
-        <div className="mt-3 h-16 animate-pulse rounded-lg bg-ink" />
+        <div className="mt-3 h-16 animate-pulse rounded-2xl bg-ink" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-brass/30 bg-ink-soft p-5">
+    <div className="rounded-2xl border border-brass/30 bg-ink-soft p-5 shadow-sm">
       <p className="font-mono text-[11px] uppercase tracking-wider text-brass">{t('loyalty')}</p>
 
       {!membership && step === 'phone' && (
@@ -179,14 +179,14 @@ export default function LoyaltyWidget({ slug, businessId, program, tapEventId }:
             placeholder={t('phoneNumber')}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory
+            className="w-full rounded-full border border-ink-line bg-ink px-4 py-2.5 text-ivory
                        placeholder:text-ivory-dim/60 focus:border-brass"
           />
           {error && <p className="text-sm text-danger">{error}</p>}
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity
+            className="w-full rounded-full bg-brass px-4 py-2.5 font-medium text-ink transition-opacity
                        hover:opacity-90 disabled:opacity-50"
           >
             {status === 'loading' ? t('checking') : tapEventId ? t('startEarning') : t('checkStatus')}
@@ -207,14 +207,14 @@ export default function LoyaltyWidget({ slug, businessId, program, tapEventId }:
             placeholder={t('tbEnterCode')}
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-            className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-center text-xl tracking-[0.3em] text-ivory placeholder:text-sm placeholder:tracking-normal placeholder:text-ivory-dim/60
+            className="w-full rounded-full border border-ink-line bg-ink px-3.5 py-2.5 text-center text-xl tracking-[0.3em] text-ivory placeholder:text-sm placeholder:tracking-normal placeholder:text-ivory-dim/60
                        focus:border-brass"
           />
           {error && <p className="text-sm text-danger">{error}</p>}
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity
+            className="w-full rounded-full bg-brass px-4 py-2.5 font-medium text-ink transition-opacity
                        hover:opacity-90 disabled:opacity-50"
           >
             {status === 'loading' ? t('checking') : t('verify')}
@@ -238,13 +238,13 @@ export default function LoyaltyWidget({ slug, businessId, program, tapEventId }:
         <div className="mt-3 space-y-3">
           {/* Threshold reward - one-time, claimed then reset */}
           {rewardReady && !pendingClaim && (
-            <div className="space-y-2 rounded-lg border border-brass bg-brass/10 px-3.5 py-2.5 text-sm text-brass-bright">
+            <div className="space-y-2 rounded-2xl border border-brass bg-brass/10 px-3.5 py-2.5 shadow-sm text-sm text-brass-bright">
               <p>{t('rewardUnlocked')} — {reward?.description || t('yourReward')}</p>
               {tapEventId && (
                 <button type="button"
                   onClick={handleClaim}
                   disabled={claiming}
-                  className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink disabled:opacity-50"
+                  className="w-full rounded-full bg-brass px-3 py-2 text-sm font-medium text-ink disabled:opacity-50"
                 >
                   {claiming ? t('claiming') : t('claimReward')}
                 </button>
@@ -252,13 +252,13 @@ export default function LoyaltyWidget({ slug, businessId, program, tapEventId }:
             </div>
           )}
           {rewardReady && pendingClaim && (
-            <div className="rounded-lg border border-brass bg-brass/10 px-3.5 py-2.5 text-sm text-brass-bright">
+            <div className="rounded-2xl border border-brass bg-brass/10 px-3.5 py-2.5 text-sm text-brass-bright shadow-sm">
               <p>{t('rewardClaimed')} — {reward?.description || t('yourReward')}</p>
               <p className="mt-1 text-xs text-ivory-dim">{t('rewardClaimedPendingNote')}</p>
             </div>
           )}
           {!rewardReady && alreadyCounted && (
-            <div className="rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-sm text-ivory-dim">
+            <div className="rounded-2xl border border-ink-line bg-ink px-3.5 py-2.5 text-sm text-ivory-dim shadow-sm">
               {t('alreadyCountedToday')}
             </div>
           )}

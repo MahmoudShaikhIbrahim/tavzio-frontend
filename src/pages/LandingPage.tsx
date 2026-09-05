@@ -129,7 +129,7 @@ function LandingPageContent({ business, tapEventId, slug, onBusinessUpdate }: {
         </div>
 
         {/* Plain external links */}
-        <div className="mt-5 space-y-4">
+        <div className="mt-5 space-y-2.5">
           {enabledLinks.map((key) => (
             <LinkButton
               key={key}

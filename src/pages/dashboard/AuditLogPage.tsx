@@ -69,7 +69,7 @@ export default function AuditLogPage() {
         {entries.map((e) => {
           const { label, description } = describeAction(e, t);
           return (
-            <div key={e.id} className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
+            <div key={e.id} className="rounded-2xl border border-ink-line px-3.5 py-2.5 text-base shadow-sm">
               <div className="flex items-center justify-between">
                 <span className={`rounded-full border px-2 py-0.5 text-sm ${ACTION_STYLE[e.action]}`}>
                   {label}

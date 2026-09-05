@@ -90,7 +90,7 @@ function ConnectionsSection({ businessId }: { businessId: string }) {
           {allChannels.map((channel) => {
             const conn = connections.find((c) => c.channel === channel);
             return (
-              <div key={channel} className="rounded-lg border border-ink-line p-3">
+              <div key={channel} className="rounded-2xl border border-ink-line p-3 shadow-sm">
                 <p className="text-base text-ivory">{CHANNEL_LABELS[channel]}</p>
                 {conn ? (
                   <>
@@ -138,7 +138,7 @@ function ConnectForm({ businessId, channel, onClose, onSaved }: {
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-ink-line p-4">
+    <div className="mt-3 rounded-2xl border border-ink-line p-4 shadow-sm">
       <p className="mb-3 text-base text-ivory">Connect {CHANNEL_LABELS[channel]}</p>
       <div className="flex flex-wrap items-end gap-3">
         <Field label="API key" className="w-56"><PasswordField value={apiKey} onChange={setApiKey} required={false} autoComplete="off" /></Field>
@@ -235,7 +235,7 @@ function InboundBookingsSection({ businessId }: { businessId: string }) {
       {!loading && (
         <div className="space-y-2">
           {bookings.map((b) => (
-            <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-line p-3">
+            <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink-line p-3 shadow-sm">
               <div>
                 <p className="text-base text-ivory">{b.guest_name} — {CHANNEL_LABELS[b.channel_connections?.channel ?? 'other']}</p>
                 <p className="text-sm text-ivory-dim">

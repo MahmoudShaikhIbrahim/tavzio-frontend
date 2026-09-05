@@ -93,7 +93,7 @@ function ChartOfAccountsSection({ businessId }: { businessId: string }) {
       </div>
     }>
       {adding && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <Field label="Code"><input value={code} onChange={(e) => setCode(e.target.value)} className={`${inputClass} w-24`} /></Field>
           <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} w-48`} /></Field>
           <Field label="Type">
@@ -116,7 +116,7 @@ function ChartOfAccountsSection({ businessId }: { businessId: string }) {
             const group = accounts.filter((a) => a.account_type === type);
             if (group.length === 0) return null;
             return (
-              <div key={type} className="rounded-lg border border-ink-line p-3">
+              <div key={type} className="rounded-2xl border border-ink-line p-3 shadow-sm">
                 <p className="mb-2 text-sm capitalize text-ivory-dim">{type}</p>
                 {group.map((a) => (
                   <p key={a.id} className="text-sm text-ivory">{a.code} — {a.name}</p>
@@ -163,7 +163,7 @@ function JournalEntriesSection({ businessId }: { businessId: string }) {
       {!loading && (
         <div className="space-y-2">
           {entries.map((e) => (
-            <div key={e.id} className="rounded-lg border border-ink-line p-3">
+            <div key={e.id} className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-base text-ivory">{new Date(e.entry_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} {e.reference && `— ${e.reference}`}</p>
@@ -229,7 +229,7 @@ function NewJournalEntryForm({ businessId, accounts, onSaved }: { businessId: st
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex flex-wrap items-end gap-3">
         <Field label="Date"><input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className={`${inputClass} w-40`} /></Field>
         <Field label="Reference"><input value={reference} onChange={(e) => setReference(e.target.value)} className={`${inputClass} w-32`} /></Field>
@@ -357,13 +357,13 @@ function VendorsAndBillsSection({ businessId }: { businessId: string }) {
       </div>
     }>
       {addingVendor && (
-        <div className="flex items-end gap-3 rounded-lg border border-ink-line p-3">
+        <div className="flex items-end gap-3 rounded-2xl border border-ink-line p-3 shadow-sm">
           <Field label="Vendor name"><input value={vendorName} onChange={(e) => setVendorName(e.target.value)} className={`${inputClass} w-48`} /></Field>
           <PrimaryButton onClick={handleAddVendor}>Add</PrimaryButton>
         </div>
       )}
       {addingBill && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-3">
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-3 shadow-sm">
           <Field label="Vendor">
             <select value={billVendorId} onChange={(e) => setBillVendorId(e.target.value)} className={`${inputClass} w-48 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <option value="">Select...</option>
@@ -437,7 +437,7 @@ function ArInvoicesSection({ businessId }: { businessId: string }) {
   return (
     <Section title="Receivables" action={<ActionButton onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : 'Add invoice'}</ActionButton>}>
       {adding && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-3">
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-3 shadow-sm">
           <Field label="Customer"><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={`${inputClass} w-48`} /></Field>
           <Field label="Due date"><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={`${inputClass} w-40`} /></Field>
           <Field label="Amount (AED)"><input type="number" value={amount} onFocus={(e) => e.target.select()} onChange={(e) => setAmount(e.target.value)} className={`${inputClass} w-32`} /></Field>

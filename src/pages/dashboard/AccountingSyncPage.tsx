@@ -75,7 +75,7 @@ export default function AccountingSyncPage() {
       </p>
 
       {!connected ? (
-        <div className="rounded-lg border border-ink-line p-4">
+        <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
           <p className="text-base text-ivory">{t('Not connected')}</p>
           <p className="mt-1 text-sm text-ivory-dim">{t("You'll be sent to Zoho to approve access to your own Zoho Books account.")}</p>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}

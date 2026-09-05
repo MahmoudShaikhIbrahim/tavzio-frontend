@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Plus, LayoutGrid, X as XIcon, Wifi, Merge } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import {
@@ -19,6 +20,13 @@ const STATUS_COLOR: Record<string, string> = {
   occupied: 'border-brass text-brass',
   reserved: 'border-warning/50 text-warning',
   cleaning: 'border-ivory-dim/50 text-ivory-dim',
+};
+
+const STATUS_DOT: Record<string, string> = {
+  available: 'bg-success',
+  occupied: 'bg-brass',
+  reserved: 'bg-warning',
+  cleaning: 'bg-ivory-dim',
 };
 
 // Real, independent tables now - a table exists on its own, whether or
@@ -186,11 +194,13 @@ export default function TableManagementPage() {
               actually see on the flip page's Tables Map side - separate
               from adding/editing tables themselves, which stays exactly
               as it already works below. */}
-          <button type="button" onClick={() => setShowFloorEditor(true)} className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={() => setShowFloorEditor(true)} className="flex items-center gap-1.5 rounded-full border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            <LayoutGrid size={14} />
             {t('Arrange floor plan')}
           </button>
-          <button type="button" onClick={() => setShowAddTable((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-            {t('+ Add table')}
+          <button type="button" onClick={() => setShowAddTable((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            <Plus size={14} />
+            {t('Add table')}
           </button>
         </div>
       }>
@@ -203,31 +213,34 @@ export default function TableManagementPage() {
           {tables.filter((t) => !t.mergedWithTableId).map((table) => {
             const mergedInto = tables.find((tt) => tt.mergedWithTableId === table.id);
             return (
-              <div key={table.id} className={`rounded-xl border p-4 ${STATUS_COLOR[table.status]}`}>
+              <div key={table.id} className={`rounded-2xl border bg-ink-soft p-4 shadow-sm ${STATUS_COLOR[table.status]}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-base font-medium text-ivory">{table.label}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[table.status]}`} />
+                    <p className="text-base font-medium text-ivory">{table.label}</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleDeleteTable(table)}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs text-ivory-dim hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
                     title={t('Delete table')}
                     aria-label={t('Delete table')}
-                  >✕</button>
+                  ><XIcon size={13} /></button>
                 </div>
-                <p className="text-sm">{t(table.status)}{table.seatCount > 0 && ` · ${table.seatCount} ${t('seats')}`}</p>
+                <p className="mt-0.5 text-sm text-ivory-dim">{t(table.status)}{table.seatCount > 0 && ` · ${table.seatCount} ${t('seats')}`}</p>
 
                 {/* Real, always-visible connection status - the actual
                     point of this whole redesign: a table with no card
                     is a completely normal, valid state, not an error. */}
                 {table.card ? (
-                  <div className="mt-2 flex items-center justify-between rounded-lg bg-ink/40 px-2 py-1.5">
-                    <span className="text-xs text-success">{t('Connected')} · {table.card.uid}</span>
-                    <button type="button" onClick={() => handleDisconnectCard(table)} className="rounded text-xs text-ivory-dim hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Disconnect')}</button>
+                  <div className="mt-2.5 flex items-center justify-between gap-2 rounded-full bg-ink px-3 py-1.5">
+                    <span className="flex items-center gap-1.5 truncate text-xs text-success"><Wifi size={12} /> {table.card.uid}</span>
+                    <button type="button" onClick={() => handleDisconnectCard(table)} className="shrink-0 text-xs text-ivory-dim hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Disconnect')}</button>
                   </div>
                 ) : connectingId === table.id ? (
                   <select
                     onChange={(e) => e.target.value && handleConnectCard(table.id, e.target.value)}
-                    className="mt-2 w-full rounded border border-brass/40 bg-ink px-2 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                    className="mt-2.5 w-full rounded-full border border-brass/40 bg-ink px-3 py-1.5 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     defaultValue=""
                     autoFocus
                   >
@@ -235,35 +248,36 @@ export default function TableManagementPage() {
                     {availableCards.map((c) => <option key={c.id} value={c.id}>{c.uid}</option>)}
                   </select>
                 ) : (
-                  <button type="button" onClick={() => setConnectingId(table.id)} className="mt-2 w-full rounded-lg border border-brass/40 py-1 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-                    {t('+ Connect NFC card')}
+                  <button type="button" onClick={() => setConnectingId(table.id)} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-full border border-brass/40 py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                    <Wifi size={12} />
+                    {t('Connect NFC card')}
                   </button>
                 )}
 
                 {table.activeOrders.length > 0 && (
-                  <p className="mt-2 text-sm text-ivory-dim">
+                  <p className="mt-2.5 text-sm text-ivory-dim">
                     {table.activeOrders.length} {t('order')}{table.activeOrders.length === 1 ? '' : 's'} · AED {table.activeOrders.reduce((s, o) => s + o.total, 0).toFixed(2)}
                   </p>
                 )}
                 {mergedInto && <p className="mt-1 text-xs text-ivory-dim">+ {t('merged with')} {mergedInto.label}</p>}
 
-                <div className="mt-3 flex flex-wrap gap-1">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {(['available', 'occupied', 'reserved', 'cleaning'] as const).map((s) => (
                     <button type="button"
                       key={s}
                       onClick={() => handleStatusChange(table.id, s)}
-                      className={`rounded px-2 py-0.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${table.status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
+                      className={`rounded-full px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${table.status === s ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim'}`}
                     >
                       {t(s)}
                     </button>
                   ))}
                 </div>
 
-                <div className="mt-2">
+                <div className="mt-2.5">
                   {mergingId === table.id ? (
                     <select
                       onChange={(e) => e.target.value && handleMerge(table.id, e.target.value)}
-                      className="w-full rounded border border-ink-line bg-ink px-2 py-1 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                      className="w-full rounded-full border border-ink-line bg-ink px-3 py-1.5 text-xs text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                       defaultValue=""
                     >
                       <option value="">{t('Merge with...')}</option>
@@ -272,14 +286,17 @@ export default function TableManagementPage() {
                       ))}
                     </select>
                   ) : (
-                    <button type="button" onClick={() => setMergingId(table.id)} className="rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Merge table')}</button>
+                    <button type="button" onClick={() => setMergingId(table.id)} className="flex items-center gap-1 text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                      <Merge size={12} />
+                      {t('Merge table')}
+                    </button>
                   )}
                 </div>
               </div>
             );
           })}
           {tables.filter((table) => table.mergedWithTableId).map((table) => (
-            <div key={table.id} className="rounded-xl border border-ink-line p-4 opacity-60">
+            <div key={table.id} className="rounded-2xl border border-ink-line bg-ink-soft p-4 opacity-60">
               <p className="text-base text-ivory">{table.label}</p>
               <p className="text-sm text-ivory-dim">{t('merged into another table')}</p>
               <button type="button" onClick={() => handleUnmerge(table.id)} className="mt-2 rounded text-xs text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Unmerge')}</button>
@@ -289,33 +306,40 @@ export default function TableManagementPage() {
       </Section>
 
       <Section title={t('Waitlist')} action={
-        <button type="button" onClick={() => setShowAddWaitlist((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-          {t('+ Add to waitlist')}
+        <button type="button" onClick={() => setShowAddWaitlist((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <Plus size={14} />
+          {t('Add to waitlist')}
         </button>
       }>
         {showAddWaitlist && (
           <AddWaitlistForm businessId={businessId} onDone={() => { setShowAddWaitlist(false); reload(); }} />
         )}
         <div className="space-y-2">
-          {waitlist.filter((w) => w.status === 'waiting').map((entry) => (
-            <div key={entry.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3">
-              <div>
-                <p className="text-base text-ivory">{entry.guest_name} · {t('party of')} {entry.party_size}</p>
-                <p className="text-sm text-ivory-dim">{entry.phone} · {t('waiting')} {Math.round((Date.now() - new Date(entry.created_at).getTime()) / 60000)} min</p>
+          {waitlist.filter((w) => w.status === 'waiting').map((entry) => {
+            const initial = entry.guest_name.trim()[0]?.toUpperCase() || '?';
+            return (
+              <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink-line bg-ink-soft px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">{initial}</span>
+                  <div>
+                    <p className="text-base text-ivory">{entry.guest_name} · {t('party of')} {entry.party_size}</p>
+                    <p className="text-sm text-ivory-dim">{entry.phone} · {t('waiting')} {Math.round((Date.now() - new Date(entry.created_at).getTime()) / 60000)} min</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    onChange={(e) => e.target.value && handleSeat(entry.id, e.target.value)}
+                    className="rounded-full border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                    defaultValue=""
+                  >
+                    <option value="">{t('Seat at...')}</option>
+                    {availableTables.map((tbl) => <option key={tbl.id} value={tbl.id}>{tbl.label}</option>)}
+                  </select>
+                  <button type="button" onClick={() => handleCancelWaitlist(entry.id)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Cancel')}</button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <select
-                  onChange={(e) => e.target.value && handleSeat(entry.id, e.target.value)}
-                  className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-                  defaultValue=""
-                >
-                  <option value="">{t('Seat at...')}</option>
-                  {availableTables.map((tbl) => <option key={tbl.id} value={tbl.id}>{tbl.label}</option>)}
-                </select>
-                <button type="button" onClick={() => handleCancelWaitlist(entry.id)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">{t('Cancel')}</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {waitlist.filter((w) => w.status === 'waiting').length === 0 && <p className="text-ivory-dim">{t('Nobody waiting.')}</p>}
         </div>
       </Section>

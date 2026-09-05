@@ -57,18 +57,21 @@ export default function OrgOwnerLayout() {
             <button type="button" onClick={logout} className="rounded hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Sign out</button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5">
-          {TABS.map((t) => (
-            <Link
-              key={t.path}
-              to={`/admin/org/${t.path}`}
-              className={`border-b-2 px-3 py-2.5 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
-                location.pathname.startsWith(`/admin/org/${t.path}`) ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
-              }`}
-            >
-              {t.label}
-            </Link>
-          ))}
+        <nav className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-6 pb-3 pt-1.5" style={{ scrollbarWidth: 'thin' }}>
+          {TABS.map((t) => {
+            const active = location.pathname.startsWith(`/admin/org/${t.path}`);
+            return (
+              <Link
+                key={t.path}
+                to={`/admin/org/${t.path}`}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  active ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'
+                }`}
+              >
+                {t.label}
+              </Link>
+            );
+          })}
         </nav>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">

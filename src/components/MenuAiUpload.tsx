@@ -235,25 +235,25 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
         </p>
 
         {warnings.length > 0 && (
-          <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
+          <div className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
             {warnings.map((w, i) => <p key={i}>{w}</p>)}
           </div>
         )}
 
         {unclear.length > 0 && (
-          <div className="space-y-3 rounded-lg border border-danger/40 bg-danger/10 p-4">
+          <div className="space-y-3 rounded-2xl border border-danger/40 bg-danger/10 p-4">
             <p className="text-sm text-danger">
               {unclear.length} photo{unclear.length === 1 ? '' : 's'} couldn't be read clearly —
               upload a better copy of each to include it. Only that one photo gets re-read, not the
               whole upload, so fixing this doesn't cost you for the photos that already came out fine.
             </p>
             {unclear.map((u) => (
-              <div key={u.imageIndex} className="flex items-center justify-between gap-3 rounded-lg border border-ink-line bg-ink px-4 py-3">
+              <div key={u.imageIndex} className="flex items-center justify-between gap-3 rounded-2xl border border-ink-line bg-ink px-4 py-3 shadow-sm">
                 <div>
                   <p className="text-sm text-ivory">Photo {u.imageIndex + 1}</p>
                   <p className="text-xs text-ivory-dim">{retryingSlot === u.imageIndex ? 'Re-reading…' : u.reason}</p>
                 </div>
-                <label className="shrink-0 cursor-pointer rounded-lg border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10">
+                <label className="shrink-0 cursor-pointer rounded-full border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10 focus-within:ring-2 focus-within:ring-brass">
                   Re-upload
                   <input
                     type="file"
@@ -270,20 +270,20 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
 
         <div className="space-y-6">
           {categories.map((category, ci) => (
-            <div key={ci} className="rounded-xl border border-ink-line p-4">
+            <div key={ci} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <div className="flex items-center gap-2">
                 <input
                   value={category.name}
                   onChange={(e) => updateCategoryName(ci, e.target.value)}
                   placeholder="Category name"
-                  className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base font-medium text-ivory"
+                  className="flex-1 rounded-full border border-ink-line bg-ink px-4 py-2 text-base font-medium text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 />
-                <button type="button" onClick={() => removeCategory(ci)} className="shrink-0 text-sm text-danger">Remove</button>
+                <button type="button" onClick={() => removeCategory(ci)} className="shrink-0 rounded-full px-2 py-1 text-sm text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">Remove</button>
               </div>
 
               <div className="mt-3 space-y-3">
                 {category.items.map((item, ii) => (
-                  <div key={ii} className="flex items-start gap-3 rounded-lg border border-ink-line bg-ink-soft p-3">
+                  <div key={ii} className="flex items-start gap-3 rounded-2xl border border-ink-line bg-ink-soft p-3.5 shadow-sm">
                     <div className="w-14 shrink-0 space-y-1">
                       {item.photoUrl ? (
                         <img src={item.photoUrl} alt="" className="h-14 w-14 rounded-md object-cover" />
@@ -295,7 +295,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                       {item.lowResPhoto && (
                         <p className="text-center text-[10px] leading-tight text-warning">may look soft</p>
                       )}
-                      <label className="block cursor-pointer text-center text-xs font-medium leading-tight text-brass hover:underline">
+                      <label className="block cursor-pointer rounded-full text-center text-xs font-medium leading-tight text-brass hover:underline focus-within:ring-2 focus-within:ring-brass">
                         {replacingPhoto === `${ci}-${ii}` ? 'Uploading…' : item.photoUrl ? 'Replace' : 'Add photo'}
                         <input
                           type="file"
@@ -311,7 +311,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                         value={item.name}
                         onChange={(e) => updateItem(ci, ii, { name: e.target.value })}
                         placeholder="Item name"
-                        className="w-full rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory"
+                        className="w-full rounded-full border border-ink-line bg-ink px-3.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                       />
                       <div className="flex gap-2">
                         <input
@@ -321,10 +321,10 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                           value={item.price}
                           onChange={(e) => updateItem(ci, ii, { price: Number(e.target.value) })}
                           placeholder="Price"
-                          className="w-24 rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory"
+                          className="w-24 rounded-full border border-ink-line bg-ink px-3.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                         />
                         {item.currency && (
-                          <span className="flex items-center rounded-lg border border-warning/40 bg-warning/10 px-2 text-xs text-warning">
+                          <span className="flex items-center rounded-full border border-warning/40 bg-warning/10 px-2.5 text-xs text-warning">
                             {item.currency} — check this converts correctly to AED
                           </span>
                         )}
@@ -334,17 +334,17 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
                         onChange={(e) => updateItem(ci, ii, { description: e.target.value })}
                         placeholder="Description (leave blank if none)"
                         rows={2}
-                        className="w-full rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory"
+                        className="w-full rounded-2xl border border-ink-line bg-ink px-3.5 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                       />
                     </div>
-                    <button type="button" onClick={() => removeItem(ci, ii)} className="shrink-0 text-xs text-danger">Remove</button>
+                    <button type="button" onClick={() => removeItem(ci, ii)} className="shrink-0 rounded-full px-2 py-1 text-xs text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">Remove</button>
                   </div>
                 ))}
-                <button type="button" onClick={() => addItem(ci)} className="text-sm text-brass hover:underline">+ Add item</button>
+                <button type="button" onClick={() => addItem(ci)} className="rounded-full px-1 text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+ Add item</button>
               </div>
             </div>
           ))}
-          <button type="button" onClick={addCategory} className="text-sm text-brass hover:underline">+ Add category</button>
+          <button type="button" onClick={addCategory} className="rounded-full px-1 text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+ Add category</button>
         </div>
 
         {error && <p className="text-sm text-danger">{error}</p>}
@@ -368,7 +368,7 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
         invented. You'll review everything before it's published.
       </p>
 
-      <label className="block cursor-pointer rounded-xl border-2 border-dashed border-ink-line px-6 py-10 text-center hover:border-brass/40">
+      <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-ink-line px-6 py-10 text-center hover:border-brass/40 focus-within:ring-2 focus-within:ring-brass">
         <input type="file" multiple accept={ACCEPT} className="hidden" onChange={handleFilePick} />
         <p className="text-base text-ivory">Tap to choose files</p>
         <p className="mt-1 text-xs text-ivory-dim">PDF, Excel/CSV, or multiple photos</p>
@@ -377,9 +377,9 @@ export default function MenuAiUpload({ businessId, onPublished }: { businessId: 
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((f, i) => (
-            <div key={i} className="flex items-center justify-between rounded-lg border border-ink-line bg-ink-soft px-4 py-2 text-sm">
+            <div key={i} className="flex items-center justify-between rounded-2xl border border-ink-line bg-ink-soft px-4 py-2.5 text-sm shadow-sm">
               <span className="text-ivory">{f.name}</span>
-              <button type="button" onClick={() => removeFile(i)} className="text-danger">Remove</button>
+              <button type="button" onClick={() => removeFile(i)} className="rounded-full px-2 py-1 text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">Remove</button>
             </div>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Check, X as XIcon, Plus, Settings2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
@@ -81,11 +82,13 @@ export default function BookingsPage() {
     <div className="space-y-10">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-3xl text-ivory">{t('Bookings')}</h1>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setShowNewBooking((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-            {t('+ New booking')}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setShowNewBooking((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            <Plus size={14} />
+            {t('New booking')}
           </button>
-          <button type="button" onClick={() => setShowOnlineSettings((s) => !s)} className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={() => setShowOnlineSettings((s) => !s)} className="flex items-center gap-1.5 rounded-full border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            <Settings2 size={14} />
             {showOnlineSettings ? t('Close online booking settings') : t('Online booking settings')}
           </button>
           <ExportButtons businessId={businessId} kind="bookings" />
@@ -106,7 +109,7 @@ export default function BookingsPage() {
         <p className="text-ivory-dim">{t('No bookings yet - manual and online bookings will both show up here as they come in.')}</p>
       )}
 
-      <Group title={t('Needs a response')} bookings={pending} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} urgent />
+      <Group title={t('Needs a response')} bookings={pending} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} urgent tray />
       <Group title={t('Upcoming')} bookings={upcoming} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} />
       <Group title={t('History')} bookings={past.slice(0, 10)} businessId={businessId} tables={tables} onBookingsChange={setBookings} onChange={reload} />
     </div>
@@ -177,8 +180,8 @@ function NewBookingForm({ businessId, tables, onDone }: { businessId: string; ta
   );
 }
 
-function Group({ title, bookings, businessId, tables, onBookingsChange, onChange, urgent }: {
-  title: string; bookings: BookingRow[]; businessId: string; tables: FloorTable[]; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void; urgent?: boolean;
+function Group({ title, bookings, businessId, tables, onBookingsChange, onChange, urgent, tray }: {
+  title: string; bookings: BookingRow[]; businessId: string; tables: FloorTable[]; onBookingsChange: (updater: (prev: BookingRow[]) => BookingRow[]) => void; onChange: () => void; urgent?: boolean; tray?: boolean;
 }) {
   if (bookings.length === 0) return null;
   return (
@@ -187,9 +190,25 @@ function Group({ title, bookings, businessId, tables, onBookingsChange, onChange
         <h2 className={`font-mono text-[11px] uppercase tracking-wider ${urgent ? 'text-brass' : 'text-ivory-dim'}`}>{title}</h2>
         {urgent && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brass px-1.5 text-[11px] font-medium text-ink">{bookings.length}</span>}
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} tables={tables} onBookingsChange={onBookingsChange} onChange={onChange} />)}
-      </div>
+      {tray ? (
+        // The one section that needs eyes on it right now gets its own
+        // horizontally-scrolling tray instead of joining the vertical
+        // grid everything else uses - the same "the urgent stuff floats
+        // in its own row up top" shape a stories tray gives the things
+        // that need attention first, without shoving the rest of the
+        // page down every time a new request comes in.
+        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" style={{ scrollbarWidth: 'thin' }}>
+          {bookings.map((b) => (
+            <div key={b.id} className="w-72 shrink-0">
+              <BookingRowItem booking={b} businessId={businessId} tables={tables} onBookingsChange={onBookingsChange} onChange={onChange} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {bookings.map((b) => <BookingRowItem key={b.id} booking={b} businessId={businessId} tables={tables} onBookingsChange={onBookingsChange} onChange={onChange} />)}
+        </div>
+      )}
     </div>
   );
 }
@@ -234,9 +253,10 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
 
   const title = booking.guest_name || booking.service_name || t('Booking');
   const foodItems = booking.booking_items || [];
+  const initial = title.trim()[0]?.toUpperCase() || '?';
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-ink-line bg-ink-soft">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-ink-line bg-ink-soft shadow-sm">
       {/* Same device already used on Kitchen tickets for "this needs
           attention" - a real colored strip, not a new pattern invented
           just for this page, so the whole dashboard signals urgency the
@@ -244,15 +264,25 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
       <div className={`h-1.5 shrink-0 ${booking.status === 'pending' ? 'bg-brass' : 'bg-ink-line'}`} />
       <div className="flex flex-1 flex-col p-3 text-sm">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-ivory">
-            {title}
-            {booking.party_size ? <span className="text-ivory-dim"> · {t('party of')} {booking.party_size}</span> : null}
-          </p>
-          <p className="text-xs text-ivory-dim">
-            {new Date(booking.requested_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
-          </p>
-          {booking.contact_phone && <p className="text-xs text-ivory-dim">{booking.contact_phone}</p>}
+        <div className="flex min-w-0 items-start gap-2.5">
+          {/* A guest-initial "avatar" is the one thing that makes a grid
+              of otherwise near-identical cards scannable at a glance -
+              the same real device every contact/chat list uses to give
+              each row its own visual anchor before you've even read the
+              name next to it. */}
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+            {initial}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-ivory">
+              {title}
+              {booking.party_size ? <span className="text-ivory-dim"> · {t('party of')} {booking.party_size}</span> : null}
+            </p>
+            <p className="text-xs text-ivory-dim">
+              {new Date(booking.requested_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+            </p>
+            {booking.contact_phone && <p className="text-xs text-ivory-dim">{booking.contact_phone}</p>}
+          </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[booking.status]}`}>
@@ -316,14 +346,16 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
           <div className="flex gap-1.5">
             <button type="button"
               onClick={() => setStatus('confirmed')}
-              className="flex-1 rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brass px-3 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
+              <Check size={14} />
               {t('Confirm')}
             </button>
             <button type="button"
               onClick={handleDecline}
-              className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="flex items-center justify-center gap-1.5 rounded-full border border-danger/40 px-3 py-2 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
+              <XIcon size={14} />
               {t('Decline')}
             </button>
           </div>
@@ -333,7 +365,7 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
             onClick={handleConfirmArrival}
             disabled={confirmingArrival}
             title={t('I see the guest')}
-            className="w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
             {confirmingArrival ? t('Confirming...') : t('Confirm arrival')}
           </button>
@@ -341,8 +373,9 @@ function BookingRowItem({ booking, businessId, tables, onBookingsChange, onChang
         {booking.status === 'confirmed' && (
           <button type="button"
             onClick={() => setStatus('completed')}
-            className="mt-1.5 w-full rounded-lg border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+            className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-full border border-brass/40 px-3 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
+            <Check size={14} />
             {t('Mark completed')}
           </button>
         )}

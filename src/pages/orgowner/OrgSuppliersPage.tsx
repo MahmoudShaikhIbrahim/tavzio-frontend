@@ -52,10 +52,15 @@ export default function OrgSuppliersPage() {
                 onCancel={() => setEditingId(null)}
               />
             ) : (
-              <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3">
-                <div>
-                  <p className="text-base text-ivory">{s.name}</p>
-                  <p className="text-sm text-ivory-dim">{[s.contact_name, s.phone, s.email].filter(Boolean).join(' · ')}</p>
+              <div key={s.id} className="flex items-center justify-between rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+                    {s.name.trim()[0]?.toUpperCase() || '?'}
+                  </span>
+                  <div>
+                    <p className="text-base text-ivory">{s.name}</p>
+                    <p className="text-sm text-ivory-dim">{[s.contact_name, s.phone, s.email].filter(Boolean).join(' · ')}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setEditingId(s.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Edit</button>
@@ -94,7 +99,7 @@ function EditSupplierForm({ supplier, onSaved, onCancel }: { supplier: Supplier;
   }
 
   return (
-    <div className="rounded-lg border border-brass/30 bg-ink-soft p-4">
+    <div className="rounded-2xl border border-brass/30 bg-ink-soft p-4 shadow-sm">
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Supplier name"><input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
         <Field label="Contact name"><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
@@ -133,7 +138,7 @@ function AddSupplierForm({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Supplier name"><input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
         <Field label="Contact name"><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>

@@ -182,7 +182,7 @@ export default function PosIntegrationPage() {
           ))}
         </div>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
       </Section>

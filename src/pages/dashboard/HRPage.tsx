@@ -58,7 +58,7 @@ export default function HRPage() {
         <p className="text-ivory-dim">{t('No HR modules are turned on yet - enable one under Features.')}</p>
       ) : (
         <>
-          <div className="flex gap-1.5 border-b border-ink-line">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: 'thin' }}>
             {availableTabs.map((tabItem) => (
               <TabButton key={tabItem.key} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)}>{t(tabItem.label)}</TabButton>
             ))}
@@ -78,7 +78,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button type="button"
       onClick={onClick}
-      className={`border-b-2 px-2 py-1.5 text-sm sm:px-3 sm:py-2.5 sm:text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+      className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${active ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}
     >
       {children}
     </button>
@@ -138,7 +138,7 @@ function DocumentsTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Staff Documents')}>
-      <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+      <form onSubmit={handleUpload} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
         <Field label={t('Staff member')}>
           <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <option value="">{t('Select...')}</option>
@@ -163,7 +163,7 @@ function DocumentsTab({ businessId }: { businessId: string }) {
         {documents.map((d) => {
           const expiringSoon = d.expiry_date && new Date(d.expiry_date).getTime() - Date.now() < 30 * 86400000;
           return (
-            <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-4 py-3 text-base">
+            <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-ink-line px-4 py-3 text-base shadow-sm">
               <div>
                 <span className="text-ivory">{d.profiles?.name || t('Unknown')}</span>
                 <span className="text-ivory-dim"> · {d.doc_type}{d.label ? ` (${d.label})` : ''}</span>
@@ -219,7 +219,7 @@ function CommissionTab({ businessId }: { businessId: string }) {
           {staff.filter((s) => s.role === 'staff').map((s) => {
             const reportRow = report.find((r) => r.staffId === s.id);
             return (
-              <div key={s.id} className="rounded-lg border border-ink-line p-3">
+              <div key={s.id} className="rounded-2xl border border-ink-line p-3 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-base text-ivory">{s.name}</span>
                   {editingId === s.id ? (
@@ -328,15 +328,15 @@ function SchedulingTab({ businessId }: { businessId: string }) {
         <input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
         <span className="text-ivory-dim">{t('to')}</span>
         <input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2 py-1.5 text-sm text-ivory" />
-        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+ {t('Add shift')}</button>
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">+ {t('Add shift')}</button>
       </div>
     }>
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-ink-line p-3">
+        <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
           <p className="text-xs text-ivory-dim">{t('Scheduled hours')}</p>
           <p className="text-xl text-ivory">{totalHours}</p>
         </div>
-        <div className="rounded-lg border border-ink-line p-3">
+        <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
           <p className="text-xs text-ivory-dim">{t('Forecasted labor cost')}</p>
           <p className="text-xl text-brass">AED {totalForecastCostAed.toFixed(2)}</p>
         </div>
@@ -348,7 +348,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
       </div>
 
       {showAdd && (
-        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+        <form onSubmit={handleCreate} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <Field label={t('Staff')}>
             <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <option value="">{t('Select...')}</option>
@@ -366,7 +366,7 @@ function SchedulingTab({ businessId }: { businessId: string }) {
 
       <div className="space-y-2">
         {schedules.map((s) => (
-          <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
+          <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-ink-line px-3 py-2 text-sm shadow-sm">
             <span className="text-ivory">
               {s.staffName}{s.roleLabel ? ` · ${s.roleLabel}` : ''} — {new Date(s.scheduledStart).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
               {' - '}{new Date(s.scheduledEnd).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
@@ -425,7 +425,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
       <Section title={t('Hourly rates')}>
         <div className="space-y-2">
           {staff.filter((s) => s.role === 'staff').map((s) => (
-            <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line p-3">
+            <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-ink-line p-3 shadow-sm">
               <span className="text-base text-ivory">{s.name}</span>
               {editingId === s.id ? (
                 <div className="flex items-center gap-2">
@@ -458,15 +458,15 @@ function LaborCostTab({ businessId }: { businessId: string }) {
         {!loading && report && (
           <>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-ink-line p-3">
+              <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
                 <p className="text-xs text-ivory-dim">{t('Revenue')}</p>
                 <p className="text-xl text-ivory">AED {report.totalRevenueAed.toFixed(2)}</p>
               </div>
-              <div className="rounded-lg border border-ink-line p-3">
+              <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
                 <p className="text-xs text-ivory-dim">{t('Labor cost')}</p>
                 <p className="text-xl text-ivory">AED {report.totalLaborCostAed.toFixed(2)}</p>
               </div>
-              <div className="rounded-lg border border-ink-line p-3">
+              <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
                 <p className="text-xs text-ivory-dim">{t('Labor cost %')}</p>
                 <p className="text-xl text-brass">{report.laborCostPct != null ? `${report.laborCostPct}%` : t('n/a')}</p>
               </div>
@@ -479,7 +479,7 @@ function LaborCostTab({ businessId }: { businessId: string }) {
             )}
             <div className="space-y-1">
               {report.byStaff.map((s) => (
-                <div key={s.staffId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-line px-3 py-2 text-sm">
+                <div key={s.staffId} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-ink-line px-3 py-2 text-sm shadow-sm">
                   <span className="text-ivory">{s.name}{s.overtimeShifts > 0 ? ` (${s.overtimeShifts} ${t('overtime shift')}${s.overtimeShifts > 1 ? 's' : ''})` : ''}</span>
                   <span className="text-ivory-dim">{s.hours}h {s.hourlyRateAed != null ? `· AED ${s.costAed.toFixed(2)}` : `· ${t('no rate set')}`}</span>
                 </div>
@@ -541,9 +541,9 @@ function TipsTab({ businessId }: { businessId: string }) {
   }
 
   return (
-    <Section title={t('Tip Pooling')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Distribute tips')}</button>}>
+    <Section title={t('Tip Pooling')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Distribute tips')}</button>}>
       {showAdd && (
-        <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-ink-line p-4">
+        <form onSubmit={handleCreate} className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <div className="flex flex-wrap items-end gap-3">
             <Field label={t('Period start')}><input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
             <Field label={t('Period end')}><input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" /></Field>
@@ -574,7 +574,7 @@ function TipsTab({ businessId }: { businessId: string }) {
       )}
       <div className="space-y-3">
         {distributions.map((d) => (
-          <div key={d.id} className="rounded-lg border border-ink-line p-4">
+          <div key={d.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-base text-ivory">
                 AED {Number(d.total_amount_aed).toFixed(2)} · {new Date(d.period_start).toLocaleDateString('en-GB')} - {new Date(d.period_end).toLocaleDateString('en-GB')}

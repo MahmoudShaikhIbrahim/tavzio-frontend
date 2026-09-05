@@ -38,7 +38,7 @@ export default function MarketingPage() {
         <h1 className="font-display text-3xl text-ivory">{t('Marketing')}</h1>
         <p className="mt-1 text-base text-ivory-dim">{t('Owner-only.')}</p>
       </div>
-      <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-ivory-dim">
+      <div className="rounded-2xl border border-warning/30 bg-warning/5 p-4 text-sm text-ivory-dim shadow-sm">
         {t('Email campaigns send for real through your connected Gmail account. SMS campaigns can be built and staged here, but sending isn\'t connected yet - there\'s no SMS provider on this account. Connect one (e.g. Twilio) to enable real SMS sending.')}
       </div>
       <CampaignsSection businessId={businessId} category={business.category} />
@@ -101,7 +101,7 @@ function NewCampaignForm({ businessId, category, onSaved }: { businessId: string
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex flex-wrap items-end gap-3">
         <Field label={t('Campaign name')}><input value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} w-48`} /></Field>
         <Field label={t('Channel')}>
@@ -190,7 +190,7 @@ function CampaignRow({ businessId, campaign, onChanged }: { businessId: string; 
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-3">
+    <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-base text-ivory">{campaign.name} <span className="text-sm text-ivory-dim">({campaign.channel})</span></p>
@@ -250,7 +250,7 @@ function TemplatesSection({ businessId }: { businessId: string }) {
   return (
     <Section title={t('Templates')} action={<ActionButton onClick={() => setAdding(!adding)}>{adding ? t('Cancel') : t('New template')}</ActionButton>}>
       {adding && (
-        <div className="rounded-lg border border-ink-line p-4">
+        <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
           <div className="flex flex-wrap items-end gap-3">
             <Field label={t('Name')}><input value={name} onChange={(e) => setName(e.target.value)} className={`${inputClass} w-48`} /></Field>
             <Field label={t('Channel')}>
@@ -279,7 +279,7 @@ function TemplatesSection({ businessId }: { businessId: string }) {
       {!loading && (
         <div className="grid gap-2 sm:grid-cols-2">
           {templates.map((tpl) => (
-            <div key={tpl.id} className="rounded-lg border border-ink-line p-3">
+            <div key={tpl.id} className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-base text-ivory">{tpl.name} <span className="text-sm text-ivory-dim">({tpl.channel}, {tpl.category})</span></p>
               <p className="mt-1 text-sm text-ivory-dim line-clamp-2">{tpl.body}</p>
               <button type="button" onClick={() => handleDelete(tpl.id, tpl.name)} className="mt-1 text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
@@ -321,7 +321,7 @@ function SuppressionsSection({ businessId }: { businessId: string }) {
       {!loading && (
         <div className="space-y-1">
           {suppressions.map((s) => (
-            <div key={s.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2 text-sm">
+            <div key={s.id} className="flex items-center justify-between rounded-2xl border border-ink-line px-3 py-2 text-sm shadow-sm">
               <span className="text-ivory">{s.contact_value} <span className="text-ivory-dim">({s.channel}, {s.reason})</span></span>
               <button type="button" onClick={() => handleRemove(s.id, s.contact_value)} className="text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Remove')}</button>
             </div>

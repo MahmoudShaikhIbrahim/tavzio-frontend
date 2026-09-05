@@ -32,9 +32,9 @@ export default function BusinessProfilePage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Business Profile')}</h1>
-      <div className="flex gap-2 border-b border-ink-line">
+      <div className="flex gap-2">
         {(['profile', 'appearance', 'account'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -196,7 +196,7 @@ function ImageUploadField({ label, businessId, kind, value, onUploaded }: {
           />
         )}
         <div className="flex-1">
-          <label className="inline-block cursor-pointer rounded-lg border border-ink-line px-5 py-4 text-base text-ivory-dim hover:text-ivory">
+          <label className="inline-block cursor-pointer rounded-full border border-ink-line px-5 py-3 text-base text-ivory-dim hover:text-ivory">
             {uploading ? t('Uploading...') : value ? t('Replace image') : t('Upload image')}
             <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
           </label>
@@ -234,7 +234,7 @@ function ColorPairPicker({ title, description, background, button, onChange, pre
   const DEFAULT_BUTTON = '#b8925a';
 
   return (
-    <div className="space-y-3 rounded-xl border border-ink-line p-4">
+    <div className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-base font-medium text-ivory">{title}</p>
@@ -310,7 +310,7 @@ function AppearanceSection({ business, businessId, onSaved }: { business: AdminB
     <Section
       title={t('Appearance')}
       action={
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={handleSave} disabled={saving} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Saving...') : t('Save')}
         </button>
       }

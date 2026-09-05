@@ -211,7 +211,7 @@ function ProgramConfigForm({ businessId, program, onSaved }: {
             </p>
             <div className="space-y-2">
               {tiers.map((tier, i) => (
-                <div key={i} className="space-y-2 rounded-lg border border-ink-line p-3">
+                <div key={i} className="space-y-2 rounded-2xl border border-ink-line p-3 shadow-sm">
                   <div className="flex items-end gap-2">
                     <Field label={t('Tier name')}>
                       <input value={tier.name} onChange={(e) => updateTier(i, { name: e.target.value })} placeholder="Silver" className={`${inputClass} w-32`} />

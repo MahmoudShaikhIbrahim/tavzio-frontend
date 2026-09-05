@@ -64,7 +64,7 @@ export default function TapHandler() {
         <p className="mt-2 text-xs text-ivory-dim/70">{error}</p>
         <Link
           to="/"
-          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+          className="mt-4 rounded-full border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
         >
           Go to homepage
         </Link>

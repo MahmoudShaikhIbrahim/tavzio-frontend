@@ -36,9 +36,9 @@ export default function FrontDeskPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Front Desk')}</h1>
-      <div className="flex gap-2 border-b border-ink-line">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: 'thin' }}>
         {(['reservations', 'rooms', 'groups', 'guests', 'city-ledger', 'tourism-dirham'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -135,7 +135,7 @@ function ReservationsTab({ businessId, onOpenFolio }: { businessId: string; onOp
       {loading && <p className="text-ivory-dim">Loading...</p>}
       <div className="space-y-2">
         {reservations.map((r) => (
-          <div key={r.id} className="rounded-lg border border-ink-line p-4">
+          <div key={r.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-base text-ivory">{r.hotel_guests?.name || t('Guest')} · {r.check_in_date} → {r.check_out_date}</p>
@@ -290,7 +290,7 @@ function NewReservationForm({ businessId, rooms, onDone }: { businessId: string;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-ink-line p-4">
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex flex-wrap gap-3">
         <Field label={t('Guest')}>
           <select value={guestId} onChange={(e) => setGuestId(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
@@ -416,7 +416,7 @@ function RoomsTab({ businessId }: { businessId: string }) {
   return (
     <Section title={t('Rooms')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Add room')}</button>}>
       {showAdd && (
-        <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-ink-line p-4">
+        <form onSubmit={handleAdd} className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <div className="flex flex-wrap items-end gap-3">
             <Field label={t('Room number')}><input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} required className={inputClass} /></Field>
             <Field label={t('Type')}><input value={roomType} onChange={(e) => setRoomType(e.target.value)} className={inputClass} /></Field>
@@ -866,7 +866,7 @@ function GuestsTab({ businessId }: { businessId: string }) {
       />
       <div className="grid gap-2 sm:grid-cols-2">
         {guests.map((g) => (
-          <button type="button" key={g.id} onClick={() => setSelectedGuestId(g.id)} className="rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" key={g.id} onClick={() => setSelectedGuestId(g.id)} className="rounded-2xl border border-ink-line p-3 text-left shadow-sm transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <p className="text-base text-ivory">{g.name}{g.vip && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('VIP')}</span>}</p>
             <p className="text-sm text-ivory-dim">{[g.phone, g.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
           </button>
@@ -906,15 +906,15 @@ function GuestDetail({ businessId, guest, onBack, onSaved }: { businessId: strin
         <p className="text-sm text-ivory-dim">{[guest.phone, guest.email].filter(Boolean).join(' · ') || t('No contact details')}{guest.nationality && ` · ${guest.nationality}`}</p>
         {history && (
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Total stays')}</p>
               <p className="text-xl text-ivory">{history.totalStays}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Total nights')}</p>
               <p className="text-xl text-ivory">{history.totalNights}</p>
             </div>
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               <p className="text-xs text-ivory-dim">{t('Lifetime spend')}</p>
               <p className="text-xl text-brass">AED {history.lifetimeSpendAed.toFixed(2)}</p>
             </div>
@@ -988,7 +988,7 @@ function CityLedgerTab({ businessId }: { businessId: string }) {
       )}
       <div className="space-y-2">
         {entries.map((e) => (
-          <div key={e.id} className="rounded-lg border border-ink-line p-3">
+          <div key={e.id} className="rounded-2xl border border-ink-line p-3 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-base text-ivory">{e.companyName}{e.guestName ? ` · ${e.guestName}` : ''}</p>
@@ -1115,7 +1115,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
         {t('A wedding party, a corporate block - link several reservations under one group so they can be tracked together. Create the group here, then pick it from "Booking group" when creating each reservation.')}
       </p>
       {showAdd && (
-        <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+        <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <Field label={t('Group name')}><input value={groupName} onChange={(e) => setGroupName(e.target.value)} required placeholder="Al Mansoori Wedding" className={inputClass} /></Field>
           <Field label={t('Contact name')}><input value={contactName} onChange={(e) => setContactName(e.target.value)} className={inputClass} /></Field>
           <Field label={t('Contact phone')}><input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className={inputClass} /></Field>
@@ -1131,7 +1131,7 @@ function BookingGroupsTab({ businessId }: { businessId: string }) {
           }
           const reservations = g.hotel_reservations || [];
           return (
-            <div key={g.id} className="rounded-lg border border-ink-line p-4">
+            <div key={g.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-base text-ivory">{g.group_name}</p>
                 <div className="flex items-center gap-3 text-sm">

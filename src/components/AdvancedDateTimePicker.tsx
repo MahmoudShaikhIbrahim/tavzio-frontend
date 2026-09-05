@@ -63,7 +63,7 @@ export function AdvancedDatePicker({ value, onChange, minDate }: { value: string
       <button
         type="button"
         onClick={() => setOpen((s) => !s)}
-        className="flex w-full items-center gap-2.5 truncate rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-start text-sm text-ivory transition-colors hover:border-brass/40"
+        className="flex w-full items-center gap-2.5 truncate rounded-full border border-ink-line bg-ink-soft px-4 py-2.5 text-start text-sm text-ivory transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       >
         <Calendar size={16} strokeWidth={1.75} className="shrink-0 text-brass" />
         <span className={displayValue ? '' : 'text-ivory-dim/70'}>{displayValue || 'Select date'}</span>
@@ -72,11 +72,11 @@ export function AdvancedDatePicker({ value, onChange, minDate }: { value: string
       {open && (
         <div className="absolute z-dropdown mt-2 w-72 rounded-2xl border border-ink-line bg-ink-soft p-3 shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between px-1">
-            <button type="button" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))} className="rounded-lg p-1.5 text-ivory-dim hover:bg-ink hover:text-ivory">
+            <button type="button" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))} className="rounded-full p-1.5 text-ivory-dim hover:bg-ink hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <ChevronLeft size={16} />
             </button>
             <p className="font-display text-sm text-ivory">{MONTH_NAMES[viewMonth.getMonth()]} {viewMonth.getFullYear()}</p>
-            <button type="button" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))} className="rounded-lg p-1.5 text-ivory-dim hover:bg-ink hover:text-ivory">
+            <button type="button" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))} className="rounded-full p-1.5 text-ivory-dim hover:bg-ink hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <ChevronRight size={16} />
             </button>
           </div>
@@ -95,7 +95,7 @@ export function AdvancedDatePicker({ value, onChange, minDate }: { value: string
                   key={i}
                   disabled={disabled}
                   onClick={() => { onChange(toDateStr(cellDate)); setOpen(false); }}
-                  className={`flex h-9 items-center justify-center rounded-lg text-sm transition-colors ${
+                  className={`flex h-9 items-center justify-center rounded-full text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                     isSelected ? 'bg-brass font-medium text-ink'
                     : disabled ? 'cursor-not-allowed text-ivory-dim/25'
                     : isToday ? 'border border-brass/50 text-brass hover:bg-brass/10'
@@ -191,7 +191,7 @@ export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, star
       <button
         type="button"
         onClick={() => setOpen((s) => !s)}
-        className="flex w-full items-center gap-2.5 truncate rounded-lg border border-ink-line bg-ink-soft px-3 py-2.5 text-start text-sm text-ivory transition-colors hover:border-brass/40"
+        className="flex w-full items-center gap-2.5 truncate rounded-full border border-ink-line bg-ink-soft px-4 py-2.5 text-start text-sm text-ivory transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       >
         <Clock size={16} strokeWidth={1.75} className="shrink-0 text-brass" />
         <span className={value ? '' : 'text-ivory-dim/70'}>{value ? displayTime(value) : 'Select time'}</span>
@@ -207,7 +207,7 @@ export function AdvancedTimePicker({ value, onChange, intervalMinutes = 30, star
                 key={slot}
                 data-time={slot}
                 onClick={() => { onChange(slot); setOpen(false); }}
-                className={`w-full rounded-lg px-3 py-2 text-start text-sm transition-colors ${
+                className={`w-full rounded-xl px-3 py-2 text-start text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
                   slot === value ? 'bg-brass font-medium text-ink' : 'text-ivory hover:bg-ink'
                 }`}
               >

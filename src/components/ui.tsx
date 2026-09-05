@@ -29,7 +29,7 @@ export function Field({ label, className, children }: { label: string; className
 
 export function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-ink-line p-9">
+    <div className="rounded-2xl border border-ink-line p-9">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-xl text-ivory">{title}</h2>
         {action}
@@ -60,10 +60,10 @@ function Spinner({ className = '' }: { className?: string }) {
 // spinner automatically, so a page can adopt the richer state whenever
 // it touches that file next, not all at once.
 export function ActionButton({
-  children, onClick, disabled, danger, loading, type = 'button', size = 'md',
+  children, onClick, disabled, danger, loading, type = 'button', size = 'md', title, 'aria-label': ariaLabel,
 }: {
   children: ReactNode; onClick?: () => void; disabled?: boolean; danger?: boolean; loading?: boolean;
-  type?: 'button' | 'submit'; size?: 'sm' | 'md';
+  type?: 'button' | 'submit'; size?: 'sm' | 'md'; title?: string; 'aria-label'?: string;
 }) {
   const sizeClass = size === 'sm' ? 'px-2.5 py-1.5 text-sm' : 'px-3.5 py-2 text-base';
   return (
@@ -71,7 +71,14 @@ export function ActionButton({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex items-center gap-1.5 rounded-lg border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${sizeClass} ${PRESS_FEEDBACK} ${
+      title={title}
+      aria-label={ariaLabel}
+      // Pill-shaped everywhere this shared component is used (rounded-full,
+      // not rounded-lg) - one change here carries the same "no square
+      // buttons" language the rest of the redesign uses across every page
+      // that already renders an ActionButton, without needing to touch
+      // each of those pages individually.
+      className={`inline-flex items-center gap-1.5 rounded-full border disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${sizeClass} ${PRESS_FEEDBACK} ${
         danger ? 'border-danger/40 text-danger hover:bg-danger/10 focus-visible:ring-danger' : 'border-brass/40 text-brass hover:bg-brass/10 focus-visible:ring-brass'
       }`}
     >
@@ -92,7 +99,7 @@ export function PrimaryButton({
       type={type}
       disabled={disabled || loading}
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-1.5 rounded-lg bg-brass font-medium text-ink hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${sizeClass} ${PRESS_FEEDBACK}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-full bg-brass font-medium text-ink hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${sizeClass} ${PRESS_FEEDBACK}`}
     >
       {loading && <Spinner />}
       {children}
@@ -104,7 +111,7 @@ export function ToggleRow({ label, description, checked, onChange, disabled }: {
   label: string; description?: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-3 transition-colors duration-150 hover:border-ink-line/70">
+    <div className="flex items-center justify-between rounded-2xl border border-ink-line px-3.5 py-3 transition-colors duration-150 hover:border-ink-line/70">
       <div>
         <p className="text-base text-ivory">{label}</p>
         {description && <p className="text-sm text-ivory-dim">{description}</p>}
@@ -112,7 +119,7 @@ export function ToggleRow({ label, description, checked, onChange, disabled }: {
       <button type="button"
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`shrink-0 rounded-lg border px-3.5 py-2 text-base disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${PRESS_FEEDBACK} ${
+        className={`shrink-0 rounded-full border px-3.5 py-2 text-base disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${PRESS_FEEDBACK} ${
           checked ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'
         }`}
       >

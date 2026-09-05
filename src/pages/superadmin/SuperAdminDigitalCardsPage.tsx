@@ -53,20 +53,20 @@ export default function SuperAdminDigitalCardsPage() {
         Yours only - create a card for yourself, a teammate, or any professional identity. Normal Tavzio businesses each get exactly one card of their own, managed from their own Business Profile settings, not from here.
       </p>
 
-      <div className="mt-5 flex flex-wrap items-center gap-2 rounded-lg border border-ink-line p-3">
+      <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-ink-line p-3 shadow-sm">
         <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full name" className="flex-1 min-w-[10rem] rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory" />
         <select value={newType} onChange={(e) => setNewType(e.target.value as typeof newType)} className="rounded-lg border border-ink-line bg-ink-soft px-3.5 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value="person">Person</option>
           <option value="business">Business</option>
         </select>
-        <button type="button" disabled={creating || !newName.trim()} onClick={handleCreate} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" disabled={creating || !newName.trim()} onClick={handleCreate} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {creating ? 'Creating...' : '+ Create New Card'}
         </button>
       </div>
 
       <div className="mt-5 space-y-3">
         {cards.map((card) => (
-          <div key={card.id} className="rounded-lg border border-ink-line p-4">
+          <div key={card.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-base font-medium text-ivory">{card.name} {card.title && <span className="text-ivory-dim">· {card.title}</span>}</p>

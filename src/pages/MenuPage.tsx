@@ -546,11 +546,16 @@ function MenuPageContent({ slug }: { slug: string }) {
       )}
 
       {submissionEnabled && cart.lines.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 border-t border-ink-line bg-ink-soft px-5 py-4">
-          <div className="mx-auto max-w-md">
+        // A floating, rounded sheet instead of a flat bar flush against
+        // the screen edges - the same "your cart is a real card sitting
+        // above the page" treatment food-ordering apps use, so it reads
+        // as its own distinct element rather than a strip of the
+        // background page.
+        <div className="fixed inset-x-0 bottom-0 px-3 pb-3">
+          <div className="mx-auto max-w-md rounded-3xl border border-ink-line bg-ink-soft/95 px-5 py-4 shadow-2xl shadow-black/40 backdrop-blur">
             <div className="mb-2 max-h-40 space-y-1.5 overflow-y-auto text-sm">
               {cart.lines.map((l, i) => (
-                <div key={i} className="flex items-start justify-between text-ivory-dim">
+                <div key={i} className="flex items-start justify-between gap-2 text-ivory-dim">
                   <button type="button" onClick={() => setEditingLineIndex(i)} className="flex-1 text-start hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
                     <span>{l.quantity}× {l.name}{l.note ? ` (${l.note})` : ''}</span>
                     {l.selectedAddons.length > 0 && (
@@ -561,7 +566,7 @@ function MenuPageContent({ slug }: { slug: string }) {
                     type="button"
                     onClick={() => cart.removeLine(i)}
                     aria-label={`Remove ${l.name} from order`}
-                    className="ms-2 shrink-0 text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
                   >✕</button>
                 </div>
               ))}
@@ -570,13 +575,13 @@ function MenuPageContent({ slug }: { slug: string }) {
               placeholder={t('orderNoteePlaceholder')}
               value={orderNote}
               onChange={(e) => setOrderNote(e.target.value)}
-              className="mb-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+              className="mb-2 w-full rounded-full border border-ink-line bg-ink px-4 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
             />
             {error && <p className="mb-2 text-sm text-danger">{error}</p>}
             <button type="button"
               onClick={handleSendOrderPressed}
               disabled={submitting}
-              className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="w-full rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {submitting ? t('sending') : `${t('sendOrder')} — ${cart.total.toFixed(2)}`}
             </button>
@@ -586,7 +591,8 @@ function MenuPageContent({ slug }: { slug: string }) {
 
       {showCheckout && (
         <div className="fixed inset-0 z-modal flex items-end bg-black/60" onClick={() => !submitting && setShowCheckout(false)}>
-          <div className="relative w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="relative w-full rounded-t-3xl border-t border-ink-line bg-ink-soft p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ink-line" />
             <button
               type="button"
               onClick={() => !submitting && setShowCheckout(false)}
@@ -602,21 +608,21 @@ function MenuPageContent({ slug }: { slug: string }) {
             <button type="button"
               onClick={handlePayByCard}
               disabled={submitting}
-              className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="mt-4 w-full rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {submitting ? t('sending') : t('payByCard')}
             </button>
             <button type="button"
               onClick={handlePayInCash}
               disabled={submitting}
-              className="mt-2 w-full rounded-lg border border-brass/40 px-4 py-3 font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="mt-2 w-full rounded-full border border-brass/40 px-4 py-3 font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {t('payInCash')}
             </button>
             <button type="button"
               onClick={() => setShowCheckout(false)}
               disabled={submitting}
-              className="mt-2 w-full rounded-lg px-4 py-2 text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="mt-2 w-full rounded-full px-4 py-2 text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {t('cancel')}
             </button>
@@ -656,9 +662,10 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
   return (
     <div className="fixed inset-0 z-modal flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="relative w-full rounded-t-2xl border-t border-ink-line bg-ink-soft p-5"
+        className="relative w-full rounded-t-3xl border-t border-ink-line bg-ink-soft p-5"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ink-line" />
         <button
           type="button"
           onClick={onClose}
@@ -676,7 +683,7 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
           <div className="mt-4 space-y-1.5">
             <p className="text-xs uppercase tracking-wide text-ivory-dim">{t('addons')}</p>
             {(item.addons || []).map((addon) => (
-              <label key={addon.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3 py-2">
+              <label key={addon.id} className="flex items-center justify-between rounded-xl border border-ink-line px-3 py-2">
                 <span className="flex items-center gap-2 text-sm text-ivory">
                   <input
                     type="checkbox"
@@ -702,12 +709,12 @@ function AddToCartSheet({ item, initialQuantity = 1, initialNote = '', initialAd
           placeholder={t('itemNotePlaceholder')}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="mt-4 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+          className="mt-4 w-full rounded-full border border-ink-line bg-ink px-4 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
 
         <button type="button"
           onClick={() => onSave(quantity, note, selectedAddons)}
-          className="mt-4 w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+          className="mt-4 w-full rounded-full bg-brass px-4 py-3 font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
         >
           {isEditing ? t('saveChanges') : t('addToOrder')} — {lineTotal.toFixed(2)}
         </button>

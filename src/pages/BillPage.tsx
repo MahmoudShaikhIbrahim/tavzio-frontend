@@ -385,11 +385,11 @@ function BillPageContent({ slug }: { slug: string }) {
 
           <button type="button"
             onClick={() => { setPaid(false); setReceipt(null); setSelected(new Set()); setTipPercent(0); loadBill(); }}
-            className="mt-3 w-full rounded-lg border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10 print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+            className="mt-3 w-full rounded-full border border-brass/40 px-4 py-2.5 text-sm text-brass hover:bg-brass/10 print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
             {t('billViewLiveBill')}
           </button>
-          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+          <button type="button" onClick={() => navigate(`/${slug}`)} className="mt-3 w-full rounded-full border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:bg-ink-soft print:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {t('backTo', { name: business?.name || slug })}
           </button>
         </div>
@@ -469,7 +469,7 @@ function BillPageContent({ slug }: { slug: string }) {
             <button type="button"
               onClick={() => setPaidSectionOpen((v) => !v)}
               aria-expanded={paidSectionOpen}
-              className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-sm text-ivory-dim hover:bg-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              className="flex w-full items-center justify-between rounded-2xl border border-ink-line px-4 py-3 text-sm text-ivory-dim shadow-sm hover:bg-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               <span>{t('billPaidCount', { count: paidItems.length })}</span>
               <span className="text-xs">{paidSectionOpen ? '▲ Hide' : '▼ Show'}</span>
@@ -536,7 +536,7 @@ function BillPageContent({ slug }: { slug: string }) {
           <button type="button"
             onClick={handlePay}
             disabled={paying}
-            className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+            className="w-full rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
           >
             {paying ? t('processing') : t('payAmount', { amount: total.toFixed(2) })}
           </button>
@@ -544,7 +544,7 @@ function BillPageContent({ slug }: { slug: string }) {
             <button type="button"
               onClick={handleMarkCash}
               disabled={markingCash || paying}
-              className="mt-2 w-full rounded-lg border border-warning/40 px-4 py-2.5 text-sm text-warning hover:bg-warning/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+              className="mt-2 w-full rounded-full border border-warning/40 px-4 py-2.5 text-sm text-warning hover:bg-warning/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
             >
               {markingCash ? t('billMarking') : t('billPayInCashInstead')}
             </button>

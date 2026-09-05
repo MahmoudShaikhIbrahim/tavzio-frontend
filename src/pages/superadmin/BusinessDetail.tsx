@@ -180,12 +180,12 @@ function PaymentStatusSection({ businessId }: { businessId: string }) {
     <Section
       title="Payments"
       action={
-        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + New receipt
         </button>
       }
     >
-      <div className="rounded-lg border border-ink-line p-4">
+      <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
         <p className="text-base text-ivory">Payment gateway</p>
         <p className="mt-1 text-sm text-ivory-dim">
           Set up by the owner directly, from their own Settings — the secret
@@ -440,7 +440,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
     <Section
       title="Contracts"
       action={
-        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => setShowForm((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + New contract
         </button>
       }
@@ -453,7 +453,7 @@ function ContractsSection({ businessId }: { businessId: string }) {
       {message && <p className={`text-sm ${message.isError ? 'text-danger' : 'text-success'}`}>{message.text}</p>}
       <div className="space-y-3">
         {contracts.map((c) => (
-          <div key={c.id} className="rounded-lg border border-ink-line p-4">
+          <div key={c.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-base font-medium text-ivory">{c.contract_number}</p>
@@ -534,7 +534,7 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-lg border border-ink-line p-4">
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex flex-wrap gap-4">
         <Field label="Start date">
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
@@ -565,7 +565,7 @@ function ContractForm({ businessId, onDone, onReload }: { businessId: string; on
         </Field>
       </div>
       {error && <p className="text-base text-danger">{error}</p>}
-      <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+      <button type="submit" disabled={saving} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {saving ? 'Creating...' : 'Create contract'}
       </button>
     </form>
@@ -684,7 +684,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-lg border border-ink-line p-4">
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-2xl border border-ink-line p-4 shadow-sm">
       <Field label="Receipt type">
         <select value={receiptType} onChange={(e) => setReceiptType(e.target.value as typeof receiptType)} className="w-48 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <option value="one_time">One-time</option>
@@ -694,7 +694,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
       </Field>
 
       {receiptType === 'monthly' && (
-        <div className="space-y-3 rounded-lg border border-ink-line p-3">
+        <div className="space-y-3 rounded-2xl border border-ink-line p-3 shadow-sm">
           <p className="text-sm text-ivory-dim">Contract term</p>
           <div className="flex flex-wrap gap-4">
             <Field label="Start date">
@@ -808,7 +808,7 @@ function ReceiptForm({ businessId, onDone, onReload }: { businessId: string; onD
           <p>VAT (5%): <span className="text-ivory-dim">AED {(total * 0.05).toFixed(2)}</span></p>
           <p>Total to charge: <span className="font-medium text-brass">AED {(total * 1.05).toFixed(2)}</span></p>
         </div>
-        <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="submit" disabled={saving} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? 'Generating...' : 'Generate & send'}
         </button>
       </div>
@@ -878,7 +878,7 @@ function AddCardsForm({ businessId, onDone }: { businessId: string; onDone: () =
         className="w-20 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
       <input placeholder="Label (e.g. Table 4)" value={label} onChange={(e) => setLabel(e.target.value)}
         className="flex-1 rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory" />
-      <button disabled={loading} className="shrink-0 rounded-lg bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+      <button disabled={loading} className="shrink-0 rounded-full bg-brass px-5 py-4 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         Add
       </button>
     </form>

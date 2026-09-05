@@ -17,6 +17,7 @@ import type {
 } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import { useConfirm } from '../../components/ConfirmDialog';
+import { Plus, SlidersHorizontal, Trash2, Pencil } from 'lucide-react';
 
 const UNITS = ['g', 'kg', 'ml', 'l', 'piece'];
 const WASTE_CATEGORIES = [
@@ -44,12 +45,17 @@ export default function InventoryPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Inventory')}</h1>
-      <div className="flex flex-wrap gap-2 border-b border-ink-line">
+      {/* A horizontally-scrolling row of pills instead of an underlined
+          tab bar - the same category-switcher shape Instagram/TikTok use
+          above a feed, and one that degrades gracefully to a swipeable
+          strip on a narrow phone screen instead of wrapping 8 labels
+          across several lines above the actual content. */}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: 'thin' }}>
         {(['ingredients', 'reorder', 'waste', 'food-cost', 'warehouses', 'stock-transfers', 'suppliers', 'purchase-orders'] as const).map((tabKey) => (
           <button type="button"
             key={tabKey}
             onClick={() => setTab(tabKey)}
-            className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'}`}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}
           >
             {t(tabLabels[tabKey])}
           </button>
@@ -125,8 +131,9 @@ function IngredientsTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Ingredients')} action={
-      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-        {t('+ Add ingredient')}
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <Plus size={15} />
+        {t('Add ingredient')}
       </button>
     }>
       {showAdd && (
@@ -160,7 +167,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
             return <IngredientEditForm key={ing.id} businessId={businessId} ingredient={ing} onDone={() => { setEditingId(null); reload(); }} onCancel={() => setEditingId(null)} />;
           }
           return (
-            <div key={ing.id} className="rounded-xl border border-ink-line bg-ink-soft/40 p-4 transition-colors hover:border-brass/40">
+            <div key={ing.id} className="rounded-2xl border border-ink-line bg-ink-soft/40 p-4 shadow-sm transition-colors hover:border-brass/40">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-display text-base text-ivory">{ing.name}</p>
                 <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${low ? 'border-danger/40 text-danger' : 'border-success/40 text-success'}`}>
@@ -194,11 +201,21 @@ function IngredientsTab({ businessId }: { businessId: string }) {
                   <button type="button" onClick={() => setAdjustingId(null)} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               ) : (
-                <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-ink-line pt-3">
-                  <button type="button" onClick={() => setAdjustingId(ing.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Adjust stock')}</button>
-                  <button type="button" onClick={() => setWastingId(ing.id)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Record waste')}</button>
-                  <button type="button" onClick={() => setEditingId(ing.id)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
-                  <button type="button" onClick={() => handleDelete(ing.id, ing.name)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-ink-line pt-3">
+                  <button type="button" onClick={() => setAdjustingId(ing.id)} className="flex items-center gap-1 rounded-full border border-brass/40 px-2.5 py-1 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                    <SlidersHorizontal size={12} />
+                    {t('Adjust stock')}
+                  </button>
+                  <button type="button" onClick={() => setWastingId(ing.id)} className="flex items-center gap-1 rounded-full border border-danger/40 px-2.5 py-1 text-xs text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">
+                    <Trash2 size={12} />
+                    {t('Record waste')}
+                  </button>
+                  <button type="button" onClick={() => setEditingId(ing.id)} className="flex h-7 w-7 items-center justify-center rounded-full text-ivory-dim hover:bg-brass/10 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" title={t('Edit')} aria-label={t('Edit')}>
+                    <Pencil size={13} />
+                  </button>
+                  <button type="button" onClick={() => handleDelete(ing.id, ing.name)} className="flex h-7 w-7 items-center justify-center rounded-full text-ivory-dim hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger" title={t('Delete')} aria-label={t('Delete')}>
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               )}
               {wastingId === ing.id && (
@@ -384,7 +401,7 @@ function ReorderTab({ businessId }: { businessId: string }) {
         {lowStock.length === 0 && <p className="text-ivory-dim">{t('Nothing is below its threshold right now.')}</p>}
         <div className="space-y-2">
           {lowStock.map((item) => (
-            <div key={item.ingredientId} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
+            <div key={item.ingredientId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-3 shadow-sm">
               <div>
                 <p className="text-base text-ivory">{item.name}</p>
                 <p className="text-sm text-ivory-dim">
@@ -638,26 +655,37 @@ function SuppliersTab({ businessId }: { businessId: string }) {
       </form>
       <div className="grid gap-3 sm:grid-cols-2">
         {suppliers.map((s) => (
-          <div key={s.id} className="rounded-xl border border-ink-line bg-ink-soft/40 px-4 py-3 transition-colors hover:border-brass/40">
+          <div key={s.id} className="rounded-2xl border border-ink-line bg-ink-soft/40 px-4 py-3 shadow-sm transition-colors hover:border-brass/40">
             {editingId === s.id ? (
               <div className="space-y-2">
                 <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t('Name')} className={inputClass} />
                 <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder={t('Phone')} className={inputClass} />
                 <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder={t('Email')} className={inputClass} />
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => handleSaveEdit(s.id)} disabled={saving} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  <button type="button" onClick={() => handleSaveEdit(s.id)} disabled={saving} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {saving ? t('Saving...') : t('Save')}
                   </button>
-                  <button type="button" onClick={() => setEditingId(null)} className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
+                  <button type="button" onClick={() => setEditingId(null)} className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               </div>
             ) : (
               <>
-                <p className="text-base text-ivory">{s.name}</p>
-                <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
-                <div className="mt-2 flex gap-3">
-                  <button type="button" onClick={() => startEdit(s)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Edit')}</button>
-                  <button type="button" onClick={() => handleDelete(s)} className="rounded text-sm text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Delete')}</button>
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+                    {s.name.trim()[0]?.toUpperCase() || '?'}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-base text-ivory">{s.name}</p>
+                    <p className="text-sm text-ivory-dim">{[s.phone, s.email].filter(Boolean).join(' · ') || t('No contact details')}</p>
+                  </div>
+                </div>
+                <div className="mt-2.5 flex gap-1.5">
+                  <button type="button" onClick={() => startEdit(s)} className="flex h-7 w-7 items-center justify-center rounded-full text-ivory-dim hover:bg-brass/10 hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" title={t('Edit')} aria-label={t('Edit')}>
+                    <Pencil size={13} />
+                  </button>
+                  <button type="button" onClick={() => handleDelete(s)} className="flex h-7 w-7 items-center justify-center rounded-full text-ivory-dim hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger" title={t('Delete')} aria-label={t('Delete')}>
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </>
             )}
@@ -746,8 +774,9 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Purchase Orders')} action={
-      <button type="button" onClick={() => setShowNew((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-        {t('+ New purchase order')}
+      <button type="button" onClick={() => setShowNew((s) => !s)} className="flex items-center gap-1.5 rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <Plus size={15} />
+        {t('New purchase order')}
       </button>
     }>
       {showNew && (
@@ -802,10 +831,10 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
       <div className="space-y-3">
         {!loadError && orders.length === 0 && <p className="text-ivory-dim">{t('No purchase orders yet.')}</p>}
         {orders.map((po) => (
-          <div key={po.id} className="rounded-xl border border-ink-line bg-ink-soft/40 px-4 py-3 transition-colors hover:border-brass/40">
+          <div key={po.id} className="rounded-2xl border border-ink-line bg-ink-soft/40 px-4 py-3 shadow-sm transition-colors hover:border-brass/40">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-base text-ivory">{po.suppliers?.name || t('No supplier')} · <span className="text-brass">AED {po.total_cost_aed.toFixed(2)}</span></p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {po.status === 'partially_received' && (
                   <span className="rounded-full border border-warning/40 px-2 py-0.5 text-xs font-medium text-warning">{t('Partially received')}</span>
                 )}
@@ -814,13 +843,13 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                 )}
                 {(po.status === 'pending' || po.status === 'partially_received') && (
                   <>
-                    <button type="button" onClick={() => handleReceiveAll(po.id)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                    <button type="button" onClick={() => handleReceiveAll(po.id)} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                       {t('Receive all outstanding')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setReceivingId(receivingId === po.id ? null : po.id)}
-                      className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                      className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {t('Receive partially...')}
                     </button>
@@ -830,7 +859,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                   <button
                     type="button"
                     onClick={() => toggleHistory(po.id)}
-                    className="rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                    className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     {historyId === po.id ? t('Hide history') : t('Receive history')}
                   </button>
@@ -847,7 +876,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
               <div className="mt-3 space-y-2 rounded-lg border border-ink-line bg-ink p-3">
                 {receipts.length === 0 && <p className="text-sm text-ivory-dim">{t('Loading...')}</p>}
                 {receipts.map((r) => (
-                  <div key={r.id} className="rounded-lg border border-ink-line px-3 py-2 text-sm">
+                  <div key={r.id} className="rounded-xl border border-ink-line px-3 py-2 text-sm">
                     <p className="text-ivory">
                       {new Date(r.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                       {' · '}
@@ -880,7 +909,7 @@ function PurchaseOrdersTab({ businessId }: { businessId: string }) {
                 })}
                 {error && <p className="text-xs text-danger">{error}</p>}
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => handleReceivePartial(po)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Confirm receipt')}</button>
+                  <button type="button" onClick={() => handleReceivePartial(po)} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Confirm receipt')}</button>
                   <button type="button" onClick={() => { setReceivingId(null); setReceiveQtys({}); }} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
                 </div>
               </div>
@@ -953,7 +982,7 @@ function WarehousesTab({ businessId }: { businessId: string }) {
                   onCancel={() => setEditingId(null)}
                 />
               ) : (
-                <div className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3">
+                <div className="flex items-center justify-between rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
                   <div>
                     <p className="text-base text-ivory">{w.name}</p>
                     <p className="text-sm text-ivory-dim">{WAREHOUSE_TYPE_LABEL[w.type] || w.type}{w.address && ` · ${w.address}`}</p>
@@ -1170,7 +1199,7 @@ function StockTransfersTab({ businessId }: { businessId: string }) {
         {loading && <p className="text-ivory-dim">{t('Loading...')}</p>}
         <div className="space-y-2">
           {transfers.map((tr) => (
-            <div key={tr.id} className="rounded-lg border border-ink-line px-4 py-3">
+            <div key={tr.id} className="rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-base text-ivory">
                   {tr.from?.name || t('New delivery')} → {tr.to?.name}

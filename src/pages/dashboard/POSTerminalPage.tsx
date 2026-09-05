@@ -107,7 +107,7 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
           />
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
-        <button type="button" onClick={handleOpen} disabled={saving} className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={handleOpen} disabled={saving} className="w-full rounded-full bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {saving ? t('Opening...') : t('Open till & start selling')}
         </button>
       </Section>
@@ -116,7 +116,7 @@ function OpenTillScreen({ businessId, onOpened }: { businessId: string; onOpened
         <Section title={t('Recent till sessions')}>
           <div className="space-y-2">
             {history.map((h) => (
-              <div key={h.id} className="rounded-lg border border-ink-line px-4 py-3 text-sm">
+              <div key={h.id} className="rounded-2xl border border-ink-line px-4 py-3 text-sm shadow-sm">
                 <p className="text-ivory">{h.profiles?.name || t('Staff')} · {new Date(h.opened_at).toLocaleDateString()}</p>
                 {h.status === 'closed' ? (
                   <p className={Number(h.variance_aed) === 0 ? 'text-success' : 'text-warning'}>
@@ -789,7 +789,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
           systems (Toast, Square) use for the order summary sidebar. The
           outer page itself never needs to scroll in focus mode; if a
           long cart genuinely doesn't fit, only this panel scrolls. */}
-      <div className={`divide-y divide-ink-line rounded-xl border border-ink-line bg-ink-soft ${focusMode ? 'max-h-[calc(100vh-88px)] overflow-y-auto' : ''}`}>
+      <div className={`divide-y divide-ink-line rounded-2xl border border-ink-line bg-ink-soft shadow-sm ${focusMode ? 'max-h-[calc(100vh-88px)] overflow-y-auto' : ''}`}>
         <div className="p-4">
           <Field label={t('Order type')}>
             <div className="grid grid-cols-4 gap-1.5">
@@ -798,7 +798,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
                   key={type}
                   type="button"
                   onClick={() => setOrderType(type)}
-                  className={`rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  className={`rounded-full border px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                     orderType === type ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
                   }`}
                 >
@@ -865,7 +865,7 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             <span className="text-xs font-medium uppercase tracking-wide text-ivory-dim">{t('Order')}</span>
             <button type="button" onClick={clearCart} aria-label={t('Clear order')}
               title={t('Clear order')}
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-danger/50 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-danger/50 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
             >
               <Minus size={14} strokeWidth={2.25} />
             </button>
@@ -877,11 +877,11 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               <div className="flex items-center justify-between gap-2 text-base">
                 <span className="font-display text-ivory">{line.name}</span>
                 <div className="flex items-center gap-2.5">
-                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  <button type="button" onClick={() => changeQty(line.menuItemId, -1)} className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     <Minus size={14} strokeWidth={2.25} />
                   </button>
                   <span className="w-5 text-center text-ivory">{line.quantity}</span>
-                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  <button type="button" onClick={() => changeQty(line.menuItemId, 1)} className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     <Plus size={14} strokeWidth={2.25} />
                   </button>
                   <span className="w-16 text-right font-medium text-brass">{(line.price * line.quantity).toFixed(2)}</span>
@@ -1000,15 +1000,15 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
             <button type="button"
               onClick={handleChargeToRoom}
               disabled={checkingOut || cart.length === 0 || !roomFolio}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-brass/40 px-4 py-3.5 text-base font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {t('Charge to Room')}{roomFolio ? ` ${roomFolio.roomNumber}` : ''}
             </button>
           )}
-          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-success px-4 py-3.5 text-base font-medium text-status-text hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={() => handleSendToKitchen(false)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-full bg-success px-4 py-3.5 text-base font-medium text-status-text hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Send to Kitchen')}
           </button>
-          <button type="button" onClick={() => handleSendToKitchen(true)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={() => handleSendToKitchen(true)} disabled={checkingOut || cart.length === 0} className="flex w-full items-center justify-center gap-2 rounded-full bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Payment')}
           </button>
         </div>
@@ -1052,10 +1052,10 @@ function TerminalScreen({ businessId, till, onTillClosed, focusMode }: { busines
               ))}
             </select>
             <div className="mt-4 flex gap-2">
-              <button type="button" onClick={() => setConvertingOrder(null)} className="flex-1 rounded-lg border border-ink-line py-2.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              <button type="button" onClick={() => setConvertingOrder(null)} className="flex-1 rounded-full border border-ink-line py-2.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {t('Cancel')}
               </button>
-              <button type="button" onClick={handleConvertToDineIn} disabled={!convertCardId || convertSaving} className="flex-1 rounded-lg bg-brass py-2.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              <button type="button" onClick={handleConvertToDineIn} disabled={!convertCardId || convertSaving} className="flex-1 rounded-full bg-brass py-2.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {convertSaving ? t('Seating...') : t('Confirm')}
               </button>
             </div>
@@ -1125,7 +1125,7 @@ function RefundsPanel({ businessId }: { businessId: string }) {
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              className={`rounded-lg border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+              className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                 filter === f ? 'border-danger bg-danger/10 text-danger' : 'border-ink-line text-ivory-dim hover:text-ivory'
               }`}
             >
@@ -1222,7 +1222,7 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
             {t('Variance:')} {variance >= 0 ? '+' : ''}{variance.toFixed(2)} AED
           </p>
         </div>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Done')}</button>
+        <button type="button" onClick={onDone} className="rounded-full bg-brass px-6 py-3 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Done')}</button>
       </div>
     );
   }
@@ -1239,10 +1239,10 @@ function CloseTillScreen({ businessId, till, onDone, onCancel }: { businessId: s
         </Field>
         {error && <p className="text-base text-danger">{error}</p>}
         <div className="flex gap-2">
-          <button type="button" onClick={handleClose} disabled={saving} className="flex-1 rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={handleClose} disabled={saving} className="flex-1 rounded-full bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? t('Closing...') : t('Close till')}
           </button>
-          <button type="button" onClick={onCancel} className="rounded-lg border border-ink-line px-4 py-3 text-base text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
+          <button type="button" onClick={onCancel} className="rounded-full border border-ink-line px-4 py-3 text-base text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
         </div>
       </Section>
     </div>

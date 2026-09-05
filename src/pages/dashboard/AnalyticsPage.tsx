@@ -105,9 +105,9 @@ export default function AnalyticsPage() {
         <Stat label={t('Returning visitors')} value={returningPct !== null ? `${returningPct}%` : '—'} />
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-ink-line">
+      <div className="flex flex-wrap gap-2">
         {tabs.map((tb) => (
-          <button type="button" key={tb.key} onClick={() => setTab(tb.key)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${activeTab === tb.key ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+          <button type="button" key={tb.key} onClick={() => setTab(tb.key)} className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${activeTab === tb.key ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {tb.label}
           </button>
         ))}

@@ -27,7 +27,7 @@ export default function OrgOverviewPage() {
       <Section title="Combined Revenue (last 30 days)">
         {report ? (
           <>
-            <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+            <div className="rounded-2xl border border-brass/30 bg-ink-soft p-4 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-brass">Total across all locations</p>
               <p className="mt-1 font-display text-2xl text-ivory">AED {report.grandTotal.toFixed(2)}</p>
             </div>
@@ -54,11 +54,11 @@ export default function OrgOverviewPage() {
             <>
               {hotelReport.orgTotals && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+                  <div className="rounded-2xl border border-brass/30 bg-ink-soft p-4 shadow-sm">
                     <p className="text-xs uppercase tracking-wide text-brass">Total room revenue</p>
                     <p className="mt-1 font-display text-2xl text-ivory">AED {hotelReport.orgTotals.totalRoomRevenueAed.toFixed(2)}</p>
                   </div>
-                  <div className="rounded-xl border border-brass/30 bg-ink-soft p-4">
+                  <div className="rounded-2xl border border-brass/30 bg-ink-soft p-4 shadow-sm">
                     <p className="text-xs uppercase tracking-wide text-brass">Total rooms across group</p>
                     <p className="mt-1 font-display text-2xl text-ivory">{hotelReport.orgTotals.totalRoomsAvailable}</p>
                   </div>
@@ -71,7 +71,7 @@ export default function OrgOverviewPage() {
               )}
               <div className="space-y-2">
                 {hotelReport.locations.map((l) => (
-                  <div key={l.businessId} className="rounded-lg border border-ink-line p-3">
+                  <div key={l.businessId} className="rounded-2xl border border-ink-line p-3 shadow-sm">
                     <p className="text-base text-ivory">{l.name}</p>
                     {l.auditedDays > 0 ? (
                       <p className="text-sm text-ivory-dim">
@@ -94,9 +94,14 @@ export default function OrgOverviewPage() {
       <Section title="Locations">
         <div className="grid gap-3 sm:grid-cols-2">
           {(org.businesses || []).map((b) => (
-            <div key={b.id} className="rounded-lg border border-ink-line p-4">
-              <p className="text-base text-ivory">{b.name}</p>
-              <p className="text-sm text-ivory-dim capitalize">{b.category} · {b.status}</p>
+            <div key={b.id} className="flex items-center gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+                {b.name.trim()[0]?.toUpperCase() || '?'}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-base text-ivory">{b.name}</p>
+                <p className="text-sm text-ivory-dim capitalize">{b.category} · {b.status}</p>
+              </div>
             </div>
           ))}
           {(org.businesses || []).length === 0 && <p className="text-ivory-dim">No locations linked yet - contact Tavzio to link one.</p>}

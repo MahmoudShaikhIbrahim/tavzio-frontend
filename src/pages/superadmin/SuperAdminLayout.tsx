@@ -47,25 +47,26 @@ export default function SuperAdminLayout() {
             <button type="button" onClick={logout} className="rounded hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Sign out</button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-6 pt-1.5 overflow-x-auto">
-          {TABS.map((t) => (
-            <Link
-              key={t.path}
-              to={`/admin/super/${t.path}`}
-              className={`relative shrink-0 flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
-                location.pathname.startsWith(`/admin/super/${t.path}`)
-                  ? 'border-brass text-ivory'
-                  : 'border-transparent text-ivory-dim hover:text-ivory'
-              }`}
-            >
-              {t.label}
-              {t.path === 'messages' && unreadTotal > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brass text-[9px] font-medium text-ink">
-                  {unreadTotal}
-                </span>
-              )}
-            </Link>
-          ))}
+        <nav className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-6 pb-3 pt-1.5" style={{ scrollbarWidth: 'thin' }}>
+          {TABS.map((t) => {
+            const active = location.pathname.startsWith(`/admin/super/${t.path}`);
+            return (
+              <Link
+                key={t.path}
+                to={`/admin/super/${t.path}`}
+                className={`relative flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  active ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'
+                }`}
+              >
+                {t.label}
+                {t.path === 'messages' && unreadTotal > 0 && (
+                  <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-medium ${active ? 'bg-ink text-brass' : 'bg-brass text-ink'}`}>
+                    {unreadTotal}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </nav>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-8 sm:py-14">

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { X as XIcon } from 'lucide-react';
 import CommandPalette from '../../components/CommandPalette';
 import CustomizeNavModal from '../../components/CustomizeNavModal';
 import { saveLastDashboardPath } from '../../lib/lastDashboardPath';
@@ -8,7 +9,7 @@ import { useT } from '../../hooks/useT';
 import { getBusiness, updateMyTheme, getNotificationCounts, markSectionViewed, setMyNavLayout, getPaymentIntegration, type NotificationCounts } from '../../lib/authApi';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import type { BusinessFeatures, BusinessTheme } from '../../types';
-import AccountMenu from '../../components/AccountMenu';
+import ThemeToggle from '../../components/ThemeToggle';
 import Logo from '../../components/Logo';
 import ClockWidget from '../../components/ClockWidget';
 import { useTheme } from '../../lib/ThemeContext';
@@ -27,14 +28,9 @@ import { updateMyTour } from '../../lib/authApi';
 // component on whichever page needs it.
 const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
-    selector: 'nav-tabs',
-    title: 'Your main tabs',
-    body: "The tabs you use most live here - which ones you see depends on what's enabled for your business. Use the customize-navigation button in the header to reorder them or hide the ones you don't use.",
-  },
-  {
-    selector: 'settings-dropdown',
-    title: 'Everything else lives here',
-    body: 'Less frequent things - Menu, Staff, Payroll, Accounting, and more - are grouped under Settings so they never crowd your main tabs. Hidden tabs can also be restored from here.',
+    selector: 'nav-drawer-button',
+    title: 'Everything lives here now',
+    body: "Tap the logo to open your menu - every page you use, Settings, your account, and Customize navigation all live in one scrollable list instead of crowding the header. What you see there depends on what's enabled for your business.",
   },
   {
     selector: 'command-palette',
@@ -206,7 +202,15 @@ function DashboardLayoutInner() {
   const [theme, setTheme] = useState<BusinessTheme | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [counts, setCounts] = useState<NotificationCounts>({ orders: 0, requests: 0, payments: 0, kitchen: 0, housekeeping: 0, 'front-desk': 0 });
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Real restructure, replacing the old tabs-bar + separate Settings
+  // dropdown entirely: every page, Settings, the account menu, and
+  // Customize navigation now live in one slide-out drawer opened from a
+  // single small logo button, the same "everything behind one menu
+  // button" shape Instagram/TikTok/WhatsApp all use for their own
+  // secondary navigation - so the header itself never grows past one
+  // compact row regardless of how many tabs/settings items a business
+  // has enabled.
+  const [drawerOpen, setDrawerOpen] = useState(false);
   // Auto-enters on these three specifically - the working, information-
   // dense screens someone stares at for a whole shift, where every
   // pixel spent on chrome is a pixel not spent on the actual floor/
@@ -247,7 +251,6 @@ function DashboardLayoutInner() {
     const dashboardPath = location.pathname.replace(/^\/admin\/dashboard\/?/, '');
     if (dashboardPath) saveLastDashboardPath(dashboardPath);
   }, [location.pathname]);
-  const settingsRef = useRef<HTMLDivElement>(null);
   const { setMode } = useTheme();
   // Local override so a hide/reorder change reflects instantly without
   // waiting on useSession's 20s cache to naturally refresh - synced from
@@ -272,6 +275,15 @@ function DashboardLayoutInner() {
     setShowTour(false);
     updateMyTour(true).catch(() => {});
   }
+
+  // Several tour steps (Focus mode, Customize navigation, the account
+  // section) now point at elements that only exist while the drawer is
+  // open - forcing it open for the tour's duration means those steps
+  // still highlight something real instead of degrading to a plain
+  // centered tooltip pointing at nothing.
+  useEffect(() => {
+    if (showTour) setDrawerOpen(true);
+  }, [showTour]);
 
   // The account's own saved theme takes over the moment it loads - this
   // is what actually makes it "belong to the account" rather than the
@@ -368,19 +380,6 @@ function DashboardLayoutInner() {
     };
   }, [user?.business_id]);
 
-  // Closes the dropdown on an outside click, same expectation any real
-  // dropdown menu carries - without this it would only ever close by
-  // picking an item, which feels broken the first time you tap away.
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   function tabAllowed(requires: 'ordering' | 'orderingNotHotel' | 'booking' | 'staffAccounts' | 'inventory' | 'hotel' | 'notHotel' | 'hr' | 'forecasting' | 'payroll' | 'accounting' | 'channelManager' | 'marketing' | 'orgOwner' | null) {
     if (requires === 'hotel') return category === 'hotel';
     // Delivery platform integrations (Deliverect etc.) only make sense for
@@ -465,7 +464,11 @@ function DashboardLayoutInner() {
     .filter((a) => reachablePaths.has(a.path) && tabAllowed(a.requires))
     .map((a) => ({ path: a.path, label: a.label, keywords: a.keywords, kind: 'action' as const }));
   const hiddenTabs = [...baseVisibleTabs, ...baseVisibleSettingsItems].filter((i) => navLayout?.hidden.includes(i.path));
-  const isSettingsActive = visibleSettingsItems.some((t) => isTabActive(location.pathname, t.path)) || location.pathname.includes('/settings');
+  // Shown on the collapsed drawer button itself, so an unread badge is
+  // still visible at a glance without needing to open the drawer first -
+  // the one piece of the old always-visible tab bar this still surfaces
+  // outside the menu.
+  const totalBadgeCount = visibleTabs.reduce((sum, tab) => sum + (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0), 0);
 
   // Persists via setMyNavLayout (self-service, see staffRoutes.js) and
   // updates the local override immediately rather than waiting on a
@@ -512,7 +515,7 @@ function DashboardLayoutInner() {
   // persistent banner making it unmistakable you're editing rather than
   // just browsing.
   const [customizing, setCustomizing] = useState(false);
-  useEffect(() => { setCustomizing(false); }, [location.pathname]);
+  useEffect(() => { setCustomizing(false); setDrawerOpen(false); }, [location.pathname]);
 
   // Owner accounts start with a password the super admin set directly
   // and knows - force setting a real one before anything else in the
@@ -539,136 +542,167 @@ function DashboardLayoutInner() {
       {showTour && <GuidedTour steps={DASHBOARD_TOUR_STEPS.filter((s) => s.selector !== 'orders-map-toggle' || tabAllowed('orderingNotHotel'))} onDone={closeTour} onSkip={closeTour} />}
       {!focusMode && (
       <header className="border-b border-ink-line">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
-          <div className="flex flex-1 items-center gap-4">
-            <Logo />
-          </div>
-          <div className="flex flex-wrap items-center gap-4 text-base text-ivory-dim">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          {/* The one thing left in the header: everything that used to
+              compete for space here (every tab, Settings and its whole
+              contents, the account menu, Customize navigation) now
+              lives behind this single button, opened as a slide-out
+              menu - the same shape Instagram, TikTok and WhatsApp all
+              use for their own secondary navigation, so the header
+              itself never grows regardless of how many tabs or settings
+              a business has enabled. */}
+          <button
+            type="button"
+            data-tour="nav-drawer-button"
+            onClick={() => setDrawerOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-ink-line py-1.5 pe-3 ps-1.5 transition-colors hover:border-brass/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            aria-label={t('Menu')}
+          >
+            <Logo size="sm" />
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-ivory-dim"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            {totalBadgeCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-status-text">
+                {totalBadgeCount > 9 ? '9+' : totalBadgeCount}
+              </span>
+            )}
+          </button>
+
+          <div className="flex flex-1 items-center justify-end gap-3">
             <div data-tour="command-palette"><CommandPalette items={paletteItems} actions={paletteActions} t={t} /></div>
-            {/* Real, explicit toggle - the actual gap this closes: the
-                only way in before was the automatic POS/Kitchen/Orders
-                trigger, with no way to enter it manually on any other
-                page, or to turn it on/off as a deliberate choice rather
-                than a side effect of which tab happened to be active. */}
-            <button
-              type="button"
-              data-tour="focus-mode-button"
-              onClick={enterFocusMode}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-line hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-              title={t('Focus mode')}
-              aria-label={t('Focus mode')}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
-            </button>
             <ClockWidget />
-            <button
-              type="button"
-              onClick={() => setShowTour(true)}
-              title={t('Show guided tour')}
-              aria-label={t('Show guided tour')}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-line text-sm text-ivory-dim transition-all duration-150 hover:border-brass hover:text-brass active:scale-[0.9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-            >
-              ?
-            </button>
-            <button
-              type="button"
-              onClick={() => setCustomizing(true)}
-              title={t('Customize navigation')}
-              aria-label={t('Customize navigation')}
-              className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm transition-all duration-150 active:scale-[0.9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
-                customizing ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:border-brass hover:text-brass'
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M2 4h8M2 8h5M2 12h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                <circle cx="12.5" cy="4" r="1.6" stroke="currentColor" strokeWidth="1.4" />
-                <circle cx="9" cy="12" r="1.6" stroke="currentColor" strokeWidth="1.4" />
-              </svg>
-            </button>
-            <div data-tour="account-menu">
-              <AccountMenu
-                name={user?.name || ''}
-                role={isOwner ? t('Owner') : t('Staff')}
-                onSignOut={logout}
-                onThemeChange={(mode) => updateMyTheme(mode).catch(() => {})}
-                t={t}
-              />
-            </div>
           </div>
         </div>
+      </header>
+      )}
 
-        {/* Real fix for the explicit request: fixed px-6 container
-            padding + px-3 py-2.5 text-base per tab, with no mobile
-            breakpoint at all, meant this nav fit barely 2 tabs per row
-            on a real phone (confirmed in the actual screenshots) and
-            pushed real page content down through several screenfuls of
-            just navigation before a person ever saw it. Genuinely more
-            compact below sm (smaller padding, smaller text) - the same
-            tabs, same tap targets that stay comfortably touchable, just
-            packed tighter so more of them fit per row on a narrow
-            screen. Unchanged above sm - this never touches desktop. */}
-        <nav className="mx-auto flex max-w-7xl items-center gap-1.5 px-4 pt-1.5 sm:px-6">
-          <div data-tour="nav-tabs" className="flex flex-1 flex-wrap items-center gap-1.5 sm:gap-2.5">
-            {visibleTabs.map((tab) => {
-              const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
+      {drawerOpen && (
+        <div className="fixed inset-0 z-modal">
+          <button
+            type="button"
+            aria-label={t('Close menu')}
+            onClick={() => setDrawerOpen(false)}
+            className="absolute inset-0 bg-black/60"
+          />
+          <div className="absolute inset-y-0 start-0 flex w-[85vw] max-w-xs flex-col overflow-y-auto border-e border-ink-line bg-ink-soft shadow-2xl shadow-black/50 sm:max-w-sm">
+            <div className="flex items-center justify-between gap-2 border-b border-ink-line px-4 py-3.5">
+              <Logo size="sm" />
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                aria-label={t('Close menu')}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-ivory-dim hover:bg-ink hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              >
+                <XIcon size={16} />
+              </button>
+            </div>
 
-              return (
+            {/* Account section: name/role, theme, business profile, sign
+                out - everything the old top-right avatar dropdown held,
+                now just the top block of this same menu instead of its
+                own separate popover. */}
+            <div data-tour="account-menu" className="border-b border-ink-line px-4 py-3.5">
+              <p className="text-base text-ivory">{user?.name}</p>
+              <p className="text-sm text-ivory-dim">{isOwner ? t('Owner') : t('Staff')}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Link
+                  to="/admin/dashboard/settings/business-profile"
+                  onClick={() => setDrawerOpen(false)}
+                  className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/50 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                >
+                  {t('Business Profile')}
+                </Link>
+                <ThemeToggle onChange={(mode) => updateMyTheme(mode).catch(() => {})} />
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-full border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                >
+                  {t('Sign out')}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick actions - Focus mode, guided tour, and reordering
+                the lists below, all demoted from their own header icons
+                into one compact row here. */}
+            <div className="flex items-center gap-2 border-b border-ink-line px-4 py-3">
+              <button
+                type="button"
+                data-tour="focus-mode-button"
+                onClick={() => { enterFocusMode(); setDrawerOpen(false); }}
+                title={t('Focus mode')}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowTour(true); }}
+                title={t('Show guided tour')}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-ink-line text-sm text-ivory-dim hover:border-brass hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              >
+                ?
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCustomizing(true); }}
+                title={t('Customize navigation')}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  customizing ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:border-brass hover:text-brass'
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 4h8M2 8h5M2 12h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  <circle cx="12.5" cy="4" r="1.6" stroke="currentColor" strokeWidth="1.4" />
+                  <circle cx="9" cy="12" r="1.6" stroke="currentColor" strokeWidth="1.4" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Main pages - one row each, active page and unread counts
+                still shown exactly as the old tab bar did. */}
+            <nav data-tour="nav-tabs" className="border-b border-ink-line py-1.5">
+              {visibleTabs.map((tab) => {
+                const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
+                const active = isTabActive(location.pathname, tab.path);
+                return (
+                  <Link
+                    key={tab.path}
+                    to={`/admin/dashboard/${tab.path}`}
+                    className={`flex items-center gap-2.5 px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                      active ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-brass' : 'bg-transparent'}`} />
+                    <span className="flex-1">{t(tab.label)}</span>
+                    {count > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-medium text-status-text">
+                        {count > 9 ? '9+' : count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Everything else - one flat scrollable list instead of a
+                separate dropdown, under its own heading. */}
+            <div data-tour="settings-dropdown" className="py-1.5">
+              <p className="px-4 pb-1 pt-2 text-xs uppercase tracking-wide text-ivory-dim/70">{t('Settings')}</p>
+              {visibleSettingsItems.map((tab) => (
                 <Link
                   key={tab.path}
                   to={`/admin/dashboard/${tab.path}`}
-                  className={`relative block shrink-0 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass sm:px-3 sm:py-2.5 sm:text-base ${
-                    isTabActive(location.pathname, tab.path)
-                      ? 'border-brass text-ivory'
-                      : 'border-transparent text-ivory-dim hover:text-ivory'
+                  className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                    isTabActive(location.pathname, tab.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                   }`}
                 >
                   {t(tab.label)}
-                  {count > 0 && (
-                    <span className="absolute top-0 end-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-medium text-status-text">
-                      {count > 9 ? '9+' : count}
-                    </span>
-                  )}
                 </Link>
-              );
-            })}
+              ))}
+            </div>
           </div>
-
-          <div ref={settingsRef} data-tour="settings-dropdown" className="relative shrink-0">
-            <button type="button"
-              onClick={() => setSettingsOpen((v) => !v)}
-              className={`flex items-center gap-1.5 border-b-2 px-2 py-2 text-sm transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass sm:px-3 sm:py-2.5 sm:text-base ${
-                isSettingsActive ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'
-              }`}
-            >
-              {t('Settings')}
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`transition-transform ${settingsOpen ? 'rotate-180' : ''}`}>
-                <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-
-            {settingsOpen && (
-              <div className="absolute end-0 top-full z-dropdown mt-2 w-[20rem] max-w-[90vw] overflow-hidden rounded-xl border border-brass/30 bg-ink-soft shadow-2xl shadow-black/50 sm:w-[26rem]">
-                <div className="grid max-h-[70vh] grid-cols-1 gap-x-1 gap-y-0.5 overflow-y-auto p-2.5 sm:grid-cols-2">
-                  {visibleSettingsItems.map((tab) => (
-                    <Link
-                      key={tab.path}
-                      to={`/admin/dashboard/${tab.path}`}
-                      onClick={() => setSettingsOpen(false)}
-                      className={`block rounded-lg px-3 py-2.5 text-base transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
-                        isTabActive(location.pathname, tab.path)
-                          ? 'bg-brass/10 text-brass'
-                          : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                      }`}
-                    >
-                      {t(tab.label)}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </nav>
-      </header>
+        </div>
       )}
 
       {customizing && (

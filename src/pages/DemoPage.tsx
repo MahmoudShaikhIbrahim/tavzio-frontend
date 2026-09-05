@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { subscribeToDemoOrders, subscribeToDemoRequests } from '../lib/supabaseClient';
-import { Bell, Receipt, UtensilsCrossed } from 'lucide-react';
+import { Bell, Receipt, UtensilsCrossed, ArrowLeft } from 'lucide-react';
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -178,7 +179,14 @@ export default function DemoPage() {
   return (
     <div className="min-h-screen bg-ink px-4 py-10 sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="text-center">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 rounded-full border border-ink-line px-3.5 py-1.5 text-sm text-ivory-dim transition-colors hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+        >
+          <ArrowLeft size={14} />
+          Back to homepage
+        </Link>
+        <div className="mt-6 text-center">
           <p className="text-sm uppercase tracking-wide text-brass">Live Demo</p>
           <h1 className="mt-1 font-display text-3xl text-ivory sm:text-4xl">Try the guest experience for real</h1>
           <p className="mx-auto mt-2 max-w-2xl text-base text-ivory-dim">
@@ -304,11 +312,11 @@ export default function DemoPage() {
               genuinely shows "this is the same product," not a mocked-up
               screenshot. */}
           <div className="rounded-2xl border border-ink-line bg-ink-soft p-5">
-            <div className="flex gap-2 border-b border-ink-line">
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setRightTab('kitchen')}
-                className={`relative px-3 py-2 text-sm ${rightTab === 'kitchen' ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+                className={`relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${rightTab === 'kitchen' ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}
               >
                 Kitchen Display
                 {pendingKitchenCount > 0 && (
@@ -318,7 +326,7 @@ export default function DemoPage() {
               <button
                 type="button"
                 onClick={() => setRightTab('notifications')}
-                className={`relative px-3 py-2 text-sm ${rightTab === 'notifications' ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+                className={`relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${rightTab === 'notifications' ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}
               >
                 Notifications
                 {pendingRequestCount > 0 && (

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent, useRef } from 'react';
-import { Search } from 'lucide-react';
+import { Search, EyeOff, Eye, Puzzle, ClipboardList, Pencil, Trash2 } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useDragReorder } from '../../hooks/useDragReorder';
 import { useT } from '../../hooks/useT';
@@ -47,9 +47,9 @@ export default function MenuManagementPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Menu Management')}</h1>
-      <div className="flex flex-wrap gap-2 border-b border-ink-line">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: 'thin' }}>
         {(['ordering-status', 'ai-upload', 'categories', 'items'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {t(tabLabels[tabKey])}
           </button>
         ))}
@@ -66,7 +66,7 @@ export default function MenuManagementPage() {
             </div>
             <button type="button"
               onClick={togglePauseAll}
-              className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium ${business.ordering_paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
             >
               {business.ordering_paused ? t('Paused — tap to resume') : t('Ordering is open')}
             </button>
@@ -151,7 +151,7 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
           <div key={c.id}
             ref={isSearching ? undefined : (el) => drag.registerItemRef(c.id, el)}
             {...handlers}
-            className={`flex items-center justify-between rounded-lg border px-5 py-4 text-base transition-all duration-200 ${
+            className={`flex items-center justify-between rounded-2xl border px-5 py-4 text-base shadow-sm transition-all duration-200 ${
               isSearching ? 'border-ink-line' : 'cursor-pointer'
             } ${isHeld ? 'scale-[1.01] border-brass shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40' : 'border-ink-line'}`}
           >
@@ -164,8 +164,9 @@ function CategoriesSection({ businessId, categories, onCategoriesChange, onChang
                   onCategoriesChange(categories.map((cat) => (cat.id === c.id ? { ...cat, paused: !cat.paused } : cat)));
                   updateMenuCategory(businessId, c.id, { paused: !c.paused }).catch(onChange);
                 }}
-                className={`rounded-lg border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm ${c.paused ? 'border-danger text-danger' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
               >
+                {c.paused ? <EyeOff size={13} /> : <Eye size={13} />}
                 {c.paused ? t('Paused') : t('Orderable')}
               </button>
               {/* Same reasoning as the Orderable button above - a press
@@ -248,9 +249,9 @@ function ItemsSection({ businessId, categories, items, onItemsChange, onChange }
       action={
         <button type="button"
           onClick={() => setShowForm((s) => !s)}
-          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
-          {t('+ Add item')}
+          {t('Add item')}
         </button>
       }
     >
@@ -445,14 +446,18 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange,
   }
 
   return (
-    <div className={`rounded-lg border transition-all duration-200 ${isHeld ? 'scale-[1.01] border-brass shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40' : 'border-ink-line'}`}>
+    <div className={`rounded-2xl border shadow-sm transition-all duration-200 ${isHeld ? 'scale-[1.01] border-brass shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40' : 'border-ink-line'}`}>
       <div className="flex flex-col gap-3 px-3.5 py-2.5 text-base sm:flex-row sm:items-center sm:justify-between">
         {/* The actual drag handle - only this part of the row picks the
             item up, so every action button below stays a normal,
             immediate click with no risk of triggering reorder instead. */}
         <div ref={dragRef} {...dragHandlers} className={`flex items-center gap-3 rounded-md ${dragHandlers ? 'cursor-pointer select-none' : ''}`}>
-          {item.image_url && (
-            <img src={item.image_url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" draggable={false} />
+          {item.image_url ? (
+            <img src={item.image_url} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" draggable={false} />
+          ) : (
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ink font-display text-sm text-ivory-dim">
+              {item.name.trim()[0]?.toUpperCase() || '?'}
+            </div>
           )}
           <div>
             <span className="text-ivory">{item.name}</span>
@@ -461,27 +466,39 @@ function ItemRow({ item, items, businessId, categories, onItemsChange, onChange,
             {item.offer_price != null && <span className="ml-2 rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{t('Special offer')}</span>}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Five separate text buttons used to fight for space and
+            attention equally, whether they were "edit the name" or
+            "permanently delete this item" - icon-only pills read faster
+            (a real IG/TikTok post's action row is icons, never labeled
+            text buttons) and put the one truly destructive action in its
+            own visually distinct danger color instead of blending in. */}
+        <div className="flex flex-wrap items-center gap-1.5">
           <ActionButton
+            size="sm"
+            title={item.is_available ? t('Mark unavailable') : t('Mark available')}
+            aria-label={item.is_available ? t('Mark unavailable') : t('Mark available')}
             onClick={() => {
               onItemsChange(items.map((i) => (i.id === item.id ? { ...i, is_available: !i.is_available } : i)));
               updateMenuItem(businessId, item.id, { isAvailable: !item.is_available }).catch(onChange);
             }}
           >
-            {item.is_available ? t('Mark unavailable') : t('Mark available')}
+            {item.is_available ? <Eye size={14} /> : <EyeOff size={14} />}
           </ActionButton>
-          <ActionButton onClick={() => setShowAddons((s) => !s)}>{t('Add-ons')}</ActionButton>
-          <ActionButton onClick={() => setShowRecipe((s) => !s)}>{t('Recipe')}</ActionButton>
-          <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
+          <ActionButton size="sm" title={t('Add-ons')} aria-label={t('Add-ons')} onClick={() => setShowAddons((s) => !s)}><Puzzle size={14} /></ActionButton>
+          <ActionButton size="sm" title={t('Recipe')} aria-label={t('Recipe')} onClick={() => setShowRecipe((s) => !s)}><ClipboardList size={14} /></ActionButton>
+          <ActionButton size="sm" title={t('Edit')} aria-label={t('Edit')} onClick={() => setEditing(true)}><Pencil size={14} /></ActionButton>
           <ActionButton
+            size="sm"
             danger
+            title={t('Remove')}
+            aria-label={t('Remove')}
             onClick={async () => {
               if (!(await confirm({ title: t('Remove this item?'), message: `${t('Remove')} "${item.name}"? ${t("This can't be undone.")}`, confirmLabel: t('Remove'), danger: true }))) return;
               onItemsChange(items.filter((i) => i.id !== item.id));
               deleteMenuItem(businessId, item.id).catch(onChange);
             }}
           >
-            {t('Remove')}
+            <Trash2 size={14} />
           </ActionButton>
         </div>
       </div>

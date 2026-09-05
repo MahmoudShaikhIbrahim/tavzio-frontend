@@ -32,11 +32,11 @@ export default function BusinessesList() {
         placeholder="Search by name..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="mt-5 w-full max-w-sm rounded-lg border border-ink-line bg-ink-soft px-5 py-4 text-base
+        className="mt-5 w-full max-w-sm rounded-full border border-ink-line bg-ink-soft px-5 py-3 text-base
                    text-ivory placeholder:text-ivory-dim/60 focus:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       />
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-ink-line">
+      <div className="mt-5 overflow-hidden rounded-2xl border border-ink-line shadow-sm">
         <div className="overflow-x-auto">
         <table className="w-full text-left text-base">
           <thead className="bg-ink-soft text-ivory-dim">
@@ -58,7 +58,10 @@ export default function BusinessesList() {
             {businesses.map((b) => (
               <tr key={b.id} className="border-t border-ink-line hover:bg-ink-soft/50">
                 <td className="px-4 py-3">
-                  <Link to={`/admin/super/businesses/${b.id}`} className="rounded text-ivory hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  <Link to={`/admin/super/businesses/${b.id}`} className="flex items-center gap-2.5 rounded text-ivory hover:text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-xs font-medium text-brass">
+                      {b.name.trim()[0]?.toUpperCase() || '?'}
+                    </span>
                     {b.name}
                   </Link>
                 </td>

@@ -59,14 +59,14 @@ export default function SuperAdminCardEditorPage() {
 
       <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_1.5fr]">
         <div className="space-y-3">
-          <div className="rounded-xl border border-ink-line p-4 space-y-2">
+          <div className="rounded-2xl border border-ink-line p-4 space-y-2 shadow-sm">
             <a href={`${SITE}/card/${form.slug}`} target="_blank" rel="noreferrer" className="block text-sm text-brass hover:underline">Preview</a>
             <a href={`${BASE}/api/public/cards/${form.slug}/qr.png`} target="_blank" rel="noreferrer" className="block text-sm text-brass hover:underline">Download QR (PNG)</a>
             <a href={`${BASE}/api/public/cards/${form.slug}/qr.svg`} target="_blank" rel="noreferrer" className="block text-sm text-brass hover:underline">Download QR (SVG)</a>
             <button type="button" onClick={() => navigator.clipboard.writeText(`${SITE}/card/${form.slug}`)} className="block text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Copy link</button>
           </div>
           {analytics && (
-            <div className="rounded-xl border border-ink-line p-4">
+            <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <p className="mb-2 text-sm font-medium text-ivory">Analytics</p>
               <div className="grid grid-cols-2 gap-2 text-sm text-ivory-dim">
                 <p>Views: <span className="text-ivory">{analytics.view}</span></p>

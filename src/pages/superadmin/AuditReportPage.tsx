@@ -44,7 +44,7 @@ export default function AuditReportPage() {
           <button type="button"
             onClick={handleIssue}
             disabled={generating}
-            className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            className="rounded-full bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {generating ? 'Generating...' : 'Issue Audit Report'}
           </button>

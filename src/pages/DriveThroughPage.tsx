@@ -271,6 +271,7 @@ function DriveThroughContent({ slug }: { slug: string }) {
   const visibleItems = q ? searched : (effectiveCategory ? grouped[effectiveCategory] || [] : []);
 
   return (
+    <>
     <Shell isRtl={isRtl}>
       <h1 className="font-display text-2xl text-ivory">{t('dtHeading')}</h1>
       <p className="mt-1 text-sm text-ivory-dim">{t('dtSubtitle')}</p>
@@ -311,10 +312,10 @@ function DriveThroughContent({ slug }: { slug: string }) {
 
       {cart.length > 0 && (
         <>
-          <div className="mt-4 space-y-2 border-t border-ink-line pt-3">
+          <div id="dt-checkout" className="mt-4 scroll-mt-24 space-y-2 border-t border-ink-line pt-3">
             <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim">{t('tbYourOrder')}</p>
             {cart.map((line) => (
-              <div key={`${line.menuItemId}-${line.note}`} className="flex items-start justify-between gap-2 rounded-lg bg-ink-soft px-3 py-2">
+              <div key={`${line.menuItemId}-${line.note}`} className="flex items-start justify-between gap-2 rounded-2xl border border-ink-line bg-ink-soft px-3.5 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-ivory">{line.quantity}× {line.name}</p>
                   {line.note && <p className="mt-0.5 text-xs italic text-brass">"{line.note}"</p>}
@@ -324,14 +325,14 @@ function DriveThroughContent({ slug }: { slug: string }) {
                     type="button"
                     onClick={() => changeQuantity(line.menuItemId, line.note, -1)}
                     aria-label={`Decrease quantity of ${line.name}`}
-                    className="flex h-8 w-8 items-center justify-center rounded border border-ink-line text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >−</button>
                   <span className="w-4 text-center text-sm text-ivory">{line.quantity}</span>
                   <button
                     type="button"
                     onClick={() => changeQuantity(line.menuItemId, line.note, 1)}
                     aria-label={`Increase quantity of ${line.name}`}
-                    className="flex h-8 w-8 items-center justify-center rounded border border-brass/40 text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-brass/40 text-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >+</button>
                   <button
                     type="button"
@@ -390,7 +391,36 @@ function DriveThroughContent({ slug }: { slug: string }) {
       )}
 
       <Link to={`/${slug}/book`} className="mt-6 block rounded text-center text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('back')}</Link>
+      {/* Keeps the sticky bar below from ever covering the last real
+          field/button once someone scrolls to the bottom. */}
+      {cart.length > 0 && <div className="h-20" aria-hidden="true" />}
     </Shell>
+
+    {/* Real restructure: a persistent bottom bar the moment there's
+        anything in the cart, the same "your order is one tap away, no
+        matter how far you've scrolled the menu" pattern every real food-
+        ordering app (Uber Eats, Deliveroo, DoorDash) uses - instead of
+        the only way back to checkout being to scroll all the way down
+        past the whole menu again. Purely a jump-to-anchor, not a second
+        checkout path - the actual order summary/payment form below is
+        completely unchanged. */}
+    {cart.length > 0 && (
+      <div className="fixed inset-x-0 bottom-0 z-dropdown border-t border-brass/30 bg-ink-soft/95 backdrop-blur px-5 py-3 shadow-2xl shadow-black/40">
+        <a
+          href="#dt-checkout"
+          className="mx-auto flex max-w-lg items-center justify-between gap-3 rounded-full bg-brass px-5 py-3 text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1.5 text-xs text-brass">
+              {cart.reduce((n, l) => n + l.quantity, 0)}
+            </span>
+            {t('tbYourOrder')}
+          </span>
+          <span className="text-sm font-semibold">AED {cartTotal.toFixed(2)}</span>
+        </a>
+      </div>
+    )}
+    </>
   );
 }
 

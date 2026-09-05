@@ -106,7 +106,7 @@ export function PaymentRowItem({ payment, businessId, onChange }: { payment: Pay
   }
 
   return (
-    <div className="rounded-lg border border-ink-line px-3.5 py-2.5 text-base">
+    <div className="rounded-2xl border border-ink-line px-3.5 py-2.5 text-base shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-ivory-dim">
           {new Date(payment.created_at).toLocaleString()}

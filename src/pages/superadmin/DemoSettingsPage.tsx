@@ -106,7 +106,7 @@ export default function DemoSettingsPage() {
           <Field label="Business name">
             <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} className={inputClass} />
           </Field>
-          <button type="button" onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {savingIdentity ? 'Saving...' : 'Save name'}
           </button>
         </div>
@@ -243,7 +243,7 @@ function AddItemForm({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
         <Field label="Category"><input value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass} /></Field>

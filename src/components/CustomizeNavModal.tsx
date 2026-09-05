@@ -56,7 +56,7 @@ export default function CustomizeNavModal({
               <div key={item.path}
                 ref={(el) => drag.registerItemRef(item.path, el)}
                 {...handlers}
-                className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 transition-all duration-200 ${
+                className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-sm transition-all duration-200 ${
                   isHeld ? 'scale-[1.02] border-brass bg-ink shadow-lg ring-2 ring-brass' : isPlaceTarget ? 'border-dashed border-brass/40 bg-ink' : 'border-ink-line bg-ink'
                 }`}
               >
@@ -66,7 +66,7 @@ export default function CustomizeNavModal({
                   onPointerDown={(e) => e.stopPropagation()}
                   onPointerUp={(e) => e.stopPropagation()}
                   onClick={() => onHide(item.path)}
-                  className="ms-1 shrink-0 rounded-lg border border-ink-line px-2.5 py-1.5 text-xs text-ivory-dim hover:border-danger hover:text-danger"
+                  className="ms-1 shrink-0 rounded-full border border-ink-line px-2.5 py-1.5 text-xs text-ivory-dim hover:border-danger hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
                 >
                   {t('Hide')}
                 </button>
@@ -88,7 +88,7 @@ export default function CustomizeNavModal({
         <div className="border-b border-ink-line p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-xl text-ivory">{t('Customize navigation')}</h2>
-            <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90">
+            <button type="button" onClick={onDone} className="rounded-full bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {t('Done')}
             </button>
           </div>
@@ -114,7 +114,7 @@ export default function CustomizeNavModal({
                     key={tab.path}
                     type="button"
                     onClick={() => onRestore(tab.path)}
-                    className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass hover:text-ivory"
+                    className="rounded-full border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   >
                     + {t(tab.label)}
                   </button>

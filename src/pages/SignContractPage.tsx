@@ -143,7 +143,7 @@ export default function SignContractPage() {
               href={`${BASE}/api/public/contracts/${token}/pdf`}
               target="_blank"
               rel="noreferrer"
-              className="shrink-0 rounded-lg border border-[#b8925a]/40 px-3.5 py-1.5 text-sm text-[#b8925a] hover:bg-[#b8925a]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f1a16]"
+              className="shrink-0 rounded-full border border-[#b8925a]/40 px-3.5 py-1.5 text-sm text-[#b8925a] hover:bg-[#b8925a]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f1a16]"
             >
               Download PDF
             </a>
@@ -160,7 +160,7 @@ export default function SignContractPage() {
         </pre>
 
         {!contract.isSigned && (
-          <div className="space-y-3 rounded-lg border border-[#3a332c] bg-[#1f1a16] p-5">
+          <div className="space-y-3 rounded-2xl border border-[#3a332c] bg-[#1f1a16] p-5 shadow-sm">
             <p className="text-sm text-[#a79a87]">
               Signing electronically here is legally valid under UAE Federal Decree-Law No. 46 of 2021 on Electronic
               Transactions and Trust Services. Your typed name, the time, and your IP address are recorded alongside
@@ -180,7 +180,7 @@ export default function SignContractPage() {
             <button type="button"
               onClick={handleSign}
               disabled={signing || !agreed}
-              className="w-full rounded-lg bg-[#b8925a] px-4 py-2.5 text-base font-medium text-[#141110] hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f1a16]"
+              className="w-full rounded-full bg-[#b8925a] px-4 py-2.5 text-base font-medium text-[#141110] hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8925a] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1f1a16]"
             >
               {signing ? 'Signing...' : 'Sign & continue to payment setup'}
             </button>

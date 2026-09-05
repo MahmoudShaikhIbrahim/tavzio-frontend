@@ -134,7 +134,7 @@ function PrinterSetup({ businessId }: { businessId: string }) {
         <button type="button"
           onClick={handleSave}
           disabled={saving || (enabled && !printerId)}
-          className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {saving ? t('Saving...') : t('Save')}
         </button>

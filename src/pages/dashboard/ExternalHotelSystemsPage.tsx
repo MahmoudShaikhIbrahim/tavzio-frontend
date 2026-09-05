@@ -67,7 +67,7 @@ export default function ExternalHotelSystemsPage() {
       </p>
       <div className="space-y-3">
         {systems.map((s) => (
-          <div key={s.provider} className="rounded-lg border border-ink-line p-4">
+          <div key={s.provider} className="rounded-2xl border border-ink-line p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-base text-ivory">{s.label} <span className="text-xs uppercase text-brass">{ROLE_LABEL[s.role]}</span></p>
@@ -101,7 +101,7 @@ export default function ExternalHotelSystemsPage() {
                     </button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => startEditing(s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  <button type="button" onClick={() => startEditing(s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Connect')}
                   </button>
                 )}

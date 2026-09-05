@@ -144,7 +144,7 @@ function SalaryStructureForm({ businessId, staffId, staffName, existing, onClose
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <p className="mb-3 text-base text-ivory">Salary for {staffName}</p>
       {existing && <p className="mb-3 text-sm text-ivory-dim">This replaces the current structure - the old one is kept on record, closed out as of today.</p>}
       <div className="flex flex-wrap items-end gap-3">
@@ -213,7 +213,7 @@ function PayrollRunsSection({ businessId }: { businessId: string }) {
       !creating && <ActionButton onClick={() => setCreating(true)}>New run</ActionButton>
     }>
       {creating && (
-        <div className="rounded-lg border border-ink-line p-4">
+        <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
           <p className="mb-3 text-base text-ivory">New payroll run</p>
           <div className="flex flex-wrap items-end gap-3">
             <Field label="Period start"><input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} className={`${inputClass} w-40`} /></Field>
@@ -309,7 +309,7 @@ function PayrollRunRow({ businessId, run, expanded, onToggle, onChanged }: {
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button type="button" onClick={onToggle} className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <p className="text-base text-ivory">
@@ -412,7 +412,7 @@ function PayslipRow({ businessId, runId, payslip, editable, onChanged }: {
       {editing && (
         <tr>
           <td colSpan={8} className="pb-3">
-            <div className="rounded-lg border border-ink-line p-3">
+            <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
               {deductions.map((d, i) => (
                 <div key={i} className="flex items-center justify-between py-1 text-sm text-ivory-dim">
                   <span>{d.label}</span>

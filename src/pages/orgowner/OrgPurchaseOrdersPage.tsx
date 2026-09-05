@@ -47,13 +47,13 @@ export default function OrgPurchaseOrdersPage() {
         {loading && <p className="text-ivory-dim">Loading...</p>}
         <div className="space-y-3">
           {orders.map((po) => (
-            <div key={po.id} className="rounded-lg border border-ink-line p-4">
+            <div key={po.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <p className="text-base text-ivory">
                 {po.suppliers?.name || 'No supplier'} · AED {po.total_cost_aed.toFixed(2)} · {new Date(po.ordered_at).toLocaleDateString()}
               </p>
               <div className="mt-2 space-y-2">
                 {(po.purchase_order_items || []).map((item) => (
-                  <div key={item.id} className="rounded-lg border border-ink-line/60 px-3 py-2 text-sm">
+                  <div key={item.id} className="rounded-xl border border-ink-line/60 px-3 py-2 text-sm">
                     <p className="text-ivory">{item.quantity} {item.item_unit} {item.item_name} · AED {item.unit_cost_aed}/unit</p>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {(item.purchase_order_allocations || []).map((a) => (
@@ -124,7 +124,7 @@ function NewOrgPoForm({ suppliers, businesses, onSaved }: {
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-ink-line p-4">
+    <div className="space-y-4 rounded-2xl border border-ink-line p-4 shadow-sm">
       <Field label="Supplier">
         <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className={inputClass}>
           <option value="">No specific supplier</option>

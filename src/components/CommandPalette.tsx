@@ -86,7 +86,7 @@ export default function CommandPalette({ items, actions = [], t, onNavigate }: {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-lg border border-ink-line px-3 py-1.5 text-sm text-ivory-dim hover:border-brass/40 hover:text-ivory"
+        className="flex items-center gap-2 rounded-full border border-ink-line px-3.5 py-2 text-sm text-ivory-dim transition-colors hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
         {t('Search...')}
@@ -115,7 +115,7 @@ export default function CommandPalette({ items, actions = [], t, onNavigate }: {
                 <button
                   type="button"
                   onClick={() => go(suggestion)}
-                  className="block w-full rounded-lg px-3 py-3 text-start text-base text-ivory hover:bg-ink"
+                  className="block w-full rounded-xl px-3 py-3 text-start text-base text-ivory hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset"
                 >
                   <span className="text-ivory-dim">{t('Did you mean')} </span>
                   <span className="font-medium text-brass">{t(suggestion.label)}</span>
@@ -128,7 +128,7 @@ export default function CommandPalette({ items, actions = [], t, onNavigate }: {
                   key={`${item.kind || 'page'}-${item.label}`}
                   onClick={() => go(item)}
                   onMouseEnter={() => setActiveIndex(i)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-start text-base transition-colors ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-start text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
                     i === activeIndex ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
                   }`}
                 >

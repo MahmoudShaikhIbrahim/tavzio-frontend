@@ -20,7 +20,7 @@ import { useConfirm } from '../../components/ConfirmDialog';
 import SectionRequestNotifications from '../../components/SectionRequestNotifications';
 import RecordPaymentFlow from '../../components/RecordPaymentFlow';
 import FloorPlanCanvas, { tableDisplayStatus } from '../../components/FloorPlanCanvas';
-import { Map as MapIcon, ListOrdered, Flame, Trash2, Check, X as XIcon } from 'lucide-react';
+import { Map as MapIcon, ListOrdered, Flame, Trash2, Check, X as XIcon, ChevronDown } from 'lucide-react';
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   // listOrders filters awaiting_payment out server-side - this view never
@@ -299,14 +299,14 @@ export default function OrdersPage() {
               keyboard shortcut), per the explicit requirement. Orders
               and Tables Map read the exact same live data underneath;
               this only changes which side is currently shown. */}
-          <div data-tour="orders-map-toggle" className="flex items-center gap-1 rounded-lg border border-ink-line bg-ink p-1">
+          <div data-tour="orders-map-toggle" className="flex items-center gap-1 rounded-full border border-ink-line bg-ink p-1">
             <button type="button" onClick={() => setView('orders')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'orders' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'orders' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
             >
               <ListOrdered size={15} strokeWidth={2} /> {t('Orders')}
             </button>
             <button type="button" onClick={() => setView('map')}
-              className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'map' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${view === 'map' ? 'bg-brass text-ink' : 'text-ivory-dim hover:text-ivory'}`}
             >
               <MapIcon size={15} strokeWidth={2} /> {t('Tables Map')}
             </button>
@@ -316,7 +316,7 @@ export default function OrdersPage() {
               which was exactly the confusing overlap between Orders and
               POS. This page is now purely the live status/notifications
               feed; POS is the only place a new order gets created. */}
-          <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+          <button type="button" onClick={() => navigate('/admin/dashboard/pos')} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {t('Take an order in POS →')}
           </button>
           {/* Real bug fix (confirmed by explicit report: the header
@@ -331,7 +331,7 @@ export default function OrdersPage() {
           {payBillEnabled === true && (
             <button type="button"
               onClick={() => setShowRecordPayment(true)}
-              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+              className="rounded-full border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
               {t('Record payment')}
             </button>
@@ -339,7 +339,7 @@ export default function OrdersPage() {
           {payBillEnabled === false && (
             <button type="button"
               onClick={() => navigate('/admin/dashboard/table-receipts')}
-              className="rounded-lg border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+              className="rounded-full border border-brass/40 px-3.5 py-1.5 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
               {t('Table Receipts')}
             </button>
@@ -351,11 +351,11 @@ export default function OrdersPage() {
       {hasAttentionItems && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {readyUnacked.map((o) => (
-            <div key={o.id} className="rounded-lg border border-success/50 bg-success/10 p-3">
+            <div key={o.id} className="rounded-2xl border border-success/50 bg-success/10 p-3 shadow-sm">
               <p className="text-sm font-medium text-success">
                 {t('Ready —')} <span className="text-ivory">{o.table_label || t('No table')}</span>
               </p>
-              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-2 w-full rounded-md border border-success px-2 min-h-[36px] py-1.5 text-xs text-success hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success">
+              <button type="button" onClick={() => handleAckReady(o.id)} className="mt-2 w-full rounded-full border border-success px-2 min-h-[36px] py-1.5 text-xs text-success hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success">
                 {t('Dismiss')}
               </button>
             </div>
@@ -373,7 +373,7 @@ export default function OrdersPage() {
             const rawLabel = r.request_type === 'call_waiter' ? t('Call waiter') : r.request_type === 'request_bill' ? t('Request bill') : r.custom_request_label || t('Request');
             const { title, note } = splitRequestLabel(rawLabel);
             return (
-              <div key={r.id} className={`rounded-lg border p-3 ${customStyle ? '' : 'border-brass/50 bg-brass/10'}`} style={customStyle}>
+              <div key={r.id} className={`rounded-2xl border p-3 shadow-sm ${customStyle ? '' : 'border-brass/50 bg-brass/10'}`} style={customStyle}>
                 <p className="text-sm font-semibold text-brass">
                   {title}
                   {' — '}<span className="font-normal text-ivory">{r.table_label || t('No table')}</span>
@@ -383,12 +383,12 @@ export default function OrdersPage() {
                   {r.table_label && tableGroups[r.table_label] && (
                     <a
                       href={`#table-${encodeURIComponent(r.table_label)}`}
-                      className="flex-1 rounded-md border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                      className="flex-1 rounded-full border border-brass bg-brass/20 px-2 min-h-[36px] py-1.5 text-center text-xs text-brass hover:bg-brass/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                     >
                       {t('View order')}
                     </a>
                   )}
-                  <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  <button type="button" onClick={() => handleDismissRequest(r.id)} className="flex-1 rounded-full border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                     {t('Dismiss')}
                   </button>
                 </div>
@@ -396,7 +396,7 @@ export default function OrdersPage() {
             );
           })}
           {cashPending.map((item) => (
-            <div key={item.id} className="rounded-lg border border-warning/50 bg-warning/10 p-3">
+            <div key={item.id} className="rounded-2xl border border-warning/50 bg-warning/10 p-3 shadow-sm">
               <p className="text-sm font-medium text-warning">
                 {t('Cash pending —')} <span className="text-ivory">{item.table_label || t('No table')}</span>
               </p>
@@ -405,13 +405,13 @@ export default function OrdersPage() {
             </div>
           ))}
           {claims.map((c) => (
-            <div key={c.id} className="rounded-lg border border-brass/50 bg-brass/10 p-3">
+            <div key={c.id} className="rounded-2xl border border-brass/50 bg-brass/10 p-3 shadow-sm">
               <p className="text-sm font-medium text-brass">
                 {t('Loyalty reward —')} <span className="text-ivory">{c.table_label || t('No table')}</span>
               </p>
               <button type="button"
                 onClick={() => handleApplyClaim(c.id)}
-                className="mt-2 w-full rounded-md border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                className="mt-2 w-full rounded-full border border-brass px-2 min-h-[36px] py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {t('Mark redeemed')}
               </button>
@@ -434,7 +434,13 @@ export default function OrdersPage() {
             {Object.keys(tableGroups).length === 0 ? (
               <p className="text-base text-ivory-dim">{t('No active orders right now.')}</p>
             ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              // One collapsed line per table, not a card grid - the same
+              // "list first, tap to open the thread" pattern a chat app
+              // uses so dozens of conversations fit on one screen. A busy
+              // shift with 15+ open tables now scans as 15 short rows
+              // instead of scrolling through a wall of cards; tap any row
+              // to expand its items in place, right where you tapped.
+              <div className="divide-y divide-ink-line overflow-hidden rounded-2xl border border-ink-line">
                 {Object.keys(tableGroups).map((table) => (
                   <TableGroup key={table} table={table} orders={tableGroups[table]} businessId={businessId} payBillEnabled={!!payBillEnabled} onOrdersChange={setOrders} onChange={reload} />
                 ))}
@@ -541,7 +547,7 @@ export default function OrdersPage() {
                     creating one) - prefixing it again here duplicated
                     it on every single table, every time. */}
                 <h2 className="font-display text-2xl text-ivory">{merged ? tableLabels.join(' + ') : table.label}</h2>
-                <span className="rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide" style={{ color, backgroundColor: hexToRgba(color, 0.15) || undefined }}>{t(statusLabel)}</span>
+                <span className="rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide" style={{ color, backgroundColor: hexToRgba(color, 0.15) || undefined }}>{t(statusLabel)}</span>
               </div>
               {table.zone && <p className="mt-1 text-sm text-ivory-dim">{table.zone} · {table.seatCount + (merged?.seatCount || 0)} {t('seats')}</p>}
               <div className="my-4 border-t border-ink-line" />
@@ -566,11 +572,11 @@ export default function OrdersPage() {
               )}
               <div className="mt-5 flex flex-col gap-2">
                 {payBillEnabled && payableItems.length > 0 && (
-                  <button type="button" onClick={() => setTableRecordPayment(true)} className="w-full rounded-lg bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+                  <button type="button" onClick={() => setTableRecordPayment(true)} className="w-full rounded-full bg-brass px-4 py-2.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
                     {t('Record Payment')}
                   </button>
                 )}
-                <button type="button" onClick={() => setSelectedTableId(null)} className="w-full rounded-lg border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                <button type="button" onClick={() => setSelectedTableId(null)} className="w-full rounded-full border border-ink-line px-4 py-2.5 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Close')}
                 </button>
               </div>
@@ -625,6 +631,11 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
   table: string; orders: OrderRow[]; businessId: string; payBillEnabled: boolean; onOrdersChange: (updater: (prev: OrderRow[]) => OrderRow[]) => void; onChange: () => void;
 }) {
   const { t } = useT();
+  // Auto-expands when a "View order" link from the requests panel above
+  // jumps here (matches this row's own #table-... anchor) - landing on a
+  // collapsed row after tapping "View order" would defeat the point of
+  // that link.
+  const [expanded, setExpanded] = useState(() => window.location.hash === `#table-${encodeURIComponent(table)}`);
   const confirm = useConfirm();
   const [clearing, setClearing] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -714,136 +725,135 @@ function TableGroup({ table, orders, businessId, payBillEnabled, onOrdersChange,
     }
   }
 
-  return (
-    <div
-      id={`table-${encodeURIComponent(table)}`}
-      className={`mx-auto flex w-full max-w-sm scroll-mt-24 flex-col overflow-hidden rounded-2xl border bg-ink-soft shadow-sm ${isDriveThrough ? 'border-drivethrough/60' : 'border-ink-line'}`}
-    >
-      {/* Header: table name is the one thing that must read at a glance
-          across a wall of these cards, so it's the largest text in the
-          card - everything else (count, total) demotes to a subtitle
-          chip, the same "title big, meta small" split every chat/feed
-          app (WhatsApp, Instagram, TikTok) uses for its list rows. */}
-      <div className={`flex items-center justify-between gap-2 px-3.5 py-3 ${isDriveThrough ? 'bg-drivethrough/10' : 'bg-ink'}`}>
-        <div className="min-w-0">
-          <h2 className={`truncate font-display text-lg font-medium ${isDriveThrough ? 'text-drivethrough' : 'text-ivory'}`}>
-            {isDriveThrough ? t('Drive Through') : table}
-          </h2>
-          <p className="text-xs text-ivory-dim">
-            {orders.length} {orders.length === 1 ? t('order') : t('orders')} · {tableTotal.toFixed(2)} {t('total')}
-          </p>
-        </div>
-        {isDriveThrough && arrivalAt ? (
-          <ArrivalCountdown arrivalAt={arrivalAt} />
-        ) : (
-          <span className="shrink-0 rounded-full bg-brass/15 px-2.5 py-1 text-xs font-medium text-brass">{tableTotal.toFixed(2)}</span>
-        )}
-      </div>
+  const itemSummary = allItems.map(({ item }) => `${item.quantity}× ${item.item_name}`).join(', ');
+  const hasAlert = heldByCourse.size > 0 || !!syncIssue;
 
-      {heldByCourse.size > 0 && (
-        <div className="space-y-1.5 border-b border-ink-line bg-ink px-3.5 py-2.5">
-          {[...heldByCourse.entries()].map(([course, entries]) => {
-            const count = entries.reduce((s, e) => s + e.count, 0);
-            return (
-              <div key={course} className="flex items-center justify-between gap-2 text-sm">
-                <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
+  return (
+    <div id={`table-${encodeURIComponent(table)}`} className="scroll-mt-24">
+      {/* Collapsed: one line, everything that matters at a glance - table,
+          a one-line summary of what's on it, the total, and a status dot
+          - the same density a chat app's conversation list uses so many
+          rows fit on screen without scrolling. Tap the row to expand. */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className={`flex w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${expanded ? 'bg-ink' : 'bg-ink-soft'}`}
+        aria-expanded={expanded}
+      >
+        <span className={`h-2 w-2 shrink-0 rounded-full ${isDriveThrough ? 'bg-drivethrough' : hasAlert ? 'bg-warning' : 'bg-brass'}`} />
+        <span className={`w-24 shrink-0 truncate font-display text-base font-medium ${isDriveThrough ? 'text-drivethrough' : 'text-ivory'}`}>
+          {isDriveThrough ? t('Drive Through') : table}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm text-ivory-dim">{itemSummary || t('All items deleted')}</span>
+        {isDriveThrough && arrivalAt && <ArrivalCountdown arrivalAt={arrivalAt} />}
+        <span className="shrink-0 text-sm font-medium text-brass">{tableTotal.toFixed(2)}</span>
+        <ChevronDown size={16} className={`shrink-0 text-ivory-dim transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      {expanded && (
+        <div className="border-t border-ink-line bg-ink-soft">
+          {heldByCourse.size > 0 && (
+            <div className="space-y-1.5 border-b border-ink-line bg-ink px-4 py-2.5">
+              {[...heldByCourse.entries()].map(([course, entries]) => {
+                const count = entries.reduce((s, e) => s + e.count, 0);
+                return (
+                  <div key={course} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-ivory-dim">{course} {t('held')} ({count})</span>
+                    <button type="button"
+                      onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
+                      disabled={firing === course}
+                      className="flex shrink-0 items-center gap-1 rounded-full bg-brass px-3 min-h-[32px] py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                    >
+                      <Flame size={13} />
+                      {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="divide-y divide-ink-line/60">
+            {allItems.map(({ item, order }) => (
+              <div key={item.id} className="flex items-start gap-2.5 px-4 py-2.5">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-[11px] font-semibold text-brass">
+                  {item.quantity}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ivory">{item.item_name}</p>
+                  {(item.course_status === 'held' || item.cash_pending) && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {item.course_status === 'held' && (
+                        <span className="rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
+                      )}
+                      {item.cash_pending && (
+                        <span className="rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
+                      )}
+                    </div>
+                  )}
+                  {item.addons.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {item.addons.map((a, i) => (
+                        <span key={i} className="rounded-full bg-brass/10 px-2 py-0.5 text-[11px] text-brass">+ {a.name}</span>
+                      ))}
+                    </div>
+                  )}
+                  {item.note && <p className="mt-1 text-xs italic text-ivory-dim">— {item.note}</p>}
+                </div>
                 <button type="button"
-                  onClick={() => handleFireCourse(course, entries.map((e) => e.orderId))}
-                  disabled={firing === course}
-                  className="flex shrink-0 items-center gap-1 rounded-full bg-brass px-3 min-h-[32px] py-1 text-xs font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                  onClick={async () => {
+                    if (!(await confirm({ title: t('Delete item?'), message: `${t('Delete just this item')}: ${item.item_name}?`, confirmLabel: t('Delete'), danger: true }))) return;
+                    onOrdersChange((prev) =>
+                      prev.map((o) =>
+                        o.id === order.id
+                          ? { ...o, order_items: (o.order_items || []).map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
+                          : o
+                      )
+                    );
+                    voidOrderItem(businessId, order.id, item.id).catch(onChange);
+                  }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                  title={t('Delete just this item')}
+                  aria-label={t('Delete just this item')}
                 >
-                  <Flame size={13} />
-                  {firing === course ? t('Firing...') : `${t('Fire')} ${course}`}
+                  <Trash2 size={14} />
                 </button>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Item rows: a small round quantity bubble (the same shape as a
-          chat app's unread-count badge) instead of a boxy "2×" chip, and
-          the delete action demotes to a quiet icon-only button instead
-          of a text link competing with the item name for attention. */}
-      <div className="divide-y divide-ink-line/60">
-        {allItems.map(({ item, order }) => (
-          <div key={item.id} className="flex items-start gap-2.5 px-3.5 py-2.5">
-            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-[11px] font-semibold text-brass">
-              {item.quantity}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-ivory">{item.item_name}</p>
-              {(item.course_status === 'held' || item.cash_pending) && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {item.course_status === 'held' && (
-                    <span className="rounded-full border border-brass/40 px-2 py-0.5 text-[10px] text-brass">{t('Held:')} {item.course}</span>
-                  )}
-                  {item.cash_pending && (
-                    <span className="rounded-full border border-warning/40 px-2 py-0.5 text-[10px] text-warning">{t('Cash pending')}</span>
-                  )}
-                </div>
-              )}
-              {item.addons.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {item.addons.map((a, i) => (
-                    <span key={i} className="rounded-full bg-brass/10 px-2 py-0.5 text-[11px] text-brass">+ {a.name}</span>
-                  ))}
-                </div>
-              )}
-              {item.note && <p className="mt-1 text-xs italic text-ivory-dim">— {item.note}</p>}
-            </div>
-            <button type="button"
-              onClick={async () => {
-                if (!(await confirm({ title: t('Delete item?'), message: `${t('Delete just this item')}: ${item.item_name}?`, confirmLabel: t('Delete'), danger: true }))) return;
-                onOrdersChange((prev) =>
-                  prev.map((o) =>
-                    o.id === order.id
-                      ? { ...o, order_items: (o.order_items || []).map((i) => (i.id === item.id ? { ...i, voided: true } : i)) }
-                      : o
-                  )
-                );
-                voidOrderItem(businessId, order.id, item.id).catch(onChange);
-              }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-danger/10 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-              title={t('Delete just this item')}
-              aria-label={t('Delete just this item')}
-            >
-              <Trash2 size={14} />
-            </button>
+            ))}
+            {allItems.length === 0 && <p className="px-4 py-3 text-sm italic text-ivory-dim">{t('All items deleted')}</p>}
           </div>
-        ))}
-        {allItems.length === 0 && <p className="px-3.5 py-3 text-sm italic text-ivory-dim">{t('All items deleted')}</p>}
-      </div>
 
-      {(notes.length > 0 || syncIssue) && (
-        <div className="space-y-1 border-t border-ink-line px-3.5 py-2">
-          {notes.map((n, i) => <p key={i} className="text-xs italic text-brass">{t('Note:')} {n}</p>)}
-          {syncIssue && (
-            <p className="text-xs text-ivory-dim">{t('POS sync failed')}{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
+          {(notes.length > 0 || syncIssue) && (
+            <div className="space-y-1 border-t border-ink-line px-4 py-2">
+              {notes.map((n, i) => <p key={i} className="text-xs italic text-brass">{t('Note:')} {n}</p>)}
+              {syncIssue && (
+                <p className="text-xs text-ivory-dim">{t('POS sync failed')}{syncIssue.pos_sync_error ? ` — ${syncIssue.pos_sync_error}` : ''}</p>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {cardId && (
-        <div className="flex shrink-0 gap-2 border-t border-ink-line px-3.5 py-2.5">
-          {!payBillEnabled && (
-            <button type="button"
-              onClick={handleMarkCompleted}
-              disabled={completing}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brass/40 px-3 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-            >
-              <Check size={13} />
-              {completing ? t('Completing...') : t('Mark completed')}
-            </button>
+          {cardId && (
+            <div className="flex shrink-0 gap-2 border-t border-ink-line px-4 py-2.5">
+              {!payBillEnabled && (
+                <button type="button"
+                  onClick={handleMarkCompleted}
+                  disabled={completing}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brass/40 px-3 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+                >
+                  <Check size={13} />
+                  {completing ? t('Completing...') : t('Mark completed')}
+                </button>
+              )}
+              <button type="button"
+                onClick={handleClearTable}
+                disabled={clearing}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-danger/40 px-3 min-h-[36px] py-1.5 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+              >
+                <XIcon size={13} />
+                {clearing ? t('Clearing...') : t('Clear table')}
+              </button>
+            </div>
           )}
-          <button type="button"
-            onClick={handleClearTable}
-            disabled={clearing}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-danger/40 px-3 min-h-[36px] py-1.5 text-xs font-medium text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-          >
-            <XIcon size={13} />
-            {clearing ? t('Clearing...') : t('Clear table')}
-          </button>
         </div>
       )}
     </div>

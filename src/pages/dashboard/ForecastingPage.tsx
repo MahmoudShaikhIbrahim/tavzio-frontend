@@ -71,7 +71,7 @@ function SalesForecastSection({ businessId }: { businessId: string }) {
           )}
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {forecast.forecast.map((f) => (
-              <div key={f.date} className={`rounded-lg border p-3 ${f.basedOnSampleSize < 3 ? 'border-warning/30 bg-warning/5' : 'border-ink-line'}`}>
+              <div key={f.date} className={`rounded-2xl border p-3 shadow-sm ${f.basedOnSampleSize < 3 ? 'border-warning/30 bg-warning/5' : 'border-ink-line'}`}>
                 <p className="text-sm text-ivory">{f.dayOfWeek}, {new Date(f.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
                 <p className="text-lg text-ivory">{f.forecastRevenueAed != null ? `AED ${f.forecastRevenueAed.toFixed(2)}` : t('No history yet')}</p>
                 <p className="text-xs text-ivory-dim">{t('based on')} {f.basedOnSampleSize} {t('past')} {f.dayOfWeek}{f.basedOnSampleSize === 1 ? '' : 's'}</p>
@@ -130,7 +130,7 @@ function BudgetSection({ businessId }: { businessId: string }) {
       {!loading && report && (
         <>
           {editing ? (
-            <div className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+            <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
               <Field label={t('Revenue budget (AED)')}>
                 <input type="number" value={revenueBudget} onFocus={(e) => e.target.select()} onChange={(e) => setRevenueBudget(e.target.value)} className={`${inputClass} w-32`} />
               </Field>
@@ -140,7 +140,7 @@ function BudgetSection({ businessId }: { businessId: string }) {
               <Field label={t('Labor cost % target')}>
                 <input type="number" value={laborCostBudget} onFocus={(e) => e.target.select()} onChange={(e) => setLaborCostBudget(e.target.value)} className={`${inputClass} w-28`} />
               </Field>
-              <button type="button" onClick={handleSaveBudget} disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              <button type="button" onClick={handleSaveBudget} disabled={saving} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 {saving ? t('Saving...') : t('Save budget')}
               </button>
               <button type="button" onClick={() => setEditing(false)} className="text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Cancel')}</button>
@@ -189,7 +189,7 @@ function BudgetCard({ label, actual, target, varianceAed, variancePct, note }: {
   const isCostCard = variancePct !== undefined;
   const goodVariance = variance != null && (isCostCard ? variance <= 0 : variance >= 0);
   return (
-    <div className="rounded-lg border border-ink-line p-3">
+    <div className="rounded-2xl border border-ink-line p-3 shadow-sm">
       <p className="text-xs text-ivory-dim">{label}</p>
       <p className="text-xl text-ivory">{actual ?? t('n/a')}</p>
       {target ? (

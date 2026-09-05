@@ -15,6 +15,7 @@ import { LINK_META, LINK_ORDER } from '../../lib/linkMeta';
 import { ICON_LIBRARY, getIcon, getIconColor } from '../../lib/iconLibrary';
 import { requestTargetSectionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, ActionButton } from '../../components/ui';
+import { Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useConfirm } from '../../components/ConfirmDialog';
 
 export default function LandingButtonsPage() {
@@ -34,9 +35,9 @@ export default function LandingButtonsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 border-b border-ink-line">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: 'thin' }}>
         {(['landing', ...(isHotel ? ['guest-portal'] as const : []), 'services', 'drive-through'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {tabKey === 'landing' ? t('Landing Page') : tabKey === 'guest-portal' ? t('Guest Portal Services') : tabKey === 'services' ? t('Bookable Services') : t('Drive Through')}
           </button>
         ))}
@@ -122,7 +123,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
 
   return (
     <Section title={t('Guest Portal Services')} action={
-      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('+ Add service')}</button>
+      <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add service')}</button>
     }>
       <p className="text-sm text-ivory-dim">
         {t('These are the buttons a guest sees under "Services" in the in-room NFC portal (Extra towels, Housekeeping, and so on) - rename, reorder, disable, or add your own. Each one routes to a specific place internally (housekeeping, maintenance, or a general staff request), which you pick when adding it.')}
@@ -134,7 +135,7 @@ function GuestPortalServicesSection({ businessId }: { businessId: string }) {
           editingId === s.id ? (
             <GuestServiceForm key={s.id} businessId={businessId} existing={s} onDone={() => { setEditingId(null); reload(); }} onCancel={() => setEditingId(null)} />
           ) : (
-            <div key={s.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 ${s.enabled ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
+            <div key={s.id} className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl border p-3 shadow-sm ${s.enabled ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
               <div>
                 <p className="text-base text-ivory">{s.label}</p>
                 <p className="text-sm text-ivory-dim">
@@ -421,13 +422,13 @@ function LandingPageButtonsSection({ business, businessId, onSaved }: { business
           const SelectedIcon = getIcon(cfg.icon || meta.defaultIcon);
           const selectedColor = getIconColor(cfg.icon || meta.defaultIcon);
           return (
-            <div key={key} className="space-y-3 rounded-xl border border-ink-line p-4">
+            <div key={key} className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
               {/* Identity - what this button is and whether it's live */}
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => toggleEnabled(key)}
-                  className={`shrink-0 rounded-lg border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
+                  className={`shrink-0 rounded-full border px-3.5 py-2 text-sm font-medium ${cfg.enabled ? 'border-brass text-brass' : 'border-ink-line text-ivory-dim'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}
                 >
                   {cfg.enabled ? t('On') : t('Off')}
                 </button>
@@ -710,7 +711,7 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
       : t('Link');
 
   return (
-    <div className="rounded-lg border border-ink-line px-5 py-4">
+    <div className="rounded-2xl border border-ink-line px-5 py-4 shadow-sm">
       <div className="flex flex-col gap-3 text-base sm:flex-row sm:items-center sm:justify-between">
         <span className="flex items-center gap-2 text-ivory">
           {button.image_url ? (
@@ -729,8 +730,9 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
             <span className="rounded-full border border-brass/40 px-2 py-0.5 text-xs text-brass">{button.target_section}</span>
           )}
         </span>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <ActionButton
+            size="sm"
             onClick={() => {
               onButtonsChange(buttons.map((b) => (b.id === button.id ? { ...b, enabled: !b.enabled } : b)));
               updateCustomButton(businessId, button.id, { enabled: !button.enabled }).catch(onChange);
@@ -738,15 +740,18 @@ function CustomButtonRow({ button, buttons, business, businessId, onButtonsChang
           >
             {button.enabled ? t('On') : t('Off')}
           </ActionButton>
-          <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
+          <ActionButton size="sm" title={t('Edit')} aria-label={t('Edit')} onClick={() => setEditing(true)}><Pencil size={14} /></ActionButton>
           <ActionButton
+            size="sm"
             danger
+            title={t('Delete')}
+            aria-label={t('Delete')}
             onClick={() => {
               onButtonsChange(buttons.filter((b) => b.id !== button.id));
               deleteCustomButton(businessId, button.id).catch(onChange);
             }}
           >
-            {t('Delete')}
+            <Trash2 size={14} />
           </ActionButton>
         </div>
       </div>
@@ -874,33 +879,39 @@ function ServiceRow({ service, services, businessId, onServicesChange, onChange,
   }
 
   return (
-    <div className="rounded-lg border border-ink-line px-3.5 py-2.5">
+    <div className="rounded-2xl border border-ink-line px-3.5 py-2.5 shadow-sm">
       <div className="flex flex-col gap-3 text-base sm:flex-row sm:items-center sm:justify-between">
         <div>
           <span className="text-ivory">{service.name}</span>
           <span className="ml-2 text-ivory-dim">{service.price.toFixed(2)} · {service.duration_minutes} min</span>
           {!service.is_available && <span className="ml-2 text-base text-danger">{t('unavailable')}</span>}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <ActionButton onClick={() => setShowOptions((s) => !s)}>{showOptions ? t('Hide options') : t('Options')}</ActionButton>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ActionButton size="sm" onClick={() => setShowOptions((s) => !s)}>{showOptions ? t('Hide options') : t('Options')}</ActionButton>
           <ActionButton
+            size="sm"
+            title={service.is_available ? t('Mark unavailable') : t('Mark available')}
+            aria-label={service.is_available ? t('Mark unavailable') : t('Mark available')}
             onClick={() => {
               onServicesChange(services.map((s) => (s.id === service.id ? { ...s, is_available: !s.is_available } : s)));
               updateService(businessId, service.id, { isAvailable: !service.is_available }).catch(onChange);
             }}
           >
-            {service.is_available ? t('Mark unavailable') : t('Mark available')}
+            {service.is_available ? <Eye size={14} /> : <EyeOff size={14} />}
           </ActionButton>
-          <ActionButton onClick={() => setEditing(true)}>{t('Edit')}</ActionButton>
+          <ActionButton size="sm" title={t('Edit')} aria-label={t('Edit')} onClick={() => setEditing(true)}><Pencil size={14} /></ActionButton>
           <ActionButton
+            size="sm"
             danger
+            title={t('Remove')}
+            aria-label={t('Remove')}
             onClick={async () => {
               if (!(await confirm({ title: t('Delete this service?'), message: `${t('Delete')} "${service.name}"?`, confirmLabel: t('Delete'), danger: true }))) return;
               onServicesChange(services.filter((s) => s.id !== service.id));
               deleteService(businessId, service.id).catch(onChange);
             }}
           >
-            {t('Remove')}
+            <Trash2 size={14} />
           </ActionButton>
         </div>
       </div>

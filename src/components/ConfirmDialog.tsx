@@ -67,7 +67,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => handle(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-ivory-dim transition-colors hover:text-ivory"
+                className="rounded-full px-4 py-2 text-sm font-medium text-ivory-dim transition-colors hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {state.options.cancelLabel || 'Cancel'}
               </button>
@@ -75,8 +75,8 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
                 type="button"
                 autoFocus
                 onClick={() => handle(true)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium text-ink transition-opacity hover:opacity-90 ${
-                  state.options.danger ? 'bg-danger' : 'bg-brass'
+                className={`rounded-full px-4 py-2 text-sm font-medium text-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 ${
+                  state.options.danger ? 'bg-danger focus-visible:ring-danger' : 'bg-brass focus-visible:ring-brass'
                 }`}
               >
                 {state.options.confirmLabel || 'Confirm'}

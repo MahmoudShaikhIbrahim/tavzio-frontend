@@ -79,7 +79,7 @@ export default function OrgMenuPage() {
       </div>
 
       <Section title="Publish to Locations" action={
-        <button type="button" onClick={handlePublish} disabled={publishing || selectedLocations.length === 0} className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={handlePublish} disabled={publishing || selectedLocations.length === 0} className="rounded-full bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {publishing ? 'Publishing...' : 'Publish'}
         </button>
       }>
@@ -96,7 +96,7 @@ export default function OrgMenuPage() {
       </Section>
 
       <Section title="Categories & Items" action={
-        <button type="button" onClick={() => setShowAddCategory((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => setShowAddCategory((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + Add category
         </button>
       }>
@@ -108,7 +108,7 @@ export default function OrgMenuPage() {
         )}
         <div className="space-y-4">
           {categories.map((cat) => (
-            <div key={cat.id} className="rounded-lg border border-ink-line p-4">
+            <div key={cat.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-base text-ivory">{cat.name}</p>
                 <button type="button" onClick={() => setShowAddItem(showAddItem === cat.id ? null : cat.id)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
@@ -154,7 +154,7 @@ function ItemRow({ item, onSaved, onDelete }: { item: { id: string; name: string
   }
 
   return (
-    <div className="flex items-center justify-between rounded border border-ink-line px-3 py-2 text-sm">
+    <div className="flex items-center justify-between rounded-2xl border border-ink-line px-3 py-2 text-sm">
       <span className="text-ivory">{item.name}</span>
       {editing ? (
         <div className="flex items-center gap-2">

@@ -89,7 +89,7 @@ export default function GuidedTour({ steps, onDone, onSkip }: {
         <div className="fixed inset-0 bg-black/70" />
       )}
 
-      <div className="fixed z-[101] w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-brass/40 bg-ink-soft p-4 shadow-2xl shadow-black/60" style={tooltipStyle}>
+      <div className="fixed z-[101] w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-brass/40 bg-ink-soft p-4 shadow-2xl shadow-black/60" style={tooltipStyle}>
         <p className="font-display text-lg text-ivory">{step.title}</p>
         <p className="mt-1.5 text-sm text-ivory-dim">{step.body}</p>
         <div className="mt-4 flex items-center justify-between">
@@ -99,9 +99,9 @@ export default function GuidedTour({ steps, onDone, onSkip }: {
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <button type="button" onClick={onSkip} className="text-sm text-ivory-dim hover:text-ivory">Skip</button>
-            {index > 0 && <button type="button" onClick={back} className="text-sm text-ivory-dim hover:text-ivory">Back</button>}
-            <button type="button" onClick={next} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90">
+            <button type="button" onClick={onSkip} className="rounded-full px-2 py-1 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Skip</button>
+            {index > 0 && <button type="button" onClick={back} className="rounded-full px-2 py-1 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Back</button>}
+            <button type="button" onClick={next} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               {index === steps.length - 1 ? 'Done' : 'Next'}
             </button>
           </div>

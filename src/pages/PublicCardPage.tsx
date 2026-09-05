@@ -115,22 +115,22 @@ export default function PublicCardPage() {
         {/* Primary actions - immediately visible, per the spec */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           {hasPhone && (
-            <a href={`tel:${card.phone}`} onClick={() => track(card.slug, 'phone_click')} className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-center text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" style={{ background: primary }}>
+            <a href={`tel:${card.phone}`} onClick={() => track(card.slug, 'phone_click')} className="flex items-center justify-center gap-1.5 rounded-full px-4 py-3 text-center text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" style={{ background: primary }}>
               <Phone size={15} strokeWidth={2} /> Call
             </a>
           )}
           {hasWhatsapp && (
-            <a href={`https://wa.me/${card.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'whatsapp_click')} className="flex items-center justify-center gap-1.5 rounded-xl border px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" style={{ borderColor: primary }}>
+            <a href={`https://wa.me/${card.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'whatsapp_click')} className="flex items-center justify-center gap-1.5 rounded-full border px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" style={{ borderColor: primary }}>
               <MessageCircle size={15} strokeWidth={2} /> WhatsApp
             </a>
           )}
           {hasEmail && (
-            <a href={`mailto:${card.email}`} onClick={() => track(card.slug, 'email_click')} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <a href={`mailto:${card.email}`} onClick={() => track(card.slug, 'email_click')} className="flex items-center justify-center gap-1.5 rounded-full border border-white/20 px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
               <Mail size={15} strokeWidth={2} /> Email
             </a>
           )}
           {hasWebsite && (
-            <a href={card.website} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'website_click')} className="flex items-center justify-center gap-1.5 rounded-xl border border-white/20 px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            <a href={card.website} target="_blank" rel="noreferrer" onClick={() => track(card.slug, 'website_click')} className="flex items-center justify-center gap-1.5 rounded-full border border-white/20 px-4 py-3 text-center text-sm font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
               <Globe size={15} strokeWidth={2} /> Website
             </a>
           )}
@@ -139,7 +139,7 @@ export default function PublicCardPage() {
         <a
           href={`${BASE}/api/public/cards/${card.slug}/vcard`}
           onClick={() => track(card.slug, 'save_contact')}
-          className="mt-3 block rounded-xl px-4 py-3 text-center text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className="mt-3 block rounded-full px-4 py-3 text-center text-sm font-medium text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           style={{ background: primary }}
         >
           Save Contact

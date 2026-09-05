@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Flame, Check, Printer } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listOrders, updateOrderStatus, getBusiness, reprintKitchenTicket } from '../../lib/authApi';
@@ -157,6 +157,16 @@ export default function KitchenPage() {
     ? kitchenOrders
     : kitchenOrders.filter((o) => o.order_items.some((i) => !i.voided && i.course_status !== 'held' && i.station === stationFilter));
 
+  // Real restructure: two lanes instead of one mixed grid - "New" and
+  // "In progress" is the actual mental model a kitchen already works in
+  // (a ticket physically moves from the rail to the pass once started),
+  // so the screen should show that same split instead of making someone
+  // scan a "Preparing" badge on every card to tell the two apart. Same
+  // Kanban shape a real kitchen board (or a Trello column) already uses
+  // for exactly this kind of state-based flow.
+  const newTickets = visibleOrders.filter((o) => o.status === 'pending');
+  const inProgressTickets = visibleOrders.filter((o) => o.status === 'preparing');
+
   return (
     <div className="space-y-6">
       {businessId && <SectionRequestNotifications businessId={businessId} section="kitchen" />}
@@ -178,97 +188,159 @@ export default function KitchenPage() {
         </div>
       )}
 
-      {visibleOrders.length === 0 && (
+      {visibleOrders.length === 0 ? (
         <p className="text-base text-ivory-dim">{t('No pending orders right now.')}</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <KitchenLane
+            title={t('New')}
+            count={newTickets.length}
+            accent="brass"
+            tickets={newTickets}
+            stationFilter={stationFilter}
+            reprintingId={reprintingId}
+            onStart={handleStart}
+            onMarkReady={handleMarkReady}
+            onReprint={handleReprint}
+            t={t}
+          />
+          <KitchenLane
+            title={t('In progress')}
+            count={inProgressTickets.length}
+            accent="warning"
+            tickets={inProgressTickets}
+            stationFilter={stationFilter}
+            reprintingId={reprintingId}
+            onStart={handleStart}
+            onMarkReady={handleMarkReady}
+            onReprint={handleReprint}
+            t={t}
+          />
+        </div>
       )}
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {visibleOrders
-          .map((order) => {
-          const minutes = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
-          const urgency = minutes >= RED_AFTER_MINUTES ? 'danger' : minutes >= AMBER_AFTER_MINUTES ? 'warning' : null;
-          const allFiredItems = order.order_items.filter((i) => !i.voided && i.course_status !== 'held');
-          const firedItems = stationFilter === 'all' ? allFiredItems : allFiredItems.filter((i) => i.station === stationFilter);
-          // Not shown in detail (a held course's items are deliberately
-          // not visible yet) - just a heads-up that more is coming, and
-          // for which course, so the kitchen can pace itself.
-          const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
-          return (
-            <div key={order.id} className={`overflow-hidden rounded-lg border bg-ink-soft ${order.order_type === 'drive_through' ? 'border-drivethrough' : 'border-ink-line'}`}>
-              {/* A colored top strip reads faster than a thin border at
-                  the distance a KDS screen is actually viewed from
-                  across a kitchen - the same real convention commercial
-                  kitchen displays (Toast, Square, Lightspeed) already
-                  use to signal an aging ticket, just implemented here
-                  with a genuine block of color instead of a 2px line.
-                  Drive-through always shows its own violet strip
-                  regardless of age - unmistakable at a glance, per the
-                  explicit request, rather than competing with the same
-                  red/yellow urgency colors every other ticket uses. */}
-              <div className={`h-1 ${order.order_type === 'drive_through' ? 'bg-drivethrough' : urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
-              <div className="p-2.5">
-                {order.order_type === 'drive_through' && (
-                  <div className="mb-2 flex items-center justify-between rounded-lg bg-drivethrough/10 px-2 py-1">
-                    <span className="text-xs font-medium uppercase tracking-wide text-drivethrough">{t('Drive Through')}</span>
-                    {order.arrival_at && <ArrivalCountdown arrivalAt={order.arrival_at} />}
-                  </div>
+function KitchenLane({ title, count, accent, tickets, stationFilter, reprintingId, onStart, onMarkReady, onReprint, t }: {
+  title: string; count: number; accent: 'brass' | 'warning'; tickets: OrderRow[]; stationFilter: string; reprintingId: string | null;
+  onStart: (id: string) => void; onMarkReady: (id: string) => void; onReprint: (id: string) => void; t: (s: string) => string;
+}) {
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="font-mono text-[11px] uppercase tracking-wider text-ivory-dim">{title}</h2>
+        <span className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-medium ${accent === 'brass' ? 'bg-brass text-ink' : 'bg-warning text-ink'}`}>{count}</span>
+      </div>
+      {tickets.length === 0 ? (
+        <p className="text-sm text-ivory-dim">{t('Nothing here.')}</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {tickets.map((order) => (
+            <KitchenTicket
+              key={order.id}
+              order={order}
+              stationFilter={stationFilter}
+              reprinting={reprintingId === order.id}
+              onStart={() => onStart(order.id)}
+              onMarkReady={() => onMarkReady(order.id)}
+              onReprint={() => onReprint(order.id)}
+              t={t}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function KitchenTicket({ order, stationFilter, reprinting, onStart, onMarkReady, onReprint, t }: {
+  order: OrderRow; stationFilter: string; reprinting: boolean;
+  onStart: () => void; onMarkReady: () => void; onReprint: () => void; t: (s: string) => string;
+}) {
+  const minutes = Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000);
+  const urgency = minutes >= RED_AFTER_MINUTES ? 'danger' : minutes >= AMBER_AFTER_MINUTES ? 'warning' : null;
+  const allFiredItems = order.order_items.filter((i) => !i.voided && i.course_status !== 'held');
+  const firedItems = stationFilter === 'all' ? allFiredItems : allFiredItems.filter((i) => i.station === stationFilter);
+  // Not shown in detail (a held course's items are deliberately not
+  // visible yet) - just a heads-up that more is coming, and for which
+  // course, so the kitchen can pace itself.
+  const heldCourses = [...new Set(order.order_items.filter((i) => !i.voided && i.course_status === 'held').map((i) => i.course))];
+
+  return (
+    <div className={`overflow-hidden rounded-2xl border bg-ink-soft shadow-sm ${order.order_type === 'drive_through' ? 'border-drivethrough' : 'border-ink-line'}`}>
+      {/* A colored top strip reads faster than a thin border at the
+          distance a KDS screen is actually viewed from across a kitchen
+          - the same real convention commercial kitchen displays (Toast,
+          Square, Lightspeed) already use to signal an aging ticket, just
+          implemented here with a genuine block of color instead of a 2px
+          line. Drive-through always shows its own violet strip
+          regardless of age - unmistakable at a glance, per the explicit
+          request, rather than competing with the same red/yellow
+          urgency colors every other ticket uses. */}
+      <div className={`h-1 ${order.order_type === 'drive_through' ? 'bg-drivethrough' : urgency === 'danger' ? 'bg-danger' : urgency === 'warning' ? 'bg-warning' : 'bg-ink-line'}`} />
+      <div className="p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className={`font-display text-lg font-medium ${order.order_type === 'drive_through' ? 'text-drivethrough' : 'text-ivory'}`}>
+            {order.order_type === 'drive_through' ? t('Drive Through') : (order.table_label || t('No table'))}
+          </p>
+          <div className="flex items-center gap-1.5">
+            {urgency && <AlertTriangle size={13} strokeWidth={2.25} className={urgency === 'danger' ? 'text-danger' : 'text-warning'} aria-hidden="true" />}
+            <TicketAge createdAt={order.created_at} />
+          </div>
+        </div>
+        {order.order_type === 'drive_through' && order.arrival_at && (
+          <p className="mt-0.5 text-xs text-drivethrough">{t('Arriving in')} <ArrivalCountdown arrivalAt={order.arrival_at} /></p>
+        )}
+
+        <div className="mt-2.5 space-y-2 border-t border-ink-line pt-2.5">
+          {firedItems.map((item) => (
+            <div key={item.id} className="flex gap-2">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brass/15 font-mono text-[11px] font-semibold text-brass">{item.quantity}</span>
+              <div className="text-ivory-dim">
+                <span className="text-base font-medium text-ivory">{item.item_name}</span>
+                {item.station && <span className="ml-1 text-xs uppercase tracking-wide text-brass">{item.station}</span>}
+                {item.addons.length > 0 && (
+                  <span className="block text-sm text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>
                 )}
-                <div className="space-y-2">
-                  {firedItems.map((item) => (
-                    <div key={item.id} className="flex gap-1.5">
-                      <span className="flex h-6 min-w-6 items-center justify-center rounded bg-ink px-1 font-mono text-sm text-brass">{item.quantity}×</span>
-                      <div className="text-ivory-dim">
-                        <span className="font-display text-lg font-medium text-ivory">{item.item_name}</span>
-                        {item.station && <span className="ml-1 text-xs uppercase tracking-wide text-brass">{item.station}</span>}
-                        {item.addons.length > 0 && (
-                          <span className="block text-sm text-brass">+ {item.addons.map((a) => a.name).join(', ')}</span>
-                        )}
-                        {item.note && <span className="block text-sm italic text-ivory">— {item.note}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 flex items-center justify-between border-t border-ink-line pt-2">
-                  <p className="text-sm text-ivory-dim">{order.order_type === 'drive_through' ? t('Drive Through') : (order.table_label || t('No table'))}</p>
-                  <div className="flex items-center gap-1.5">
-                    {order.status === 'preparing' && <span className="rounded-full border border-brass/40 px-1.5 py-0.5 text-xs font-medium text-brass">{t('Preparing')}</span>}
-                    {urgency && <AlertTriangle size={13} strokeWidth={2.25} className={urgency === 'danger' ? 'text-danger' : 'text-warning'} aria-hidden="true" />}
-                    <TicketAge createdAt={order.created_at} />
-                  </div>
-                </div>
-                {heldCourses.length > 0 && (
-                  <p className="mt-2 rounded bg-ink px-2 py-1 text-xs text-brass">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
-                )}
-                {order.note && <p className="mt-2 rounded border border-brass/30 bg-brass/5 px-2 py-1 text-xs italic text-brass">{t('Note:')} {order.note}</p>}
-                <div className="mt-2.5 flex gap-1.5">
-                  {order.status === 'pending' && (
-                    <button type="button"
-                      onClick={() => handleStart(order.id)}
-                      className="flex-1 rounded-md border border-brass/40 px-2 min-h-[36px] py-1.5 text-xs font-medium text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-                    >
-                      {t('Start')}
-                    </button>
-                  )}
-                  <button type="button"
-                    onClick={() => handleMarkReady(order.id)}
-                    className="flex-1 rounded-md bg-brass px-2 min-h-[36px] py-1.5 text-xs font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
-                  >
-                    {t('Mark ready')}
-                  </button>
-                  <button type="button"
-                    onClick={() => handleReprint(order.id)}
-                    disabled={reprintingId === order.id}
-                    title={t('Reprint ticket')}
-                    aria-label={reprintingId === order.id ? t('Reprinting...') : t('Reprint ticket')}
-                    className="rounded-md border border-ink-line px-2 min-h-[36px] py-1.5 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-                  >
-                    {reprintingId === order.id ? '…' : t('Reprint')}
-                  </button>
-                </div>
+                {item.note && <span className="block text-sm italic text-ivory">— {item.note}</span>}
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        {heldCourses.length > 0 && (
+          <p className="mt-2 rounded-lg bg-ink px-2 py-1 text-xs text-brass">{t('Waiting to fire:')} {heldCourses.join(', ')}</p>
+        )}
+        {order.note && <p className="mt-2 rounded-lg border border-brass/30 bg-brass/5 px-2 py-1 text-xs italic text-brass">{t('Note:')} {order.note}</p>}
+
+        <div className="mt-3 flex items-center gap-2">
+          {order.status === 'pending' && (
+            <button type="button"
+              onClick={onStart}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-brass/40 min-h-[38px] py-2 text-sm font-medium text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            >
+              <Flame size={14} />
+              {t('Start')}
+            </button>
+          )}
+          <button type="button"
+            onClick={onMarkReady}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brass min-h-[38px] py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+          >
+            <Check size={14} />
+            {t('Mark ready')}
+          </button>
+          <button type="button"
+            onClick={onReprint}
+            disabled={reprinting}
+            title={t('Reprint ticket')}
+            aria-label={reprinting ? t('Reprinting...') : t('Reprint ticket')}
+            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          >
+            <Printer size={14} className={reprinting ? 'animate-pulse' : ''} />
+          </button>
+        </div>
       </div>
     </div>
   );

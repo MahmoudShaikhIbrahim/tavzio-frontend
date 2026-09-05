@@ -86,7 +86,7 @@ export default function NightAuditPage() {
       <Section title={t('History')}>
         <div className="space-y-3">
           {audits.map((a) => (
-            <div key={a.id} className="rounded-lg border border-ink-line p-4">
+            <div key={a.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-base text-ivory">{a.business_date}</p>
                 <p className="text-sm text-ivory-dim">{t('Run at')} {new Date(a.run_at).toLocaleString('en-GB')}</p>

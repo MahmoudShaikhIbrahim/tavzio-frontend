@@ -67,7 +67,7 @@ function BookingArrivalPageContent() {
         <button
           type="button"
           onClick={() => navigate(`/${slug}`)}
-          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+          className="mt-4 rounded-full border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
         >
           {t('arrContinueTo', { name: slug || '' })}
         </button>
@@ -86,7 +86,7 @@ function BookingArrivalPageContent() {
         <button
           type="button"
           onClick={() => navigate(`/${slug}`)}
-          className="mt-4 rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+          className="mt-4 rounded-full border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
         >
           {t('arrContinueTo', { name: booking?.businessName || slug || '' })}
         </button>
@@ -111,7 +111,7 @@ function BookingArrivalPageContent() {
         type="button"
         onClick={handleConfirm}
         disabled={confirming}
-        className="mt-4 w-full max-w-xs rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+        className="mt-4 w-full max-w-xs rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
       >
         {confirming ? t('tbConfirming') : t('arrYesThatsUs')}
       </button>

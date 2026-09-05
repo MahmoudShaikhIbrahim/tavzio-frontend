@@ -152,7 +152,7 @@ export default function ContractsListPage() {
         <h1 className="font-display text-3xl text-ivory">Contracts</h1>
         <Link
           to="/admin/super/contracts/new"
-          className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           + Create contract
         </Link>
@@ -168,7 +168,7 @@ export default function ContractsListPage() {
           const isStandalonePending = !c.business_id;
           const canOnboard = isStandalonePending && ['signed', 'paid'].includes(c.status);
           return (
-            <div key={c.id} className="rounded-lg border border-ink-line p-4">
+            <div key={c.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-base font-medium text-ivory">

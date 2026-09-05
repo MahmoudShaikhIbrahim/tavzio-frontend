@@ -15,7 +15,7 @@ export default function ContractPage() {
         <h1 className="font-display text-3xl text-ivory">{t('Contracts & Receipts')}</h1>
         <p className="mt-1 text-base text-ivory-dim">{t("Everything you've signed and everything you've been billed, in one place.")}</p>
       </div>
-      <div className="flex gap-1.5 border-b border-ink-line">
+      <div className="flex gap-2">
         <TabButton active={tab === 'contract'} onClick={() => setTab('contract')}>{t('Contract')}</TabButton>
         <TabButton active={tab === 'receipts'} onClick={() => setTab('receipts')}>{t('Receipts')}</TabButton>
       </div>
@@ -28,7 +28,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button type="button"
       onClick={onClick}
-      className={`border-b-2 px-2 py-1.5 text-sm sm:px-3 sm:py-2.5 sm:text-base ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'}`}
+      className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${active ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}
     >
       {children}
     </button>
@@ -124,7 +124,7 @@ function ContractTab() {
       </pre>
 
       {!isSigned && (
-        <div className="space-y-3 rounded-lg border border-ink-line p-4">
+        <div className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <p className="text-sm text-ivory-dim">
             {t('Signing electronically here is legally valid under UAE Federal Decree-Law No. 46 of 2021 on Electronic Transactions and Trust Services. Your typed name, the time, and your IP address are recorded alongside the exact text above at the moment you sign.')}
           </p>
@@ -142,7 +142,7 @@ function ContractTab() {
           <button type="button"
             onClick={handleSign}
             disabled={signing}
-            className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+            className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
           >
             {signing ? t('Signing...') : t('Sign contract')}
           </button>
@@ -182,7 +182,7 @@ function ReceiptsTab() {
       </p>
       <div className="space-y-4">
         {receipts.map((r) => (
-          <div key={r.id} className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
+          <div key={r.id} className="flex flex-col gap-3 rounded-2xl border border-ink-line px-5 py-4 text-base shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-ivory">
                 {r.receipt_number}
@@ -201,7 +201,7 @@ function ReceiptsTab() {
                   href={r.payment_link_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90"
+                  className="rounded-full bg-brass px-4 py-2 text-sm font-medium text-ink hover:opacity-90"
                 >
                   {t('Pay now')}
                 </a>
@@ -209,7 +209,7 @@ function ReceiptsTab() {
               <button type="button"
                 onClick={() => handleDownload(r)}
                 disabled={downloadingId === r.id}
-                className="rounded-lg border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
+                className="rounded-full border border-brass/40 px-4 py-2 text-sm text-brass hover:bg-brass/10 disabled:opacity-50"
               >
                 {downloadingId === r.id ? t('Downloading...') : t('Download PDF')}
               </button>

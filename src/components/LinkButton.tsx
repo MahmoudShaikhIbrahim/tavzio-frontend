@@ -38,8 +38,9 @@ export default function LinkButton({ linkKey, value, icon, label, imageUrl, slug
       onClick={() => {
         if (eventType) logEvent(slug, eventType).catch(() => {});
       }}
-      className="group flex items-center gap-3 border-b border-ink-line/60 py-3.5
-                 text-ivory-dim transition-colors duration-150 last:border-b-0 hover:text-ivory active:opacity-70"
+      className="group flex items-center gap-3 rounded-2xl border border-ink-line px-4 py-3.5 shadow-sm
+                 text-ivory-dim transition-all duration-150 hover:border-brass/50 hover:text-ivory active:scale-[0.98] active:opacity-80
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
     >
       {imageUrl ? (
         <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-ink-line">
@@ -47,8 +48,8 @@ export default function LinkButton({ linkKey, value, icon, label, imageUrl, slug
         </span>
       ) : (
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass"
-          style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 text-brass"
+          style={brandColor ? { color: brandColor } : undefined}
         >
           <Icon size={17} />
         </span>

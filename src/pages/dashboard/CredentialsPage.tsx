@@ -37,7 +37,7 @@ export default function CredentialsPage() {
           {t('Every API key, account connection, and gateway credential your business needs, in one place.')}
         </p>
       </div>
-      <div className="flex flex-wrap gap-1.5 border-b border-ink-line">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap" style={{ scrollbarWidth: 'thin' }}>
         {tabs.map((tabItem) => (
           <TabButton key={tabItem.key} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)}>{tabItem.label}</TabButton>
         ))}
@@ -58,7 +58,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button type="button"
       onClick={onClick}
-      className={`border-b-2 px-2 py-1.5 text-sm sm:px-3 sm:py-2.5 sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${active ? 'border-brass text-ivory' : 'border-transparent text-ivory-dim hover:text-ivory'}`}
+      className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${active ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}
     >
       {children}
     </button>

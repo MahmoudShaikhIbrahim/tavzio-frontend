@@ -41,15 +41,15 @@ export default function OrganizationsPage() {
           <h1 className="font-display text-3xl text-ivory">Organizations</h1>
           <p className="mt-1 text-base text-ivory-dim">Franchise/multi-outlet groups - link locations, invite an org owner.</p>
         </div>
-        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           + Create organization
         </button>
       </div>
 
       {showAdd && (
-        <form onSubmit={handleCreate} className="flex items-end gap-3 rounded-lg border border-ink-line p-4">
+        <form onSubmit={handleCreate} className="flex items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <Field label="Organization name"><input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Costa Coffee UAE" className={inputClass} /></Field>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="submit" disabled={saving} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {saving ? 'Creating...' : 'Create'}
           </button>
         </form>
@@ -161,7 +161,7 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-4">
+    <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-base text-ivory">{org.name}</p>
@@ -200,7 +200,7 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
                 <option value="">Select a business to link...</option>
                 {unlinkedBusinesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
-              <button type="button" onClick={handleLink} disabled={busy || !linkBusinessId} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+              <button type="button" onClick={handleLink} disabled={busy || !linkBusinessId} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                 Link
               </button>
             </div>
@@ -211,7 +211,7 @@ function OrganizationCard({ org, allBusinesses, expanded, onToggle, onChange }: 
             <form onSubmit={handleInviteOwner} className="flex flex-wrap items-end gap-2">
               <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Name" className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
               <input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" placeholder="Email" className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
-              <button type="submit" disabled={busy} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Invite</button>
+              <button type="submit" disabled={busy} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">Invite</button>
             </form>
             {inviteResult && <p className="mt-1 text-sm text-ivory-dim">{inviteResult}</p>}
           </div>

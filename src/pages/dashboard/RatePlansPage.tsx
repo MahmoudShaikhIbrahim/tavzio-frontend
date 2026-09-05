@@ -56,14 +56,14 @@ export default function RatePlansPage() {
         </p>
       </div>
 
-      <Section title={t('Plans')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('+ Add plan')}</button>}>
+      <Section title={t('Plans')} action={<button type="button" onClick={() => setShowAdd((s) => !s)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90">{t('Add plan')}</button>}>
         {showAdd && <RatePlanForm businessId={businessId} onDone={() => { setShowAdd(false); reload(); }} />}
         <div className="space-y-3">
           {plans.map((p) => (
             editingId === p.id ? (
               <RatePlanForm key={p.id} businessId={businessId} existing={p} onDone={() => { setEditingId(null); reload(); }} onCancel={() => setEditingId(null)} />
             ) : (
-              <div key={p.id} className={`rounded-lg border p-4 ${p.active ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
+              <div key={p.id} className={`rounded-2xl border p-4 shadow-sm ${p.active ? 'border-ink-line' : 'border-ink-line opacity-50'}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-base text-ivory">{p.name} <span className="text-sm text-ivory-dim">· {spacedWord(t, p.rate_type)}</span></p>
@@ -224,7 +224,7 @@ function PricingRulesSection({ businessId }: { businessId: string }) {
           {t('As the hotel fills up for a given date, apply a surcharge automatically - a transparent rule, not a hidden algorithm. When several rules match, only the highest threshold applies (never stacked).')}
         </p>
         {showAdd && (
-          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
             <Field label={t('Name')}><input value={name} onChange={(e) => setName(e.target.value)} placeholder="High demand" className={inputClass} /></Field>
             <Field label={t('At or above occupancy %')}><input type="number" min={1} max={100} value={threshold} onFocus={(e) => e.target.select()} onChange={(e) => setThreshold(Number(e.target.value))} className={`${inputClass} w-28`} /></Field>
             <Field label={t('Surcharge %')}><input type="number" min={1} value={surcharge} onFocus={(e) => e.target.select()} onChange={(e) => setSurcharge(Number(e.target.value))} className={`${inputClass} w-28`} /></Field>

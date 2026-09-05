@@ -149,10 +149,10 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
       <div className="w-full max-w-sm rounded-2xl border border-ink-line bg-ink-soft p-6 shadow-2xl shadow-black/50">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">{t('Payment')}</h2>
-          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">{t('Close')}</button>
+          <button type="button" onClick={onClose} className="rounded-full px-2 py-1 text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Close')}</button>
         </div>
 
-        <div className="mb-5 rounded-lg border border-ink-line bg-ink px-4 py-3">
+        <div className="mb-5 rounded-2xl border border-ink-line bg-ink px-4 py-3 shadow-sm">
           <p className="text-sm text-ivory-dim">{t('Amount due')}</p>
           <p className="font-display text-3xl text-brass">AED {total.toFixed(2)}</p>
         </div>
@@ -165,21 +165,21 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
                 type="password" inputMode="numeric" maxLength={6}
                 value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
                 placeholder={t('New PIN (4-6 digits)')}
-                className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-center text-lg tracking-widest text-ivory"
+                className="w-full rounded-full border border-ink-line bg-ink px-3.5 py-2.5 text-center text-lg tracking-widest text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                 autoFocus
               />
               <input
                 type="password" inputMode="numeric" maxLength={6}
                 value={confirmNewPin} onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ''))}
                 placeholder={t('Confirm PIN')}
-                className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-center text-lg tracking-widest text-ivory"
+                className="w-full rounded-full border border-ink-line bg-ink px-3.5 py-2.5 text-center text-lg tracking-widest text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               />
               {setupError && <p className="text-center text-sm text-danger">{setupError}</p>}
               <button
                 type="button"
                 onClick={handleSetupSubmit}
                 disabled={settingUp || newPin.length < 4 || confirmNewPin.length < 4}
-                className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+                className="w-full rounded-full bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {settingUp ? t('Setting up...') : t('Set PIN and continue')}
               </button>
@@ -201,7 +201,7 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
                   key={m}
                   type="button"
                   onClick={() => setMode(m)}
-                  className={`rounded-lg border px-3 py-2.5 text-sm font-medium capitalize ${
+                  className={`rounded-full border px-3 py-2.5 text-sm font-medium capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
                     mode === m ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory-dim hover:text-ivory'
                   }`}
                 >
@@ -220,7 +220,7 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
                   value={cashTendered}
                   onChange={(e) => setCashTendered(e.target.value)}
                   placeholder={total.toFixed(2)}
-                  className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-lg text-ivory"
+                  className="w-full rounded-2xl border border-ink-line bg-ink px-3.5 py-2.5 text-lg text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   autoFocus
                 />
                 {tendered > 0 && !cashShort && (
@@ -241,7 +241,7 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
                   <input
                     type="number" min={0} step="0.01" value={splitCash}
                     onChange={(e) => { setSplitCash(e.target.value); setSplitCard((total - (Number(e.target.value) || 0)).toFixed(2)); }}
-                    className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory"
+                    className="w-full rounded-2xl border border-ink-line bg-ink px-3.5 py-2.5 text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   />
                 </div>
                 <div>
@@ -249,7 +249,7 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
                   <input
                     type="number" min={0} step="0.01" value={splitCard}
                     onChange={(e) => { setSplitCard(e.target.value); setSplitCash((total - (Number(e.target.value) || 0)).toFixed(2)); }}
-                    className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory"
+                    className="w-full rounded-2xl border border-ink-line bg-ink px-3.5 py-2.5 text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
                   />
                 </div>
                 {!splitBalanced && <p className="col-span-2 text-sm text-danger">{t('Cash + Card must add up to the amount due')}</p>}
@@ -263,7 +263,7 @@ export default function PaymentModal({ businessId, items, onClose, onDone, defau
               type="button"
               onClick={handleConfirm}
               disabled={submitting || cashShort || !splitBalanced || pin.length < 4 || (mode === 'cash' && !tendered)}
-              className="w-full rounded-lg bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              className="w-full rounded-full bg-brass px-4 py-3.5 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {submitting ? t('Recording...') : t('Confirm payment')}
             </button>
@@ -316,7 +316,7 @@ function PadButton({ children, onClick, disabled, accent }: { children: ReactNod
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-14 items-center justify-center rounded-xl border text-xl transition-colors disabled:opacity-30 ${
+      className={`flex h-14 items-center justify-center rounded-full border text-xl transition-colors disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
         accent ? 'border-brass bg-brass/10 text-brass' : 'border-ink-line text-ivory hover:border-brass/40'
       }`}
     >

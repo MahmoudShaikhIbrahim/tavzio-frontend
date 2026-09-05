@@ -30,9 +30,9 @@ export default function SalesEventsPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Sales & Events')}</h1>
-      <div className="flex gap-2 border-b border-ink-line">
+      <div className="flex gap-2">
         {(['events', 'spaces'] as const).map((tabKey) => (
-          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`px-2.5 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base ${tab === tabKey ? 'border-b-2 border-brass text-brass' : 'text-ivory-dim hover:text-ivory'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+          <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {tabKey === 'spaces' ? t('Event Spaces') : t('Events')}
           </button>
         ))}
@@ -64,7 +64,7 @@ function EventsTab({ businessId, onOpenEvent }: { businessId: string; onOpenEven
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {['inquiry', 'tentative', 'confirmed', 'completed', 'cancelled'].map((s) => (
             <button type="button" key={s} onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
-              className={`rounded-lg border p-3 text-left ${statusFilter === s ? 'border-brass bg-brass/10' : 'border-ink-line'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
+              className={`rounded-2xl border p-3 text-left shadow-sm ${statusFilter === s ? 'border-brass bg-brass/10' : 'border-ink-line'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass`}>
               <p className={`text-xs uppercase tracking-wide ${STATUS_COLOR[s]}`}>{t(s)}</p>
               <p className="text-xl text-ivory">{summary.byStatus[s] || 0}</p>
             </button>
@@ -77,7 +77,7 @@ function EventsTab({ businessId, onOpenEvent }: { businessId: string; onOpenEven
         {showNew && <NewEventForm businessId={businessId} spaces={spaces} onDone={() => { setShowNew(false); reload(); }} />}
         <div className="space-y-2">
           {events.map((e) => (
-            <button type="button" key={e.id} onClick={() => onOpenEvent(e.id)} className="block w-full rounded-lg border border-ink-line p-3 text-left transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            <button type="button" key={e.id} onClick={() => onOpenEvent(e.id)} className="block w-full rounded-2xl border border-ink-line p-3 text-left shadow-sm transition-colors hover:border-brass/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-base text-ivory">{e.client_name} <span className="text-sm text-ivory-dim">· {t(e.event_type)}</span></p>
@@ -320,7 +320,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
           {event.charges.length === 0 && <p className="text-ivory-dim">{t('No charges yet.')}</p>}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <form onSubmit={handleAddCharge} className="space-y-2 rounded-lg border border-ink-line p-3">
+          <form onSubmit={handleAddCharge} className="space-y-2 rounded-2xl border border-ink-line p-3 shadow-sm">
             <p className="text-sm text-ivory-dim">{t('Add charge')}</p>
             <input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder={t('Description ')} className={inputClass} />
             <select value={chargeType} onChange={(e) => setChargeType(e.target.value)} className={inputClass}>
@@ -333,7 +333,7 @@ function EventDetail({ businessId, eventId, onBack }: { businessId: string; even
             <input type="number" onFocus={(e) => e.target.select()} value={chargeAmount} onChange={(e) => setChargeAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={inputClass} />
             <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Add')}</button>
           </form>
-          <form onSubmit={handlePayment} className="space-y-2 rounded-lg border border-ink-line p-3">
+          <form onSubmit={handlePayment} className="space-y-2 rounded-2xl border border-ink-line p-3 shadow-sm">
             <p className="text-sm text-ivory-dim">{t('Record payment')}</p>
             <input type="number" onFocus={(e) => e.target.select()} value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} placeholder={t('Amount AED')} className={inputClass} />
             <button type="submit" className="w-full rounded-lg bg-brass px-3 py-2 text-sm font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Record payment')}</button>

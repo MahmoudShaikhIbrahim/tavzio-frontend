@@ -64,7 +64,7 @@ export default function PaymentReconciliationPage() {
           <button type="button"
             onClick={handleIssueAuditReport}
             disabled={generatingAudit}
-            className="rounded-lg bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            className="rounded-full bg-brass px-4 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             {generatingAudit ? t('Generating...') : t('Issue Audit Report')}
           </button>
@@ -77,15 +77,15 @@ export default function PaymentReconciliationPage() {
       </Section>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-ink-line p-4">
+        <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
           <p className="text-sm text-ivory-dim">{t('Gateway-confirmed')}</p>
           <p className="mt-1 font-display text-xl text-success">AED {totalCompleted.toFixed(2)}</p>
         </div>
-        <div className="rounded-lg border border-ink-line p-4">
+        <div className="rounded-2xl border border-ink-line p-4 shadow-sm">
           <p className="text-sm text-ivory-dim">{t('Refunded')}</p>
           <p className="mt-1 font-display text-xl text-warning">AED {totalRefunded.toFixed(2)}</p>
         </div>
-        <div className="rounded-lg border border-danger/40 p-4">
+        <div className="rounded-2xl border border-danger/40 p-4 shadow-sm">
           <p className="text-sm text-ivory-dim">{t('Unverified manual entries')}</p>
           <p className="mt-1 font-display text-xl text-danger">{unverified.length}</p>
         </div>
@@ -96,7 +96,7 @@ export default function PaymentReconciliationPage() {
           <p className="text-sm text-ivory-dim">{t('Recorded by staff without a real gateway transaction behind them - cash, or something paid outside Tavzio entirely.')}</p>
           <div className="space-y-2">
             {unverified.map((u) => (
-              <div key={u.id} className="rounded-lg border border-danger/30 px-4 py-3 text-sm">
+              <div key={u.id} className="rounded-2xl border border-danger/30 px-4 py-3 text-sm shadow-sm">
                 <p className="text-ivory">{u.description} · AED {Math.abs(u.amount_aed).toFixed(2)} · {u.charge_type}</p>
                 <p className="text-ivory-dim">{new Date(u.created_at).toLocaleString()}</p>
               </div>
@@ -146,7 +146,7 @@ function TransactionRow({ txn, businessId, onChange }: { txn: PaymentTransaction
   const canRefund = txn.status === 'completed' && txn.transaction_type === 'charge';
 
   return (
-    <div className="rounded-lg border border-ink-line px-4 py-3">
+    <div className="rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-base text-ivory">{txn.provider} · {txn.transaction_type} · AED {txn.amount_aed.toFixed(2)}</p>

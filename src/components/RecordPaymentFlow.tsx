@@ -67,7 +67,7 @@ export default function RecordPaymentFlow({ businessId, orders, onClose, onDone 
       <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-ink-line bg-ink p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl text-ivory">{t('Record payment')}</h2>
-          <button type="button" onClick={onClose} className="text-base text-ivory-dim hover:text-ivory">{t('Close')}</button>
+          <button type="button" onClick={onClose} className="rounded-full px-2 py-1 text-base text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t("Close")}</button>
         </div>
 
         {pickingTables ? (
@@ -77,7 +77,7 @@ export default function RecordPaymentFlow({ businessId, orders, onClose, onDone 
             {Object.keys(tableGroups).map((table) => (
               <label
                 key={table}
-                className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-base text-ivory ${
+                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-base text-ivory shadow-sm ${
                   selectedTables.has(table) ? 'border-brass bg-brass/10' : 'border-ink-line hover:border-brass/40'
                 }`}
               >
@@ -88,19 +88,19 @@ export default function RecordPaymentFlow({ businessId, orders, onClose, onDone 
             <button type="button"
               onClick={() => setPickingTables(false)}
               disabled={selectedTables.size === 0}
-              className="mt-2 w-full rounded-lg bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              className="mt-2 w-full rounded-full bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {selectedTables.size > 1 ? t('Combine {n} tables').replace('{n}', String(selectedTables.size)) : t('Continue')}
             </button>
           </div>
         ) : (
           <div className="space-y-4">
-            <button type="button" onClick={() => { setPickingTables(true); setSelected(new Set()); }} className="text-sm text-brass hover:underline">{t('← Back to tables')}</button>
+            <button type="button" onClick={() => { setPickingTables(true); setSelected(new Set()); }} className="rounded-full px-1 text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('← Back to tables')}</button>
             <div className="flex items-center justify-between">
               <p className="text-sm text-ivory-dim">{selected.size} {t('of')} {itemToOrder.size} {t('selected')}</p>
               <button type="button"
                 onClick={() => setSelected(selected.size === itemToOrder.size ? new Set() : new Set(itemToOrder.keys()))}
-                className="text-sm text-brass hover:underline"
+                className="rounded-full px-1 text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
               >
                 {selected.size === itemToOrder.size ? t('Deselect all') : t('Select all')}
               </button>
@@ -125,7 +125,7 @@ export default function RecordPaymentFlow({ businessId, orders, onClose, onDone 
             <button type="button"
               onClick={() => setShowPayment(true)}
               disabled={selected.size === 0}
-              className="w-full rounded-lg bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50"
+              className="w-full rounded-full bg-brass px-3 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {t('Continue to Payment')}
             </button>

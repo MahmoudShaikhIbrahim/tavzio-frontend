@@ -77,7 +77,7 @@ export default function HotelOutletsPage() {
         </button>
       }>
         {showAdd && (
-          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-lg border border-ink-line p-4">
+          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 rounded-2xl border border-ink-line p-4 shadow-sm">
             <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Rooftop Bar" className={inputClass} /></Field>
             <Field label={t('Type')}>
               <select value={outletType} onChange={(e) => setOutletType(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-3 py-2 text-base text-ivory">
@@ -92,7 +92,7 @@ export default function HotelOutletsPage() {
 
         <div className="space-y-3">
           {outlets.map((o) => (
-            <div key={o.id} className="rounded-lg border border-ink-line p-4">
+            <div key={o.id} className="rounded-2xl border border-ink-line p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-base text-ivory">{o.name} <span className="text-xs uppercase text-brass">{t(OUTLET_TYPES.find((ot) => ot.value === o.outlet_type)?.label || '')}</span></p>

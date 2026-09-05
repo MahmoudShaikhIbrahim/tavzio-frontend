@@ -332,7 +332,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
       >
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-brass">Menu</span>
-          <button type="button" onClick={onClose} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={onClose} aria-label="Close menu" className="flex h-10 w-10 items-center justify-center rounded-full text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             <X size={22} strokeWidth={1.75} />
           </button>
         </div>
@@ -410,7 +410,7 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <Link
             to="/admin/login"
-            className="hidden rounded-lg border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10 md:inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            className="hidden rounded-full border border-brass/40 px-4 py-2 text-sm font-medium text-brass transition-colors hover:bg-brass/10 md:inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             Sign In
           </Link>
@@ -418,7 +418,7 @@ export default function Home() {
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open menu"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-ivory md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-ivory md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <Menu size={22} strokeWidth={1.75} />
           </button>

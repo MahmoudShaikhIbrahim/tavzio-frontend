@@ -119,7 +119,7 @@ export default function CreateBusiness() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          className="w-full rounded-full bg-brass px-4 py-2.5 font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {loading ? 'Creating...' : 'Create business'}
         </button>

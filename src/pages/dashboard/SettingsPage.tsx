@@ -160,7 +160,7 @@ function CustomButtonRow({ button, buttons, businessId, onButtonsChange, onChang
   const brandColor = getIconColor(button.icon);
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-ink-line px-5 py-4 text-base sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-2xl border border-ink-line px-5 py-4 text-base shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <span className="flex items-center gap-2 text-ivory">
         {button.image_url ? (
           <img src={button.image_url} alt="" className="h-7 w-7 shrink-0 rounded-full border border-ink-line object-cover" />

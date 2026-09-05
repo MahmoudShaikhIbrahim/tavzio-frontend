@@ -339,7 +339,7 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
       <div className="space-y-2">
         <button type="button" onClick={() => setShowServices(false)} className="rounded text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">&larr; {t('back')}</button>
         {data.guestServices.map((s) => (
-          <button type="button" key={s.id} onClick={() => onRequestCategory(s)} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" key={s.id} onClick={() => onRequestCategory(s)} className="w-full rounded-2xl border border-ink-line px-4 py-3.5 text-left text-ivory shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {s.label}
           </button>
         ))}
@@ -352,13 +352,13 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
 
   return (
     <div className="space-y-5">
-      <button type="button" onClick={() => onNav('myRequests')} className="flex w-full items-center justify-between rounded-xl border border-brass/30 bg-ink-soft px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-        <span className="text-base text-ivory">{t('myRequests')}</span>
+      <button type="button" onClick={() => onNav('myRequests')} className="flex w-full items-center justify-between rounded-2xl border border-brass/30 bg-ink-soft px-4 py-3.5 text-left shadow-sm transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <span className="text-base font-medium text-ivory">{t('myRequests')}</span>
         {requestsCount > 0 && <span className="rounded-full bg-brass px-2 py-0.5 text-xs font-medium text-ink">{requestsCount}</span>}
       </button>
 
       {data.folioBalance !== null && (
-        <button type="button" onClick={() => onNav('myBill')} className="w-full rounded-xl border border-brass/30 bg-ink-soft p-4 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => onNav('myBill')} className="w-full rounded-2xl border border-brass/30 bg-ink-soft p-4 text-center shadow-sm transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <p className="text-xs uppercase tracking-wide text-brass">{t('myBill')}</p>
           <p className="mt-1 font-display text-2xl text-ivory">AED {data.folioBalance.toFixed(2)}</p>
           <p className="mt-1 text-sm text-ivory-dim">{t('tapToViewDetailsAndPay')}</p>
@@ -369,7 +369,7 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
         <div className="space-y-2">
           <p className="text-sm uppercase tracking-wide text-brass">{t('order')}</p>
           {outlets.map((o) => (
-            <button type="button" key={o.id} onClick={() => onSelectOutlet(o)} className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            <button type="button" key={o.id} onClick={() => onSelectOutlet(o)} className="flex w-full items-center justify-between rounded-2xl border border-ink-line px-4 py-3.5 text-left shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
               <span className="text-ivory">{outletIcon(o.outletType)} {o.name}</span>
               <span className="text-xs text-ivory-dim">{o.openingHours}</span>
             </button>
@@ -378,7 +378,7 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
       )}
 
       <div className="space-y-2">
-        <button type="button" onClick={() => setShowServices(true)} className="flex w-full items-center justify-between rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => setShowServices(true)} className="flex w-full items-center justify-between rounded-2xl border border-ink-line px-4 py-3.5 text-left text-ivory shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           <span>{t('services')}</span>
           <span className="text-ivory-dim">&rsaquo;</span>
         </button>
@@ -390,10 +390,10 @@ function HomeView({ data, outlets, portalBase, requestsCount, onSelectOutlet, on
         {data.customButtons.filter((b) => !b.parent_button_id).map((btn) => (
           <CustomButtonItem key={btn.id} btn={btn} portalBase={portalBase} onOpenGroup={setOpenGroupId} />
         ))}
-        <button type="button" onClick={() => onNav('reception')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => onNav('reception')} className="w-full rounded-2xl border border-ink-line px-4 py-3.5 text-left text-ivory shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('reception')}
         </button>
-        <button type="button" onClick={() => onNav('feedback')} className="w-full rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" onClick={() => onNav('feedback')} className="w-full rounded-2xl border border-ink-line px-4 py-3.5 text-left text-ivory shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {t('feedback')}
         </button>
       </div>
@@ -428,16 +428,16 @@ function CustomButtonItem({ btn, portalBase, onOpenGroup }: {
       <img src={btn.image_url} alt="" className="h-full w-full object-cover" />
     </span>
   ) : (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass" style={brandColor ? { color: brandColor, borderColor: `${brandColor}66` } : undefined}>
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 text-brass" style={brandColor ? { color: brandColor } : undefined}>
       <Icon size={15} />
     </span>
   );
 
   if (btn.button_type === 'group') {
     return (
-      <button type="button" onClick={() => onOpenGroup(btn.id)} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+      <button type="button" onClick={() => onOpenGroup(btn.id)} className="flex w-full items-center gap-3 rounded-2xl border border-ink-line px-4 py-3.5 text-left text-ivory shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
         {iconEl}
-        <span>{btn.label}</span>
+        <span className="font-medium">{btn.label}</span>
         <span className="ml-auto text-ivory-dim">&rsaquo;</span>
       </button>
     );
@@ -448,9 +448,9 @@ function CustomButtonItem({ btn, portalBase, onOpenGroup }: {
   }
 
   return (
-    <a href={withProtocol(btn.url)} target="_blank" rel="noreferrer" className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+    <a href={withProtocol(btn.url)} target="_blank" rel="noreferrer" className="flex w-full items-center gap-3 rounded-2xl border border-ink-line px-4 py-3.5 text-left text-ivory shadow-sm transition-all active:scale-[0.98] hover:border-brass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
       {iconEl}
-      <span>{btn.label}</span>
+      <span className="font-medium">{btn.label}</span>
     </a>
   );
 }
@@ -521,7 +521,7 @@ function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCusto
           className="mt-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
         <div className="mt-2 flex gap-2">
-          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {state === 'sending' ? t('sending') : t('send')}
           </button>
           <button type="button" onClick={() => setState('idle')} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('cancel')}</button>
@@ -531,7 +531,7 @@ function CustomNotificationButton({ btn, portalBase, iconEl }: { btn: GuestCusto
   }
 
   return (
-    <button type="button" onClick={handleTap} disabled={state === 'sending'} className="flex w-full items-center gap-3 rounded-lg border border-ink-line px-4 py-3 text-left text-ivory hover:border-brass disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+    <button type="button" onClick={handleTap} disabled={state === 'sending'} className="flex w-full items-center gap-3 rounded-2xl border border-ink-line px-4 py-3 text-left text-ivory shadow-sm hover:border-brass disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
       {iconEl}
       <span>{state === 'sending' ? t('sending') : state === 'error' ? `${btn.label} - ${t('hgTapToTryAgain')}` : btn.label}</span>
     </button>
@@ -591,7 +591,7 @@ function OutletOrderView({ portalBase, outlet, onDone }: { portalBase: string; o
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">{success}</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
+        <button type="button" onClick={onDone} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
       </div>
     );
   }
@@ -604,7 +604,7 @@ function OutletOrderView({ portalBase, outlet, onDone }: { portalBase: string; o
       </div>
       <div className="space-y-3">
         {outlet.items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-ink-line p-3">
+          <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-ink-line p-3 shadow-sm">
             {item.imageUrl && (
               <img src={item.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
             )}
@@ -639,7 +639,7 @@ function OutletOrderView({ portalBase, outlet, onDone }: { portalBase: string; o
             <span className="text-brass">AED {total.toFixed(2)}</span>
           </div>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
-          <button type="button" onClick={handleSubmit} disabled={submitting} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+          <button type="button" onClick={handleSubmit} disabled={submitting} className="mt-3 w-full rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
             {submitting ? t('sending') : t('hgChargeToRoom')}
           </button>
         </div>
@@ -662,7 +662,7 @@ function MyBillView({ data, paying, payError, onPay }: {
   return (
     <div className="space-y-4">
       <p className="font-display text-xl text-ivory">{t('myBill')}</p>
-      <div className="space-y-2 rounded-lg border border-ink-line p-4">
+      <div className="space-y-2 rounded-2xl border border-ink-line p-4 shadow-sm">
         {data.charges.map((c) => (
           <div key={c.id} className="flex justify-between text-sm">
             <span className="text-ivory-dim">{c.description}</span>
@@ -672,7 +672,7 @@ function MyBillView({ data, paying, payError, onPay }: {
         {data.charges.length === 0 && <p className="text-sm text-ivory-dim">{t('noChargesYet')}</p>}
       </div>
       {data.vatBreakdown && (
-        <div className="space-y-1 rounded-lg border border-ink-line p-4 text-sm">
+        <div className="space-y-1 rounded-2xl border border-ink-line p-4 text-sm shadow-sm">
           <div className="flex justify-between text-ivory-dim">
             <span>{t('subtotalExclVat')}</span>
             <span>AED {data.vatBreakdown.subtotalExVat.toFixed(2)}</span>
@@ -688,7 +688,7 @@ function MyBillView({ data, paying, payError, onPay }: {
         <p className="mt-1 font-display text-2xl text-ivory">AED {(data.folioBalance ?? 0).toFixed(2)}</p>
         {payErrorText && <p className="mt-2 text-sm text-danger">{payErrorText}</p>}
         {(data.folioBalance ?? 0) > 0 && (
-          <button type="button" onClick={onPay} disabled={paying} className="mt-3 w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+          <button type="button" onClick={onPay} disabled={paying} className="mt-3 w-full rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
             {paying ? t('startingPayment') : t('payByCard')}
           </button>
         )}
@@ -714,7 +714,7 @@ function MyRequestsView({ requests }: { requests: TrackedRequest[] }) {
     <div className="space-y-3">
       <p className="font-display text-xl text-ivory">{t('myRequests')}</p>
       {active.map((r) => (
-        <div key={`${r.kind}-${r.id}`} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3">
+        <div key={`${r.kind}-${r.id}`} className="flex items-center justify-between rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
           <span className="capitalize text-ivory">{r.label}</span>
           <span className="text-sm text-brass">{statusLabel(t, r.status)}</span>
         </div>
@@ -728,7 +728,7 @@ function MyRequestsView({ requests }: { requests: TrackedRequest[] }) {
           {showHistory && (
             <div className="mt-2 space-y-2">
               {completed.map((r) => (
-                <div key={`${r.kind}-${r.id}`} className="flex items-center justify-between rounded-lg border border-ink-line px-4 py-3 opacity-60">
+                <div key={`${r.kind}-${r.id}`} className="flex items-center justify-between rounded-2xl border border-ink-line px-4 py-3 opacity-60 shadow-sm">
                   <span className="capitalize text-ivory">{r.label}</span>
                   <span className="text-sm text-success">{statusLabel(t, r.status)}</span>
                 </div>
@@ -776,13 +776,13 @@ function RequestFormView({ portalBase, service, onDone }: { portalBase: string; 
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">{t('requestSentConfirmation')}</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
+        <button type="button" onClick={onDone} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-ink-line p-4">
+    <div className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
       <p className="font-display text-xl text-ivory">{service.label}</p>
       {service.options.length > 0 && (
         <select value={option} onChange={(e) => setOption(e.target.value)} className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
@@ -814,7 +814,7 @@ function RequestFormView({ portalBase, service, onDone }: { portalBase: string; 
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
-      <button type="button" onClick={handleSubmit} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+      <button type="button" onClick={handleSubmit} disabled={submitting} className="w-full rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
         {submitting ? t('sending') : t('sendRequest')}
       </button>
     </div>
@@ -846,13 +846,13 @@ function ReceptionView({ portalBase, onDone }: { portalBase: string; onDone: () 
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">{t('messageSentConfirmation')}</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
+        <button type="button" onClick={onDone} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-ink-line p-4">
+    <div className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
       <p className="font-display text-xl text-ivory">{t('reception')}</p>
       <p className="text-sm text-ivory-dim">{t('howCanWeHelp')}</p>
       <textarea
@@ -862,7 +862,7 @@ function ReceptionView({ portalBase, onDone }: { portalBase: string; onDone: () 
         placeholder={t('typeYourMessage')}
         className="w-full rounded-lg border border-ink-line bg-ink px-3 py-2.5 text-base text-ivory placeholder:text-ivory-dim/60"
       />
-      <button type="button" onClick={handleSend} disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+      <button type="button" onClick={handleSend} disabled={submitting} className="w-full rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
         {submitting ? t('sending') : t('send')}
       </button>
     </div>
@@ -895,13 +895,13 @@ function FeedbackView({ portalBase, onDone }: { portalBase: string; onDone: () =
     return (
       <div className="space-y-4 text-center">
         <p className="text-base text-success">{t('thankYouForFeedback')}</p>
-        <button type="button" onClick={onDone} className="rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
+        <button type="button" onClick={onDone} className="rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('done')}</button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-ink-line p-4">
+    <div className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
       <p className="font-display text-xl text-ivory">{t('howWasYourStay')}</p>
       <div className="flex justify-center gap-1 text-3xl">
         {[1, 2, 3, 4, 5].map((n) => (
@@ -925,7 +925,7 @@ function FeedbackView({ portalBase, onDone }: { portalBase: string; onDone: () =
         <input type="checkbox" checked={contactMe} onChange={(e) => setContactMe(e.target.checked)} className="accent-brass" />
         {t('contactMeCheckbox')}
       </label>
-      <button type="button" onClick={handleSubmit} disabled={submitting || rating === 0} className="w-full rounded-lg bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
+      <button type="button" onClick={handleSubmit} disabled={submitting || rating === 0} className="w-full rounded-full bg-brass px-4 py-2.5 text-base font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft">
         {submitting ? t('sending') : t('submitFeedback')}
       </button>
     </div>

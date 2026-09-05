@@ -41,7 +41,7 @@ export default function DeliveryIntegrationPage() {
       </p>
 
       {!integration.enabled ? (
-        <div className="space-y-3 rounded-lg border border-ink-line p-4">
+        <div className="space-y-3 rounded-2xl border border-ink-line p-4 shadow-sm">
           <p className="text-sm text-ivory-dim">
             {t('Not connected yet. Two things are needed before this goes live - neither can be done from here:')}
           </p>
@@ -52,7 +52,7 @@ export default function DeliveryIntegrationPage() {
           <p className="text-sm text-ivory-dim">
             {t('Once you have a Deliverect account, click below to generate this business\'s connection ID - you\'ll enter that as the "External Location ID" when setting up this location in Deliverect\'s dashboard.')}
           </p>
-          <button type="button" onClick={handleConnect} disabled={connecting} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={handleConnect} disabled={connecting} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {connecting ? t('Generating...') : t('Generate connection ID')}
           </button>
         </div>

@@ -138,7 +138,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
               {t('No printer connected')}{printedResult.printError ? ` (${printedResult.printError})` : ''} - {t("opened your browser's print dialog instead.")}
             </p>
           )}
-          <button type="button" onClick={onPrinted} className="rounded-lg bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={onPrinted} className="rounded-full bg-brass px-4 py-2 text-base font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Done')}
           </button>
         </Section>
@@ -155,7 +155,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
         </p>
         <div className="space-y-2">
           {items.map((item) => (
-            <label key={item.id} className="flex items-center justify-between rounded-lg border border-ink-line px-3.5 py-3">
+            <label key={item.id} className="flex items-center justify-between rounded-2xl border border-ink-line px-3.5 py-3 shadow-sm">
               <span className="flex items-center gap-3 text-base text-ivory">
                 <input
                   type="checkbox"
@@ -180,7 +180,7 @@ function TableReceiptDetail({ businessId, cardId, onBack, onPrinted }: {
         <button type="button"
           onClick={handlePrint}
           disabled={printing || finalItems.length === 0}
-          className="w-full rounded-lg bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          className="w-full rounded-full bg-brass px-4 py-3 text-base font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
         >
           {printing ? t('Printing...') : t('Print')}
         </button>

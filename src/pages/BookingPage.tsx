@@ -84,7 +84,7 @@ export function BookingMenuItemRow({ item, cart, onAdd, t }: {
   }
 
   return (
-    <div className="rounded-lg border border-ink-line p-2.5">
+    <div className="rounded-2xl border border-ink-line p-2.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-3">
           {item.image_url ? (
@@ -101,7 +101,7 @@ export function BookingMenuItemRow({ item, cart, onAdd, t }: {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {totalQuantity > 0 && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{totalQuantity} {t('tbInCart')}</span>}
-          <button type="button" onClick={() => setExpanded((s) => !s)} className="rounded-lg border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={() => setExpanded((s) => !s)} className="rounded-full border border-brass/40 px-3 py-1.5 text-xs text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {expanded ? t('tbCancel') : t('tbAdd')}
           </button>
         </div>
@@ -114,7 +114,7 @@ export function BookingMenuItemRow({ item, cart, onAdd, t }: {
             placeholder={t('tbItemNotePlaceholder')}
             className="w-full rounded-lg border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory placeholder:text-ivory-dim/60"
           />
-          <button type="button" onClick={handleConfirmAdd} className="mt-1.5 w-full rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+          <button type="button" onClick={handleConfirmAdd} className="mt-1.5 w-full rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('tbAddToOrder')}
           </button>
         </div>
@@ -449,7 +449,7 @@ function BookingPageContent({ slug }: { slug: string }) {
               className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-3 text-center text-2xl tracking-[0.3em] text-ivory placeholder:text-base placeholder:tracking-normal placeholder:text-ivory-dim/60"
             />
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button type="submit" disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+            <button type="submit" disabled={submitting} className="w-full rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
               {submitting ? t('tbConfirming') : t('tbConfirmBooking')}
             </button>
             <button
@@ -480,7 +480,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                 className="w-full rounded-lg border border-ink-line bg-ink px-3.5 py-2.5 text-ivory placeholder:text-ivory-dim/60 focus:border-brass"
               />
               {error && <p className="text-sm text-danger">{error}</p>}
-              <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-2.5 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+              <button type="submit" disabled={manageBusy} className="w-full rounded-full bg-brass px-4 py-2.5 font-medium text-ink transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                 {manageBusy ? t('tbSendingCode') : t('tbSendVerificationCode')}
               </button>
             </form>
@@ -505,7 +505,7 @@ function BookingPageContent({ slug }: { slug: string }) {
               className="w-full rounded-lg border border-ink-line bg-ink-soft px-3.5 py-3 text-center text-2xl tracking-[0.3em] text-ivory placeholder:text-base placeholder:tracking-normal placeholder:text-ivory-dim/60"
             />
             {error && <p className="text-sm text-danger">{error}</p>}
-            <button type="submit" disabled={manageBusy} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+            <button type="submit" disabled={manageBusy} className="w-full rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
               {manageBusy ? t('tbConfirming') : t('tbConfirmBooking')}
             </button>
           </form>
@@ -668,7 +668,7 @@ function BookingPageContent({ slug }: { slug: string }) {
                   <div className="mt-4 space-y-2 border-t border-ink-line pt-3">
                     <p className="text-xs font-medium uppercase tracking-wide text-ivory-dim">{t('tbYourOrder')}</p>
                     {cart.map((line) => (
-                      <div key={`${line.menuItemId}-${line.note}`} className="flex items-start justify-between gap-2 rounded-lg bg-ink px-3 py-2">
+                      <div key={`${line.menuItemId}-${line.note}`} className="flex items-start justify-between gap-2 rounded-2xl border border-ink-line bg-ink px-3.5 py-2.5">
                         <div className="min-w-0">
                           <p className="truncate text-sm text-ivory">{line.quantity}× {line.name}</p>
                           {line.note && <p className="mt-0.5 text-xs italic text-brass">"{line.note}"</p>}
@@ -801,7 +801,7 @@ function BookingPageContent({ slug }: { slug: string }) {
           )}
 
           {error && <p className="text-sm text-danger">{error}</p>}
-          <button type="submit" disabled={submitting} className="w-full rounded-lg bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+          <button type="submit" disabled={submitting} className="w-full rounded-full bg-brass px-4 py-3 font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {submitting ? t('tbSendingCode') : t('tbSendVerificationCode')}
           </button>
         </form>
@@ -851,7 +851,7 @@ function RescheduleForm({ booking, busy, onCancel, onSave, operatingHours, booki
         </div>
       )}
       <div className="flex gap-3">
-        <button type="button" disabled={busy || hours.closed || !time} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+        <button type="button" disabled={busy || hours.closed || !time} onClick={() => onSave(booking.id, date, time, partySize)} className="rounded-full bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
           {busy ? t('tbConfirming') : t('tbSaveChanges')}
         </button>
         <button type="button" disabled={busy} onClick={onCancel} className="rounded text-sm text-ivory-dim hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">

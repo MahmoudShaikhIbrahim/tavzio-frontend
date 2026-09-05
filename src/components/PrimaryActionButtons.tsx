@@ -13,12 +13,17 @@ interface Props {
 }
 
 const buttonClass =
-  'group flex w-full items-center gap-3 rounded-xl border border-brass/30 bg-ink-soft px-4 py-3.5 ' +
-  'text-start text-ivory transition-colors duration-150 hover:border-brass active:bg-ink ' +
+  'group flex w-full items-center gap-3 rounded-2xl border border-brass/30 bg-ink-soft px-4 py-3.5 shadow-sm ' +
+  'text-start text-ivory transition-all duration-150 hover:border-brass active:scale-[0.98] active:bg-ink ' +
   'active:shadow-[inset_0_1px_4px_rgba(0,0,0,0.5)] disabled:opacity-50 ' +
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink';
 
-const iconWrapClass = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass/40 text-brass';
+// A filled brass-tinted circle, not just a bordered ring - the same
+// "icon sits in its own colored bubble" language every avatar/icon
+// badge elsewhere in this redesign uses (staff initials, table status,
+// booking guests), so this reads as one consistent system rather than
+// this one screen having its own separate icon treatment.
+const iconWrapClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 text-brass';
 
 export default function PrimaryActionButtons({ business, tapEventId }: Props) {
   const { ordering, booking } = business.features;
@@ -209,13 +214,13 @@ function QuickRequestButton({ slug, tapEventId, button }: {
           onChange={(e) => setNote(e.target.value)}
           placeholder={t('addNoteOptional')}
           rows={2}
-          className="mt-2 w-full rounded-lg border border-ink-line bg-ink px-3 py-2 text-sm text-ivory placeholder:text-ivory-dim/60"
+          className="mt-2 w-full rounded-2xl border border-ink-line bg-ink px-3.5 py-2.5 text-sm text-ivory placeholder:text-ivory-dim/60"
         />
         <div className="mt-2 flex gap-2">
-          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-lg bg-brass px-3 py-1.5 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+          <button type="button" onClick={handleSend} disabled={state === 'sending'} className="rounded-full bg-brass px-4 py-2 text-sm font-medium text-ink disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
             {state === 'sending' ? t('sending') : t('send')}
           </button>
-          <button type="button" onClick={() => setState('idle')} className="rounded text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">{t('cancel')}</button>
+          <button type="button" onClick={() => setState('idle')} className="rounded-full px-4 py-2 text-sm text-ivory-dim focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink">{t('cancel')}</button>
         </div>
       </div>
     );
