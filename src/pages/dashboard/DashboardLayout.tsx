@@ -67,61 +67,64 @@ const TABS = [
   // now surfaces only in Orders' own attention panel - it used to also
   // have this separate tab showing the exact same live queue, which was
   // pure duplication (see the retired /requests route in App.tsx).
-  { path: 'orders', label: 'Orders', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
-  { path: 'kitchen', label: 'Kitchen', ownerOnly: false, requires: 'ordering' as const, badge: 'kitchen' as const, badge2: null },
-  { path: 'pos', label: 'POS Terminal', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
-  { path: 'bookings', label: 'Bookings', ownerOnly: false, requires: 'booking' as const, badge: null, badge2: null },
+  { path: 'orders', label: 'Orders', emoji: '🧾', ownerOnly: false, requires: 'ordering' as const, badge: 'orders' as const, badge2: 'requests' as const },
+  { path: 'kitchen', label: 'Kitchen', emoji: '🔥', ownerOnly: false, requires: 'ordering' as const, badge: 'kitchen' as const, badge2: null },
+  { path: 'pos', label: 'POS Terminal', emoji: '💳', ownerOnly: false, requires: 'ordering' as const, badge: null, badge2: null },
+  { path: 'bookings', label: 'Bookings', emoji: '📅', ownerOnly: false, requires: 'booking' as const, badge: null, badge2: null },
   // Floor plan / table layout is a restaurant-only concept - a hotel with
   // ordering enabled (for its Room Service / outlet POS) still shouldn't
   // see a "Tables" tab, since it has rooms, not tables.
-  { path: 'tables', label: 'Tables', ownerOnly: false, requires: 'orderingNotHotel' as const, badge: null, badge2: null },
-  { path: 'front-desk', label: 'Front Desk', ownerOnly: false, requires: 'hotel' as const, badge: 'front-desk' as const, badge2: null },
-  { path: 'housekeeping', label: 'Housekeeping', ownerOnly: false, requires: 'hotel' as const, badge: 'housekeeping' as const, badge2: null },
-  { path: 'sales-events', label: 'Sales & Events', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
-  { path: 'payments', label: 'Payments', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
-  { path: 'inventory', label: 'Inventory', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
-  { path: 'reconciliation', label: 'Bank Reconciliation', ownerOnly: true, requires: null, badge: null, badge2: null },
+  { path: 'tables', label: 'Tables', emoji: '🪑', ownerOnly: false, requires: 'orderingNotHotel' as const, badge: null, badge2: null },
+  { path: 'front-desk', label: 'Front Desk', emoji: '🛎️', ownerOnly: false, requires: 'hotel' as const, badge: 'front-desk' as const, badge2: null },
+  { path: 'housekeeping', label: 'Housekeeping', emoji: '🧹', ownerOnly: false, requires: 'hotel' as const, badge: 'housekeeping' as const, badge2: null },
+  { path: 'sales-events', label: 'Sales & Events', emoji: '🎉', ownerOnly: false, requires: 'hotel' as const, badge: null, badge2: null },
+  { path: 'payments', label: 'Payments', emoji: '💰', ownerOnly: false, requires: null, badge: 'payments' as const, badge2: null },
+  { path: 'inventory', label: 'Inventory', emoji: '📦', ownerOnly: false, requires: 'inventory' as const, badge: null, badge2: null },
+  { path: 'reconciliation', label: 'Bank Reconciliation', emoji: '🏦', ownerOnly: true, requires: null, badge: null, badge2: null },
 ];
 
 // Everything that used to be its own tab, or lived buried inside the old
 // monolithic Settings page, now surfaces here instead - grouped roughly
 // by how closely related each thing is, not alphabetically.
 const SETTINGS_ITEMS = [
-  { path: 'settings/credentials', label: 'Credentials & Integrations', ownerOnly: true, requires: null },
-  { path: 'settings/contract', label: 'Contracts & Receipts', ownerOnly: true, requires: null },
+  { path: 'settings/credentials', label: 'Credentials & Integrations', emoji: '🔑', ownerOnly: true, requires: null },
+  { path: 'settings/contract', label: 'Contracts & Receipts', emoji: '📄', ownerOnly: true, requires: null },
   // Staff-only entry point - owners get this inline inside Business
   // Profile instead (see that page), and Business Profile itself is
   // owner-only, so staff still need a direct way to change their own
   // password. Filtered out for owners below rather than typed as a
   // field on every item, to keep this array's shape uniform.
-  { path: 'settings/change-password', label: 'Change Password', ownerOnly: false, requires: null },
-  { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', ownerOnly: true, requires: 'hotel' as const },
-  { path: 'settings/rate-plans', label: 'Rate Plans', ownerOnly: true, requires: 'hotel' as const },
-  { path: 'settings/night-audit', label: 'Night Audit', ownerOnly: true, requires: 'hotel' as const },
-  { path: 'settings/hr', label: 'HR', ownerOnly: true, requires: 'hr' as const },
-  { path: 'settings/payroll', label: 'Payroll', ownerOnly: true, requires: 'payroll' as const },
-  { path: 'settings/accounting', label: 'Accounting', ownerOnly: true, requires: 'accounting' as const },
-  { path: 'settings/channel-manager', label: 'Channel Manager', ownerOnly: true, requires: 'channelManager' as const },
-  { path: 'settings/marketing', label: 'Marketing', ownerOnly: true, requires: 'marketing' as const },
-  { path: 'settings/landing-buttons', label: 'Buttons and Links', ownerOnly: true, requires: null },
-  { path: 'settings/menu', label: 'Menu Management', ownerOnly: false, requires: null },
-  { path: 'settings/loyalty', label: 'Loyalty', ownerOnly: false, requires: null },
-  { path: 'settings/cards', label: 'Cards', ownerOnly: false, requires: null },
-  { path: 'settings/notifications', label: 'Notifications', ownerOnly: false, requires: null },
-  { path: 'features', label: 'Features', ownerOnly: false, requires: null },
-  { path: 'audit-log', label: 'Audit Log', ownerOnly: false, requires: null },
-  { path: 'analytics', label: 'Analytics', ownerOnly: false, requires: null },
-  { path: 'forecasting', label: 'Forecasting & Budgeting', ownerOnly: true, requires: 'forecasting' as const },
-  { path: 'staff', label: 'Staff', ownerOnly: true, requires: 'staffAccounts' as const },
-  { path: 'messages', label: 'Contact Us', ownerOnly: false, requires: null },
+  { path: 'settings/change-password', label: 'Change Password', emoji: '🔒', ownerOnly: false, requires: null },
+  { path: 'settings/hotel-outlets', label: 'F&B Outlets & Services', emoji: '🍽️', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/rate-plans', label: 'Rate Plans', emoji: '🏷️', ownerOnly: true, requires: 'hotel' as const },
+  { path: 'settings/night-audit', label: 'Night Audit', emoji: '🌙', ownerOnly: true, requires: 'hotel' as const },
+  // Staff account management (the roster, invites, permissions) lives
+  // as a tab inside this same page now, and stays reachable regardless
+  // of the HR feature module - so this entry is gated only on being an
+  // owner, not on 'hr', which HRPage itself checks per-module instead.
+  { path: 'settings/hr', label: 'HR', emoji: '👥', ownerOnly: true, requires: null },
+  { path: 'settings/payroll', label: 'Payroll', emoji: '💵', ownerOnly: true, requires: 'payroll' as const },
+  { path: 'settings/accounting', label: 'Accounting', emoji: '📊', ownerOnly: true, requires: 'accounting' as const },
+  { path: 'settings/channel-manager', label: 'Channel Manager', emoji: '🔗', ownerOnly: true, requires: 'channelManager' as const },
+  { path: 'settings/marketing', label: 'Marketing', emoji: '📣', ownerOnly: true, requires: 'marketing' as const },
+  { path: 'settings/landing-buttons', label: 'Buttons and Links', emoji: '🔘', ownerOnly: true, requires: null },
+  { path: 'settings/menu', label: 'Menu Management', emoji: '📖', ownerOnly: false, requires: null },
+  { path: 'settings/loyalty', label: 'Loyalty', emoji: '⭐', ownerOnly: false, requires: null },
+  { path: 'settings/cards', label: 'Cards', emoji: '💳', ownerOnly: false, requires: null },
+  { path: 'settings/notifications', label: 'Notifications', emoji: '🔔', ownerOnly: false, requires: null },
+  { path: 'features', label: 'Features', emoji: '🧩', ownerOnly: false, requires: null },
+  { path: 'audit-log', label: 'Audit Log', emoji: '📋', ownerOnly: false, requires: null },
+  { path: 'analytics', label: 'Analytics', emoji: '📈', ownerOnly: false, requires: null },
+  { path: 'forecasting', label: 'Forecasting & Budgeting', emoji: '🔮', ownerOnly: true, requires: 'forecasting' as const },
+  { path: 'messages', label: 'Contact Us', emoji: '💬', ownerOnly: false, requires: null },
   // Appears/disappears per-account, not per-business - see is_org_owner
   // (migration 0098). Deliberately ownerOnly: false: org duty was never
   // tied to full business-owner access, so a regular staff member
   // appointed to run the org sees these the same as the owner would.
-  { path: 'org/overview', label: 'Organization', ownerOnly: false, requires: 'orgOwner' as const },
-  { path: 'org/menu', label: 'Org Menu', ownerOnly: false, requires: 'orgOwner' as const },
-  { path: 'org/suppliers', label: 'Org Suppliers', ownerOnly: false, requires: 'orgOwner' as const },
-  { path: 'org/purchase-orders', label: 'Org Purchase Orders', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/overview', label: 'Organization', emoji: '🌐', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/menu', label: 'Org Menu', emoji: '📖', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/suppliers', label: 'Org Suppliers', emoji: '🚚', ownerOnly: false, requires: 'orgOwner' as const },
+  { path: 'org/purchase-orders', label: 'Org Purchase Orders', emoji: '🛒', ownerOnly: false, requires: 'orgOwner' as const },
 ];
 
 // Real tasks, not just destinations - "how do I invite a new server"
@@ -144,8 +147,8 @@ const DASHBOARD_ACTIONS = [
   { path: 'settings/menu', label: 'Add a menu item', keywords: 'new dish product create', requires: null },
   { path: 'settings/menu', label: 'Add a menu category', keywords: 'new section create', requires: null },
   { path: 'settings/menu', label: 'Pause a menu item', keywords: 'sold out unavailable 86', requires: null },
-  { path: 'staff', label: 'Invite a staff member', keywords: 'new employee add hire', requires: 'staffAccounts' as const },
-  { path: 'staff', label: 'Deactivate a staff member', keywords: 'remove fire disable account', requires: 'staffAccounts' as const },
+  { path: 'settings/hr', label: 'Invite a staff member', keywords: 'new employee add hire staff', requires: 'staffAccounts' as const },
+  { path: 'settings/hr', label: 'Deactivate a staff member', keywords: 'remove fire disable account staff', requires: 'staffAccounts' as const },
   { path: 'inventory', label: 'Create a purchase order', keywords: 'restock order supplier new', requires: 'inventory' as const },
   { path: 'inventory', label: 'Add a supplier', keywords: 'new vendor create', requires: 'inventory' as const },
   { path: 'inventory', label: 'Record waste', keywords: 'spoilage loss log', requires: 'inventory' as const },
@@ -543,16 +546,15 @@ function DashboardLayoutInner() {
   const pinnedTabs = visibleSettingsItems.filter((i) => pinned.includes(i.path));
   const drawerSettingsItems = visibleSettingsItems.filter((i) => !pinned.includes(i.path));
 
-  // Two entries whose sub-pages genuinely belong under them rather than
-  // sitting as their own top-level rows: Organization (and the shared
-  // org pages) is a Business Profile concern, not a Staff one, and Staff
-  // itself is an HR concern - both now nest as an expandable group in
-  // the drawer instead of six flat, same-looking rows.
+  // Organization (and the shared org pages) is a Business Profile
+  // concern, not a Staff one - it nests as an expandable group in the
+  // drawer instead of four flat, same-looking rows. Staff itself now
+  // lives as a tab inside HR (see HRPage), not as a separate nav entry
+  // at all.
   const ORG_GROUP_PATHS = ['org/overview', 'org/menu', 'org/suppliers', 'org/purchase-orders'];
   const orgGroupItems = drawerSettingsItems.filter((i) => ORG_GROUP_PATHS.includes(i.path));
   const hrItem = drawerSettingsItems.find((i) => i.path === 'settings/hr');
-  const staffItem = drawerSettingsItems.find((i) => i.path === 'staff');
-  const flatSettingsItems = drawerSettingsItems.filter((i) => !ORG_GROUP_PATHS.includes(i.path) && i.path !== 'staff' && (i.path !== 'settings/hr' || !hrItem));
+  const flatSettingsItems = drawerSettingsItems.filter((i) => !ORG_GROUP_PATHS.includes(i.path) && i.path !== 'settings/hr');
   // Deliberately the full permission-filtered lists, not the
   // hide-filtered visibleTabs/visibleSettingsItems above - a command
   // palette exists precisely to still reach a page someone hid from
@@ -720,7 +722,7 @@ function DashboardLayoutInner() {
                   isTabActive(location.pathname, tab.path) ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/50 hover:text-ivory'
                 }`}
               >
-                📌 {t(tab.label)}
+                {tab.emoji} {t(tab.label)}
               </Link>
             ))}
           </div>
@@ -805,8 +807,9 @@ function DashboardLayoutInner() {
                         active ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
                       }`}
                     >
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-brass' : 'bg-transparent'}`} />
+                      <span aria-hidden="true">{tab.emoji}</span>
                       <span className="flex-1">{t(tab.label)}</span>
+                      {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brass" />}
                       {count > 0 && (
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-medium text-status-text">
                           {count > 9 ? '9+' : count}
@@ -842,36 +845,17 @@ function DashboardLayoutInner() {
                   />
                 )}
 
-                {hrItem && staffItem && (
-                  <NavGroup
-                    emoji="👥"
-                    label={t(hrItem.label)}
-                    linkPath={hrItem.path}
-                    items={[staffItem]}
-                    open={isGroupOpen('hr', [hrItem.path, staffItem.path])}
-                    onToggle={() => toggleGroup('hr', [hrItem.path, staffItem.path])}
-                    pathname={location.pathname}
-                    t={t}
-                  />
-                )}
-                {hrItem && !staffItem && (
+                {/* Staff lives as a tab inside HR itself now (see
+                    HRPage) - no separate nested dropdown for it here
+                    anymore, just the one flat row. */}
+                {hrItem && (
                   <Link
                     to={`/admin/dashboard/${hrItem.path}`}
                     className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
                       isTabActive(location.pathname, hrItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                     }`}
                   >
-                    {t(hrItem.label)}
-                  </Link>
-                )}
-                {!hrItem && staffItem && (
-                  <Link
-                    to={`/admin/dashboard/${staffItem.path}`}
-                    className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
-                      isTabActive(location.pathname, staffItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                    }`}
-                  >
-                    {t(staffItem.label)}
+                    {hrItem.emoji} {t(hrItem.label)}
                   </Link>
                 )}
 
@@ -883,7 +867,7 @@ function DashboardLayoutInner() {
                       isTabActive(location.pathname, tab.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                     }`}
                   >
-                    {t(tab.label)}
+                    {tab.emoji} {t(tab.label)}
                   </Link>
                 ))}
               </div>

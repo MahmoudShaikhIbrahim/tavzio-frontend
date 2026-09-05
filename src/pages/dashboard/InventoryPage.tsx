@@ -87,6 +87,7 @@ function IngredientsTab({ businessId }: { businessId: string }) {
   const [wastingId, setWastingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   function reload() {
     setLoading(true);
@@ -154,9 +155,37 @@ function IngredientsTab({ businessId }: { businessId: string }) {
       )}
       {error && <p className="text-base text-danger">{error}</p>}
       {loading && <p className="text-ivory-dim">Loading...</p>}
+
+      {!loading && ingredients.length > 0 && (
+        <>
+          {/* At-a-glance counts, the same kind of summary strip a real
+              inventory screen leads with, before the actual list. */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: t('Total items'), value: ingredients.length, tone: 'text-ivory' },
+              { label: t('In stock'), value: ingredients.filter((i) => i.stock_qty > i.low_stock_threshold).length, tone: 'text-success' },
+              { label: t('Low stock'), value: ingredients.filter((i) => i.stock_qty > 0 && i.stock_qty <= i.low_stock_threshold).length, tone: 'text-warning' },
+              { label: t('Out of stock'), value: ingredients.filter((i) => i.stock_qty <= 0).length, tone: 'text-danger' },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-ink-line px-4 py-3 shadow-sm">
+                <p className={`font-display text-2xl ${stat.tone}`}>{stat.value}</p>
+                <p className="text-sm text-ivory-dim">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('Search ingredients...')}
+            className="w-full max-w-xs rounded-full border border-ink-line bg-ink px-4 py-2 text-base text-ivory placeholder:text-ivory-dim/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+          />
+        </>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
-        {ingredients.map((ing) => {
-          const low = ing.stock_qty <= ing.low_stock_threshold;
+        {ingredients.filter((ing) => ing.name.toLowerCase().includes(search.trim().toLowerCase())).map((ing) => {
+          const outOfStock = ing.stock_qty <= 0;
+          const low = !outOfStock && ing.stock_qty <= ing.low_stock_threshold;
           // A visual sense of "how full" this ingredient is, not just a
           // number - capped at 2x the low-stock threshold so the bar is
           // meaningful (a threshold of 5 with 200 in stock shouldn't read
@@ -170,14 +199,14 @@ function IngredientsTab({ businessId }: { businessId: string }) {
             <div key={ing.id} className="rounded-2xl border border-ink-line bg-ink-soft/40 p-4 shadow-sm transition-colors hover:border-brass/40">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-display text-base text-ivory">{ing.name}</p>
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${low ? 'border-danger/40 text-danger' : 'border-success/40 text-success'}`}>
-                  {low ? t('Low stock') : t('In stock')}
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${outOfStock ? 'border-danger/40 text-danger' : low ? 'border-warning/40 text-warning' : 'border-success/40 text-success'}`}>
+                  {outOfStock ? t('Out of stock') : low ? t('Low stock') : t('In stock')}
                 </span>
               </div>
 
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-ink-line">
                 <div
-                  className={`h-full rounded-full transition-all ${low ? 'bg-danger' : 'bg-brass'}`}
+                  className={`h-full rounded-full transition-all ${outOfStock ? 'bg-danger' : low ? 'bg-warning' : 'bg-brass'}`}
                   style={{ width: `${fillPct}%` }}
                 />
               </div>

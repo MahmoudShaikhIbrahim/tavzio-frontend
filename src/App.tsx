@@ -44,7 +44,6 @@ import OrgPurchaseOrdersPage from './pages/orgowner/OrgPurchaseOrdersPage';
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import ForecastingPage from './pages/dashboard/ForecastingPage';
-import StaffPage from './pages/dashboard/StaffPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import BusinessProfilePage from './pages/dashboard/BusinessProfilePage';
 import PayBillSetupPage from './pages/dashboard/PayBillSetupPage';
@@ -211,7 +210,10 @@ export default function App() {
             <Route index element={<DashboardIndexRedirect />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="forecasting" element={<ForecastingPage />} />
-            <Route path="staff" element={<StaffPage />} />
+            {/* Staff moved to live as a tab inside HR (see HRPage) - this
+                keeps any bookmarked/old link to the standalone page
+                working rather than 404ing. */}
+            <Route path="staff" element={<Navigate to="../settings/hr" replace />} />
             <Route path="settings" element={<SettingsPage />} />
             {/* Same components the standalone /admin/org portal uses -
                 self-contained (call getMyOrganization() themselves via

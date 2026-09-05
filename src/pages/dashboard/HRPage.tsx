@@ -12,6 +12,7 @@ import { uploadStaffDocumentFile, getStaffDocumentUrl } from '../../lib/supabase
 import type { StaffMember, AdminBusiness, StaffSchedule, LaborCostReport } from '../../types';
 import { Section, Field, inputClass } from '../../components/ui';
 import { useConfirm } from '../../components/ConfirmDialog';
+import StaffPage from './StaffPage';
 
 const DOC_TYPES = ['Emirates ID', 'Passport', 'Visa', 'Labor Card', 'Employment Contract', 'Other'];
 
@@ -20,7 +21,7 @@ export default function HRPage() {
   const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
-  const [tab, setTab] = useState<'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'>('documents');
+  const [tab, setTab] = useState<'staff' | 'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'>('staff');
 
   useEffect(() => {
     if (businessId) getBusiness(businessId).then(setBusiness);
@@ -29,24 +30,20 @@ export default function HRPage() {
   if (!businessId || !business) return <p className="text-ivory-dim">Loading...</p>;
 
   const hr = business.features.hr;
-  if (!hr?.enabled) {
-    return (
-      <div className="max-w-lg space-y-3">
-        <h1 className="font-display text-3xl text-ivory">HR</h1>
-        <p className="text-base text-ivory-dim">
-          {t('HR is turned off for your business. Turn it on under Features, then come back here - each module (documents, commission, tips, scheduling, labor cost) can be enabled independently.')}
-        </p>
-      </div>
-    );
-  }
+  // Staff itself (the roster, invites, permissions) is core account
+  // management, not one of the optional HR modules - it stays available
+  // here even when the HR feature module is switched off, same as it
+  // was reachable on its own before moving under this page.
+  const staffTab = business.features.staffAccounts ? { key: 'staff' as const, label: 'Staff' } : null;
 
   const availableTabs = [
-    hr.documents && { key: 'documents' as const, label: 'Staff Documents' },
-    hr.commission && { key: 'commission' as const, label: 'Commission' },
-    hr.tips && { key: 'tips' as const, label: 'Tip Pooling' },
-    hr.scheduling && { key: 'scheduling' as const, label: 'Scheduling' },
-    hr.laborCost && { key: 'labor-cost' as const, label: 'Labor Cost' },
-  ].filter(Boolean) as { key: 'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'; label: string }[];
+    staffTab,
+    hr?.enabled && hr.documents && { key: 'documents' as const, label: 'Staff Documents' },
+    hr?.enabled && hr.commission && { key: 'commission' as const, label: 'Commission' },
+    hr?.enabled && hr.tips && { key: 'tips' as const, label: 'Tip Pooling' },
+    hr?.enabled && hr.scheduling && { key: 'scheduling' as const, label: 'Scheduling' },
+    hr?.enabled && hr.laborCost && { key: 'labor-cost' as const, label: 'Labor Cost' },
+  ].filter(Boolean) as { key: 'staff' | 'documents' | 'commission' | 'tips' | 'scheduling' | 'labor-cost'; label: string }[];
 
   return (
     <div className="space-y-6">
@@ -63,11 +60,19 @@ export default function HRPage() {
               <TabButton key={tabItem.key} active={tab === tabItem.key} onClick={() => setTab(tabItem.key)}>{t(tabItem.label)}</TabButton>
             ))}
           </div>
-          {tab === 'documents' && hr.documents && <DocumentsTab businessId={businessId} />}
-          {tab === 'commission' && hr.commission && <CommissionTab businessId={businessId} />}
-          {tab === 'tips' && hr.tips && <TipsTab businessId={businessId} />}
-          {tab === 'scheduling' && hr.scheduling && <SchedulingTab businessId={businessId} />}
-          {tab === 'labor-cost' && hr.laborCost && <LaborCostTab businessId={businessId} />}
+          {tab === 'staff' && staffTab && <StaffPage />}
+          {!hr?.enabled && tab !== 'staff' && (
+            <p className="text-ivory-dim">{t('HR is turned off for your business. Turn it on under Features to use documents, commission, tips, scheduling, or labor cost.')}</p>
+          )}
+          {hr?.enabled && (
+            <>
+              {tab === 'documents' && hr.documents && <DocumentsTab businessId={businessId} />}
+              {tab === 'commission' && hr.commission && <CommissionTab businessId={businessId} />}
+              {tab === 'tips' && hr.tips && <TipsTab businessId={businessId} />}
+              {tab === 'scheduling' && hr.scheduling && <SchedulingTab businessId={businessId} />}
+              {tab === 'labor-cost' && hr.laborCost && <LaborCostTab businessId={businessId} />}
+            </>
+          )}
         </>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { AlertTriangle, Flame, Check, Printer } from 'lucide-react';
+import { Flame, Check, Printer } from 'lucide-react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
 import { listOrders, updateOrderStatus, getBusiness, reprintKitchenTicket } from '../../lib/authApi';
@@ -338,10 +338,10 @@ function KitchenTicket({ order, stationFilter, reprinting, onStart, onMarkReady,
           <p className={`font-display text-lg font-medium ${order.order_type === 'drive_through' ? 'text-drivethrough' : 'text-ivory'}`}>
             {order.order_type === 'drive_through' ? t('Drive Through') : (order.table_label || t('No table'))}
           </p>
-          <div className="flex items-center gap-1.5">
-            {urgency && <AlertTriangle size={13} strokeWidth={2.25} className={urgency === 'danger' ? 'text-danger' : 'text-warning'} aria-hidden="true" />}
-            <TicketAge createdAt={order.created_at} />
-          </div>
+          {/* The colored top strip already carries the urgency signal -
+              a second warning icon here next to already-colored text
+              was saying the same thing twice. */}
+          <TicketAge createdAt={order.created_at} />
         </div>
         {order.order_type === 'drive_through' && order.arrival_at && (
           <p className="mt-0.5 text-xs text-drivethrough">{t('Arriving in')} <ArrivalCountdown arrivalAt={order.arrival_at} /></p>
@@ -368,8 +368,14 @@ function KitchenTicket({ order, stationFilter, reprinting, onStart, onMarkReady,
         )}
         {order.note && <p className="mt-2 rounded-lg border border-brass/30 bg-brass/5 px-2 py-1 text-xs italic text-brass">{t('Note:')} {order.note}</p>}
 
+        {/* One action per card, not two - a New ticket only ever needs
+            Start next; a ticket already in progress only ever needs
+            Mark ready next. Showing both at once was the clutter: the
+            second button was never the right one to press yet. Reprint
+            is real but rare, so it steps back into a plain icon rather
+            than matching weight with the actual next step. */}
         <div className="mt-3 flex items-center gap-2">
-          {order.status === 'pending' && (
+          {order.status === 'pending' ? (
             <button type="button"
               onClick={onStart}
               className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-brass/40 min-h-[38px] px-2 py-2 text-sm font-medium text-brass hover:bg-brass/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
@@ -377,20 +383,21 @@ function KitchenTicket({ order, stationFilter, reprinting, onStart, onMarkReady,
               <Flame size={14} />
               {t('Start')}
             </button>
+          ) : (
+            <button type="button"
+              onClick={onMarkReady}
+              className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-brass min-h-[38px] px-2 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
+            >
+              <Check size={14} />
+              {t('Mark ready')}
+            </button>
           )}
-          <button type="button"
-            onClick={onMarkReady}
-            className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-brass min-h-[38px] px-2 py-2 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-offset-2 focus-visible:ring-offset-ink-soft"
-          >
-            <Check size={14} />
-            {t('Mark ready')}
-          </button>
           <button type="button"
             onClick={onReprint}
             disabled={reprinting}
             title={t('Reprint ticket')}
             aria-label={reprinting ? t('Reprinting...') : t('Reprint ticket')}
-            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-ink hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
           >
             <Printer size={14} className={reprinting ? 'animate-pulse' : ''} />
           </button>

@@ -4,37 +4,53 @@ import { useT } from '../../hooks/useT';
 import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, setMyAvatar, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
-import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
+import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import { subscribeToBusinessTable, uploadBusinessFile } from '../../lib/supabaseClient';
 import { usePollingFallback } from '../../hooks/usePollingFallback';
 import { useConfirm } from '../../components/ConfirmDialog';
 
+// Real restructure, inspired by how a real POS/staff-management product
+// (Toast, Petpooja, Lightspeed) actually lays this out: a compact roster
+// - one or two lines per person, nothing more - with every real detail
+// (contact info, permissions, status, photo) one tap away in a side
+// panel, instead of a wall of cards each carrying every action chip at
+// once whether you need it right now or not.
 export default function StaffPage() {
   const { user } = useSession();
   const { t } = useT();
-  const confirm = useConfirm();
   const businessId = user?.business_id;
   const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [inviteSections, setInviteSections] = useState<string[]>(sectionOptionsFor(false).map((o) => o.key));
-  const [restrictOnInvite, setRestrictOnInvite] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [inviteError, setInviteError] = useState('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [resetResult, setResetResult] = useState<{ name: string; tempPassword: string } | null>(null);
-  const [resendingId, setResendingId] = useState<string | null>(null);
-  const [resendMessage, setResendMessage] = useState('');
-  const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
-  const [togglingFullAccessId, setTogglingFullAccessId] = useState<string | null>(null);
-  const [editingSectionsFor, setEditingSectionsFor] = useState<string | null>(null);
-  const [editingOutletsFor, setEditingOutletsFor] = useState<string | null>(null);
   const [isHotel, setIsHotel] = useState(false);
   const [outlets, setOutlets] = useState<HotelOutlet[]>([]);
-
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [addingStaff, setAddingStaff] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  function reload() {
+    if (!businessId) return;
+    setLoadError('');
+    listStaff(businessId)
+      .then((rows) => { setStaff(rows); setLoaded(true); })
+      .catch((err) => { setLoadError(err instanceof Error ? err.message : 'Could not load staff'); setLoaded(true); });
+  }
+
+  useEffect(reload, [businessId]);
+  usePollingFallback(reload, !!businessId);
+  useEffect(() => {
+    if (!businessId) return;
+    return subscribeToBusinessTable(businessId, 'profiles', reload);
+  }, [businessId]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    getBusiness(businessId).then((b) => {
+      const hotel = b.category === 'hotel';
+      setIsHotel(hotel);
+      if (hotel) listHotelOutlets(businessId).then(setOutlets);
+    }).catch(() => {});
+  }, [businessId]);
 
   // Self-service only, same as the backend enforces: a person sets their
   // own picture so a manager can recognize their face at a glance -
@@ -49,71 +65,124 @@ export default function StaffPage() {
       await setMyAvatar(businessId, user.id, url);
       setStaff((prev) => prev.map((s) => (s.id === user.id ? { ...s, avatar_url: url } : s)));
     } catch {
-      // Silent - the upload button itself simply stops spinning; nothing
-      // destructive happened, so there's nothing to roll back.
+      // Silent - the upload control itself simply stops spinning.
     } finally {
       setUploadingAvatar(false);
     }
   }
 
-  function reload() {
-    if (!businessId) return;
-    setLoadError('');
-    listStaff(businessId)
-      .then((rows) => { setStaff(rows); setLoaded(true); })
-      .catch((err) => { setLoadError(err instanceof Error ? err.message : 'Could not load staff'); setLoaded(true); });
-  }
-
-  useEffect(reload, [businessId]);
-  usePollingFallback(reload, !!businessId);
-  // business - a newly invited account, a role/section change made from
-  // another tab, a deactivate/reactivate - without waiting for a manual
-  // page reload. Full refetch on each event rather than merging the
-  // changed row in by hand: listStaff's response shape (assigned_sections,
-  // assigned_outlet_ids, full_access, etc.) is exactly what this page
-  // already renders from, so reusing it here can't drift out of sync
-  // with what a manual reload would show.
-  useEffect(() => {
-    if (!businessId) return;
-    return subscribeToBusinessTable(businessId, 'profiles', reload);
-  }, [businessId]);
-
-
-  // Outlet assignment is hotel-only (confirmed: restaurants may get this
-  // later, not yet) - the outlet list only ever gets fetched when it
-  // could actually be used.
-  useEffect(() => {
-    if (!businessId) return;
-    getBusiness(businessId).then((b) => {
-      const hotel = b.category === 'hotel';
-      setIsHotel(hotel);
-      // Re-sync the invite form's default (all-selected) set to the
-      // business's real category - without this, a hotel would keep the
-      // restaurant-scoped default (set at mount, before this fetch
-      // resolves) for the brief window before this effect runs, and
-      // "Restrict sections" would offer Tables while quietly missing
-      // Front Desk/Housekeeping.
-      setInviteSections(sectionOptionsFor(hotel).map((o) => o.key));
-      if (hotel) listHotelOutlets(businessId).then(setOutlets);
-    }).catch(() => {});
-  }, [businessId]);
-
   if (!businessId) return null;
 
-  // Real fix for a confirmed bug: this had no try/catch at all - a
-  // real, common failure (email already registered, or Supabase's own
-  // outbound-email rate limit) threw uncaught, execution stopped
-  // before setSaving(false) ever ran, and the button was stuck on
-  // "Adding..." forever with the actual error only visible in the
-  // browser console, invisible to whoever was actually using the form.
+  const openStaff = staff.find((s) => s.id === openId) || null;
+
+  return (
+    <div className="space-y-8">
+      <Section
+        title={t('Staff')}
+        action={
+          <button type="button" onClick={() => setAddingStaff((v) => !v)} className="rounded-full bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            {addingStaff ? t('Close') : `+ ${t('Add staff')}`}
+          </button>
+        }
+      >
+        {addingStaff && (
+          <InviteStaffForm
+            businessId={businessId}
+            isHotel={isHotel}
+            onInvited={() => { setAddingStaff(false); reload(); }}
+          />
+        )}
+
+        {!loaded && <p className="text-ivory-dim">{t('Loading...')}</p>}
+        {loadError && <p className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger">{loadError}</p>}
+        {loaded && !loadError && staff.length === 0 && (
+          <p className="text-ivory-dim">{t('No team members found - something is wrong, since your own owner account should always show up here.')}</p>
+        )}
+
+        {/* One or two lines per person - name, role, status, a section
+            count at a glance - everything else lives in the detail panel
+            a tap away, not competing for space in this list. */}
+        <div className="overflow-hidden rounded-2xl border border-ink-line">
+          {staff.map((s, i) => {
+            const sectionCount = s.assigned_sections === null ? t('All') : String(s.assigned_sections.length);
+            return (
+              <button
+                type="button"
+                key={s.id}
+                onClick={() => setOpenId(s.id)}
+                className={`flex w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                  i > 0 ? 'border-t border-ink-line' : ''
+                } ${s.is_active ? '' : 'opacity-50'}`}
+              >
+                {s.avatar_url ? (
+                  <img src={s.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
+                    {s.name.trim()[0]?.toUpperCase() || '?'}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base text-ivory">{s.name}</p>
+                  <p className="truncate text-sm text-ivory-dim">{s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</p>
+                </div>
+                <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+                  {s.full_access && <span className="rounded-full bg-brass/15 px-2 py-0.5 text-xs text-brass">{t('Full access')}</span>}
+                  {s.is_org_owner && <span className="rounded-full bg-brass/15 px-2 py-0.5 text-xs text-brass">{t('Org Owner')}</span>}
+                  {s.role === 'staff' && !s.full_access && (
+                    <span className="rounded-full border border-ink-line px-2 py-0.5 text-xs text-ivory-dim">{sectionCount} {t('sections')}</span>
+                  )}
+                </div>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${s.is_active ? 'bg-brass' : 'bg-ivory-dim/40'}`} title={s.is_active ? t('Active') : t('Deactivated')} />
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" className="shrink-0 text-ivory-dim rtl:rotate-180"><path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <ShiftReportSection businessId={businessId} />
+
+      {openStaff && (
+        <StaffDetailPanel
+          businessId={businessId}
+          staffMember={openStaff}
+          currentUserId={user?.id}
+          isHotel={isHotel}
+          outlets={outlets}
+          uploadingAvatar={uploadingAvatar}
+          onAvatarPick={handleAvatarPick}
+          onClose={() => setOpenId(null)}
+          onUpdated={(updated) => setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)))}
+          onDeleted={(id) => { setStaff((prev) => prev.filter((m) => m.id !== id)); setOpenId(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Collapsed by default behind "+ Add staff" - the roster itself is the
+// primary view; inviting someone is a real but occasional action, not
+// something that should permanently take up a third of the page.
+function InviteStaffForm({ businessId, isHotel, onInvited }: { businessId: string; isHotel: boolean; onInvited: () => void }) {
+  const { t } = useT();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [inviteSections, setInviteSections] = useState<string[]>(sectionOptionsFor(isHotel).map((o) => o.key));
+  const [restrictOnInvite, setRestrictOnInvite] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [inviteError, setInviteError] = useState('');
+
+  function toggleInviteSection(key: string) {
+    setInviteSections((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+
   async function handleInvite(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     setInviteError('');
     try {
-      await inviteStaff(businessId!, name, email, restrictOnInvite ? inviteSections : null);
-      setName(''); setEmail(''); setRestrictOnInvite(false); setInviteSections(sectionOptionsFor(isHotel).map((o) => o.key));
-      reload();
+      await inviteStaff(businessId, name, email, restrictOnInvite ? inviteSections : null);
+      onInvited();
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : 'Could not add this staff member');
     } finally {
@@ -121,189 +190,202 @@ export default function StaffPage() {
     }
   }
 
-  function toggleInviteSection(key: string) {
-    setInviteSections((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  return (
+    <form onSubmit={handleInvite} className="space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-4">
+      <p className="text-sm text-ivory-dim">
+        {t('New staff sign in with their own email and password — no card needed. The same account can be open on as many devices at once as needed.')}
+      </p>
+      <div className="flex gap-2.5">
+        <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+        <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-ivory">
+        <input type="checkbox" checked={restrictOnInvite} onChange={(e) => setRestrictOnInvite(e.target.checked)} className="accent-brass" />
+        {t('Restrict which sections they can see, starting from their very first login')}
+      </label>
+      {restrictOnInvite && (
+        <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-ink-line bg-ink p-3 sm:grid-cols-3">
+          {sectionOptionsFor(isHotel).map((opt) => (
+            <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
+              <input type="checkbox" checked={inviteSections.includes(opt.key)} onChange={() => toggleInviteSection(opt.key)} className="accent-brass" />
+              {t(opt.label)}
+            </label>
+          ))}
+        </div>
+      )}
+      <PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add staff')}</PrimaryButton>
+      {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
+    </form>
+  );
+}
+
+// The actual detail view every row opens into - a slide-over panel, not
+// a modal stacked on top of the roster, so closing it always lands back
+// on the exact same scroll position in the list. Overview and
+// Permissions are genuinely separate concerns (who they are / what
+// they're allowed to see) so they get their own tabs rather than one
+// long scroll of both mixed together.
+function StaffDetailPanel({ businessId, staffMember, currentUserId, isHotel, outlets, uploadingAvatar, onAvatarPick, onClose, onUpdated, onDeleted }: {
+  businessId: string; staffMember: StaffMember; currentUserId?: string; isHotel: boolean; outlets: HotelOutlet[];
+  uploadingAvatar: boolean; onAvatarPick: (e: ChangeEvent<HTMLInputElement>) => void;
+  onClose: () => void; onUpdated: (updated: StaffMember) => void; onDeleted: (id: string) => void;
+}) {
+  const { t } = useT();
+  const confirm = useConfirm();
+  const [tab, setTab] = useState<'overview' | 'permissions'>('overview');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [resetResult, setResetResult] = useState<string | null>(null);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const s = staffMember;
+  const canManage = s.role === 'staff' || s.role === 'org_owner';
+
+  async function handleResetPassword() {
+    if (!(await confirm({
+      title: t('Reset password?'),
+      message: t("Reset this account's password? They will be given a new temporary password and forced to set their own on next login."),
+      confirmLabel: t('Reset password'),
+    }))) return;
+    const result = await resetAccountPassword(businessId, s.id);
+    setResetResult(result.tempPassword);
   }
 
-  // Permanent removal, distinct from Deactivate above - confirmed
-  // explicitly since (unlike deactivating) this can't be undone from
-  // this account again; a new invite would be a brand new account.
-  async function handleDeleteStaff(s: StaffMember) {
+  async function handleResetPin() {
+    if (!(await confirm({
+      title: t('Reset PIN?'),
+      message: t('Clear {name}\'s POS PIN? They\'ll be asked to set a new one the next time they take a payment.').replace('{name}', s.name),
+      confirmLabel: t('Reset PIN'),
+    }))) return;
+    await clearStaffPin(businessId, s.id);
+    setMessage(t('PIN cleared.'));
+  }
+
+  async function handleResendInvite() {
+    setBusy('resend');
+    try {
+      await resendStaffInvite(businessId, s.id);
+      setMessage(t('Invite resent.'));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not resend invite');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleToggleActive() {
+    const next = !s.is_active;
+    setBusy('active');
+    try {
+      const updated = await setStaffActive(businessId, s.id, next);
+      onUpdated(updated);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleToggleFullAccess() {
+    const next = !s.full_access;
+    const message = next
+      ? t('Give {name} full owner-equivalent access? They will be able to see and do everything you can, including billing, contracts, and staff management.').replace('{name}', s.name)
+      : t('Revoke full access from {name}? They will go back to only their assigned sections.').replace('{name}', s.name);
+    if (!(await confirm({ title: next ? t('Grant full access?') : t('Revoke full access?'), message, danger: !next }))) return;
+    setBusy('fullAccess');
+    try {
+      await setStaffFullAccess(businessId, s.id, next);
+      onUpdated({ ...s, full_access: next });
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleDelete() {
     if (!(await confirm({
       title: t('Delete this account?'),
       message: t('Permanently delete {name}\'s account? This cannot be undone - all their history stays on past records, but the account itself is gone. If you just want to block their access, use Deactivate instead.').replace('{name}', s.name),
       confirmLabel: t('Delete account'),
       danger: true,
     }))) return;
-    setDeletingId(s.id);
+    setBusy('delete');
     try {
-      await deleteStaffAccount(businessId!, s.id);
-      setStaff((prev) => prev.filter((m) => m.id !== s.id));
+      await deleteStaffAccount(businessId, s.id);
+      onDeleted(s.id);
     } catch (err) {
-      setInviteError(err instanceof Error ? err.message : 'Could not delete this account');
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
-  async function handleResetPassword(userId: string) {
-    if (!(await confirm({
-      title: t('Reset password?'),
-      message: t("Reset this account's password? They will be given a new temporary password and forced to set their own on next login."),
-      confirmLabel: t('Reset password'),
-    }))) return;
-    const result = await resetAccountPassword(businessId!, userId);
-    setResetResult(result);
-  }
-
-  // Same "owner unlocks a locked-out staff member" pattern as password
-  // reset above, but genuinely simpler underneath: a PIN is cleared, not
-  // replaced - the owner never learns or chooses the new one, the staff
-  // member sets their own the next time they take a payment (real
-  // first-time-setup flow already built into PaymentModal for exactly
-  // this moment).
-  async function handleResetPin(userId: string, name: string) {
-    if (!(await confirm({
-      title: t('Reset PIN?'),
-      message: t('Clear {name}\'s POS PIN? They\'ll be asked to set a new one the next time they take a payment.').replace('{name}', name),
-      confirmLabel: t('Reset PIN'),
-    }))) return;
-    await clearStaffPin(businessId!, userId);
-  }
-
-  // For someone who never checked their first invite email - sends a
-  // fresh one via resendStaffInvite (Gmail API, never touches
-  // Supabase's own rate-limited mailer - see notifications.js).
-  async function handleResendInvite(userId: string) {
-    setResendingId(userId);
-    try {
-      await resendStaffInvite(businessId!, userId);
-      setResendMessage(t('Invite resent.'));
-    } catch (err) {
-      setResendMessage(err instanceof Error ? err.message : 'Could not resend invite');
-    } finally {
-      setResendingId(null);
-    }
-  }
-
-  // Granting is a real, server-enforced trust decision (this account
-  // will pass every owner-only check across the whole app - billing,
-  // contracts, deleting things, all of it) - confirmed explicitly every
-  // time, both directions, rather than a silent toggle.
-  //
-  // Real fix for a confirmed bug: this had no in-flight guard at all -
-  // unlike every other action button on this page (delete, resend,
-  // deactivate now), nothing disabled the button or gave any feedback
-  // while the PATCH was in the air, so a person unsure whether their
-  // click registered would click again - firing a second overlapping
-  // PATCH with the SAME `next` value computed from the same stale `s`,
-  // which can flip the account back to where it started once both
-  // responses land, depending on which one wins the race. Now that the
-  // dialog itself is a real async component (not the blocking native
-  // confirm()), the togglingFullAccessId guard below is what actually
-  // prevents a second in-flight request - not the dialog blocking
-  // anything - so keep that guard even if this dialog is ever reused
-  // elsewhere.
-  async function handleToggleFullAccess(s: StaffMember) {
-    if (togglingFullAccessId === s.id) return;
-    const next = !s.full_access;
-    const message = next
-      ? t('Give {name} full owner-equivalent access? They will be able to see and do everything you can, including billing, contracts, and staff management.').replace('{name}', s.name)
-      : t('Revoke full access from {name}? They will go back to only their assigned sections.').replace('{name}', s.name);
-    if (!(await confirm({ title: next ? t('Grant full access?') : t('Revoke full access?'), message, danger: !next }))) return;
-    setTogglingFullAccessId(s.id);
-    setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, full_access: next } : m)));
-    try {
-      await setStaffFullAccess(businessId!, s.id, next);
-    } catch {
-      reload();
-    } finally {
-      setTogglingFullAccessId(null);
-    }
-  }
-
-  // Same missing-guard bug as full-access above, same fix.
-  async function handleToggleActive(s: StaffMember) {
-    if (togglingActiveId === s.id) return;
-    const next = !s.is_active;
-    setTogglingActiveId(s.id);
-    setStaff((prev) => prev.map((m) => (m.id === s.id ? { ...m, is_active: next } : m)));
-    try {
-      await setStaffActive(businessId!, s.id, next);
-    } catch {
-      reload();
-    } finally {
-      setTogglingActiveId(null);
+      setError(err instanceof Error ? err.message : 'Could not delete this account');
+      setBusy(null);
     }
   }
 
   return (
-    <div className="space-y-10">
-      {resendMessage && (
-        <div className="rounded-lg border border-brass/40 bg-ink-soft px-4 py-3">
-          <p className="text-base text-ivory">{resendMessage}</p>
-          <button type="button" onClick={() => setResendMessage('')} className="mt-1 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Dismiss')}</button>
+    <div className="fixed inset-0 z-modal flex justify-end bg-ink/70" onClick={onClose}>
+      <div
+        className="flex h-full w-full max-w-md flex-col overflow-y-auto border-s border-ink-line bg-ink-soft shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-ink-line p-5">
+          <div className="flex items-center gap-3">
+            {s.avatar_url ? (
+              <img src={s.avatar_url} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-xl font-medium text-brass">
+                {s.name.trim()[0]?.toUpperCase() || '?'}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-display text-xl text-ivory">{s.name}</p>
+              <p className="text-sm text-ivory-dim">{s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</p>
+              <p className={`mt-0.5 flex items-center gap-1.5 text-xs ${s.is_active ? 'text-brass' : 'text-ivory-dim'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${s.is_active ? 'bg-brass' : 'bg-ivory-dim/40'}`} />
+                {s.is_active ? t('Active') : t('Deactivated')}
+              </p>
+              {s.id === currentUserId && (
+                <label className="mt-1 block cursor-pointer text-xs font-medium text-brass hover:underline focus-within:ring-2 focus-within:ring-brass">
+                  {uploadingAvatar ? t('Uploading…') : s.avatar_url ? t('Change photo') : t('Add photo')}
+                  <input type="file" accept="image/*" className="hidden" disabled={uploadingAvatar} onChange={onAvatarPick} />
+                </label>
+              )}
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label={t('Close')} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ivory-dim hover:bg-ink hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">✕</button>
         </div>
-      )}
-      {resetResult && (
-        <div className="rounded-lg border border-brass/40 bg-ink-soft p-4">
-          <p className="text-base text-ivory">
-            {t('New temporary password for')} <span className="text-brass">{resetResult.name}</span>:
-          </p>
-          <p className="mt-1 select-all rounded bg-ink px-3 py-2 font-mono text-lg text-brass">{resetResult.tempPassword}</p>
-          <p className="mt-2 text-sm text-ivory-dim">
-            {t("Send this to them directly (not visible again after you leave this page). They'll be required to set their own new password the moment they log in with it.")}
-          </p>
-          <button type="button" onClick={() => setResetResult(null)} className="mt-2 text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">{t('Dismiss')}</button>
-        </div>
-      )}
 
-      <Section title={t('Team')}>
-        {!loaded && <p className="text-ivory-dim">{t('Loading...')}</p>}
-        {loadError && <p className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger">{loadError}</p>}
-        {loaded && !loadError && staff.length === 0 && (
-          <p className="text-ivory-dim">{t('No team members found - something is wrong, since your own owner account should always show up here.')}</p>
-        )}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {staff.map((s) => (
-            <div key={s.id} className={`rounded-2xl border px-5 py-4 text-base shadow-sm ${s.is_active ? 'border-ink-line' : 'border-ink-line opacity-60'}`}>
-              <div className="flex items-start gap-3">
-                {s.avatar_url ? (
-                  <img src={s.avatar_url} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
-                ) : (
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brass/15 font-display text-sm font-medium text-brass">
-                    {s.name.trim()[0]?.toUpperCase() || '?'}
-                  </span>
-                )}
-                <div className="min-w-0">
-                  {s.id === user?.id && (
-                    <label className="mb-0.5 block cursor-pointer text-xs font-medium text-brass hover:underline focus-within:ring-2 focus-within:ring-brass">
-                      {uploadingAvatar ? t('Uploading…') : s.avatar_url ? t('Change photo') : t('Add photo')}
-                      <input type="file" accept="image/*" className="hidden" disabled={uploadingAvatar} onChange={handleAvatarPick} />
-                    </label>
-                  )}
-                  <p className="truncate text-ivory">{s.name}</p>
-                  <p className="text-sm text-ivory-dim">{s.role === 'business_owner' ? t('Owner') : t(s.role.replace(/_/g, ' '))}</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {!s.is_active && <span className="rounded-full border border-danger/40 px-2 py-0.5 text-xs text-danger">{t('deactivated')}</span>}
-                    {s.full_access && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{t('Full access')}</span>}
-                    {s.is_org_owner && <span className="rounded-full bg-brass/20 px-2 py-0.5 text-xs text-brass">{t('Org Owner')}</span>}
-                  </div>
-                </div>
-              </div>
+        <div className="flex gap-2 border-b border-ink-line px-5 py-3">
+          {(['overview', 'permissions'] as const).map((tabKey) => (
+            <button
+              type="button"
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'
+              }`}
+            >
+              {tabKey === 'overview' ? t('Overview') : t('Permissions')}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 space-y-4 p-5">
+          {message && <p className="rounded-2xl border border-brass/40 bg-brass/10 px-4 py-2.5 text-sm text-brass">{message}</p>}
+          {error && <p className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-2.5 text-sm text-danger">{error}</p>}
+          {resetResult && (
+            <div className="rounded-2xl border border-brass/40 bg-ink p-4">
+              <p className="text-sm text-ivory">{t('New temporary password')}:</p>
+              <p className="mt-1 select-all rounded-xl bg-ink-soft px-3 py-2 font-mono text-lg text-brass">{resetResult}</p>
+              <p className="mt-2 text-xs text-ivory-dim">{t("Send this to them directly - it won't be shown again.")}</p>
+            </div>
+          )}
+
+          {tab === 'overview' && (
+            <>
               {s.role === 'staff' && s.full_access && (
-                <p className="mt-1 text-sm text-brass">
-                  {t('Owner-equivalent access - sees and does everything the owner can, regardless of assigned sections below.')}
-                </p>
+                <p className="text-sm text-brass">{t('Owner-equivalent access - sees and does everything the owner can, regardless of assigned sections.')}</p>
               )}
               {(s.role === 'org_owner' || s.is_org_owner) && (
-                <p className="mt-1 text-sm text-brass">
-                  {t('Manages the multi-location organization this business belongs to - shared menu, suppliers, and consolidated reporting across every linked location.')}
-                </p>
+                <p className="text-sm text-brass">{t('Manages the multi-location organization this business belongs to.')}</p>
               )}
               {s.role === 'staff' && !s.full_access && (
-                <p className="mt-1 text-sm text-ivory-dim">
-                  {s.assigned_sections === null
+                <p className="text-sm text-ivory-dim">
+                  {t('Sections:')} {s.assigned_sections === null
                     ? t('Sees everything')
                     : s.assigned_sections.length === 0
                       ? t('No sections assigned yet')
@@ -319,121 +401,57 @@ export default function StaffPage() {
                       : s.assigned_outlet_ids.map((id) => outlets.find((o) => o.id === id)?.name || id).join(', ')}
                 </p>
               )}
-              {/* Real restructure: a wall of plain underlined text links
-                  all read with equal weight, whether "Reset PIN" or
-                  "Delete account" - small pill chips (the same shape
-                  every other action row in this redesign uses) give each
-                  action a real tap target and let color alone separate
-                  routine actions from destructive ones, the same way a
-                  chat app's own settings rows do. */}
-              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-ink-line pt-3">
-                <button type="button" onClick={() => handleResetPassword(s.id)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+
+              <div className="flex flex-wrap gap-1.5 border-t border-ink-line pt-4">
+                <button type="button" onClick={handleResetPassword} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Reset password')}
                 </button>
-                <button type="button" onClick={() => handleResetPin(s.id, s.name)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                <button type="button" onClick={handleResetPin} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {t('Reset PIN')}
                 </button>
-                <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-                  {resendingId === s.id ? t('Resending...') : t('Resend invite')}
+                <button type="button" disabled={busy === 'resend'} onClick={handleResendInvite} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                  {busy === 'resend' ? t('Resending...') : t('Resend invite')}
                 </button>
-                {(s.role === 'staff' || s.role === 'org_owner') && (
+                {canManage && (
                   <>
-                    <button type="button"
-                      disabled={togglingActiveId === s.id}
-                      onClick={() => handleToggleActive(s)}
-                      className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass"
-                    >
-                      {togglingActiveId === s.id ? t('Updating...') : s.is_active ? t('Deactivate') : t('Reactivate')}
+                    <button type="button" disabled={busy === 'active'} onClick={handleToggleActive} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+                      {busy === 'active' ? t('Updating...') : s.is_active ? t('Deactivate') : t('Reactivate')}
                     </button>
-                    <button type="button"
-                      disabled={deletingId === s.id}
-                      onClick={() => handleDeleteStaff(s)}
-                      className="rounded-full border border-danger/40 px-2.5 py-1 text-xs text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
-                    >
-                      {deletingId === s.id ? t('Deleting...') : t('Delete account')}
+                    <button type="button" disabled={busy === 'delete'} onClick={handleDelete} className="rounded-full border border-danger/40 px-2.5 py-1 text-xs text-danger hover:bg-danger/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger">
+                      {busy === 'delete' ? t('Deleting...') : t('Delete account')}
                     </button>
-                  </>
-                )}
-                {s.role === 'staff' && (
-                  <>
-                    <button type="button"
-                      disabled={togglingFullAccessId === s.id}
-                      onClick={() => handleToggleFullAccess(s)}
-                      className={`rounded-full border px-2.5 py-1 text-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${s.full_access ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
-                    >
-                      {togglingFullAccessId === s.id ? t('Updating...') : s.full_access ? t('Revoke full access') : t('Grant full access')}
-                    </button>
-                    <button type="button"
-                      onClick={() => setEditingSectionsFor(editingSectionsFor === s.id ? null : s.id)}
-                      className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${editingSectionsFor === s.id ? 'border-brass bg-brass/10 text-brass' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
-                    >
-                      {editingSectionsFor === s.id ? t('Close') : t('Assign sections')}
-                    </button>
-                    {isHotel && (
-                      <button type="button"
-                        onClick={() => setEditingOutletsFor(editingOutletsFor === s.id ? null : s.id)}
-                        className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${editingOutletsFor === s.id ? 'border-brass bg-brass/10 text-brass' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
-                      >
-                        {editingOutletsFor === s.id ? t('Close') : t('Assign outlets')}
-                      </button>
-                    )}
                   </>
                 )}
               </div>
-              {editingSectionsFor === s.id && (
-                <SectionAssignmentForm
-                  businessId={businessId}
-                  staffMember={s}
-                  isHotel={isHotel}
-                  onSaved={(updated) => {
-                    setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, assigned_sections: updated.assigned_sections } : m)));
-                    setEditingSectionsFor(null);
-                  }}
-                />
-              )}
-              {editingOutletsFor === s.id && (
-                <OutletAssignmentForm
-                  businessId={businessId}
-                  staffMember={s}
-                  outlets={outlets}
-                  onSaved={(updated) => {
-                    setStaff((prev) => prev.map((m) => (m.id === updated.id ? { ...m, assigned_outlet_ids: updated.assigned_outlet_ids } : m)));
-                    setEditingOutletsFor(null);
-                  }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        <p className="text-base text-ivory-dim">
-          {t('New staff sign in with their own email and password — no card needed, since staff sign in through the website. The same account can be open on as many devices at once as needed.')}
-        </p>
-        <form onSubmit={handleInvite} className="space-y-3 border-t border-ink-line pt-4">
-          <div className="flex gap-2.5">
-            <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-            <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ivory">
-            <input type="checkbox" checked={restrictOnInvite} onChange={(e) => setRestrictOnInvite(e.target.checked)} className="accent-brass" />
-            {t('Restrict which sections they can see, starting from their very first login')}
-          </label>
-          {restrictOnInvite && (
-            <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-ink-line bg-ink-soft p-3 sm:grid-cols-3">
-              {sectionOptionsFor(isHotel).map((opt) => (
-                <label key={opt.key} className="flex items-center gap-2 text-sm text-ivory">
-                  <input type="checkbox" checked={inviteSections.includes(opt.key)} onChange={() => toggleInviteSection(opt.key)} className="accent-brass" />
-                  {t(opt.label)}
-                </label>
-              ))}
-            </div>
+            </>
           )}
-          <PrimaryButton disabled={saving}>{saving ? t('Adding...') : t('Add staff')}</PrimaryButton>
-        </form>
-        {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
-      </Section>
 
-      <ShiftReportSection businessId={businessId} />
+          {tab === 'permissions' && (
+            s.role !== 'staff' ? (
+              <p className="text-sm text-ivory-dim">{t('Permissions only apply to staff accounts.')}</p>
+            ) : (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  disabled={busy === 'fullAccess'}
+                  onClick={handleToggleFullAccess}
+                  className={`w-full rounded-full border px-3.5 py-2 text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                    s.full_access ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'
+                  }`}
+                >
+                  {busy === 'fullAccess' ? t('Updating...') : s.full_access ? t('Revoke full access') : t('Grant full access')}
+                </button>
+                {!s.full_access && (
+                  <>
+                    <SectionAssignmentForm businessId={businessId} staffMember={s} isHotel={isHotel} onSaved={onUpdated} />
+                    {isHotel && <OutletAssignmentForm businessId={businessId} staffMember={s} outlets={outlets} onSaved={onUpdated} />}
+                  </>
+                )}
+              </div>
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -471,9 +489,9 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
       title={t('Time Clock')}
       action={
         <div className="flex items-center gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-full border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
           <span className="text-sm text-ivory-dim">{t('to')}</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-lg border border-ink-line bg-ink px-2.5 py-1.5 text-sm text-ivory" />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-full border border-ink-line bg-ink px-3 py-1.5 text-sm text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass" />
         </div>
       }
     >
@@ -542,7 +560,7 @@ function SectionAssignmentForm({ businessId, staffMember, isHotel, onSaved }: {
   }
 
   return (
-    <div className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
+    <div className="space-y-3 rounded-2xl border border-ink-line bg-ink p-3.5">
       <p className="text-sm text-ivory-dim">{t("Only checked sections will appear on this account's dashboard.")}</p>
       <div className="grid grid-cols-2 gap-1.5">
         {sectionOptionsFor(isHotel).map((opt) => (
@@ -553,9 +571,7 @@ function SectionAssignmentForm({ businessId, staffMember, isHotel, onSaved }: {
         ))}
       </div>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-          {saving ? t('Saving...') : t('Save')}
-        </button>
+        <ActionButton onClick={handleSave} loading={saving}>{t('Save')}</ActionButton>
         {staffMember.assigned_sections !== null && (
           <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Remove restriction (sees everything)')}
@@ -569,9 +585,7 @@ function SectionAssignmentForm({ businessId, staffMember, isHotel, onSaved }: {
 // Same "null = unrestricted" convention as SectionAssignmentForm above -
 // opening this for the first time starts every outlet checked, so
 // closing without changing anything leaves the account exactly as
-// unrestricted as it was. An empty (non-null) selection is deliberately
-// allowed and shown distinctly ("None assigned yet") - a real, correct
-// state for a brand-new hire not yet cleared for any outlet, not a bug.
+// unrestricted as it was.
 function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
   businessId: string; staffMember: StaffMember; outlets: HotelOutlet[]; onSaved: (updated: StaffMember) => void;
 }) {
@@ -606,9 +620,9 @@ function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
   }
 
   return (
-    <div className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
+    <div className="space-y-3 rounded-2xl border border-ink-line bg-ink p-3.5">
       <p className="text-sm text-ivory-dim">
-        {t('Only checked outlets can be selected when this account opens a till - e.g. a beach attendant checked only for "Pool Bar" can never open the Lobby\'s till.')}
+        {t('Only checked outlets can be selected when this account opens a till.')}
       </p>
       <div className="grid grid-cols-2 gap-1.5">
         {outlets.map((o) => (
@@ -620,9 +634,7 @@ function OutletAssignmentForm({ businessId, staffMember, outlets, onSaved }: {
         {outlets.length === 0 && <p className="text-sm text-ivory-dim">{t('No outlets set up yet - add some under F&B Outlets & Services first.')}</p>}
       </div>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={handleSave} disabled={saving} className="rounded-lg bg-brass px-3.5 py-1.5 text-sm font-medium text-ink hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-          {saving ? t('Saving...') : t('Save')}
-        </button>
+        <ActionButton onClick={handleSave} loading={saving}>{t('Save')}</ActionButton>
         {staffMember.assigned_outlet_ids !== null && (
           <button type="button" onClick={handleClearRestriction} disabled={saving} className="text-sm text-ivory-dim hover:text-ivory focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
             {t('Remove restriction (any outlet)')}
