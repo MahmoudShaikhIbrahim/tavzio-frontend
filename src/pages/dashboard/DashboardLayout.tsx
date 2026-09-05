@@ -802,10 +802,10 @@ function DashboardLayoutInner() {
               </Link>
               {orgGroupItems.length > 0 && (
                 <NavGroup
-
-                  emoji="🏢"
+                  emoji="🌐"
                   label={t('Organization')}
-                  items={orgGroupItems}
+                  linkPath={orgGroupItems[0].path}
+                  items={orgGroupItems.slice(1)}
                   open={isGroupOpen('business-profile-org', orgGroupItems.map((i) => i.path))}
                   onToggle={() => toggleGroup('business-profile-org', orgGroupItems.map((i) => i.path))}
                   pathname={location.pathname}
@@ -815,7 +815,7 @@ function DashboardLayoutInner() {
 
               {hrItem && staffItem && (
                 <NavGroup
-                  emoji="🧑‍🤝‍🧑"
+                  emoji="👥"
                   label={t(hrItem.label)}
                   linkPath={hrItem.path}
                   items={[staffItem]}
