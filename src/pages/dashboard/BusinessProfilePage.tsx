@@ -1,13 +1,14 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent, type CSSProperties } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { getBusiness, updateBusiness, updateMyTour } from '../../lib/authApi';
+import { getBusiness, updateBusiness, updateMyTour, listStaff, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, type BusinessOrganization } from '../../lib/authApi';
 import { uploadBusinessImage } from '../../lib/supabaseClient';
-import type { AdminBusiness } from '../../types';
+import type { AdminBusiness, StaffMember } from '../../types';
 import { Section, Field, inputClass, PrimaryButton, ActionButton } from '../../components/ui';
 import { buildBusinessThemeVars } from '../../lib/businessTheme';
 import WeeklyHoursEditor, { type WeeklyHours } from '../../components/WeeklyHoursEditor';
 import ChangePasswordPage from './ChangePasswordPage';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 
 export default function BusinessProfilePage() {
@@ -15,7 +16,7 @@ export default function BusinessProfilePage() {
   const { t } = useT();
   const businessId = user?.business_id;
   const [business, setBusiness] = useState<AdminBusiness | null>(null);
-  const [tab, setTab] = useState<'profile' | 'appearance' | 'account'>('profile');
+  const [tab, setTab] = useState<'profile' | 'appearance' | 'organization' | 'account'>('profile');
   // Digital Business Card is fully built (Settings tab, super admin
   // multi-card page, public /card/:slug page, QR/vCard, analytics) but
   // hidden from the UI until Apple/Google Wallet is worth building -
@@ -27,13 +28,13 @@ export default function BusinessProfilePage() {
 
   if (!business || !businessId) return <p className="text-ivory-dim">Loading...</p>;
 
-  const tabLabels: Record<typeof tab, string> = { profile: 'Profile', appearance: 'Appearance', account: 'Account' };
+  const tabLabels: Record<typeof tab, string> = { profile: 'Profile', appearance: 'Appearance', organization: 'Organization', account: 'Account' };
 
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-ivory">{t('Business Profile')}</h1>
       <div className="flex gap-2">
-        {(['profile', 'appearance', 'account'] as const).map((tabKey) => (
+        {(['profile', 'appearance', 'organization', 'account'] as const).map((tabKey) => (
           <button type="button" key={tabKey} onClick={() => setTab(tabKey)} className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${tab === tabKey ? 'bg-brass text-ink' : 'border border-ink-line text-ivory-dim hover:border-brass/40 hover:text-ivory'}`}>
             {t(tabLabels[tabKey])}
           </button>
@@ -42,6 +43,11 @@ export default function BusinessProfilePage() {
 
       {tab === 'profile' && <ProfileForm business={business} businessId={businessId} onSaved={setBusiness} />}
       {tab === 'appearance' && <AppearanceSection business={business} businessId={businessId} onSaved={setBusiness} />}
+      {/* Genuinely a Business Profile concern, not a Staff one - who
+          manages the shared menu/suppliers/reporting across every
+          location this business belongs to has nothing to do with
+          managing this one business's own team roster. */}
+      {tab === 'organization' && <OrganizationSection businessId={businessId} />}
       {/* Change Password (and Preferred language) live here, not as their
           own settings entry - personal account security and preference,
           not business configuration, so they belong alongside "who am I /
@@ -371,5 +377,210 @@ function RestartGuideSection() {
         {t('Restart guide')}
       </ActionButton>
     </Section>
+  );
+}
+
+// Moved here from the old Staff page - running more than one location is
+// a Business Profile-level concern (which of your locations shares a
+// menu/suppliers/reporting, and who manages that), not something that
+// belongs mixed into your own team roster. Fetches its own staff list
+// (rather than reusing StaffPage's) since this page has no other reason
+// to share state with it - the two are genuinely independent now.
+function OrganizationSection({ businessId }: { businessId: string }) {
+  const { t } = useT();
+  const confirm = useConfirm();
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [organization, setOrganization] = useState<BusinessOrganization | null>(null);
+  const [orgLoaded, setOrgLoaded] = useState(false);
+  const [showAppointForm, setShowAppointForm] = useState(false);
+  const [leavingOrg, setLeavingOrg] = useState(false);
+  const [leaveOrgError, setLeaveOrgError] = useState('');
+  const [togglingOrgOwnerId, setTogglingOrgOwnerId] = useState<string | null>(null);
+
+  function reloadStaff() {
+    listStaff(businessId).then(setStaff).catch(() => {});
+  }
+  useEffect(reloadStaff, [businessId]);
+  useEffect(() => {
+    getBusinessOrganization(businessId)
+      .then((org) => { setOrganization(org); setOrgLoaded(true); })
+      .catch(() => setOrgLoaded(true));
+  }, [businessId]);
+
+  // Same "don't strand the org" server-side check as leaving an
+  // organization uses - works on any role (including the owner's own
+  // row), since is_org_owner is a capability layered on top of role, not
+  // tied to a specific one (migration 0098).
+  async function handleToggleOrgOwner(s: StaffMember) {
+    if (togglingOrgOwnerId === s.id) return;
+    const next = !s.is_org_owner;
+    const message = next
+      ? t('Give {name} org-management access? They will manage the shared menu, suppliers, and consolidated reporting for every location in this organization.').replace('{name}', s.name)
+      : t('Remove org-management access from {name}? Their regular account stays exactly as it is - only the org piece goes away.').replace('{name}', s.name);
+    if (!(await confirm({ title: next ? t('Grant org owner?') : t('Revoke org owner?'), message, danger: !next }))) return;
+    setTogglingOrgOwnerId(s.id);
+    try {
+      await setOrgOwnerStatus(businessId, s.id, next);
+      reloadStaff();
+      getBusinessOrganization(businessId).then(setOrganization).catch(() => {});
+    } catch (err) {
+      setLeaveOrgError(err instanceof Error ? err.message : 'Could not update org owner status');
+    } finally {
+      setTogglingOrgOwnerId(null);
+    }
+  }
+
+  async function handleLeaveOrganization() {
+    if (!organization) return;
+    if (!(await confirm({
+      title: t('Leave organization?'),
+      message: t('Leave "{orgName}"? This business stops sharing its menu, suppliers, and reporting with the rest of the organization. Nothing about the organization itself is deleted.').replace('{orgName}', organization.name),
+      confirmLabel: t('Leave organization'),
+      danger: true,
+    }))) return;
+    setLeavingOrg(true);
+    setLeaveOrgError('');
+    try {
+      await leaveOrganization(businessId);
+      setOrganization(null);
+      reloadStaff();
+    } catch (err) {
+      setLeaveOrgError(err instanceof Error ? err.message : 'Could not leave organization');
+    } finally {
+      setLeavingOrg(false);
+    }
+  }
+
+  const orgOwners = staff.filter((s) => s.is_org_owner);
+
+  return (
+    <Section
+      title={t('Organization')}
+      action={
+        orgLoaded && (
+          <button type="button" onClick={() => setShowAppointForm((v) => !v)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            {showAppointForm ? t('Close') : organization ? t('Appoint another org owner') : t('Set up multi-location')}
+          </button>
+        )
+      }
+    >
+      {!orgLoaded && <p className="text-ivory-dim">{t('Loading...')}</p>}
+      {orgLoaded && organization && (
+        <div className="space-y-2">
+          <p className="text-base text-ivory-dim">
+            {t('This business is part of')} <span className="text-ivory">{organization.name}</span>.
+          </p>
+          {orgOwners.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {orgOwners.map((s) => (
+                <span key={s.id} className="flex items-center gap-1.5 rounded-full bg-brass/15 px-3 py-1.5 text-sm text-brass">
+                  {s.name}
+                  <button type="button"
+                    disabled={togglingOrgOwnerId === s.id}
+                    onClick={() => handleToggleOrgOwner(s)}
+                    title={t('Revoke org owner')}
+                    className="rounded-full text-brass/70 hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger disabled:opacity-50"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <button type="button" disabled={leavingOrg} onClick={handleLeaveOrganization} className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
+            {leavingOrg ? t('Leaving...') : t('Leave organization')}
+          </button>
+          {leaveOrgError && <p className="text-sm text-danger">{leaveOrgError}</p>}
+        </div>
+      )}
+      {orgLoaded && !organization && (
+        <p className="text-base text-ivory-dim">
+          {t('Running more than one location? Set up an organization to share a menu, suppliers, and reporting across all of them - you can appoint yourself or someone on your team to manage it.')}
+        </p>
+      )}
+      {showAppointForm && (
+        <OrgOwnerAppointForm
+          businessId={businessId}
+          existingStaff={staff.filter((s) => (s.role === 'staff' || s.role === 'business_owner') && !s.is_org_owner)}
+          hasOrganization={!!organization}
+          onAppointed={() => {
+            setShowAppointForm(false);
+            reloadStaff();
+            getBusinessOrganization(businessId).then(setOrganization).catch(() => {});
+          }}
+        />
+      )}
+    </Section>
+  );
+}
+
+function OrgOwnerAppointForm({ businessId, existingStaff, hasOrganization, onAppointed }: {
+  businessId: string; existingStaff: StaffMember[]; hasOrganization: boolean; onAppointed: () => void;
+}) {
+  const { t } = useT();
+  const [mode, setMode] = useState<'invite' | 'promote'>(existingStaff.length > 0 ? 'promote' : 'invite');
+  const [staffId, setStaffId] = useState(existingStaff[0]?.id || '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [orgName, setOrgName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      if (mode === 'promote') {
+        if (!staffId) { setError(t('Choose a team member to promote')); setSaving(false); return; }
+        await appointOrgOwner(businessId, { staffId, orgName: orgName || undefined });
+      } else {
+        await appointOrgOwner(businessId, { name, email, orgName: orgName || undefined });
+      }
+      onAppointed();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('Could not appoint org owner'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
+      {!hasOrganization && (
+        <Field label={t('Organization name (optional - defaults to this business\'s name)')}>
+          <input value={orgName} onChange={(e) => setOrgName(e.target.value)} className={inputClass} />
+        </Field>
+      )}
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2 text-sm text-ivory">
+          <input type="radio" checked={mode === 'promote'} onChange={() => setMode('promote')} disabled={existingStaff.length === 0} className="accent-brass" />
+          {t('Promote an existing team member')}
+        </label>
+        <label className="flex items-center gap-2 text-sm text-ivory">
+          <input type="radio" checked={mode === 'invite'} onChange={() => setMode('invite')} className="accent-brass" />
+          {t('Invite someone new')}
+        </label>
+      </div>
+      {mode === 'promote' && (
+        existingStaff.length === 0 ? (
+          <p className="text-sm text-ivory-dim">{t('No staff accounts to promote yet - add one under Team first, or invite someone new below.')}</p>
+        ) : (
+          <Field label={t('Team member')}>
+            <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className={inputClass}>
+              {existingStaff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </Field>
+        )
+      )}
+      {mode === 'invite' && (
+        <div className="flex gap-2.5">
+          <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
+          <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
+        </div>
+      )}
+      <PrimaryButton disabled={saving}>{saving ? t('Appointing...') : t('Appoint org owner')}</PrimaryButton>
+      {error && <p className="text-sm text-danger">{error}</p>}
+    </form>
   );
 }

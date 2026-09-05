@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { X as XIcon } from 'lucide-react';
 import CommandPalette from '../../components/CommandPalette';
@@ -55,7 +55,7 @@ const DASHBOARD_TOUR_STEPS: TourStep[] = [
   {
     selector: 'account-menu',
     title: 'Your account',
-    body: 'Your name and Sign out live at the very bottom of this menu. Your theme (light, dark, or matching your system) is right at the top instead, and Business Profile lives in the Settings list above.',
+    body: 'Your name, a small Business Profile icon, and Sign out live at the very bottom of this menu. Your theme (light, dark, or matching your system) is right at the top instead.',
   },
 ];
 
@@ -225,6 +225,33 @@ function NavGroup({ emoji, label, linkPath, items, open, onToggle, pathname, t }
             </Link>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// The whole "Main pages" section and the whole "Settings" section, each
+// collapsible in exactly the same way a single subpage group is - not
+// just the two special cases (Business Profile's Organization, HR's
+// Staff) nested inside Settings, but the sections themselves too.
+function SidebarSection({ label, open, onToggle, last, children }: {
+  label: string; open: boolean; onToggle: () => void; last?: boolean; children: ReactNode;
+}) {
+  return (
+    <div className={last ? 'flex-1' : 'border-b border-ink-line'}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset"
+      >
+        <span className="flex-1 text-xs font-medium uppercase tracking-wide text-ivory-dim/70">{label}</span>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className={`shrink-0 text-ivory-dim transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
+          <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <div className="grid transition-[grid-template-rows] duration-300 ease-in-out" style={{ gridTemplateRows: open ? '1fr' : '0fr' }}>
+        <div className="overflow-hidden pb-1.5">{children}</div>
       </div>
     </div>
   );
@@ -757,117 +784,136 @@ function DashboardLayoutInner() {
               </button>
             </div>
 
-            {/* Main pages - one row each, active page and unread counts
-                still shown exactly as the old tab bar did. */}
-            <nav data-tour="nav-tabs" className="border-b border-ink-line py-1.5">
-              {visibleTabs.map((tab) => {
-                const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
-                const active = isTabActive(location.pathname, tab.path);
-                return (
+            {/* Main pages and Settings are each their own collapsible
+                section now - the same smooth accordion every real
+                subpage group uses below, applied to the two sections
+                themselves, not just the two special cases inside them. */}
+            <SidebarSection
+              label={t('Main pages')}
+              open={isGroupOpen('main-pages', visibleTabs.map((i) => i.path))}
+              onToggle={() => toggleGroup('main-pages', visibleTabs.map((i) => i.path))}
+            >
+              <nav data-tour="nav-tabs">
+                {visibleTabs.map((tab) => {
+                  const count = (tab.badge ? counts[tab.badge] : 0) + (tab.badge2 ? counts[tab.badge2] : 0);
+                  const active = isTabActive(location.pathname, tab.path);
+                  return (
+                    <Link
+                      key={tab.path}
+                      to={`/admin/dashboard/${tab.path}`}
+                      className={`flex items-center gap-2.5 px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                        active ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-brass' : 'bg-transparent'}`} />
+                      <span className="flex-1">{t(tab.label)}</span>
+                      {count > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-medium text-status-text">
+                          {count > 9 ? '9+' : count}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </SidebarSection>
+
+            {/* Everything else, under its own collapsible section. A page
+                with real subpages (Business Profile's Organization, HR's
+                Staff) expands in place as its own nested accordion
+                instead of sitting as its own same-looking flat row. */}
+            <SidebarSection
+              label={t('Settings')}
+              open={isGroupOpen('settings', visibleSettingsItems.map((i) => i.path))}
+              onToggle={() => toggleGroup('settings', visibleSettingsItems.map((i) => i.path))}
+              last
+            >
+              <div data-tour="settings-dropdown">
+                {orgGroupItems.length > 0 && (
+                  <NavGroup
+                    emoji="🌐"
+                    label={t('Organization')}
+                    linkPath={orgGroupItems[0].path}
+                    items={orgGroupItems.slice(1)}
+                    open={isGroupOpen('business-profile-org', orgGroupItems.map((i) => i.path))}
+                    onToggle={() => toggleGroup('business-profile-org', orgGroupItems.map((i) => i.path))}
+                    pathname={location.pathname}
+                    t={t}
+                  />
+                )}
+
+                {hrItem && staffItem && (
+                  <NavGroup
+                    emoji="👥"
+                    label={t(hrItem.label)}
+                    linkPath={hrItem.path}
+                    items={[staffItem]}
+                    open={isGroupOpen('hr', [hrItem.path, staffItem.path])}
+                    onToggle={() => toggleGroup('hr', [hrItem.path, staffItem.path])}
+                    pathname={location.pathname}
+                    t={t}
+                  />
+                )}
+                {hrItem && !staffItem && (
+                  <Link
+                    to={`/admin/dashboard/${hrItem.path}`}
+                    className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                      isTabActive(location.pathname, hrItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                    }`}
+                  >
+                    {t(hrItem.label)}
+                  </Link>
+                )}
+                {!hrItem && staffItem && (
+                  <Link
+                    to={`/admin/dashboard/${staffItem.path}`}
+                    className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                      isTabActive(location.pathname, staffItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
+                    }`}
+                  >
+                    {t(staffItem.label)}
+                  </Link>
+                )}
+
+                {flatSettingsItems.map((tab) => (
                   <Link
                     key={tab.path}
                     to={`/admin/dashboard/${tab.path}`}
-                    className={`flex items-center gap-2.5 px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
-                      active ? 'bg-brass/10 text-brass' : 'text-ivory hover:bg-ink'
+                    className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
+                      isTabActive(location.pathname, tab.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
                     }`}
                   >
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-brass' : 'bg-transparent'}`} />
-                    <span className="flex-1">{t(tab.label)}</span>
-                    {count > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-medium text-status-text">
-                        {count > 9 ? '9+' : count}
-                      </span>
-                    )}
+                    {t(tab.label)}
                   </Link>
-                );
-              })}
-            </nav>
-
-            {/* Everything else - one flat scrollable list instead of a
-                separate dropdown, under its own heading. A page with
-                real subpages (Business Profile's Organization, HR's
-                Staff) expands in place as a smooth accordion instead of
-                sitting as its own same-looking flat row. */}
-            <div data-tour="settings-dropdown" className="flex-1 py-1.5">
-              <p className="px-4 pb-1 pt-2 text-xs uppercase tracking-wide text-ivory-dim/70">{t('Settings')}</p>
-
-              <Link
-                to="/admin/dashboard/settings/business-profile"
-                onClick={() => setDrawerOpen(false)}
-                className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
-                  isTabActive(location.pathname, 'settings/business-profile') ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                }`}
-              >
-                🏢 {t('Business Profile')}
-              </Link>
-              {orgGroupItems.length > 0 && (
-                <NavGroup
-                  emoji="🌐"
-                  label={t('Organization')}
-                  linkPath={orgGroupItems[0].path}
-                  items={orgGroupItems.slice(1)}
-                  open={isGroupOpen('business-profile-org', orgGroupItems.map((i) => i.path))}
-                  onToggle={() => toggleGroup('business-profile-org', orgGroupItems.map((i) => i.path))}
-                  pathname={location.pathname}
-                  t={t}
-                />
-              )}
-
-              {hrItem && staffItem && (
-                <NavGroup
-                  emoji="👥"
-                  label={t(hrItem.label)}
-                  linkPath={hrItem.path}
-                  items={[staffItem]}
-                  open={isGroupOpen('hr', [hrItem.path, staffItem.path])}
-                  onToggle={() => toggleGroup('hr', [hrItem.path, staffItem.path])}
-                  pathname={location.pathname}
-                  t={t}
-                />
-              )}
-              {hrItem && !staffItem && (
-                <Link
-                  to={`/admin/dashboard/${hrItem.path}`}
-                  className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
-                    isTabActive(location.pathname, hrItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                  }`}
-                >
-                  {t(hrItem.label)}
-                </Link>
-              )}
-              {!hrItem && staffItem && (
-                <Link
-                  to={`/admin/dashboard/${staffItem.path}`}
-                  className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
-                    isTabActive(location.pathname, staffItem.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                  }`}
-                >
-                  {t(staffItem.label)}
-                </Link>
-              )}
-
-              {flatSettingsItems.map((tab) => (
-                <Link
-                  key={tab.path}
-                  to={`/admin/dashboard/${tab.path}`}
-                  className={`block px-4 py-2.5 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass focus-visible:ring-inset ${
-                    isTabActive(location.pathname, tab.path) ? 'bg-brass/10 text-brass' : 'text-ivory-dim hover:bg-ink hover:text-ivory'
-                  }`}
-                >
-                  {t(tab.label)}
-                </Link>
-              ))}
-            </div>
+                ))}
+              </div>
+            </SidebarSection>
 
             {/* Account section: name/role, sign out - moved to the very
                 bottom of the drawer, below every page it's not one of. */}
-            <div data-tour="account-menu" className="mt-auto border-t border-ink-line px-4 py-3.5">
-              <p className="text-base text-ivory">{user?.name}</p>
-              <p className="text-sm text-ivory-dim">{isOwner ? t('Owner') : t('Staff')}</p>
+            <div data-tour="account-menu" className="mt-auto flex items-center gap-3 border-t border-ink-line px-4 py-3.5">
+              {/* Business Profile - a small icon-only picture button, not
+                  a text row lost inside Settings, right here at the very
+                  bottom next to who's signed in. */}
+              <Link
+                to="/admin/dashboard/settings/business-profile"
+                onClick={() => setDrawerOpen(false)}
+                title={t('Business Profile')}
+                aria-label={t('Business Profile')}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${
+                  isTabActive(location.pathname, 'settings/business-profile') ? 'bg-brass/25 text-brass' : 'bg-brass/15 text-brass hover:bg-brass/25'
+                }`}
+              >
+                <span aria-hidden="true">🏢</span>
+              </Link>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base text-ivory">{user?.name}</p>
+                <p className="text-sm text-ivory-dim">{isOwner ? t('Owner') : t('Staff')}</p>
+              </div>
               <button
                 type="button"
                 onClick={logout}
-                className="mt-3 rounded-full border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                className="shrink-0 rounded-full border border-danger/40 px-3 py-1.5 text-sm text-danger hover:bg-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
               >
                 {t('Sign out')}
               </button>

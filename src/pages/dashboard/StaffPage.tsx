@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { useT } from '../../hooks/useT';
-import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, getBusinessOrganization, appointOrgOwner, leaveOrganization, setOrgOwnerStatus, setMyAvatar, type StaffShift, type BusinessOrganization } from '../../lib/authApi';
+import { listStaff, inviteStaff, deleteStaffAccount, resendStaffInvite, setStaffActive, setStaffSections, setStaffOutlets, setStaffFullAccess, resetAccountPassword, clearStaffPin, listStaffShifts, getBusiness, listHotelOutlets, setMyAvatar, type StaffShift } from '../../lib/authApi';
 import type { StaffMember, HotelOutlet } from '../../types';
 import { SECTION_OPTIONS, sectionOptionsFor } from '../../lib/dashboardSections';
 import { Section, Field, inputClass, PrimaryButton } from '../../components/ui';
@@ -27,16 +27,10 @@ export default function StaffPage() {
   const [resendMessage, setResendMessage] = useState('');
   const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
   const [togglingFullAccessId, setTogglingFullAccessId] = useState<string | null>(null);
-  const [togglingOrgOwnerId, setTogglingOrgOwnerId] = useState<string | null>(null);
   const [editingSectionsFor, setEditingSectionsFor] = useState<string | null>(null);
   const [editingOutletsFor, setEditingOutletsFor] = useState<string | null>(null);
   const [isHotel, setIsHotel] = useState(false);
   const [outlets, setOutlets] = useState<HotelOutlet[]>([]);
-  const [organization, setOrganization] = useState<BusinessOrganization | null>(null);
-  const [orgLoaded, setOrgLoaded] = useState(false);
-  const [showAppointForm, setShowAppointForm] = useState(false);
-  const [leavingOrg, setLeavingOrg] = useState(false);
-  const [leaveOrgError, setLeaveOrgError] = useState('');
 
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -84,12 +78,6 @@ export default function StaffPage() {
     return subscribeToBusinessTable(businessId, 'profiles', reload);
   }, [businessId]);
 
-  useEffect(() => {
-    if (!businessId) return;
-    getBusinessOrganization(businessId)
-      .then((org) => { setOrganization(org); setOrgLoaded(true); })
-      .catch(() => setOrgLoaded(true));
-  }, [businessId]);
 
   // Outlet assignment is hotel-only (confirmed: restaurants may get this
   // later, not yet) - the outlet list only ever gets fetched when it
@@ -249,61 +237,6 @@ export default function StaffPage() {
     }
   }
 
-  // Real, separate action from Delete - the actual gap the old
-  // role-swap design had no answer for: reassigning org management used
-  // to mean deleting the whole account just to take away the org piece.
-  // Works on any role (including the owner's own row) since is_org_owner
-  // is a capability layered on top of role, not tied to a specific one -
-  // see migration 0098. Backend re-runs the same "don't strand the org"
-  // check leaveOrganization uses, so revoking the last org owner is
-  // blocked the same way unlinking the last business is.
-  async function handleToggleOrgOwner(s: StaffMember) {
-    if (togglingOrgOwnerId === s.id) return;
-    const next = !s.is_org_owner;
-    const message = next
-      ? t('Give {name} org-management access? They will manage the shared menu, suppliers, and consolidated reporting for every location in this organization.').replace('{name}', s.name)
-      : t('Remove org-management access from {name}? Their regular account stays exactly as it is - only the org piece goes away.').replace('{name}', s.name);
-    if (!(await confirm({ title: next ? t('Grant org owner?') : t('Revoke org owner?'), message, danger: !next }))) return;
-    setTogglingOrgOwnerId(s.id);
-    try {
-      await setOrgOwnerStatus(businessId!, s.id, next);
-      reload();
-      getBusinessOrganization(businessId!).then(setOrganization).catch(() => {});
-    } catch (err) {
-      setLeaveOrgError(err instanceof Error ? err.message : 'Could not update org owner status');
-    } finally {
-      setTogglingOrgOwnerId(null);
-    }
-  }
-
-  // Self-service unlink - only ever touches this business's own link to
-  // the org, same as appointing an org owner only ever touched this
-  // business. Blocked server-side (see leaveOrganization/
-  // checkWouldOrphanOrgOwners in organizationController.js) if this is
-  // the only business hosting an org_owner for this org - the error
-  // message from that check is shown as-is, since it already explains
-  // exactly what to do (reassign or remove that org owner first).
-  async function handleLeaveOrganization() {
-    if (!organization) return;
-    if (!(await confirm({
-      title: t('Leave organization?'),
-      message: t('Leave "{orgName}"? This business stops sharing its menu, suppliers, and reporting with the rest of the organization. Nothing about the organization itself is deleted.').replace('{orgName}', organization.name),
-      confirmLabel: t('Leave organization'),
-      danger: true,
-    }))) return;
-    setLeavingOrg(true);
-    setLeaveOrgError('');
-    try {
-      await leaveOrganization(businessId!);
-      setOrganization(null);
-      reload();
-    } catch (err) {
-      setLeaveOrgError(err instanceof Error ? err.message : 'Could not leave organization');
-    } finally {
-      setLeavingOrg(false);
-    }
-  }
-
   return (
     <div className="space-y-10">
       {resendMessage && (
@@ -403,15 +336,6 @@ export default function StaffPage() {
                 <button type="button" disabled={resendingId === s.id} onClick={() => handleResendInvite(s.id)} className="rounded-full border border-ink-line px-2.5 py-1 text-xs text-ivory-dim hover:border-brass/40 hover:text-ivory disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
                   {resendingId === s.id ? t('Resending...') : t('Resend invite')}
                 </button>
-                {organization && (
-                  <button type="button"
-                    disabled={togglingOrgOwnerId === s.id}
-                    onClick={() => handleToggleOrgOwner(s)}
-                    className={`rounded-full border px-2.5 py-1 text-xs disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass ${s.is_org_owner ? 'border-danger/40 text-danger hover:bg-danger/10' : 'border-brass/40 text-brass hover:bg-brass/10'}`}
-                  >
-                    {togglingOrgOwnerId === s.id ? t('Updating...') : s.is_org_owner ? t('Revoke org owner') : t('Make org owner')}
-                  </button>
-                )}
                 {(s.role === 'staff' || s.role === 'org_owner') && (
                   <>
                     <button type="button"
@@ -509,47 +433,6 @@ export default function StaffPage() {
         {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
       </Section>
 
-      <Section
-        title={t('Organization')}
-        action={
-          orgLoaded && (
-            <button type="button" onClick={() => setShowAppointForm((v) => !v)} className="text-sm text-brass hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-              {showAppointForm ? t('Close') : organization ? t('Appoint another org owner') : t('Set up multi-location')}
-            </button>
-          )
-        }
-      >
-        {!orgLoaded && <p className="text-ivory-dim">{t('Loading...')}</p>}
-        {orgLoaded && organization && (
-          <div className="space-y-2">
-            <p className="text-base text-ivory-dim">
-              {t('This business is part of')} <span className="text-ivory">{organization.name}</span>. {t('Shared menu, suppliers, and consolidated reporting are managed from the org owner account(s) listed above in Team.')}
-            </p>
-            <button type="button" disabled={leavingOrg} onClick={handleLeaveOrganization} className="text-sm text-danger hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass">
-              {leavingOrg ? t('Leaving...') : t('Leave organization')}
-            </button>
-            {leaveOrgError && <p className="text-sm text-danger">{leaveOrgError}</p>}
-          </div>
-        )}
-        {orgLoaded && !organization && (
-          <p className="text-base text-ivory-dim">
-            {t('Running more than one location? Set up an organization to share a menu, suppliers, and reporting across all of them - you can appoint yourself or someone on your team to manage it.')}
-          </p>
-        )}
-        {showAppointForm && (
-          <OrgOwnerAppointForm
-            businessId={businessId}
-            existingStaff={staff.filter((s) => (s.role === 'staff' || s.role === 'business_owner') && !s.is_org_owner)}
-            hasOrganization={!!organization}
-            onAppointed={() => {
-              setShowAppointForm(false);
-              reload();
-              getBusinessOrganization(businessId).then(setOrganization).catch(() => {});
-            }}
-          />
-        )}
-      </Section>
-
       <ShiftReportSection businessId={businessId} />
     </div>
   );
@@ -618,85 +501,6 @@ function ShiftReportSection({ businessId }: { businessId?: string }) {
         ))}
       </div>
     </Section>
-  );
-}
-
-// Two ways to appoint an org owner: invite someone brand new (same
-// email-invite mechanism as adding staff), or promote an existing staff
-// member who already has a working login - no second invite email
-// needed for someone already on the team, including the owner
-// appointing themselves if they're listed as staff on their own login.
-// Creating the organization itself (if this business doesn't have one
-// yet) happens automatically as part of the same appointOrgOwner call -
-// no separate "create org" step for the person filling this out.
-function OrgOwnerAppointForm({ businessId, existingStaff, hasOrganization, onAppointed }: {
-  businessId: string; existingStaff: StaffMember[]; hasOrganization: boolean; onAppointed: () => void;
-}) {
-  const { t } = useT();
-  const [mode, setMode] = useState<'invite' | 'promote'>(existingStaff.length > 0 ? 'promote' : 'invite');
-  const [staffId, setStaffId] = useState(existingStaff[0]?.id || '');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [orgName, setOrgName] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    try {
-      if (mode === 'promote') {
-        if (!staffId) { setError(t('Choose a team member to promote')); setSaving(false); return; }
-        await appointOrgOwner(businessId, { staffId, orgName: orgName || undefined });
-      } else {
-        await appointOrgOwner(businessId, { name, email, orgName: orgName || undefined });
-      }
-      onAppointed();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('Could not appoint org owner'));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-2xl border border-ink-line bg-ink-soft p-3">
-      {!hasOrganization && (
-        <Field label={t('Organization name (optional - defaults to this business\'s name)')}>
-          <input value={orgName} onChange={(e) => setOrgName(e.target.value)} className={inputClass} />
-        </Field>
-      )}
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm text-ivory">
-          <input type="radio" checked={mode === 'promote'} onChange={() => setMode('promote')} disabled={existingStaff.length === 0} className="accent-brass" />
-          {t('Promote an existing team member')}
-        </label>
-        <label className="flex items-center gap-2 text-sm text-ivory">
-          <input type="radio" checked={mode === 'invite'} onChange={() => setMode('invite')} className="accent-brass" />
-          {t('Invite someone new')}
-        </label>
-      </div>
-      {mode === 'promote' && (
-        existingStaff.length === 0 ? (
-          <p className="text-sm text-ivory-dim">{t('No staff accounts to promote yet - add one under Team first, or invite someone new below.')}</p>
-        ) : (
-          <Field label={t('Team member')}>
-            <select value={staffId} onChange={(e) => setStaffId(e.target.value)} className={inputClass}>
-              {existingStaff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </Field>
-        )
-      )}
-      {mode === 'invite' && (
-        <div className="flex gap-2.5">
-          <Field label={t('Name')}><input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} /></Field>
-          <Field label={t('Email')}><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} /></Field>
-        </div>
-      )}
-      <PrimaryButton disabled={saving}>{saving ? t('Appointing...') : t('Appoint org owner')}</PrimaryButton>
-      {error && <p className="text-sm text-danger">{error}</p>}
-    </form>
   );
 }
 
